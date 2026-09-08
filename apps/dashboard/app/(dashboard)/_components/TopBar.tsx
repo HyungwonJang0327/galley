@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
 import { ChevronDown, Menu } from 'lucide-react';
 import { TopBarChip } from '@galley/ui';
 import { useSidebarCollapse } from './SidebarProvider';
@@ -10,10 +9,7 @@ import styles from './TopBar.module.css';
 const MODEL_LABEL = 'Claude Opus 4.8';
 
 export function TopBar() {
-  const router = useRouter();
-  const pathname = usePathname();
   const { collapsed, toggle } = useSidebarCollapse();
-  const isSettings = pathname.startsWith('/settings');
   return (
     <>
       <div className={styles.left}>
@@ -21,12 +17,6 @@ export function TopBar() {
           <Menu size={18} aria-hidden="true" />
         </TopBarChip>
         <span className={styles.wordmark}>Galley</span>
-        <TopBarChip isActive={!isSettings} onClick={() => router.push('/queue')}>
-          글
-        </TopBarChip>
-        <TopBarChip isActive={isSettings} onClick={() => router.push('/settings/repos')}>
-          설정
-        </TopBarChip>
       </div>
       <div className={styles.right}>
         <TopBarChip trailing={<ChevronDown size={14} aria-hidden="true" />}>
