@@ -16,7 +16,7 @@ packages/ui/
     hooks/         # useAwaitDialog 등 헤드리스 훅
     index.ts       # 공개 API. 여기 export된 것만 앱이 쓴다
   package.json     # name @galley/ui, exports 필드, sideEffects ["*.css"], peerDependencies react
-  tsup.config.ts   # ESM+CJS+d.ts. 앱은 빌드 산출물을 소비(src 직접 import 금지)
+  vite.config.ts   # 라이브러리 모드 ESM+CJS+스코프 CSS+d.ts. 앱은 빌드 산출물을 소비(src 직접 import 금지)
 ```
 
 ### 의존성 경계

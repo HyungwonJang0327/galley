@@ -16,7 +16,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 - `primitives/`(Base UI 래퍼: Tabs·Dialog·Menu·Select·Checkbox·Tooltip·Popover).
 - `components/`(직접 작성: Button·Badge·Card·PageHeader …), `patterns/`(AppShell·Sidebar*·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar), `hooks/`(useAwaitDialog 등).
 - 각 컴포넌트 = 폴더 하나(`X/{index.ts, X.tsx, X.module.css, X.test.tsx, X.stories.tsx}`), 공개 API는 `src/index.ts` 배럴.
-- tsup 빌드 설정, exports 필드, `sideEffects:["*.css"]`.
+- Vite 라이브러리 빌드 설정(vite.config.ts), exports 필드, `sideEffects:["*.css"]`.
 
 ## 산출물 위치
 
