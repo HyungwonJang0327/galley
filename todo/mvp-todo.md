@@ -51,6 +51,10 @@
 - [ ] **A4c** ts — 파서 라운드트립 테스트(read→수정→write→re-read 동일) 픽스처. 커밋: `test(queue): 주제_큐.md 파서 라운드트립 테스트`
 - [ ] **A4d** pl — 파일→DB 최초 임포트 + 로드 시 재적재(파일이 진실, decisions/queue-sync-direction). 커밋: `feat(queue): 주제_큐.md를 SQLite로 적재`
 
+### AN. 사이드바 IA 재정비 (설계 먼저 — planner/fe · A5c 전 권장)
+
+- [ ] **AN** planner/fe — 사이드바 메뉴 이름·구성·순서를 유저 흐름 기반으로 재정비. **브레인스토밍 진행 중**: 1차 축 (a)흐름 단계 / (b)객체별 유지+정리 / (c)초안 먼저 — 사용자 선택 대기(planning.md 미결). 확정 시 decisions/layout.md §3 갱신 + apps/dashboard/lib/navigation.ts 반영.
+
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
 
 - [ ] **A5a** ui — ListToolbar·ListRow 패턴(검색·필터·체크박스 슬롯 / 행: 제목+보조+우측 배지·시간). 도메인 무지. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
