@@ -21,6 +21,8 @@
   /* 색 — TopBar(앱에서 유일한 다크 영역) */
   --ui-color-topbar-bg: #1f2126;
   --ui-color-topbar-fg: #ffffff;
+  --ui-color-topbar-chip-bg: rgba(255, 255, 255, 0.08); /* 다크 위 단색 pill(모델 칩 등) */
+  --ui-color-topbar-chip-hover: rgba(255, 255, 255, 0.16);
 
   /* 색 — 상태 배지(variant. 도메인 매핑은 앱에서) : 배경 + 텍스트 쌍 */
   --ui-color-neutral-bg: #eef0f2; /* 회색 (후보) */
@@ -69,6 +71,7 @@
   /* 레이아웃 치수 */
   --ui-topbar-height: 48px;
   --ui-sidebar-width: 232px;
+  --ui-sidebar-collapsed-width: 56px; /* 접힘: 아이콘만 */
 }
 
 /* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */

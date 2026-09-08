@@ -1,0 +1,10 @@
+.group {
+  padding: var(--ui-space-2) var(--ui-space-2) var(--ui-space-3);
+}
+
+.label {
+  padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-1);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+  font-weight: var(--ui-weight-medium);
+}

@@ -10,3 +10,12 @@ export { Card } from './components/Card';
 export type { CardProps } from './components/Card';
 export { PageHeader } from './components/PageHeader';
 export type { PageHeaderProps } from './components/PageHeader';
+
+export { AppShell } from './patterns/AppShell';
+export type { AppShellProps } from './patterns/AppShell';
+export { SidebarGroup } from './patterns/SidebarGroup';
+export type { SidebarGroupProps } from './patterns/SidebarGroup';
+export { SidebarItem } from './patterns/SidebarItem';
+export type { SidebarItemProps } from './patterns/SidebarItem';
+export { TopBarChip } from './patterns/TopBarChip';
+export type { TopBarChipProps } from './patterns/TopBarChip';
