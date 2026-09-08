@@ -1,0 +1,24 @@
+# deps / build
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+.mcp.json
+.claude/settings.local.json
+
+# local db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# os / editor
+.DS_Store
+*.log
