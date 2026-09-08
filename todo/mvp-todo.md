@@ -39,6 +39,11 @@
 - [ ] **A3d** fe — 사이드바 접힘 localStorage + 하이드레이션 플래시 방지 인라인 스크립트. 커밋: `feat(dashboard): 사이드바 접힘 localStorage 저장`
   - 완료조건(A3 전체, [B]§7): 스펙 §3 메뉴 전부 렌더, URL 이동 시 활성 바뀜, 접힘 토글 동작. 데이터 없음.
 
+### AG. 컴포넌트 갤러리 (/design) — fe · A3 이후 (decisions/component-gallery.md)
+
+- [ ] **AG** fe — `app/(dashboard)/design/page.tsx` 갤러리: 그때까지의 `@galley/ui` 컴포넌트를 셸 안에서 variant/size별로 렌더. 공개 배럴로만 소비(도메인 무지). 이후 컴포넌트 추가 시 여기에 얹는다. 커밋: `feat(dashboard): 컴포넌트 갤러리 /design 라우트 추가`
+  - 완료조건: `/design`이 셸 안에서 렌더, 기존 컴포넌트(Button·Badge·Card·PageHeader 등)가 상태별로 보임.
+
 ### A4. DB 접근 계층 + 큐 적재
 
 - [ ] **A4a** pl — Prisma·SQLite 도입 + 초기 스키마(QueueItem: status 대기/후보/보류/완료 문자열, order). `.env` DATABASE_URL. 커밋: `feat(pipeline): Prisma·SQLite 스키마와 클라이언트 추가`

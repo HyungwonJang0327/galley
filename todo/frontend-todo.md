@@ -7,6 +7,7 @@
 - A3b — 사이드바 메뉴 정의 + layout.tsx 셸 배선(활성 URL 기준)
 - A3c — 루트 redirect + Phase 2 자리 라우트
 - A3d — 사이드바 접힘 localStorage
+- AG — /design 컴포넌트 갤러리(셸 안, A3 이후)
 - A5b — 상태→Badge variant 매핑 어댑터(`lib/`)
 - A5c — 큐 목록 3화면(대기·후보·완료)
 - A6a — 큐 순서 DnD(pragmatic-drag-and-drop)

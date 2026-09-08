@@ -33,6 +33,7 @@
 - 실행 이력 SQLite 저장·조회
 - 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(make_thumb.py 호출)
 - 화면: TopBar/Sidebar 셸, 큐 목록(패턴 A), 실행 상세(패턴 B)
+- 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스(Storybook)는 Phase 2. (decisions/component-gallery.md)
 
 ### 제외
 
