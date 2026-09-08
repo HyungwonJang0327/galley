@@ -17,3 +17,9 @@ body {
   color: var(--ui-color-text);
   background-color: var(--ui-color-bg);
 }
+
+/* 사이드바 접힘 시 그리드 폭을 하이드레이션 전에 좁혀 플래시를 막는다.
+   data-sidebar-collapsed 속성은 <body> 인라인 스크립트가 localStorage에서 읽어 미리 세팅한다. */
+html[data-sidebar-collapsed='true'] {
+  --ui-sidebar-width: var(--ui-sidebar-collapsed-width);
+}
