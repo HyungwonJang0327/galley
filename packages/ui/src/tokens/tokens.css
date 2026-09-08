@@ -44,8 +44,7 @@
 
   /* 타이포 */
   --ui-font-sans:
-    system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo',
-    'Noto Sans KR', sans-serif;
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   --ui-text-xs: 12px; /* 배지 */
   --ui-text-sm: 13px;
   --ui-text-body: 14px; /* 본문 13~14 */
