@@ -49,7 +49,7 @@
 - [x] **A4a** (2026-09-08 `da9c381`) pl — Prisma·SQLite 도입 + 초기 스키마(QueueItem: status 대기/후보/보류/완료 문자열, order). `.env` DATABASE_URL. Prisma 6.19.3 핀(7↑ datasource.url 제거 충돌 — decisions/toolchain-pins.md). 커밋: `feat(pipeline): Prisma·SQLite 스키마와 클라이언트 추가`
 - [x] **A4b** (2026-09-09 `0b2534d`) pl — 주제_큐.md 파서·라이터(Storage 인터페이스 + LocalFsStorage). 섹션 구조·줄 순서·완료 날짜 유지. 라운드트립은 "구조상 동일"(빈 줄 정규화). 커밋: `feat(queue): 주제_큐.md 파서·라이터 추가`
 - [x] **A4c** (2026-09-09 `d73e72c`) ts — 파서 라운드트립 테스트(read→수정→write→re-read 동일) 픽스처. 커밋: `test(queue): 주제_큐.md 파서 라운드트립 테스트`
-- [ ] **A4d** pl — 파일→DB 최초 임포트 + 로드 시 재적재(파일이 진실, decisions/queue-sync-direction). 커밋: `feat(queue): 주제_큐.md를 SQLite로 적재`
+- [ ] **A4d** pl — 파일→DB 최초 임포트 + 로드 시 재적재(파일이 진실, decisions/queue-sync-direction). **결정(2026-09-09): 표시 정보 최대 보존 → QueueItem 스키마에 `category`·`completedOn` 컬럼 추가 + 마이그레이션** 후 적재(파서 QueueTopic 전 필드 보존). 큐 화면 카테고리 필터·완료일 표시 위해 필요. 커밋: `feat(queue): 주제_큐.md를 SQLite로 적재`
 
 ### AN. 네비게이션·화면 구조 재정비 (fe · 사용 흐름 IA — decisions/navigation.md) — A5·A6보다 먼저
 
