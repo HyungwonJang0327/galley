@@ -32,7 +32,7 @@ Galley는 기술 블로그 초안 파이프라인을 큐로 관리하고, 실행
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ TopBar (다크 #1F2126, 48px, 전체 폭)                       │
-│  좌: [☰] Galley  [글][설정](워크스페이스 탭)   우: 모델 칩 ▾ │
+│  좌: [☰] Galley                              우: 모델 칩 ▾ │
 ├────────────┬─────────────────────────────────────────────┤
 │ Sidebar    │ Content (#F5F6F8)                            │
 │ (흰 220~240)│  h1 (여백 24)                                │
@@ -58,10 +58,10 @@ Galley/
 │     ├─ app/
 │     │  ├─ (dashboard)/       # 라우트 그룹: TopBar+Sidebar 공유, userId="local" 컨텍스트 자리
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
-│     │  │  ├─ queue/          # 큐(대기)·후보·완료 화면 (패턴 A)
-│     │  │  └─ runs/           # 실행 이력·진행 중·실행 상세 (패턴 B)
+│     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A)
+│     │  │  └─ runs/           # 실행 상세(2분할)·이력 (패턴 B)
 │     │  ├─ api/               # Route Handlers → @galley/pipeline 호출만
-│     │  └─ page.tsx           # /queue 로 redirect (루트 page.tsx는 redirect 전용)
+│     │  └─ page.tsx           # 승인 대기≥1→/runs, else /queue redirect (루트 page.tsx는 redirect 전용)
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
 ├─ packages/
 │  ├─ ui/                      # @galley/ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)

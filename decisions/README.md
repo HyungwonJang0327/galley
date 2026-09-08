@@ -37,6 +37,7 @@
 ### 경계·구조
 
 - layout — 대시보드 레이아웃 스펙
+- navigation — 사이드바·TopBar IA(사용 흐름 순), 워크스페이스 제거
 - ui-package-boundary — @galley/ui 경계 규칙
 - deploy-readiness — 배포 가능성 유지 규칙
 - toolchain-pins — 툴체인 버전 핀·빌드 우회(TS6 고정 등)

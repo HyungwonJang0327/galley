@@ -51,16 +51,31 @@
 - [ ] **A4c** ts — 파서 라운드트립 테스트(read→수정→write→re-read 동일) 픽스처. 커밋: `test(queue): 주제_큐.md 파서 라운드트립 테스트`
 - [ ] **A4d** pl — 파일→DB 최초 임포트 + 로드 시 재적재(파일이 진실, decisions/queue-sync-direction). 커밋: `feat(queue): 주제_큐.md를 SQLite로 적재`
 
-### AN. 사이드바 IA 재정비 (설계 먼저 — planner/fe · A5c 전 권장)
+### AN. 네비게이션·화면 구조 재정비 (fe · 사용 흐름 IA — decisions/navigation.md) — A5·A6보다 먼저
 
-- [ ] **AN** planner/fe — 사이드바 메뉴 이름·구성·순서를 유저 흐름 기반으로 재정비. **브레인스토밍 진행 중**: 1차 축 (a)흐름 단계 / (b)객체별 유지+정리 / (c)초안 먼저 — 사용자 선택 대기(planning.md 미결). 확정 시 decisions/layout.md §3 갱신 + apps/dashboard/lib/navigation.ts 반영.
+레이아웃 스펙 [C]의 정보 종류별 사이드바를 글의 생애주기(사용 흐름) 순으로 재구성. 문서(decisions/navigation.md·layout.md §2~§4·planning 라우트 표·CLAUDE) 선반영 완료. 각 항목 = 커밋 하나.
+
+- [ ] **AN1** fe — TopBar 워크스페이스 탭(글/설정) 제거 + 관련 코드 정리. 커밋: `refactor(dashboard): TopBar 워크스페이스 탭 제거`
+  - 완료조건: TopBar에 `[☰]·Galley·모델 칩`만. 글/설정 pill·`isSettings`·미사용 import(useRouter·usePathname) 제거. 워크스페이스 라우트 그룹/상태 없음(TopBar.tsx에 국한 확인됨). build 통과.
+- [ ] **AN2** fe — 사이드바 메뉴 정의를 새 구성으로 교체 + 구 라우트 5개 redirect(**next.config redirects**). 커밋: `feat(dashboard): 사이드바를 사용 흐름 순으로 재구성`
+  - 완료조건: 메뉴 7개(주제:큐 / 실행:실행·이력 / 발행:발행 대기 / 설정:리포·모델·프롬프트) + 외부 2개 렌더, /queue/candidates·/queue/done·/runs/active·/publish/zenn·/publish/velog 5개가 전부 새 경로로 redirect, 배지 자리 있음(값 더미 가능. 실값은 사이드바 서버 컴포넌트에서 직접 조회).
+- [ ] **AN3** fe — 루트 진입 분기(승인 대기 ≥1 → /runs, else /queue). 커밋: `feat(dashboard): 루트 진입 시 승인 대기 여부로 분기`
+  - 완료조건: 루트 `/`가 승인 대기 유무로 분기. Run 스키마(B1e) 전까지 카운트 0/더미 → 사실상 /queue. 홈 화면 없음.
+- [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. (선행: A5a·A5b) 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
+  - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
+- [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
+  - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
+- [ ] **AN6** fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
+  - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재, 설정 3개는 기존 유지. 메뉴 링크 유효.
+
+> 실행 화면(2분할)·산출물 미리보기는 Phase 1-B B2에서. B2에 "타임라인 펼침 산출물 미리보기"(B2e)만 추가, 순서 유지.
 
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
 
 - [ ] **A5a** ui — ListToolbar·ListRow 패턴(검색·필터·체크박스 슬롯 / 행: 제목+보조+우측 배지·시간). 도메인 무지. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
 - [ ] **A5b** fe — 상태→Badge variant 매핑 어댑터(`lib/`). 커밋: `feat(dashboard): 큐 상태→Badge variant 매핑 추가`
-- [ ] **A5c** fe — 큐 목록 3화면(대기 `/queue`·후보 `/queue/candidates`·완료 `/queue/done`), 같은 컴포넌트 조합, pipeline에서 데이터 페칭. 커밋: `feat(dashboard): 큐 목록 화면(대기·후보·완료) 추가`
-  - 완료조건([B]#3): 4-A 패턴으로 3개 화면이 같은 컴포넌트 조합으로 렌더.
+- [ ] **A5c** fe — 큐 데이터 페칭(pipeline에서 섹션별 주제 로드) → AN4 탭 + A5a 행에 공급. (기존 "3화면" 폐지 — 1화면+탭은 AN4.) 커밋: `feat(dashboard): 큐 데이터 페칭 배선`
+  - 완료조건: 대기/후보/보류/완료 섹션 데이터가 탭별로 렌더된다.
 
 ### A6. 큐 편집 — [B] Phase 1-A #4
 
@@ -90,6 +105,7 @@
 - [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(단계 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
 - [ ] **B2d** fe — 하단 ActionBar(수정 지시 입력 + 승인) → Route Handler 배선. 커밋: `feat(run): 실행 상세 수정 지시·승인 배선`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
+- [ ] **B2e** fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown**(apps/dashboard). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
 
