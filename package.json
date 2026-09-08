@@ -28,8 +28,11 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
       "esbuild",
-      "lefthook"
+      "lefthook",
+      "prisma"
     ]
   }
 }

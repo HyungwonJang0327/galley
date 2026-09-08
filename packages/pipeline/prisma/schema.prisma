@@ -1,0 +1,27 @@
+// @galley/pipeline 데이터 접근 계층 스키마.
+// 저장: SQLite / ORM: Prisma. 배포 시 provider 한 줄로 Postgres 전환. (decisions/db-access-layer.md)
+// 상태값(대기/후보/보류/완료)은 SQLite가 native enum을 지원하지 않으므로
+// String 필드 + 애플리케이션 레벨 체크로 표현한다. (스키마에 enum 사용 금지)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 주제 큐 항목. 진실은 주제_큐.md 파일이며 DB는 파생 캐시다. (decisions/queue-sync-direction.md)
+model QueueItem {
+  id        String   @id @default(cuid())
+  title     String
+  // 대기 | 후보 | 보류 | 완료 — 값 검증은 애플리케이션 레벨.
+  status    String   @default("대기")
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 섹션(status)별 정렬 조회 편의를 위한 최소 인덱스.
+  @@index([status, order])
+}
