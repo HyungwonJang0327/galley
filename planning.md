@@ -63,4 +63,4 @@
 
 ## 미결 질문
 
-- 7-3 환경 마무리: gitleaks **pre-commit 훅 도입 여부**(husky/lefthook), **main 브랜치 보호 설정 여부**.
+- (없음 — 환경 세팅(7단계) 완료. 다음은 8단계 Phase 1 todo 분해. 새 미결은 여기에 추가.)
