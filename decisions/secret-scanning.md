@@ -2,7 +2,8 @@
 
 ## 결정
 
-gitleaks를 도입한다. CI 잡 + 로컬 pre-commit 훅. 첫 커밋 전부터 적용.
+gitleaks를 도입한다. **CI 잡**(gitleaks-action)과 **lefthook 기반 로컬 pre-commit 훅**(`gitleaks git --staged`) 둘 다. 첫 커밋 전부터 적용.
+로컬 훅은 gitleaks 바이너리 필요(`brew install gitleaks`). 버전: gitleaks 8.30.1 · lefthook 2.1.12.
 
 ## 이유
 
@@ -24,3 +25,4 @@ gitleaks를 도입한다. CI 잡 + 로컬 pre-commit 훅. 첫 커밋 전부터 �
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-08 로컬 훅 매니저를 **lefthook**으로 확정, pre-commit에서 `gitleaks git --staged` 실행.

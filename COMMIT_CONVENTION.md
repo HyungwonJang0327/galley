@@ -42,3 +42,11 @@ fix(pipeline): 승인 대기 상태에서 단계 재실행 순서 교정
 docs(docs): CLAUDE.md 스택 표를 실제 버전으로 갱신
 chore: 프로젝트 기반 세팅
 ```
+
+## 브랜치
+
+- `type/scope-desc` — COMMIT_CONVENTION의 type·scope 재사용, 소문자 kebab-case, 설명 2~4단어.
+  - 예: `feat/ui-button` · `feat/queue-parser` · `fix/pipeline-retry-order` · `chore/ci-gitleaks` · `docs/readme-screenshots`.
+- 브랜치 하나 = todo 항목 하나(또는 아주 작은 기능 하나). 짧은 수명, 머지 후 삭제.
+- main은 보호됨: 직접 push 금지, PR + CI 통과 필수, force-push·삭제 금지. (decisions/branch-protection.md)
+- 머지 전략: **Rebase and merge** (원자적 커밋 보존·선형 히스토리). squash·merge commit은 저장소 설정에서 비활성. (decisions/branch-convention.md)

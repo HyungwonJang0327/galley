@@ -40,3 +40,5 @@
 - ui-package-boundary — @galley/ui 경계 규칙
 - deploy-readiness — 배포 가능성 유지 규칙
 - toolchain-pins — 툴체인 버전 핀·빌드 우회(TS6 고정 등)
+- branch-convention — 브랜치 이름(type/scope-desc)·Rebase merge
+- branch-protection — main 표준 보호(PR·CI 필수·force-push 금지)
