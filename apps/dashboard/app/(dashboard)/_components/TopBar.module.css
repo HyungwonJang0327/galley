@@ -1,0 +1,16 @@
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.wordmark {
+  font-size: var(--ui-text-h2);
+  font-weight: var(--ui-weight-semibold);
+  margin-right: var(--ui-space-2);
+}
