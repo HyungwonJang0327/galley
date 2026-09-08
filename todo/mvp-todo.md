@@ -55,18 +55,18 @@
 
 레이아웃 스펙 [C]의 정보 종류별 사이드바를 글의 생애주기(사용 흐름) 순으로 재구성. 문서(decisions/navigation.md·layout.md §2~§4·planning 라우트 표·CLAUDE) 선반영 완료. 각 항목 = 커밋 하나.
 
-- [ ] **AN1** fe — TopBar 워크스페이스 탭(글/설정) 제거 + 관련 코드 정리. 커밋: `refactor(dashboard): TopBar 워크스페이스 탭 제거`
+- [x] **AN1** (2026-09-09 `db2e8d6`) fe — TopBar 워크스페이스 탭(글/설정) 제거 + 관련 코드 정리. 커밋: `refactor(dashboard): TopBar 워크스페이스 탭 제거`
   - 완료조건: TopBar에 `[☰]·Galley·모델 칩`만. 글/설정 pill·`isSettings`·미사용 import(useRouter·usePathname) 제거. 워크스페이스 라우트 그룹/상태 없음(TopBar.tsx에 국한 확인됨). build 통과.
-- [ ] **AN2** fe — 사이드바 메뉴 정의를 새 구성으로 교체 + 구 라우트 5개 redirect(**next.config redirects**). 커밋: `feat(dashboard): 사이드바를 사용 흐름 순으로 재구성`
-  - 완료조건: 메뉴 7개(주제:큐 / 실행:실행·이력 / 발행:발행 대기 / 설정:리포·모델·프롬프트) + 외부 2개 렌더, /queue/candidates·/queue/done·/runs/active·/publish/zenn·/publish/velog 5개가 전부 새 경로로 redirect, 배지 자리 있음(값 더미 가능. 실값은 사이드바 서버 컴포넌트에서 직접 조회).
-- [ ] **AN3** fe — 루트 진입 분기(승인 대기 ≥1 → /runs, else /queue). 커밋: `feat(dashboard): 루트 진입 시 승인 대기 여부로 분기`
-  - 완료조건: 루트 `/`가 승인 대기 유무로 분기. Run 스키마(B1e) 전까지 카운트 0/더미 → 사실상 /queue. 홈 화면 없음.
-- [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. (선행: A5a·A5b) 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
+- [x] **AN2** (2026-09-09 `1b31aef`) fe — 사이드바 메뉴 정의를 새 구성으로 교체 + 구 라우트 5개 redirect(**next.config redirects**). 커밋: `feat(dashboard): 사이드바를 사용 흐름 순으로 재구성`
+  - 완료조건: 메뉴 7개(주제:큐 / 실행:실행·이력 / 발행:발행 대기 / 설정:리포·모델·프롬프트) + 외부 2개 렌더, /queue/candidates·/queue/done·/runs/active·/publish/zenn·/publish/velog 5개가 전부 새 경로로 redirect(308 스모크 확인), 배지 자리 있음(값 미주입. 실값은 사이드바 서버 컴포넌트에서 직접 조회).
+- [x] **AN3** (2026-09-09 `2b4a51a`) fe — 루트 진입 분기(승인 대기 ≥1 → /runs, else /queue). 커밋: `feat(dashboard): 루트 진입 시 승인 대기 여부로 분기`
+  - 완료조건: 루트 `/`가 승인 대기 유무로 분기(스모크 `/`→`/queue`). Run 스키마(B1e) 전까지 카운트 0/더미(`getPendingApprovalCount`) → 사실상 /queue. 홈 화면 없음.
+- [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 미완이라 보류(가짜 데이터/행 금지). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
-- [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
+- [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). **의존: AN4 행**(A4b·A5a). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
   - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
-- [ ] **AN6** fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
-  - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재, 설정 3개는 기존 유지. 메뉴 링크 유효.
+- [x] **AN6** (2026-09-09 `6bd4c6c`) fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
+  - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재(200 스모크), 설정 3개는 기존 유지. 메뉴 링크 유효.
 
 > 실행 화면(2분할)·산출물 미리보기는 Phase 1-B B2에서. B2에 "타임라인 펼침 산출물 미리보기"(B2e)만 추가, 순서 유지.
 
