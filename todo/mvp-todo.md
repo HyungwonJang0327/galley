@@ -35,7 +35,7 @@
 
 - [x] **A3a** (2026-09-08 `f56db05`) ui — AppShell(TopBar+Sidebar 슬롯)·SidebarGroup·SidebarItem·TopBarChip 패턴(표현 전용, `isActive` prop). 커밋: `feat(ui): AppShell·Sidebar·TopBar 패턴 추가`
 - [x] **A3b** (2026-09-08 `7f8adc0`) fe — 사이드바 메뉴 정의(라벨·경로·아이콘 배열 1개) + `app/(dashboard)/layout.tsx`에 셸 배선, 활성 판정 URL(pathname). 커밋: `feat(dashboard): 대시보드 레이아웃 셸과 사이드바 메뉴 배선` (+ CI 소비 전 ui 빌드 `80255c3`)
-- [ ] **A3c** fe — 루트 `page.tsx`→`/queue` redirect + Phase 2 자리 라우트(발행·설정) 스텁. 커밋: `feat(dashboard): 루트 redirect와 Phase 2 자리 라우트 추가`
+- [x] **A3c** (2026-09-08 `279ac01`) fe — 루트 `page.tsx`→`/queue` redirect + Phase 2 자리 라우트(발행·설정) 스텁. 커밋: `feat(dashboard): 루트 redirect와 Phase 2 자리 라우트 추가`
 - [ ] **A3d** fe — 사이드바 접힘 localStorage + 하이드레이션 플래시 방지 인라인 스크립트. 커밋: `feat(dashboard): 사이드바 접힘 localStorage 저장`
   - 완료조건(A3 전체, [B]§7): 스펙 §3 메뉴 전부 렌더, URL 이동 시 활성 바뀜, 접힘 토글 동작. 데이터 없음.
 
