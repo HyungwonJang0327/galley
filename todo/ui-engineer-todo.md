@@ -7,7 +7,7 @@
 - A1 — 디자인 토큰(색·간격·타이포·라운드·그림자 → `--ui-*`)
 - A2a Button · A2b Badge · A2c Card · A2d PageHeader (각 폴더+테스트+스토리)
 - A3a — AppShell·SidebarGroup·SidebarItem·TopBarChip 패턴(표현 전용, `isActive` prop)
-- A5a — ListToolbar·ListRow 패턴
+- A5a — ListToolbar·ListRow 패턴 (큐 탭 화면 AN4가 소비)
 
 ## Phase 1-B
 
