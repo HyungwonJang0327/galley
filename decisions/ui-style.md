@@ -26,3 +26,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-08 (A1) 토큰은 `src/tokens/tokens.css`의 `--ui-*` 변수로. `index.ts`가 로드 → 빌드 산출물 `dist/index.css`, 소비자는 `@galley/ui/styles.css`로 import. 정적 토큰이라 단위 테스트 없이 빌드로 검증.
