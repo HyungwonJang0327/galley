@@ -76,19 +76,21 @@ Galley/
 
 ## 3. 기술 스택
 
-| 영역          | 선택                                                         | 버전         |
-| ------------- | ------------------------------------------------------------ | ------------ |
-| 패키지 매니저 | pnpm (workspace: apps/_, packages/_)                         | 설치 시 고정 |
-| 앱            | Next.js App Router + React + TypeScript(strict)              | 설치 시 고정 |
-| 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | 설치 시 고정 |
-| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | 설치 시 고정 |
-| 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —            |
-| DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 설치 시 고정 |
-| 테스트        | Vitest                                                       | 설치 시 고정 |
-| 빌드(ui)      | tsup (ESM+CJS+d.ts) + Changesets                             | 설치 시 고정 |
-| 린트/포맷     | ESLint + Prettier + typescript-eslint                        | 설치 시 고정 |
+| 영역          | 선택                                                         | 버전 (2026-09-08 기준)                            |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------------- |
+| 패키지 매니저 | pnpm (workspace: apps/\*, packages/\*)                       | 10.26.2 (node ≥20)                                |
+| 앱            | Next.js App Router + React                                   | next 16.3.4 · react 19.2.8                        |
+| 언어          | TypeScript (strict)                                          | 6.0.3 (7.x 보류 — decisions/toolchain-pins.md)    |
+| 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | 미설치 (컴포넌트 작업 시 추가)                    |
+| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | 미설치 (Phase 1-B)                                |
+| 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                 |
+| DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                |
+| 테스트        | Vitest                                                       | 5.0.0                                             |
+| 빌드(ui)      | tsup (ESM+CJS+d.ts) + Changesets                             | tsup 8.5.1 · changesets 3.0.2                     |
+| 린트/포맷     | ESLint + Prettier + typescript-eslint                        | eslint 10.10.0 · prettier 3.9.6 · tseslint 8.70.0 |
+| 시크릿·훅     | gitleaks + lefthook (pre-commit + CI)                        | gitleaks 8.30.1 · lefthook 2.1.12                 |
 
-> 설치 후 실제 버전으로 이 표를 갱신한다.
+> 미설치 항목은 해당 Phase 작업 시 설치하고 버전을 갱신한다. 버전 핀·빌드 우회 사유는 decisions/toolchain-pins.md.
 
 ## 4. 코딩 컨벤션
 
@@ -113,6 +115,7 @@ Galley/
 - **비밀값(API 키·Zenn 토큰)은 `.env`에만.** 코드·SQLite·산출물 파일에 절대 쓰지 않는다.
 - **macOS 전용 명령(`open`, `pbcopy`)·경로 구분자 가정 금지.**
 - `.env*`(except `.env.example`)·`.mcp.json`·`.claude/settings.local.json`은 gitignore.
+- **pnpm 10은 네이티브 패키지 빌드 스크립트를 차단.** 새 네이티브 도구(esbuild·lefthook 등) 추가 시 `pnpm.onlyBuiltDependencies`에 넣어야 빌드된다. (decisions/toolchain-pins.md)
 
 ## 6. 금지
 
@@ -123,7 +126,9 @@ Galley/
 
 ## 7. 작업 흐름
 
-`todo/{역할}-todo 확인 → 브랜치 → 구현 → 테스트 → 기능 최소 단위마다 즉시 커밋 → /log → PR`
+`todo/{역할}-todo 확인 → 브랜치(type/scope-desc) → 구현 → 테스트 → 기능 최소 단위마다 즉시 커밋 → /log → PR → CI 초록 → rebase merge → 브랜치 삭제`
+
+- main은 보호됨(직접 push 금지, PR·CI 필수, force-push 금지). 브랜치·머지 규칙은 [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) 브랜치 절.
 
 ## 8. 커밋 단위 규칙
 
