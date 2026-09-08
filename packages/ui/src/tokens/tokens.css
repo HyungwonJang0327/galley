@@ -1,0 +1,78 @@
+/*
+ * @galley/ui 디자인 토큰 — 모든 값의 단일 출처.
+ * 컴포넌트는 raw 값을 쓰지 않고 반드시 이 변수(--ui-*)만 참조한다.
+ * 레이아웃 스펙 §1(색·타이포·여백)·§5(배지 색) 기준. 라이트만 구현, 다크는 자리만.
+ */
+
+:root {
+  /* 색 — 표면·텍스트 */
+  --ui-color-bg: #f5f6f8; /* 앱 배경 */
+  --ui-color-surface: #ffffff; /* 카드 */
+  --ui-color-border: #e5e7eb;
+  --ui-color-text: #23262b; /* 본문 */
+  --ui-color-text-muted: #6b7280; /* 보조 텍스트 */
+
+  /* 색 — 포인트(블루 1개). 활성 탭·활성 메뉴·주요 버튼에만 */
+  --ui-color-accent: #5b6cff;
+  --ui-color-accent-hover: #4a5aed;
+  --ui-color-accent-fg: #ffffff;
+  --ui-color-accent-tint: #eef0ff; /* 활성 메뉴 연한 틴트 배경 */
+
+  /* 색 — TopBar(앱에서 유일한 다크 영역) */
+  --ui-color-topbar-bg: #1f2126;
+  --ui-color-topbar-fg: #ffffff;
+
+  /* 색 — 상태 배지(variant. 도메인 매핑은 앱에서) : 배경 + 텍스트 쌍 */
+  --ui-color-neutral-bg: #eef0f2; /* 회색 (후보) */
+  --ui-color-neutral-fg: #4b5563;
+  --ui-color-info-bg: #eef0ff; /* 블루 (대기·실행 중) */
+  --ui-color-info-fg: #3b45c7;
+  --ui-color-warning-bg: #fef3e2; /* 주황 (승인 대기) */
+  --ui-color-warning-fg: #b45309;
+  --ui-color-success-bg: #e7f7ec; /* 초록 (완료) */
+  --ui-color-success-fg: #15803d;
+  --ui-color-danger-bg: #fdecec; /* 빨강 (실패) */
+  --ui-color-danger-fg: #b91c1c;
+
+  /* 간격 (4px 스텝, 넉넉하게) */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-6: 32px;
+
+  /* 타이포 */
+  --ui-font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo',
+    'Noto Sans KR', sans-serif;
+  --ui-text-xs: 12px; /* 배지 */
+  --ui-text-sm: 13px;
+  --ui-text-body: 14px; /* 본문 13~14 */
+  --ui-text-h2: 16px;
+  --ui-text-title: 22px; /* 페이지 제목 20~22 */
+  --ui-leading-tight: 1.25;
+  --ui-leading-normal: 1.5;
+  --ui-weight-regular: 400;
+  --ui-weight-medium: 500;
+  --ui-weight-semibold: 600;
+
+  /* 라운드 */
+  --ui-radius-sm: 6px;
+  --ui-radius-md: 8px; /* 카드 8~12 */
+  --ui-radius-lg: 12px;
+  --ui-radius-pill: 9999px;
+
+  /* 그림자 (약하게) */
+  --ui-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --ui-shadow-popover: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* 레이아웃 치수 */
+  --ui-topbar-height: 48px;
+  --ui-sidebar-width: 232px;
+}
+
+/* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */
+[data-theme='dark'] {
+  /* --ui-color-bg: ...; */
+}
