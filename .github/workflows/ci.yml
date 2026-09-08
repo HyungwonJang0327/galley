@@ -17,11 +17,12 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # 소비자(dashboard)가 빌드된 dist·d.ts를 참조하므로 typecheck·test 앞에서 먼저 빌드
+      - run: pnpm --filter @galley/ui build
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm --filter @galley/ui build
 
   gitleaks:
     runs-on: ubuntu-latest
