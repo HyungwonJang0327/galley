@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push -f:*)",
+      "Bash(npm publish:*)",
+      "Bash(pnpm publish:*)",
+      "Bash(pnpm -r publish:*)",
+      "Bash(npx changeset publish:*)",
+      "Bash(vercel:*)",
+      "Bash(vercel deploy:*)"
+    ]
+  }
+}
