@@ -63,4 +63,4 @@
 
 ## 미결 질문
 
-- (없음 — 환경 세팅(7단계) 완료. 다음은 8단계 Phase 1 todo 분해. 새 미결은 여기에 추가.)
+- CI에 `prettier --check` 추가 여부 — 현재 CI는 lint·typecheck·test·build만이라 포맷 드리프트가 통과된다(A1 tokens.css 사례). 작은 `ci:` 작업으로 보강 검토.

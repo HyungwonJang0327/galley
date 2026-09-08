@@ -25,7 +25,7 @@
 
 ### A2. 기본 컴포넌트(직접 작성) — ui (각 컴포넌트 = 폴더+테스트+스토리, 토큰만 참조)
 
-- [ ] **A2a** Button — variant·size. 커밋: `feat(ui): Button 컴포넌트 추가`
+- [x] **A2a** (2026-09-08 `70fcf28`) Button — variant·size. 커밋: `feat(ui): Button 컴포넌트 추가`
 - [ ] **A2b** Badge — variant(회색/블루/주황/초록/빨강 + 펄스). ui는 variant 이름만. 커밋: `feat(ui): Badge 컴포넌트 추가`
 - [ ] **A2c** Card — 커밋: `feat(ui): Card 컴포넌트 추가`
 - [ ] **A2d** PageHeader(h1+여백) — 커밋: `feat(ui): PageHeader 컴포넌트 추가`
