@@ -26,6 +26,7 @@ export function Sidebar() {
                 key={item.href}
                 label={item.label}
                 icon={icon}
+                badge={item.badge}
                 isActive={isNavItemActive(pathname, item)}
                 collapsed={collapsed}
                 render={link}
