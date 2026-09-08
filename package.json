@@ -12,12 +12,14 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.2",
     "@types/node": "^26.5.0",
     "eslint": "^10.10.0",
+    "lefthook": "^2.1.12",
     "prettier": "^3.9.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
@@ -25,7 +27,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "lefthook"
     ]
   }
 }

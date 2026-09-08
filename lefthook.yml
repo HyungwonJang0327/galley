@@ -1,0 +1,6 @@
+# 로컬 git 훅 (lefthook). 시크릿이 커밋되기 전에 차단한다 (decisions/secret-scanning.md).
+# gitleaks 바이너리 필요: brew install gitleaks
+pre-commit:
+  commands:
+    gitleaks:
+      run: gitleaks git --staged --no-banner --redact

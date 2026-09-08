@@ -1,0 +1,5 @@
+title = "Galley gitleaks config"
+
+# 기본 규칙 사용. 필요 시 [[rules]]나 allowlist를 여기에 추가한다.
+[extend]
+useDefault = true
