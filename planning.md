@@ -64,4 +64,5 @@
 
 ## 미결 질문
 
+- **`/design` 갤러리 노출 위치.** 현재 nav 링크 없이 URL 직접 진입만 가능. 도메인 메뉴에 넣을지, 별도 "개발" 섹션으로 뺄지, 링크 없이 둘지 미정.
 - **apps/dashboard 단위 테스트 인프라(vitest+testing-library) 도입 여부.** 현재 dashboard는 test 스크립트·설정이 없어 fe 작업(A3b·A3c·A3d)을 build+프로덕션 스모크로만 검증 중. 라이브러리 추가 = decisions 필요. A5(큐 목록)·A6(편집) 등 로직이 붙기 전 결정할 것.
