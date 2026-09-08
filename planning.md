@@ -63,4 +63,4 @@
 
 ## 미결 질문
 
-- (없음 — Phase 1 착수 전 결정 완료. 새 미결은 여기에 추가)
+- 7-3 환경 마무리: gitleaks **pre-commit 훅 도입 여부**(husky/lefthook), **main 브랜치 보호 설정 여부**.

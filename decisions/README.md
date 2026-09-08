@@ -39,3 +39,4 @@
 - layout — 대시보드 레이아웃 스펙
 - ui-package-boundary — @galley/ui 경계 규칙
 - deploy-readiness — 배포 가능성 유지 규칙
+- toolchain-pins — 툴체인 버전 핀·빌드 우회(TS6 고정 등)
