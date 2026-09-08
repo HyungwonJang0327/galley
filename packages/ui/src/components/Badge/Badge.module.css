@@ -1,0 +1,53 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 2px var(--ui-space-2);
+  border-radius: var(--ui-radius-pill);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-xs);
+  font-weight: var(--ui-weight-medium);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.neutral {
+  background-color: var(--ui-color-neutral-bg);
+  color: var(--ui-color-neutral-fg);
+}
+.info {
+  background-color: var(--ui-color-info-bg);
+  color: var(--ui-color-info-fg);
+}
+.warning {
+  background-color: var(--ui-color-warning-bg);
+  color: var(--ui-color-warning-fg);
+}
+.success {
+  background-color: var(--ui-color-success-bg);
+  color: var(--ui-color-success-fg);
+}
+.danger {
+  background-color: var(--ui-color-danger-bg);
+  color: var(--ui-color-danger-fg);
+}
+
+/* 진행 중 펄스 점(currentColor로 variant 색을 따름). 크기는 em이라 폰트에 비례 */
+.pulse::before {
+  content: '';
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: var(--ui-radius-pill);
+  background-color: currentColor;
+  animation: ui-badge-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ui-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
