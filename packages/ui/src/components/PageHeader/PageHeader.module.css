@@ -1,0 +1,22 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+  margin-bottom: var(--ui-space-5);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+  color: var(--ui-color-text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
