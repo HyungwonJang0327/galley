@@ -6,7 +6,7 @@ Phase 1은 turborepo를 도입하지 않는다. 태스크는 `pnpm --filter <pkg
 
 ## 이유
 
-- 패키지 3개, 빌드 대상은 `@galley/ui`(tsup)뿐 → 빌드 그래프 단순.
+- 패키지 3개, 빌드 대상은 `@galley/ui`(Vite)뿐 → 빌드 그래프 단순.
 - turbo의 원격/증분 캐시 이득은 CI가 느려지고 패키지가 늘어야 발생.
 
 ## 기각된 대안
