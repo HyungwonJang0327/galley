@@ -12,6 +12,7 @@ import {
   Coins,
   MessageSquareText,
   ExternalLink,
+  Component,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const NAV_GROUPS: NavGroup[] = [
+const BASE_GROUPS: NavGroup[] = [
   {
     label: '주제',
     items: [
@@ -67,6 +68,15 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+// 개발 보조 갤러리는 개발 서버에서만 노출. process.env.NODE_ENV는 Next가 빌드 시
+// 정적 치환하므로 프로덕션 빌드에선 이 그룹이 번들에서 제거된다(배포 대비).
+const DEV_GROUPS: NavGroup[] =
+  process.env.NODE_ENV === 'development'
+    ? [{ label: '개발', items: [{ label: '컴포넌트 갤러리', href: '/design', icon: Component }] }]
+    : [];
+
+export const NAV_GROUPS: NavGroup[] = [...BASE_GROUPS, ...DEV_GROUPS];
 
 /** 활성 판정은 URL(pathname) 기준. 외부 링크는 항상 비활성. */
 export function isNavItemActive(pathname: string, item: NavItem): boolean {
