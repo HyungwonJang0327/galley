@@ -64,4 +64,4 @@
 
 ## 미결 질문
 
-- (없음 — CI `prettier --check` 반영 완료(#7). 새 미결은 여기에 추가.)
+- **apps/dashboard 단위 테스트 인프라(vitest+testing-library) 도입 여부.** 현재 dashboard는 test 스크립트·설정이 없어 fe 작업(A3b·A3c·A3d)을 build+프로덕션 스모크로만 검증 중. 라이브러리 추가 = decisions 필요. A5(큐 목록)·A6(편집) 등 로직이 붙기 전 결정할 것.
