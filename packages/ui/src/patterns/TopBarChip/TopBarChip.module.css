@@ -1,0 +1,30 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-1) var(--ui-space-3);
+  border: none;
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-topbar-chip-bg);
+  color: var(--ui-color-topbar-fg);
+  font-size: var(--ui-text-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background-color: var(--ui-color-topbar-chip-hover);
+}
+
+.active {
+  background-color: var(--ui-color-accent);
+  color: var(--ui-color-accent-fg);
+}
+
+.active:hover {
+  background-color: var(--ui-color-accent-hover);
+}
+
+.trailing {
+  display: inline-flex;
+}

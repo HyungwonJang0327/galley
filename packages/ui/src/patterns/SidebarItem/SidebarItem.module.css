@@ -1,0 +1,46 @@
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-color-text);
+  font-size: var(--ui-text-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover {
+  background-color: var(--ui-color-bg);
+}
+
+.active {
+  background-color: var(--ui-color-accent-tint);
+  color: var(--ui-color-accent);
+}
+
+.active:hover {
+  background-color: var(--ui-color-accent-tint);
+}
+
+.collapsed {
+  justify-content: center;
+  gap: 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex-shrink: 0;
+}
