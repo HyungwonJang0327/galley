@@ -41,7 +41,7 @@
 
 ### AG. 컴포넌트 갤러리 (/design) — fe · A3 이후 (decisions/component-gallery.md)
 
-- [x] **AG** (2026-09-08 `30ad8b5`) fe — `app/(dashboard)/design/page.tsx` 갤러리: 셸 안에서 `@galley/ui` 공개 배럴로 Button·Badge·Card·PageHeader를 variant/size/상태별 렌더. 서버 컴포넌트, 도메인 무지. nav 링크는 미추가(노출 위치 미결). 커밋: `feat(dashboard): 컴포넌트 갤러리 /design 라우트 추가`
+- [x] **AG** (2026-09-08 `30ad8b5`) fe — `app/(dashboard)/design/page.tsx` 갤러리: 셸 안에서 `@galley/ui` 공개 배럴로 Button·Badge·Card·PageHeader를 variant/size/상태별 렌더. 서버 컴포넌트, 도메인 무지. nav 링크는 개발 서버 전용으로 노출(`181fdaf`, 프로덕션 빌드 제외). 커밋: `feat(dashboard): 컴포넌트 갤러리 /design 라우트 추가`
   - 완료조건: `/design`이 셸 안에서 렌더, 기존 컴포넌트(Button·Badge·Card·PageHeader 등)가 상태별로 보임.
 
 ### A4. DB 접근 계층 + 큐 적재
