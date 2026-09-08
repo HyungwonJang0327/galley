@@ -82,7 +82,7 @@ Galley/
 | 앱            | Next.js App Router + React                                   | next 16.3.4 · react 19.2.8                            |
 | 언어          | TypeScript (strict)                                          | 6.0.3 (7.x 보류 — decisions/toolchain-pins.md)        |
 | 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | 미설치 (컴포넌트 작업 시 추가)                        |
-| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | 미설치 (Phase 1-B)                                    |
+| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | prisma 6.19.3 (7↑ 보류 — decisions/toolchain-pins.md) |
 | 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                     |
 | DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
 | 테스트        | Vitest                                                       | 5.0.0                                                 |
