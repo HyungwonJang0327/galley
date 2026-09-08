@@ -1,0 +1,36 @@
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-5);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--ui-space-4);
+  font-size: var(--ui-text-h2);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.group + .group {
+  margin-top: var(--ui-space-4);
+}
+
+.groupLabel {
+  display: block;
+  margin-bottom: var(--ui-space-2);
+  font-size: var(--ui-text-xs);
+  font-weight: var(--ui-weight-medium);
+  color: var(--ui-color-text-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
+.innerCard {
+  max-width: 320px;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-color-text-muted);
+}
