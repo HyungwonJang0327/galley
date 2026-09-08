@@ -1,13 +1,11 @@
-// 사이드바 메뉴의 단일 정의(라벨·경로·아이콘). 스펙 §3 기준.
-// Phase 1 구현 화면 = 주제 3 + 실행 2. 나머지는 메뉴에 두되 Phase 2 자리 페이지(A3c).
+// 사이드바 메뉴의 단일 정의(라벨·경로·아이콘·배지). decisions/navigation.md 기준.
+// 사용 흐름 순: 주제(큐) → 실행 → 발행 → 설정. 상태(대기/후보/보류/완료 등)는
+// 화면 안 탭(?tab=)이라 메뉴에 두지 않는다.
 import {
   Inbox,
-  Lightbulb,
-  CheckCircle2,
+  Play,
   History,
-  Activity,
-  FileText,
-  PenLine,
+  Send,
   FolderGit2,
   Coins,
   MessageSquareText,
@@ -20,6 +18,8 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** 우측 배지(대기 n·승인 대기 n·미발행 n). 값은 데이터 소스 준비 시 주입. */
+  badge?: string | number;
   /** 외부 링크(새 탭). 활성 판정 제외. */
   external?: boolean;
 }
@@ -32,25 +32,18 @@ export interface NavGroup {
 const BASE_GROUPS: NavGroup[] = [
   {
     label: '주제',
-    items: [
-      { label: '큐', href: '/queue', icon: Inbox },
-      { label: '후보', href: '/queue/candidates', icon: Lightbulb },
-      { label: '완료', href: '/queue/done', icon: CheckCircle2 },
-    ],
+    items: [{ label: '큐', href: '/queue', icon: Inbox }],
   },
   {
     label: '실행',
     items: [
-      { label: '실행 이력', href: '/runs', icon: History },
-      { label: '진행 중', href: '/runs/active', icon: Activity },
+      { label: '실행', href: '/runs', icon: Play },
+      { label: '이력', href: '/runs/history', icon: History },
     ],
   },
   {
     label: '발행',
-    items: [
-      { label: 'Zenn 下書き', href: '/publish/zenn', icon: FileText },
-      { label: '벨로그 대기', href: '/publish/velog', icon: PenLine },
-    ],
+    items: [{ label: '발행 대기', href: '/publish', icon: Send }],
   },
   {
     label: '설정',
