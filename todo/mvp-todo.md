@@ -19,7 +19,7 @@
 
 ### A1. 디자인 토큰 — ui
 
-- [ ] **A1** color·spacing·typography·radius·shadow를 `--ui-*` CSS 변수로. 레이아웃 스펙 §1(#F5F6F8·카드 흰색·블루 #5B6CFF·본문 13~~14/제목 20~~22)·§5(배지 색) 기준. 라이트 값 + 다크 자리.
+- [x] **A1** (2026-09-08 `97b55bb`) color·spacing·typography·radius·shadow를 `--ui-*` CSS 변수로. 레이아웃 스펙 §1(#F5F6F8·카드 흰색·블루 #5B6CFF·본문 13~~14/제목 20~~22)·§5(배지 색) 기준. 라이트 값 + 다크 자리.
   - 완료조건: `tokens/`가 CSS 변수 파일 export, ui build 산출물에 CSS 포함, index에서 스타일 진입점 노출. build·typecheck 통과. 하드코딩 색·px 없음.
   - 커밋: `design(ui): 색·간격·타이포·라운드·그림자 토큰 추가`
 
