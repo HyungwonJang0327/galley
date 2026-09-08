@@ -26,6 +26,11 @@ packages/ui/
 - **도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다. 도메인 매핑은 `apps/dashboard` 어댑터.
 - 스타일은 tokens CSS 변수만 참조. 하드코딩 색·px 금지.
 
+### `"use client"` (배포 시 소비자 호환)
+
+- 현재 컴포넌트는 훅 0개·전부 표현 전용이라 Next App Router의 RSC에서 그대로 안전(디렉티브 불필요).
+- **상태·이벤트 훅(useState/useEffect 등)을 쓰는 컴포넌트(예: Dialog·Popover·Tooltip 등 상태 있는 primitive)를 추가하면 그 파일 최상단에 `"use client"` 배너를 두고, 빌드 산출물에 보존되게 한다.** 안 그러면 npm 소비자가 RSC에서 import할 때 깨진다. (Vite 라이브러리 빌드가 배너를 제거하지 않는지 그때 확인 — 필요 시 `rollupOptions.output.banner`/플러그인으로 보존.)
+
 ### 검증
 
 - `pnpm --filter @galley/ui build && test`가 단독 통과.
@@ -45,3 +50,4 @@ packages/ui/
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-08 빌드 도구 tsup→Vite 반영, `"use client"` 배포 호환 메모 추가.
