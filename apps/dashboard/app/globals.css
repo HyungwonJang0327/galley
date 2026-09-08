@@ -1,0 +1,19 @@
+/* 앱 전역 최소 리셋. 값은 @galley/ui 토큰(--ui-*)만 참조. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-body);
+  color: var(--ui-color-text);
+  background-color: var(--ui-color-bg);
+}

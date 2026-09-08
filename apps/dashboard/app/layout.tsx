@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import '@galley/ui/styles.css';
+import './globals.css';
 
 export const metadata = {
   title: 'Galley',
