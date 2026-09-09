@@ -14,8 +14,12 @@
 ## Phase 1-B
 
 - 🔒 B1a — 단계 상태 머신 + 승인 게이트 ← 구현 금지, 테스트만
-- 🔒 B1c — 모델 어댑터 인터페이스 + Claude 어댑터 ← 구현 금지, 테스트만
-- B1e — Run 스키마 저장·조회
-- B1f — 단계 실행 오케스트레이션
+- 🔒 BM1 — 모델 어댑터 **인터페이스만** 사용자 작성 ← 구현 금지. **Mock·레지스트리·Claude 어댑터·비용은 AI가 구현**(인터페이스만 🔒 — decisions/core-modules·model-selection)
+- BM2 — ModelRegistry(list/get/default·available)
+- BM3 — Claude 어댑터 2개 + 단가 상수(id·단가 사용자 확정) + usage→cost 테스트
+- BM4 — 스키마: Run.modelId · RunStep 토큰·비용·모델 컬럼
+- BW1 — Run 워커 상태(queued/running/interrupted)·workerId·heartbeat 컬럼
+- BW2 — 워커 루프(bin/worker.ts): 클레임·단계 오케스트레이션·heartbeat (구 B1f 대체)
+- BW3 — 중단 감지·단계 재개
 - B3a — posts/<슬러그>/ 5개 산출물 쓰기
 - B3b — ThumbnailRenderer + make_thumb.py 호출

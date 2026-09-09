@@ -21,11 +21,13 @@
 - ondemand-execution — 온디맨드 실행(스케줄 유지)
 - team-naming — 역할명 그대로(사람 이름 기각)
 - core-modules — 직접 작성 핵심 모듈 2개
+- model-selection — 모델은 Run 속성(실행별 선택·비용 기록), 어댑터 레지스트리
 
 ### 기술 결정 (①~⑨)
 
 - db-access-layer — SQLite + Prisma
-- pipeline-execution-location — 같은 프로세스
+- pipeline-execution-location — 같은 프로세스 (⚠️ 2026-09-09 변경 → run-location)
+- run-location — 별도 워커 프로세스(SQLite 폴링·heartbeat·중단 재개). 결정 ② 변경
 - queue-sync-direction — 파일이 진실, DB 파생 캐시
 - zenn-push — GitHub 연동 리포 커밋
 - ui-style — CSS Modules + 토큰 변수

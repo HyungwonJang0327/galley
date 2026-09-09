@@ -1,5 +1,7 @@
 # ② 파이프라인 실행 위치: 같은 프로세스
 
+> ⚠️ **2026-09-09 변경됨 → decisions/run-location.md (별도 워커 프로세스).** 아래는 원래 결정과 기각 맥락(히스토리). 현행은 run-location.md.
+
 ## 결정
 
 파이프라인 실행 로직은 전부 `@galley/pipeline` 함수에 둔다. `apps/dashboard`의 Route Handler / Server Action은 그 함수를 **호출만** 한다. Phase 1은 Next.js와 같은 프로세스에서 실행(별도 워커 없음).
@@ -26,3 +28,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-09 **결정 변경 → decisions/run-location.md**(별도 워커 프로세스). "배포 시 워커로 추출"을 Phase 1-B로 앞당김. 로직은 여전히 `@galley/pipeline`에 있고 워커가 호출(로직 이동 없음).
