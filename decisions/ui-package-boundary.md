@@ -30,6 +30,7 @@ packages/ui/
 
 - 현재 컴포넌트는 훅 0개·전부 표현 전용이라 Next App Router의 RSC에서 그대로 안전(디렉티브 불필요).
 - **상태·이벤트 훅(useState/useEffect 등)을 쓰는 컴포넌트(예: Dialog·Popover·Tooltip 등 상태 있는 primitive)를 추가하면 그 파일 최상단에 `"use client"` 배너를 두고, 빌드 산출물에 보존되게 한다.** 안 그러면 npm 소비자가 RSC에서 import할 때 깨진다. (Vite 라이브러리 빌드가 배너를 제거하지 않는지 그때 확인 — 필요 시 `rollupOptions.output.banner`/플러그인으로 보존.)
+- **확정(2026-09-09, UM1)**: Rollup은 모듈 지시어를 버리므로 Vite `rollupOptions.output.banner: '"use client";'`로 **번들 전체**(ESM·CJS)에 배너 1줄. 결과적으로 `@galley/ui` 전부가 클라이언트 컴포넌트가 된다 — 표현 전용 컴포넌트도 클라이언트 번들에 실리지만 SSR HTML은 그대로이고 로컬 데스크톱 도구라 비용이 작다. 소스 파일의 `'use client'`는 문서 역할로 유지. **파일별 보존(`preserveModules` + 지시어 보존 플러그인)은 npm 배포 시점(Phase 2)에 재검토.**
 
 ### 검증
 
@@ -51,3 +52,4 @@ packages/ui/
 
 - 2026-09-08 최초 결정.
 - 2026-09-08 빌드 도구 tsup→Vite 반영, `"use client"` 배포 호환 메모 추가.
+- 2026-09-09 `"use client"` 보존 방식 확정(번들 전체 배너). Base UI 패키지명 `@base-ui/react`(base-ui-over-shadcn 갱신 이력).
