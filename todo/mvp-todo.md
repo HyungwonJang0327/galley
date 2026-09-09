@@ -86,7 +86,7 @@
 
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
 
-- [ ] **A5a** ui — ListToolbar·ListRow 패턴(검색·필터·체크박스 슬롯 / 행: 제목+보조+우측 배지·시간). 도메인 무지. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
+- [x] **A5a** (2026-09-09 `e9ca423`, feat/ui-list-patterns) ui — `ListToolbar`(tabs·search·filters 슬롯) + `ListToolbarTab`(?tab= 링크 탭: label·count·isActive·render) / `ListRow`(<li>: leading·title·meta·trailing·actions 슬롯, isActive) + `ListRows`(<ul>). 행 전체는 링크 아님(제목을 앱이 Link로 감쌈). 테스트 13개·스토리. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
 - [ ] **A5b** fe — 상태→Badge variant 매핑 어댑터(`lib/`). 커밋: `feat(dashboard): 큐 상태→Badge variant 매핑 추가`
 - [ ] **A5c** fe — 큐 데이터 페칭(pipeline에서 섹션별 주제 로드) → AN4 탭 + A5a 행에 공급. (기존 "3화면" 폐지 — 1화면+탭은 AN4.) 커밋: `feat(dashboard): 큐 데이터 페칭 배선`
   - 완료조건: 대기/후보/보류/완료 섹션 데이터가 탭별로 렌더된다.
