@@ -119,8 +119,8 @@
 - [~] 🔒 **BM1** pl — `ModelAdapter` 인터페이스(**사용자 작성 완료** 2026-09-09 `c906727`, feat/model-adapter) + Mock 어댑터(고정 텍스트·비용 0, dev 전용 노출) + 테스트. 커밋: `feat(model): 모델 어댑터 인터페이스와 Mock 어댑터 추가`
 - [ ] **BM2** pl — `ModelRegistry`(list/get/default, `available` 판정=API 키 유무). 커밋: `feat(model): 모델 레지스트리 추가`
   - 완료조건: `.env`에서 API 키를 지우면 해당 어댑터가 `available:false`(테스트).
-- [ ] **BM3** pl — Claude 어댑터 2개(상위+저렴, **모델 id·단가는 Anthropic 문서 확인→사용자 확정 후 상수화**) + usage→cost 테스트. 커밋: `feat(model): Claude 어댑터와 비용 계산 추가`
-  - 완료조건: 고정 usage 입력에 costUsd가 단가표와 일치(테스트). **실제 API 호출 테스트는 안 만듦**(비용) — Mock만.
+- [ ] **BM3** pl — 어댑터 7개(Claude 4: Fable 5.1·Opus 5·Sonnet 5·Haiku 4.5 / GPT 3: gpt-5.5·gpt-5.1·gpt-5-mini) + 단가 상수(decisions/model-selection 표) + usage→cost 테스트. SDK 설치 `@anthropic-ai/sdk`·`openai`(버전 핀). 기본=Opus 5. 커밋(쪼갬 가능): `feat(model): Claude·GPT 어댑터와 비용 계산 추가`
+  - 완료조건: 고정 usage 입력에 costUsd가 단가표와 일치(테스트, provider별). **실제 API 호출 테스트는 안 만듦**(비용) — Mock만. OPENAI_API_KEY 없으면 GPT 어댑터 available:false.
 - [ ] **BM4** pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계에 모델과 비용 기록 컬럼 추가` _(BW1과 한 마이그레이션으로 합칠 수 있음)_
 - [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
 - [ ] **BM6** fe — 실행 시작 Dialog(모델 Select, available=false 비활성+툴팁, 예상 비용 미표시) + 진입점 3곳(큐 행 ⋮·맨 위 실행·홈 다음 실행) 연결. **선행: ui Dialog·Select 프리미티브(UM1).** 커밋: `feat(dashboard): 실행 시작 시 모델 선택 Dialog 추가`

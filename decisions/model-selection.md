@@ -4,16 +4,29 @@
 
 모델은 전역 설정이 아니라 **실행(Run) 단위 속성**이다. 실행을 시작할 때 고르고, `Run.modelId`에 기록되고, 재실행 시 그 단계만 바꿀 수 있다.
 
-- 어댑터 계층은 `@galley/pipeline`에 둔다: `ModelAdapter` 인터페이스(🔒 직접 작성 핵심 모듈 b — decisions/core-modules.md) + `ModelRegistry` + 구체 어댑터(Claude 2개 + Mock).
+- 어댑터 계층은 `@galley/pipeline`에 둔다: `ModelAdapter` 인터페이스(🔒 직접 작성 핵심 모듈 b — decisions/core-modules.md) + `ModelRegistry` + 구체 어댑터. **멀티 provider**(`anthropic` + `openai`) — 유저가 실행 시 Claude·GPT를 함께 고른다.
 - 파이프라인 단계 코드는 **어댑터 id만** 받고 provider를 모른다. `costUsd`는 어댑터가 계산하고 파이프라인은 합산만 한다.
 - `Settings.defaultModelId` 하나 = 실행 Dialog 초기값 + TopBar 칩 표시값. **SQLite settings 테이블**에 저장.
 
 ## 어댑터 계층 (packages/pipeline)
 
-- **ModelAdapter**(요구사항 — 인터페이스 파일은 🔒 사용자 작성, AI는 초안·나머지 배선·테스트): `id`(예 `anthropic:claude-…`)·`label`·`provider`·가격(입력·출력 토큰당 USD)·`available`(API 키 설정 여부) / `generate(input) → { text, usage:{ inputTokens, outputTokens }, costUsd, durationMs }`. **스트리밍은 Phase 1에 안 함** — 인터페이스에 자리만 남기지 않고 필요할 때 추가(YAGNI).
-- **ModelRegistry**: `list()` / `get(id)` / `default()`. API 키 없는 provider의 어댑터는 목록에 남되 `available:false`(UI 비활성 + 툴팁 "API 키 없음 (.env ANTHROPIC_API_KEY)"). **레지스트리 정의 = `packages/pipeline` 코드 상수** — 어댑터 추가 = 파일 하나 + 등록 한 줄. 어댑터 provider 로직이 어차피 코드라 json 외부화 이득이 적다(YAGNI). 단가·레지스트리 외부화는 Phase 2.
+- **ModelAdapter**(요구사항 — 인터페이스 파일은 🔒 사용자 작성, AI는 초안·나머지 배선·테스트): `id`(예 `anthropic:claude-opus-5`)·`label`·`provider`·가격(입력·출력 백만 토큰당 USD)·`available`(API 키 설정 여부) / `generate(input) → { text, usage:{ inputTokens, outputTokens }, costUsd, durationMs }`. **스트리밍은 Phase 1에 안 함** — 인터페이스에 자리만 남기지 않고 필요할 때 추가(YAGNI).
+- **ModelRegistry**: `list()` / `get(id)` / `default()`. API 키 없는 provider의 어댑터는 목록에 남되 `available:false`(UI 비활성 + 툴팁 "API 키 없음 (.env ANTHROPIC_API_KEY / OPENAI_API_KEY)"). **레지스트리 정의 = `packages/pipeline` 코드 상수** — 어댑터 추가 = 파일 하나 + 등록 한 줄. 어댑터 provider 로직이 어차피 코드라 json 외부화 이득이 적다(YAGNI). 단가·레지스트리 외부화는 Phase 2.
+- **SDK 의존성 2개**: `@anthropic-ai/sdk` + `openai`. 라이브러리 추가 결정은 이 문서로 갈음(설치·버전 핀은 BM3에서). provider 타입 `'anthropic' | 'openai' | 'mock'`.
 - **가격표**: 어댑터별 상수로 시작. 비용 = usage × 단가를 **어댑터 안에서** 계산. 가격이 바뀌면 코드 수정으로 대응(Anthropic은 가격 API가 없어 자동화 이득도 없음). provider API 가격 조회는 Phase 2 검토 항목.
-- **첫 구현**: Claude 어댑터 2개(상위 모델 1 + 저렴한 모델 1). **모델 id·단가는 추측하지 않고 Anthropic 문서에서 확인해 사용자에게 보여주고 확정**받은 뒤 상수화(작업 M3에서). Mock 어댑터 1개(고정 텍스트 반환·비용 0, 테스트·데모용) — 프로덕션 레지스트리에는 `NODE_ENV=development`에서만 노출.
+- **첫 구현(2026-09-09 확정)**: Claude 4개 + GPT 3개 + Mock. id·단가는 각 provider 문서에서 확인(아래 표). Mock 어댑터(고정 텍스트·비용 0, 테스트·데모용)는 프로덕션 레지스트리에 `NODE_ENV=development`에서만 노출. 기본 모델(`default()`)은 Claude Opus 5.
+
+  | provider  | id                          | label            | 입력 $/MTok | 출력 $/MTok |
+  | --------- | --------------------------- | ---------------- | ----------- | ----------- |
+  | anthropic | `claude-fable-5-1`          | Claude Fable 5.1 | 10          | 50          |
+  | anthropic | `claude-opus-5`             | Claude Opus 5    | 5           | 25          |
+  | anthropic | `claude-sonnet-5`           | Claude Sonnet 5  | 2           | 10          |
+  | anthropic | `claude-haiku-4-5-20251001` | Claude Haiku 4.5 | 1           | 5           |
+  | openai    | `gpt-5.5`                   | GPT-5.5          | 5           | 30          |
+  | openai    | `gpt-5.1`                   | GPT-5.1          | 1.25        | 10          |
+  | openai    | `gpt-5-mini`                | GPT-5 mini       | 0.25        | 2           |
+
+  단가는 백만 토큰당(어댑터 안에서 `× tokens / 1_000_000`). 가격 변동 시 코드 수정.
 
 ## 데이터 모델
 
@@ -53,3 +66,4 @@
 ## 갱신 이력
 
 - 2026-09-09 최초 결정.
+- 2026-09-09 **멀티 provider 확정**: 픽커에 Claude 4개(Fable 5.1·Opus 5·Sonnet 5·Haiku 4.5) + GPT 3개(gpt-5.5·gpt-5.1·gpt-5-mini) + Mock. provider 타입에 `openai` 추가, SDK 2개(`@anthropic-ai/sdk`·`openai`) 도입(라이브러리 추가 결정 = 이 문서). id·단가는 각 provider 라이브 문서에서 확인해 표로 고정. 기본 모델 = Opus 5.
