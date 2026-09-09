@@ -107,10 +107,40 @@
 
 - [ ] 🔒 **B1a** 단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). 커밋: `feat(pipeline): 단계 상태 머신과 승인 게이트 추가`
 - [ ] **B1b** ts — 상태 머신 전이 테스트(정상·수정 재실행·불가 전이). 커밋: `test(pipeline): 상태 머신 전이 테스트`
-- [ ] 🔒 **B1c** 모델 어댑터 인터페이스(교체 가능 + 토큰·비용 기록) + Claude 어댑터 첫 구현. 커밋: `feat(model): 모델 어댑터 인터페이스와 Claude 어댑터 추가`
-- [ ] **B1d** ts — 어댑터 목으로 토큰·비용 기록 테스트. 커밋: `test(model): 모델 어댑터 토큰·비용 기록 테스트`
-- [ ] **B1e** pl — Run 스키마(시각·모델·토큰·비용·결과·단계) + 저장·조회. 커밋: `feat(run): 실행 이력 스키마와 저장·조회 추가`
-- [ ] **B1f** pl — 단계 실행 오케스트레이션(상태 머신이 각 단계에서 어댑터 호출 → 결과 기록). 커밋: `feat(pipeline): 단계 실행 오케스트레이션 추가`
+- [ ] 🔒 **B1c** 모델 어댑터 인터페이스 → **BM1~BM3로 재구성**(인터페이스 🔒 + Mock·레지스트리·Claude 2개). 아래 BM 참조.
+- [ ] **B1d** ts — 어댑터 목 토큰·비용 테스트 → **BM1·BM3에 흡수**.
+- [ ] **B1e** pl — Run 스키마 → **BM4(modelId·RunStep 비용) + BW1(워커 상태·heartbeat)로 확장**. 아래 참조.
+- [ ] **B1f** pl — 단계 실행 오케스트레이션 → **BW2 워커 루프가 담당**(별도 프로세스 — decisions/run-location.md).
+
+### BM. 실행별 모델 선택 — [B] Phase 1-B (decisions/model-selection.md) · B1↔B2 사이
+
+모델은 Run 속성. BM1~~BM3(어댑터 계층)은 Run 스키마와 독립 → B1 초반에 착수 가능. BM4~~BM9는 Run 스키마(BM4)·실행 화면(B2)에 의존. 각 항목 = 커밋 하나.
+
+- [ ] 🔒 **BM1** pl — `ModelAdapter` 인터페이스(**사용자 작성**, AI는 초안) + Mock 어댑터(고정 텍스트·비용 0, dev 전용 노출) + 테스트. 커밋: `feat(model): 모델 어댑터 인터페이스와 Mock 어댑터 추가`
+- [ ] **BM2** pl — `ModelRegistry`(list/get/default, `available` 판정=API 키 유무). 커밋: `feat(model): 모델 레지스트리 추가`
+  - 완료조건: `.env`에서 API 키를 지우면 해당 어댑터가 `available:false`(테스트).
+- [ ] **BM3** pl — Claude 어댑터 2개(상위+저렴, **모델 id·단가는 Anthropic 문서 확인→사용자 확정 후 상수화**) + usage→cost 테스트. 커밋: `feat(model): Claude 어댑터와 비용 계산 추가`
+  - 완료조건: 고정 usage 입력에 costUsd가 단가표와 일치(테스트). **실제 API 호출 테스트는 안 만듦**(비용) — Mock만.
+- [ ] **BM4** pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계에 모델과 비용 기록 컬럼 추가` _(BW1과 한 마이그레이션으로 합칠 수 있음)_
+- [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
+- [ ] **BM6** fe — 실행 시작 Dialog(모델 Select, available=false 비활성+툴팁, 예상 비용 미표시) + 진입점 3곳(큐 행 ⋮·맨 위 실행·홈 다음 실행) 연결. **선행: ui Dialog·Select 프리미티브(UM1).** 커밋: `feat(dashboard): 실행 시작 시 모델 선택 Dialog 추가`
+  - 완료조건: 세 진입점 모두 같은 Dialog, 선택 modelId가 Run에 저장, available=false는 선택 불가.
+- [ ] **BM7** fe — 실행 상세 타임라인에 모델 label·비용(USD 4자리) 표시(단계 모델이 Run과 다르면 그 줄에만 label). 커밋: `feat(dashboard): 실행 상세에 모델과 비용 표시`
+- [ ] **BM8** fe — 재실행 ActionBar에 모델 Select(초기값=원래 모델) → 그 `RunStep.modelId`만 변경. 커밋: `feat(dashboard): 단계 재실행 시 모델 변경 지원`
+  - 완료조건: 한 단계만 다른 모델로 재실행 시 그 RunStep.modelId만 바뀌고 Run.modelId 유지.
+- [ ] **BM9** fe — TopBar 칩 클릭 → Select로 기본 모델 변경(Settings 갱신, 실행 중 Run엔 영향 없음 툴팁). 커밋: `feat(dashboard): TopBar 칩에서 기본 모델 변경`
+
+### BW. 워커 실행 — [B] Phase 1-B (decisions/run-location.md) · B1↔B2 사이
+
+별도 워커 프로세스. **선행: 상태 머신(B1a 🔒)·Run 스키마(BM4).** 대시보드는 Run을 queued로 만들 뿐. 각 항목 = 커밋 하나.
+
+- [ ] **BW1** pl — Run 실행 상태(queued/running/interrupted) + `workerId`·`heartbeat` 컬럼 + 마이그레이션. 커밋: `feat(run): 워커 실행 상태·heartbeat 컬럼 추가`
+- [ ] **BW2** pl — 워커 루프(`bin/worker.ts`): queued→running 클레임, 단계 오케스트레이션(레지스트리 어댑터 호출·RunStep 기록·heartbeat), 동시 1개. 폴링 2s·heartbeat 5s. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
+- [ ] **BW3** pl — 중단 감지·재개(heartbeat 30s 공백→interrupted, 완료 단계 다음부터; 기동 시+깨어날 때 검사, 단계는 원자적). 커밋: `feat(pipeline): 워커 중단 감지와 단계 재개 추가`
+  - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
+- [ ] **BW4** fe — 수정 지시·승인을 Run 상태 변경으로(대시보드 write → 워커 pickup). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
+- [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
+- [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 

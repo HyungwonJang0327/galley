@@ -19,12 +19,18 @@ Galley는 기술 블로그 초안 파이프라인을 큐로 관리하고, 실행
 ┌───────── apps/dashboard (Next.js App Router, 서버+클라 한 프로세스) ─────────┐
 │ [프론트] Server/Client Components (@galley/ui 화면)                           │
 │      ↕ HTTP                                                                   │
-│ [백엔드] Route Handlers / Server Actions  ──호출──▶  @galley/pipeline (서버 전용) │
-│                                                        │  상태머신·모델어댑터·Storage │
-│                                                        ▼                       │
-│                                        SQLite(Prisma)   ~/blog 파일   zenn-content │
+│ [백엔드] Route Handlers / Server Actions  ── Run을 queued로 생성 ──┐          │
+└───────────────────────────────────────────────────────────────────┼──────────┘
+                        SQLite(Prisma) ◀── 상태로만 소통(신호 없음) ──┤
+                              ▲                                        │
+                              │ 폴링(2s)·heartbeat                     ▼
+┌─────────── worker (packages/pipeline/bin/worker.ts, 별도 프로세스) ───────────┐
+│ queued Run을 running으로 잡고 단계 실행. ModelRegistry·상태머신·Storage.       │
+│ 동시 1개. 중단(heartbeat 30s 공백)→interrupted→완료 단계 다음부터 재개.        │
+│         @galley/pipeline (서버 전용)  →  ~/blog 파일 · zenn-content            │
 └──────────────────────────────────────────────────────────────────────────────┘
-브라우저는 DB·fs·모델 API를 직접 만지지 않는다. 전부 서버 런타임에서만.
+브라우저는 DB·fs·모델 API를 직접 만지지 않는다. 대시보드는 Run을 queued로 만들고
+running일 때만 폴링한다. 실행은 워커가 한다. (decisions/run-location.md)
 ```
 
 ### 화면 골격 (레이아웃 상세는 decisions/layout.md, 스펙 파일이 우선)
@@ -66,7 +72,8 @@ Galley/
 ├─ packages/
 │  ├─ ui/                      # @galley/ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)
 │  │  └─ src/{tokens,primitives,components,patterns,hooks,index.ts}
-│  └─ pipeline/                # @galley/pipeline — 단계 실행·상태머신·모델 어댑터·Storage·Zenn push (서버 전용)
+│  └─ pipeline/                # @galley/pipeline — 단계 실행·상태머신·모델 어댑터(ModelRegistry)·Storage·Zenn push (서버 전용)
+│     └─ bin/worker.ts         # 워커 프로세스(pnpm --filter @galley/pipeline worker) — queued Run 폴링·실행 (decisions/run-location.md)
 ├─ INTENT.md  planning.md  CLAUDE.md  COMMIT_CONVENTION.md  README.md
 ├─ decisions/  worklog/  todo/  docs/
 └─ .env(.example)  .gitignore
@@ -113,6 +120,8 @@ Galley/
 - **`@galley/ui` 딥 임포트 금지**(`@galley/ui/src/...` ✗). 공개 배럴만.
 - **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·SQLite 경로는 `.env`.
 - **비밀값(API 키·Zenn 토큰)은 `.env`에만.** 코드·SQLite·산출물 파일에 절대 쓰지 않는다.
+- **모델 id·단가를 앱 코드에 하드코딩하지 않는다. `ModelRegistry`(packages/pipeline)만 안다.** 앱·단계 코드는 어댑터 id만 받고 provider를 모른다. 모델은 실행(Run) 속성 — decisions/model-selection.md.
+- **파이프라인은 대시보드가 아니라 워커가 실행한다.** 대시보드는 Run을 `queued`로 만들 뿐, 워커에 직접 신호를 보내지 않는다(수정 지시·승인도 Run 상태 변경으로만) — decisions/run-location.md.
 - **macOS 전용 명령(`open`, `pbcopy`)·경로 구분자 가정 금지.**
 - `.env*`(except `.env.example`)·`.mcp.json`·`.claude/settings.local.json`은 gitignore.
 - **pnpm 10은 네이티브 패키지 빌드 스크립트를 차단.** 새 네이티브 도구(esbuild·lefthook 등) 추가 시 `pnpm.onlyBuiltDependencies`에 넣어야 빌드된다. (decisions/toolchain-pins.md)

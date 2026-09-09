@@ -12,7 +12,7 @@
 | #    | 영역                 | 확정                                                  | 근거                                      |
 | ---- | -------------------- | ----------------------------------------------------- | ----------------------------------------- |
 | ①    | DB 접근 계층         | SQLite + Prisma                                       | decisions/db-access-layer.md              |
-| ②    | 파이프라인 실행 위치 | 같은 프로세스(Route Handler→pipeline 함수)            | decisions/pipeline-execution-location.md  |
+| ②    | 파이프라인 실행 위치 | 별도 워커 프로세스(SQLite 폴링·heartbeat)             | decisions/run-location.md (② 변경)        |
 | ③    | 큐 동기화 방향       | 파일(주제_큐.md)이 진실, DB 파생 캐시                 | decisions/queue-sync-direction.md         |
 | ④    | Zenn push            | GitHub 연동 리포 커밋(published:false)                | decisions/zenn-push.md                    |
 | ⑤    | ui 스타일            | CSS Modules + 토큰 CSS 변수                           | decisions/ui-style.md                     |
@@ -28,8 +28,8 @@
 ### 포함 (Phase 1)
 
 - 큐 관리: **큐 1화면 + 탭 4개(대기/후보/보류/완료)**, 순서 변경(DnD), 섹션 이동, `주제_큐.md` 반영
-- 파이프라인 실행: 5단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료)
-- 모델 어댑터 인터페이스(교체 가능 + 토큰·비용 기록)
+- 파이프라인 실행: 5단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). **별도 워커 프로세스가 실행**(decisions/run-location.md)
+- 모델 어댑터 인터페이스(교체 가능 + 토큰·비용 기록) + **실행별 모델 선택**(모델은 Run 속성, 어댑터 레지스트리 — decisions/model-selection.md)
 - 실행 이력 SQLite 저장·조회
 - 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(make_thumb.py 호출)
 - 화면: TopBar/Sidebar 셸(사용 흐름 순 IA — decisions/navigation.md), 큐(패턴 A·탭 4개), 실행 상세(패턴 B)
@@ -48,6 +48,8 @@
 - AI 주제 후보 생성 (모델 어댑터 활용)
 - Zenn push 실 연동 + 원격 배포 판단
 - 설정 화면(리포 연결·모델·비용·어투 프롬프트), 비용 칩
+- **단계별 모델 오버라이드**(스키마는 Phase 1부터 `RunStep.modelId`로 대비 — decisions/model-selection.md)
+- 모델 단가·레지스트리 외부화(설정 파일 / provider 가격 API)
 - Storybook 실행 환경
 - 스케줄을 DB 연동으로 이전할지 판단
 

@@ -31,3 +31,10 @@
 - B2c — 실행 상세 2분할 화면
 - B2d — 하단 ActionBar 배선
 - B2e — 타임라인 펼침 산출물 마크다운 미리보기
+- BM5 — Settings.defaultModelId + TopBar 칩 label 표시
+- BM6 — 실행 시작 Dialog(모델 Select) + 진입점 3곳 (선행 UM1)
+- BM7 — 실행 상세 타임라인 모델·비용 표시
+- BM8 — 재실행 시 모델 변경(ActionBar Select)
+- BM9 — TopBar 칩 클릭 기본 모델 변경
+- BW4 — 수정 지시·승인을 Run 상태 변경으로(워커 pickup)
+- BW6 — TopBar 워커 생존 점
