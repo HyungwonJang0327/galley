@@ -2,15 +2,16 @@
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { Check, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { ItemContent } from '../ItemContent';
 import styles from './Select.module.css';
 
 export interface SelectItem {
   value: string;
   label: string;
-  /** label 아래 작은 회색 보조 텍스트. */
+  /** label 아래 한 줄 회색 보조 텍스트. */
   description?: ReactNode;
-  /** 우측 회색 텍스트. */
-  trailing?: ReactNode;
+  /** 우측 메타(회색·tabular-nums). */
+  meta?: ReactNode;
   disabled?: boolean;
   /** disabled 사유. Phase 1은 native title로 노출(Tooltip 프리미티브 전). */
   disabledReason?: string;
@@ -30,7 +31,10 @@ export interface SelectProps {
   className?: string;
 }
 
-/** 단일 선택 Select(Base UI). 키보드 내비·타입어헤드·포털은 Base UI 기본값. */
+/**
+ * 단일 선택 Select(Base UI). 키보드 내비·타입어헤드·포털·뷰포트 충돌 시 뒤집기는 Base UI 기본값.
+ * 팝업은 내용 폭(max-content)으로 넓어지되 트리거보다 좁아지지 않고, 토큰 상한까지만.
+ */
 export function Select({
   value,
   onValueChange,
@@ -80,17 +84,11 @@ export function Select({
                   <BaseSelect.ItemIndicator className={styles.indicator}>
                     <Check size={14} aria-hidden="true" />
                   </BaseSelect.ItemIndicator>
-                  <span className={styles.itemBody}>
-                    <BaseSelect.ItemText className={styles.itemText}>
-                      {item.label}
-                    </BaseSelect.ItemText>
-                    {item.description !== undefined ? (
-                      <span className={styles.itemDescription}>{item.description}</span>
-                    ) : null}
-                  </span>
-                  {item.trailing !== undefined ? (
-                    <span className={styles.itemTrailing}>{item.trailing}</span>
-                  ) : null}
+                  <ItemContent
+                    label={<BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>}
+                    description={item.description}
+                    meta={item.meta}
+                  />
                 </BaseSelect.Item>
               ))}
             </BaseSelect.List>

@@ -4,8 +4,8 @@ import { Select } from './Select';
 import type { SelectItem } from './Select';
 
 const ITEMS: SelectItem[] = [
-  { value: 'a', label: '첫째', description: '보조 A', trailing: '1 / 5' },
-  { value: 'b', label: '둘째', description: '보조 B', trailing: '2 / 10' },
+  { value: 'a', label: '첫째', description: '보조 A', meta: '1 / 5' },
+  { value: 'b', label: '둘째', description: '보조 B', meta: '2 / 10' },
   { value: 'c', label: '셋째', disabled: true, disabledReason: '사용 불가 사유' },
 ];
 
@@ -36,7 +36,7 @@ describe('Select', () => {
     expect(screen.getByRole('combobox').textContent).toContain('둘째');
   });
 
-  it('트리거를 누르면 항목 목록이 열리고 description·trailing이 보인다', async () => {
+  it('트리거를 누르면 항목 목록이 열리고 description·meta가 보인다', async () => {
     render(<Select value="a" onValueChange={() => {}} items={ITEMS} aria-label="옵션" />);
     openSelect();
     await waitFor(() => expect(screen.getByRole('listbox')).toBeTruthy());

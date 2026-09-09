@@ -64,6 +64,7 @@
 - [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 미완이라 보류(가짜 데이터/행 금지). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
 - [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). **의존: AN4 행**(A4b·A5a). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
+  - **선행 UM2**(ui): Base UI Menu 래퍼 — 아이템은 Select와 같은 공통 `ItemContent`({ label, description?, meta? }) 사용(2026-09-10 Select 수정에서 분리).
   - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
 - [x] **AN6** (2026-09-09 `6bd4c6c`) fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
   - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재(200 스모크), 설정 3개는 기존 유지. 메뉴 링크 유효.

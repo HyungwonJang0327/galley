@@ -75,6 +75,14 @@
   --ui-sidebar-collapsed-width: 56px; /* 접힘: 아이콘만 */
   --ui-dialog-width: 480px;
   --ui-control-height: 32px; /* Select 트리거 등 폼 컨트롤 */
+  --ui-select-popup-max-width: min(
+    480px,
+    calc(100vw - var(--ui-space-6))
+  ); /* 팝업은 내용 폭, 이 값까지 */
+  --ui-select-popup-max-height: min(
+    360px,
+    calc(100vh - var(--ui-space-6))
+  ); /* 넘치면 팝업 안에서 스크롤 */
 }
 
 /* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */

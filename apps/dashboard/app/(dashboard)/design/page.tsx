@@ -9,7 +9,19 @@ import {
   PageHeader,
 } from '@galley/ui';
 import styles from './page.module.css';
-import { DialogDemo, SelectDemo, SelectDisabledDemo } from './PrimitiveDemos';
+import {
+  DialogDemo,
+  SelectAtBottomDemo,
+  SelectDemo,
+  SelectDisabledDemo,
+  SelectFortyDemo,
+  SelectLabelOnlyDemo,
+  SelectLongValueDemo,
+  SelectPathLabelDemo,
+  SelectLongDemo,
+  SelectWithDescriptionDemo,
+  SelectWithDescriptionMetaDemo,
+} from './PrimitiveDemos';
 
 // 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 @galley/ui 공개 배럴만
 // 소비해 컴포넌트를 상태별로 렌더한다. 도메인 무지 — 컴포넌트 추가 시 여기에 얹는다.
@@ -145,13 +157,70 @@ export default function DesignPage() {
           <div className={styles.group}>
             <span className={styles.groupLabel}>placeholder → 선택</span>
             <div className={styles.row}>
-              <SelectDemo />
+              <div className={styles.selectBox}>
+                <SelectDemo />
+              </div>
             </div>
           </div>
           <div className={styles.group}>
             <span className={styles.groupLabel}>disabled</span>
             <div className={styles.row}>
-              <SelectDisabledDemo />
+              <div className={styles.selectBox}>
+                <SelectDisabledDemo />
+              </div>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              아이템 레이아웃: 라벨만 / 라벨+보조 / 라벨+보조+메타 / 긴 라벨(40자)+긴 보조
+            </span>
+            <div className={styles.row}>
+              <div className={styles.selectBox}>
+                <SelectLabelOnlyDemo />
+              </div>
+              <div className={styles.selectBox}>
+                <SelectWithDescriptionDemo />
+              </div>
+              <div className={styles.selectBox}>
+                <SelectWithDescriptionMetaDemo />
+              </div>
+              <div className={styles.selectBox}>
+                <SelectLongDemo />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Select · 긴 내용</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              공백 없는 80자 경로 라벨 / 항목 40개(35번째 선택) / 트리거에 긴 선택값(부모 200px)
+            </span>
+            <div className={styles.row}>
+              <div className={styles.selectBox}>
+                <SelectPathLabelDemo />
+              </div>
+              <div className={styles.selectBox}>
+                <SelectFortyDemo />
+              </div>
+              <div className={styles.selectBox}>
+                <SelectLongValueDemo />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Select · 화면 하단</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              페이지 맨 아래에서 열면 팝업이 위로 뒤집힌다(Base UI 충돌 회피)
+            </span>
+            <div className={styles.row}>
+              <div className={styles.selectBox}>
+                <SelectAtBottomDemo />
+              </div>
             </div>
           </div>
         </Card>
