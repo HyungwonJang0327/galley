@@ -3,5 +3,7 @@
 export { prisma } from './db';
 export { parseQueue, serializeQueue } from './queue/queueFile';
 export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile';
+export { parsedQueueToRows, importQueueFromFile } from './queue/importQueue';
+export type { QueueItemRow } from './queue/importQueue';
 export type { Storage } from './storage/Storage';
 export { LocalFsStorage } from './storage/LocalFsStorage';
