@@ -1,20 +1,25 @@
+/* 루트: 뷰포트 높이 고정 + 두 행(TopBar / 본문). 문서 스크롤을 만들지 않는다. */
 .shell {
   display: grid;
-  grid-template-columns: var(--ui-sidebar-width) 1fr;
   grid-template-rows: var(--ui-topbar-height) 1fr;
-  grid-template-areas:
-    'topbar topbar'
-    'sidebar content';
-  min-height: 100vh;
+  height: 100dvh;
   min-width: 1200px; /* 데스크톱 전용 */
+  overflow: hidden;
 }
 
-.shell[data-collapsed='true'] {
+/* 두 번째 행: Sidebar | Content. min-height:0이 핵심 — grid 자식이 내용 높이로 늘어나 행을 밀어내는 것을 막는다. */
+.body {
+  display: grid;
+  grid-template-columns: var(--ui-sidebar-width) 1fr;
+  min-height: 0;
+}
+
+/* 접힘 토글은 열 폭만 바뀐다. */
+.shell[data-collapsed='true'] .body {
   grid-template-columns: var(--ui-sidebar-collapsed-width) 1fr;
 }
 
 .topbar {
-  grid-area: topbar;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -24,15 +29,17 @@
   color: var(--ui-color-topbar-fg);
 }
 
+/* 메뉴가 길어지면 사이드바만 자체 스크롤. */
 .sidebar {
-  grid-area: sidebar;
+  height: 100%;
   overflow-y: auto;
   background-color: var(--ui-color-surface);
   border-right: 1px solid var(--ui-color-border);
 }
 
+/* Content만 스크롤. 패딩은 소비자 래퍼에 — 스크롤바가 카드 옆이 아니라 영역 우측 끝에 붙는다. */
 .content {
-  grid-area: content;
+  height: 100%;
   overflow-y: auto;
   background-color: var(--ui-color-bg);
 }
