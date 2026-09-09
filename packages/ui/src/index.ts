@@ -23,3 +23,6 @@ export { ListToolbar, ListToolbarTab } from './patterns/ListToolbar';
 export type { ListToolbarProps, ListToolbarTabProps } from './patterns/ListToolbar';
 export { ListRow, ListRows } from './patterns/ListRow';
 export type { ListRowProps, ListRowsProps } from './patterns/ListRow';
+
+export { Dialog } from './primitives/Dialog';
+export type { DialogProps } from './primitives/Dialog';

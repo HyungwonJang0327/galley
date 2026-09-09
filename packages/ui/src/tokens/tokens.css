@@ -17,6 +17,7 @@
   --ui-color-accent-hover: #4a5aed;
   --ui-color-accent-fg: #ffffff;
   --ui-color-accent-tint: #eef0ff; /* 활성 메뉴 연한 틴트 배경 */
+  --ui-color-backdrop: rgba(0, 0, 0, 0.4); /* Dialog 뒤 오버레이 */
 
   /* 색 — TopBar(앱에서 유일한 다크 영역) */
   --ui-color-topbar-bg: #1f2126;
@@ -72,6 +73,8 @@
   --ui-topbar-height: 48px;
   --ui-sidebar-width: 232px;
   --ui-sidebar-collapsed-width: 56px; /* 접힘: 아이콘만 */
+  --ui-dialog-width: 480px;
+  --ui-control-height: 32px; /* Select 트리거 등 폼 컨트롤 */
 }
 
 /* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */
