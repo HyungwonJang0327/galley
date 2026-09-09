@@ -26,3 +26,5 @@ export type { ListRowProps, ListRowsProps } from './patterns/ListRow';
 
 export { Dialog } from './primitives/Dialog';
 export type { DialogProps } from './primitives/Dialog';
+export { Select } from './primitives/Select';
+export type { SelectProps, SelectItem } from './primitives/Select';
