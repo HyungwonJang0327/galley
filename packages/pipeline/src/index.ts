@@ -17,3 +17,10 @@ export type {
 } from './model/ModelAdapter';
 export { createMockAdapter } from './model/MockAdapter';
 export type { MockAdapterOptions } from './model/MockAdapter';
+export {
+  createModelRegistry,
+  createModelRegistryFromEnv,
+  DEFAULT_MODEL_ID,
+  INDEXING_DEFAULT_MODEL_ID,
+} from './model/ModelRegistry';
+export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry';
