@@ -27,10 +27,15 @@ Galley는 기술 블로그 초안 파이프라인을 큐로 관리하고, 실행
 ┌─────────── worker (packages/pipeline/bin/worker.ts, 별도 프로세스) ───────────┐
 │ queued Run을 running으로 잡고 단계 실행. ModelRegistry·상태머신·Storage.       │
 │ 동시 1개. 중단(heartbeat 30s 공백)→interrupted→완료 단계 다음부터 재개.        │
+│ IndexJob(리포 인덱싱)도 같은 루프가 집어감(Run 우선). RepoIndex → SQLite 캐시. │
 │         @galley/pipeline (서버 전용)  →  ~/blog 파일 · zenn-content            │
+│                                       →  연결 리포(읽기만: git show/log)       │
 └──────────────────────────────────────────────────────────────────────────────┘
 브라우저는 DB·fs·모델 API를 직접 만지지 않는다. 대시보드는 Run을 queued로 만들고
 running일 때만 폴링한다. 실행은 워커가 한다. (decisions/run-location.md)
+근거 흐름: RepoIndex(분석 글+포인터, SQLite) → 실행 시 포인터로 원본 조각 읽기
+→ EvidenceBundle(snippet은 DATA_DIR, posts/<슬러그>/evidence.json은 포인터만) → 본문 → 근거 검증
+→ VerificationReport(verification.json). (decisions/evidence-collection.md)
 ```
 
 ### 화면 골격 (레이아웃 상세는 decisions/layout.md, 스펙 파일이 우선)
@@ -52,8 +57,8 @@ running일 때만 폴링한다. 실행은 워커가 한다. (decisions/run-locat
 
 ### 파이프라인 단계 (순서 고정)
 
-`근거 수집 → 벨로그 본문 → 링크드인 → Zenn → 발행정보·썸네일`
-상태 머신: `실행 → 승인 대기 → (수정 지시 → 해당 단계 재실행) → 완료`.
+`근거 수집 → 벨로그 본문 → 근거 검증 → 링크드인 → Zenn → 발행정보·썸네일` (6단계, decisions/evidence-collection.md)
+상태 머신: `실행 → 승인 대기 → (수정 지시 → 해당 단계 재실행) → 완료`. 근거 검증의 unsupported는 표시 조건이지 실패가 아니다. 본문 재실행 시 근거 검증 자동 재실행, 근거 수집은 기본 건너뜀.
 
 ### 폴더 구조
 
@@ -65,17 +70,22 @@ Galley/
 │     │  ├─ (dashboard)/       # 라우트 그룹: TopBar+Sidebar 공유, userId="local" 컨텍스트 자리
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
 │     │  │  ├─ page.tsx        # 홈(요약 대시보드) — 루트 / (목록형 A의 변형 "요약형", decisions/navigation·layout)
-│     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A)
-│     │  │  └─ runs/           # 실행 상세(2분할)·이력 (패턴 B)
+│     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A) — 행 ⋮ "근거 편집" Dialog
+│     │  │  ├─ runs/           # 실행 상세(2분할)·이력 (패턴 B) — 타임라인 6줄(근거 수집·검증 펼침)
+│     │  │  └─ settings/repos/ # 리포 연결·인덱싱 상태 (Phase 2, Phase 1-B는 CLI index)
 │     │  └─ api/               # Route Handlers → @galley/pipeline 호출만
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
 ├─ packages/
 │  ├─ ui/                      # @galley/ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)
 │  │  └─ src/{tokens,primitives,components,patterns,hooks,index.ts}
 │  └─ pipeline/                # @galley/pipeline — 단계 실행·상태머신·모델 어댑터(ModelRegistry)·Storage·Zenn push (서버 전용)
-│     └─ bin/worker.ts         # 워커 프로세스(pnpm --filter @galley/pipeline worker) — queued Run 폴링·실행 (decisions/run-location.md)
+│     ├─ src/index/            # RepoIndex — 리포 인덱서(분석 글 RepoAnalysis·IndexJob·증분 재인덱싱) (decisions/evidence-collection.md)
+│     ├─ src/evidence/         # EvidenceBundle(근거 수집)·VerificationReport(근거 검증)·redact 필터
+│     ├─ bin/worker.ts         # 워커 프로세스(pnpm --filter @galley/pipeline worker) — queued Run·IndexJob 폴링·실행 (decisions/run-location.md)
+│     └─ bin/index.ts          # 인덱싱 CLI(pnpm --filter @galley/pipeline index <path>) — Phase 1-B 진입점
 ├─ INTENT.md  planning.md  CLAUDE.md  COMMIT_CONVENTION.md  README.md
 ├─ decisions/  worklog/  todo/  docs/
+├─ .galley/redact.json         # 식별 정보 필터(회사명·도메인·키·이메일·내부 URL 패턴) — 한 곳
 └─ .env(.example)  .gitignore
 ```
 
@@ -118,10 +128,14 @@ Galley/
 - **루트 `/`는 홈(요약 대시보드).** `app/(dashboard)/page.tsx`가 셸 안에서 그린다. redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md). 목록형(A)의 변형 "요약형"이며 새 패턴이 아니다.
 - **`packages/ui`에 도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다.
 - **`@galley/ui` 딥 임포트 금지**(`@galley/ui/src/...` ✗). 공개 배럴만.
-- **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·SQLite 경로는 `.env`.
+- **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·`DATA_DIR`·SQLite 경로는 `.env`.
+- **회사 코드 조각(EvidenceBundle snippet)은 `DATA_DIR`에만 쓴다.** `~/Desktop/blog` 아래에는 포인터(커밋·경로·라인)만. blog 폴더 밖으로 나갈 경로를 만들지 않는다 — decisions/evidence-collection.md.
 - **비밀값(API 키·Zenn 토큰)은 `.env`에만.** 코드·SQLite·산출물 파일에 절대 쓰지 않는다.
 - **모델 id·단가를 앱 코드에 하드코딩하지 않는다. `ModelRegistry`(packages/pipeline)만 안다.** 앱·단계 코드는 어댑터 id만 받고 provider를 모른다. 모델은 실행(Run) 속성 — decisions/model-selection.md.
 - **파이프라인은 대시보드가 아니라 워커가 실행한다.** 대시보드는 Run을 `queued`로 만들 뿐, 워커에 직접 신호를 보내지 않는다(수정 지시·승인도 Run 상태 변경으로만) — decisions/run-location.md.
+- **요약만으로 본문을 쓰지 않는다. 본문 단계 입력은 EvidenceBundle뿐**(주제 + 원본 조각 + 어투 프롬프트). 리포 경로·분석 글 원문이 들어갈 자리를 입력 타입에 두지 않는다 — decisions/evidence-collection.md.
+- **읽기 전용 리포에 쓰기 금지.** 인덱싱·근거 수집은 `git show`·`git log` 등 읽기 명령만. 파일·브랜치·git 상태를 바꾸는 명령을 리포 경로에서 실행하지 않는다. 테스트는 tmpdir 픽스처 리포로만(회사 리포 미열람은 그대로).
+- **식별 정보 필터는 `.galley/redact.json` 한 곳.** 인덱싱(summary·note)과 EvidenceBundle(snippet) 양쪽이 같은 함수를 쓴다. 패턴을 코드에 흩어 두지 않는다.
 - **macOS 전용 명령(`open`, `pbcopy`)·경로 구분자 가정 금지.**
 - `.env*`(except `.env.example`)·`.mcp.json`·`.claude/settings.local.json`은 gitignore.
 - **pnpm 10은 네이티브 패키지 빌드 스크립트를 차단.** 새 네이티브 도구(esbuild·lefthook 등) 추가 시 `pnpm.onlyBuiltDependencies`에 넣어야 빌드된다. (decisions/toolchain-pins.md)
