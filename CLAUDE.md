@@ -153,6 +153,7 @@ Galley/
 `todo/{역할}-todo 확인 → 브랜치(type/scope-desc) → 구현 → 테스트 → 기능 최소 단위마다 즉시 커밋 → /log → PR → CI 초록 → rebase merge → 브랜치 삭제`
 
 - main은 보호됨(직접 push 금지, PR·CI 필수, force-push 금지). 브랜치·머지 규칙은 [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) 브랜치 절.
+- 레이아웃 컴포넌트(AppShell·Sidebar·TopBar·ListRow 등)를 건드리거나 갤러리(`/design`)를 바꾸면 `pnpm --filter dashboard verify:layout` 통과가 완료 조건(decisions/layout-measurement.md). 스크립트는 갤러리 aria-label에 결합되어 있으니 갤러리를 바꾸면 스크립트도 맞춘다.
 
 ## 8. 커밋 단위 규칙
 
@@ -175,6 +176,7 @@ pnpm --filter @galley/ui build          # 디자인 시스템 단독 빌드(독�
 pnpm --filter @galley/ui test
 pnpm --filter dashboard dev              # 대시보드 로컬 실행
 pnpm lint && pnpm typecheck && pnpm test # 전체 검증
+pnpm --filter dashboard verify:layout    # 레이아웃 실측(headless Chrome, /design). --no-build·--url·--out. Chrome 경로는 GALLEY_CHROME
 ```
 
 > 커맨드: `/log /decide /brief /review /status /retro /retro-public /agent /ship /demo`

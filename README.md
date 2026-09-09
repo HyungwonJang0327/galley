@@ -42,6 +42,7 @@ cp .env.example .env          # 경로·키 채우기
 pnpm --filter dashboard dev    # 대시보드 로컬 실행
 pnpm lint && pnpm typecheck && pnpm test
 pnpm --filter @galley/ui build # 디자인 시스템 단독 빌드
+pnpm --filter dashboard verify:layout # 레이아웃 실측(설치된 Chrome headless, GALLEY_CHROME로 경로 지정 가능)
 ```
 
 ## AI 활용 방식
