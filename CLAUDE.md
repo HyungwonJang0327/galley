@@ -101,6 +101,7 @@ Galley/
 | 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | 미설치 (컴포넌트 작업 시 추가)                        |
 | DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | prisma 6.19.3 (7↑ 보류 — decisions/toolchain-pins.md) |
 | 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                     |
+| 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                      |
 | DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
 | 테스트        | Vitest                                                       | 5.0.0                                                 |
 | 빌드(ui)      | Vite 라이브러리 모드 (ESM+CJS+스코프 CSS+d.ts) + Changesets  | vite 8.2.2 · vite-plugin-dts 5.1.0 · changesets 3.0.2 |
