@@ -116,7 +116,7 @@
 
 모델은 Run 속성. BM1~~BM3(어댑터 계층)은 Run 스키마와 독립 → B1 초반에 착수 가능. BM4~~BM9는 Run 스키마(BM4)·실행 화면(B2)에 의존. 각 항목 = 커밋 하나.
 
-- [ ] 🔒 **BM1** pl — `ModelAdapter` 인터페이스(**사용자 작성**, AI는 초안) + Mock 어댑터(고정 텍스트·비용 0, dev 전용 노출) + 테스트. 커밋: `feat(model): 모델 어댑터 인터페이스와 Mock 어댑터 추가`
+- [~] 🔒 **BM1** pl — `ModelAdapter` 인터페이스(**사용자 작성 완료** 2026-09-09 `c906727`, feat/model-adapter) + Mock 어댑터(고정 텍스트·비용 0, dev 전용 노출) + 테스트. 커밋: `feat(model): 모델 어댑터 인터페이스와 Mock 어댑터 추가`
 - [ ] **BM2** pl — `ModelRegistry`(list/get/default, `available` 판정=API 키 유무). 커밋: `feat(model): 모델 레지스트리 추가`
   - 완료조건: `.env`에서 API 키를 지우면 해당 어댑터가 `available:false`(테스트).
 - [ ] **BM3** pl — Claude 어댑터 2개(상위+저렴, **모델 id·단가는 Anthropic 문서 확인→사용자 확정 후 상수화**) + usage→cost 테스트. 커밋: `feat(model): Claude 어댑터와 비용 계산 추가`
