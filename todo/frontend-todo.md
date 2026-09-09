@@ -38,3 +38,6 @@
 - BM9 — TopBar 칩 클릭 기본 모델 변경
 - BW4 — 수정 지시·승인을 Run 상태 변경으로(워커 pickup)
 - BW6 — TopBar 워커 생존 점
+- BE12 — 큐 행 ⋮ "근거 편집" Dialog + 실행 Dialog(BM6) 근거 목록·0건 경고 (decisions/evidence-collection.md, 선행 BE7·UM1)
+- BE13 — 실행 상세 타임라인 6줄: 근거 수집·근거 검증 줄 펼침 표시 + 좌 목록·홈 "지금 할 일" "근거 없음 n" (선행 B2c·BE10)
+- (Phase 2) /settings/repos — 리포 행(상태·분석 글 n·재인덱싱)·폴더 추가·진행률

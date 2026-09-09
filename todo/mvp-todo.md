@@ -105,7 +105,7 @@
 
 ### B1. 상태 머신 + 모델 어댑터 + 실행 이력 — [B] Phase 1-B #5
 
-- [ ] 🔒 **B1a** 단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). 커밋: `feat(pipeline): 단계 상태 머신과 승인 게이트 추가`
+- [ ] 🔒 **B1a** 단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). **단계 6개**(근거 수집·본문·근거 검증·링크드인·Zenn·발행정보) + 단계 결과 표시용 플래그(근거 검증 unsupported는 실패 아님) — decisions/evidence-collection.md. 커밋: `feat(pipeline): 단계 상태 머신과 승인 게이트 추가`
 - [ ] **B1b** ts — 상태 머신 전이 테스트(정상·수정 재실행·불가 전이). 커밋: `test(pipeline): 상태 머신 전이 테스트`
 - [ ] 🔒 **B1c** 모델 어댑터 인터페이스 → **BM1~BM3로 재구성**(인터페이스 🔒 + Mock·레지스트리·Claude 2개). 아래 BM 참조.
 - [ ] **B1d** ts — 어댑터 목 토큰·비용 테스트 → **BM1·BM3에 흡수**.
@@ -142,26 +142,58 @@
 - [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
 - [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
+### BE. 근거 수집 구조 — [B] Phase 1-B (decisions/evidence-collection.md · 2026-09-09 확정)
+
+캐시(리포 인덱스)는 "어디를 볼지", 내용은 항상 원본에서. 단계 5→6(근거 검증). **선행: BM1~BM3(Mock 어댑터·레지스트리)**, BE8~BE11·BE14는 B1a(🔒 상태 머신)·BW2(워커 루프). 제품 코드는 승인 후. 각 항목 = 커밋 하나. 테스트는 전부 **tmpdir 픽스처 git 리포**(회사 리포 미열람).
+
+- [ ] **BE1** pl — 스키마: `Repo`(aliases·lastIndexModelId 포함) · `RepoAnalysis`(pointers JSON ≥ 1) · `IndexJob`(modelId) · `TopicAnalysisLink`(topicSlug 키) · `QueueItem.repoNames/keywords/period` + 마이그레이션. 커밋: `feat(pipeline): 리포 인덱스와 주제 연결 스키마 추가`
+  - 완료조건: `prisma validate`·마이그레이션 적용. pointers 빈 배열 저장은 접근 함수에서 거부(테스트).
+- [ ] **BE2** pl — 식별 정보 필터: `.galley/redact.json` 로더 + `redact(text)` 적용 함수 + 테스트. 커밋: `feat(pipeline): 식별 정보 필터 추가`
+  - 완료조건: 회사명·도메인·이메일·키 패턴·내부 URL 픽스처가 전부 치환되고 통과 여부가 반환된다. 함수 하나를 인덱싱·EvidenceBundle이 공유.
+- [ ] **BE3** pl — 리포 인덱서 1: 파일 트리 요약 + 주요 디렉터리별 `area` 분석 글 생성(입력 상한 `INDEX_LIMITS` 16KB/20개·160KB/30개, 초과분 `summaryOnly`). Mock 어댑터로 테스트. 커밋: `feat(pipeline): 리포 인덱서에 파일 트리·영역 분석 추가`
+  - 완료조건: 픽스처 리포 인덱싱 시 분석 글마다 pointers ≥ 1, **모든 포인터가 실제 파일·라인을 가리킨다**(테스트).
+- [ ] **BE4** pl — 리포 인덱서 2: `git log`를 기간(월)·경로로 묶어 `change` 분석 글 + `overview`. 인덱싱 토큰·비용을 IndexJob에 기록. 커밋: `feat(pipeline): 리포 인덱서에 변경 이력 분석 추가`
+  - 완료조건: BE3와 동일 포인터 검증 + change 분석 글에 period가 있다.
+- [ ] **BE5** pl — 증분 재인덱싱(HEAD 비교 → `stale`, 바뀐 경로·새 커밋 범위만) + `--full` + CLI `bin/index.ts`(`pnpm --filter @galley/pipeline index <path> [--name --alias --read-only --model --full]`, 모델 기본 = 레지스트리 `indexingDefault` Haiku 4.5, 사용 모델을 `Repo.lastIndexModelId`에 기록). 커밋: `feat(pipeline): 증분 재인덱싱과 index CLI 추가`
+  - 완료조건: 픽스처 리포에 커밋 하나 추가 후 재인덱싱하면 **바뀐 경로의 분석 글만 갱신**된다(테스트). 읽기 전용 리포에서 쓰기 명령 0(리포 git status 불변 테스트).
+- [ ] **BE6** pl — `주제_큐.md` 괄호 힌트 파서 확장(리포 이름·alias·키워드·기간 추출, 괄호 형식 불변) + 주제 슬러그 파생(B1e에서 앞당김) + 테스트. 커밋: `feat(queue): 주제 항목에서 리포·키워드·기간 추출`
+  - 완료조건: `(spacehome, react-router)` `(vendor manager, 2024.03)` `(spacehome + vendor manager)` `(2024.07)` 4형이 파싱되고 라운드트립(A4c)이 그대로 통과.
+- [ ] **BE7** pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
+  - 완료조건: 픽스처 인덱스 + 큐에서 키워드 겹치는 분석 글만 연결. 재적재(전체 리셋) 후에도 `manual` 링크 유지(테스트).
+- [ ] **BE8** pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
+  - 완료조건: **EvidenceBundle의 모든 snippet이 pointers가 가리키는 commit의 파일 내용과 일치**(테스트). posts 쪽 `evidence.json`에 `snippet` 키가 없다(테스트).
+- [ ] **BE9** pl — 근거 수집 단계 2: discovered 추가 탐색(키워드 겹침 + 기간 가중 점수, 모델 없음) + 상한 8. 커밋: `feat(run): 근거 수집에 추가 탐색 추가`
+  - 완료조건: 연결에 없던 분석 글이 discovered로 들어오고 상한을 넘지 않는다.
+- [ ] **BE10** pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
+  - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
+- [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
+  - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
+- [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
+  - 완료조건: 편집 결과가 `TopicAnalysisLink(manual)`로 저장, 큐 행 "근거 n건" 갱신.
+- [ ] **BE13** fe — 실행 상세 타임라인에 근거 수집("linked n · discovered n", 펼침 목록)·근거 검증("근거 없음 n · 불확실 n" 주황 배지, 펼침 주장 목록) 표시 + 좌 목록·홈 "지금 할 일" 작은 텍스트. 커밋: `feat(dashboard): 타임라인에 근거·검증 결과 표시`
+- [ ] **BE14** pl — 재실행 규칙: 근거 수집 기본 건너뜀(지시에 "근거"·"커밋"·"코드" 또는 단계 지정 시만), 본문 재실행 → 검증 자동 재실행. 커밋: `feat(run): 재실행 시 근거·검증 단계 규칙 적용`
+  - 완료조건: 세 경우(기본·키워드 포함·단계 지정) 전이 테스트.
+
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
 - [ ] **B2a** ui — SplitPane·TimelineItem·ActionBar 패턴(도메인 무지). 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
 - [ ] **B2b** fe — 실행·재실행·승인 Route Handler(pipeline 함수 호출만). 커밋: `feat(run): 실행·재실행·승인 Route Handler 추가`
-- [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(단계 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
+- [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(**6단계** 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
 - [ ] **B2d** fe — 하단 ActionBar(수정 지시 입력 + 승인) → Route Handler 배선. 커밋: `feat(run): 실행 상세 수정 지시·승인 배선`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
 - [ ] **B2e** fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown**(apps/dashboard). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
 
-- [ ] **B3a** pl — `posts/<슬러그>/` 5개 파일 쓰기(벨로그·링크드인·Zenn·발행정보·썸네일 자리) via Storage. 새 슬러그 폴더에만. 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
+- [ ] **B3a** pl — `posts/<슬러그>/` 5개 파일 쓰기(벨로그·링크드인·Zenn·발행정보·썸네일 자리) + `evidence.json`·`verification.json` via Storage. 새 슬러그 폴더에만. 발행정보에 `## 근거` 섹션(BE11). 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
 - [ ] **B3b** pl — ThumbnailRenderer 인터페이스 + make_thumb.py 호출 구현. 커밋: `feat(publish): 썸네일 렌더러(make_thumb.py 호출) 추가`
-- [ ] **B3c** ts — 산출물 5개 구조·파일명 픽스처 테스트. 커밋: `test(publish): posts 산출물 구조 테스트`
+- [ ] **B3c** ts — 산출물 5개 + evidence/verification 2개 구조·파일명 픽스처 테스트. 커밋: `test(publish): posts 산출물 구조 테스트`
 
 ---
 
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
-Zenn push 실연동 · 설정 화면(리포·모델·비용·어투 프롬프트) · 비용 칩 · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전.
+Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
 
 ## 상시 역할
 
