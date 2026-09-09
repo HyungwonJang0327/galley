@@ -19,6 +19,10 @@ model QueueItem {
   // 대기 | 후보 | 보류 | 완료 — 값 검증은 애플리케이션 레벨.
   status    String   @default("대기")
   order     Int
+  // 후보 섹션 ### 소제목(있을 때만). 파서 QueueTopic.category 보존.
+  category    String?
+  // 완료 항목의 날짜 접두 YYYY-MM-DD(완료 항목만). 파서 QueueTopic.completedOn 보존.
+  completedOn String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
