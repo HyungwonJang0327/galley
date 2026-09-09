@@ -20,6 +20,8 @@
 | ⑦    | 사이드바 접힘 저장   | localStorage                                          | decisions/sidebar-collapse-persistence.md |
 | ⑧    | turborepo            | 미도입(pnpm --filter)                                 | decisions/turborepo.md                    |
 | ⑨    | 시크릿 스캔          | gitleaks (CI + pre-commit)                            | decisions/secret-scanning.md              |
+| ⑩    | dashboard 테스트     | vitest + happy-dom + testing-library (ui와 동일)      | decisions/dashboard-testing.md            |
+| ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트(수동, CI 보류)           | decisions/layout-measurement.md           |
 | 공통 | 모노레포             | pnpm (apps/dashboard + @galley/ui + @galley/pipeline) | decisions/monorepo.md                     |
 | 공통 | UI 기반              | Base UI(헤드리스), shadcn/ui 기각                     | decisions/base-ui-over-shadcn.md          |
 
@@ -85,6 +87,6 @@
 
 ## 미결 질문
 
-- **apps/dashboard 단위 테스트 인프라(vitest+testing-library) 도입 여부.** 현재 dashboard는 test 스크립트·설정이 없어 fe 작업(A3b·A3c·A3d)을 build+프로덕션 스모크로만 검증 중. 라이브러리 추가 = decisions 필요. A5(큐 목록)·A6(편집) 등 로직이 붙기 전 결정할 것.
-  - 같이 결정: **레이아웃 실측 스크립트**(설치된 Chrome headless + Node `--experimental-websocket` CDP, 2026-09-10 AppShell·Select 검증에 사용, 현재 세션 스크래치패드에만 있음)를 리포(`apps/dashboard/scripts/`)에 둘지. CSS 레이아웃은 happy-dom으로 RED가 안 나와 실측이 유일한 자동 검증 수단.
+- ~~apps/dashboard 단위 테스트 인프라 도입 여부~~ **해소(2026-09-10)** → decisions/dashboard-testing.md(vitest+happy-dom+testing-library, ui와 동일). ~~레이아웃 실측 스크립트 리포 반영~~ **해소(2026-09-10)** → decisions/layout-measurement.md(`apps/dashboard/scripts/verify-layout/`, 수동 `verify:layout`).
+- **실측 스크립트 CI 통합(2-B).** 로컬에서 `verify:layout` 10회 연속 통과를 확인한 뒤 별도 `/decide`.
 - ~~사이드바 IA 재정비~~ **해소(2026-09-08)** → decisions/navigation.md 확정. layout.md §2~§4·라우트 표·CLAUDE.md·todo AN1~6 반영. 구현은 승인 후 AN1부터.
