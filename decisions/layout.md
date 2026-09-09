@@ -44,9 +44,19 @@
   - 타임라인 한 줄 = 단계명 + 상태 아이콘 + 소요 시간 + 토큰 + "diff 보기". 단계 순서 고정: 근거 수집 → 벨로그 본문 → 링크드인 → Zenn → 발행정보·썸네일.
   - 하단 바 = "지시 1회 → 해당 단계 재실행" (채팅 아님).
 
-설정 화면은 "목록형(A) 카드 안의 폼 섹션"으로 정의한다. 셋째 패턴을 만들지 않는다.
+설정 화면은 "목록형(A) 카드 안의 폼 섹션"으로 정의한다. 홈 화면은 "목록형(A)의 변형 **요약형**"으로 정의한다(아래 화면별 적용). **셋째 패턴을 만들지 않는다.**
 
 #### 화면별 적용 (IA는 decisions/navigation.md)
+
+**홈 / — 목록형(A)의 변형 "요약형" · Phase 1(분할 구현)**
+
+- 새 패턴 아님. 목록형(A)에서 툴바(검색·필터)를 빼고 **"제목 → 카드 여러 개를 grid 배치, 각 카드 안은 ListRow 목록"**으로 변형. 최대 폭 1200px, 카드 간격은 tokens spacing만, 차트 없음.
+- h1 "홈". 우측 보조 텍스트: 다음 스케줄 실행 시각("다음 자동 실행: 수 18:00" — 수·토 18:00 중 가까운 쪽). TZ는 .env/설정값(하드코딩 금지), **계산은 apps/dashboard 유틸**(pipeline은 스케줄을 소유하지 않음, 표시 전용).
+- **행 1 — StatTile 4개**(같은 폭): 대기 n→/queue?tab=waiting · 승인 대기 n(주황)→/runs?filter=approval · 발행 대기 n→/publish · 이번 달 비용(Phase 2, "—"). 타일=라벨(13px 회색)+숫자(24~28px)+우하단 화살표. 0이면 회색, **승인 대기만 ≥1일 때 주황 텍스트**. 색 블록·배경색 금지. 클릭→해당 화면.
+- **행 2 (좌 60% / 우 40%)**: "지금 할 일"(승인 대기 실행 목록, 행=주제·마지막 완료 단계·대기 시작 시간·우측 `검수`→/runs?id=, 최대 5, 초과 시 "n개 더 보기→/runs", 빈 상태 "검수할 초안이 없습니다.") / "다음 실행"(대기 맨 위 1개 크게=제목·카테고리·근거 리포 + `지금 실행`(주요 블루)·`큐 편집`(→/queue), 아래 대기 2~4위 작은 행 최대 3, 빈 상태 "대기 중인 주제가 없습니다. 후보에서 골라 주세요."+`후보 보기`→/queue?tab=candidates).
+- **행 3 (좌우 동일)**: "최근 실행"(최근 5, 행=주제·결과 배지(완료/실패/승인 대기)·모델·시간, 클릭→/runs?id=, 헤더 우측 "이력 전체 →"/runs/history) / "발행 대기"(승인됐지만 채널 3 중 미발행, 행=제목·velog·Zenn·LinkedIn 미니 상태, 클릭→/publish, 최대 5, Phase 2 데이터 없으면 카드는 두되 빈 상태).
+- 데이터: 전부 서버 컴포넌트 직접 조회(**배지 카운트와 같은 소스** → 타일·배지 불일치 방지). 홈 전용 API 없음. 갱신 = 서버 렌더 + 네비게이션 시 재조회(배지와 동일).
+- **구현 분할**: 뼈대·타일·"다음 실행"(A4d 큐 데이터)은 Phase 1 지금. "지금 할 일"·"최근 실행"은 B1e(Run 스키마), "발행 대기"는 Phase 2 — 그 전까지 영구 빈 상태.
 
 **큐 /queue — 목록형(A)**
 
@@ -90,7 +100,7 @@
 
 ### 7. 구현 매핑
 
-- `app/(dashboard)/layout.tsx` 하나에 TopBar·Sidebar 고정. 루트 `page.tsx`는 `/queue` redirect.
+- `app/(dashboard)/layout.tsx` 하나에 TopBar·Sidebar 고정. 루트 `/`는 `app/(dashboard)/page.tsx` = 홈(요약형). redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md).
 - `@galley/ui`(도메인 단어 없음): components/ Button·Badge·Card·PageHeader / patterns/ AppShell·SidebarGroup·SidebarItem·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar / primitives/ Tabs·Menu·Checkbox·Tooltip·Dialog·Select.
 - `apps/dashboard`: 라우트, 사이드바 메뉴 정의(라벨·경로·아이콘 배열 1개), 상태→Badge variant 매핑, 데이터 페칭.
 
@@ -107,3 +117,4 @@
 
 - 2026-09-08 최초 결정(스펙 요약본 반영).
 - 2026-09-08 IA 재정비: 사이드바를 사용 흐름 순으로 재구성(§3), TopBar 워크스페이스 탭 제거(§2), 화면별 레이아웃 추가(§4). decisions/navigation.md 신설. 사용자 프롬프트가 §3 고정 결정 변경 승인.
+- 2026-09-09 홈 화면 추가: 목록형(A)의 변형 **"요약형"**(§4 화면별 적용). 루트 `/`=홈으로 결정 변경(decisions/navigation.md 갱신 이력)에 따라 §7 구현 매핑도 redirect→홈으로 갱신. 셋째 패턴은 만들지 않음(요약형은 A 변형).

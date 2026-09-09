@@ -70,6 +70,20 @@
 
 > 실행 화면(2분할)·산출물 미리보기는 Phase 1-B B2에서. B2에 "타임라인 펼침 산출물 미리보기"(B2e)만 추가, 순서 유지.
 
+### AH. 홈(요약 대시보드) — 루트 `/` (decisions/navigation·layout "요약형") — 2026-09-09 결정 변경
+
+목록형(A)의 변형 "요약형". **분할 구현**: 카드 6개 중 4개가 Run(B1e)·Phase 2 데이터라 영구 빈 상태 → 지금은 뼈대+실데이터(대기 큐, A4d)만. 승인 대기·최근 실행·발행 대기 카드는 데이터 도착 후(AN4/AN5 선례: 가짜 데이터 금지). 각 항목 = 커밋 하나.
+
+- [ ] **AH1** ui — `StatTile`(label·value·href·tone default|warning·icon 슬롯) + `EmptyState`(한 줄 메시지+선택 액션 버튼, 큐·실행·발행 빈 상태 재사용). 테스트·스토리. `CardGrid`(columns·비율 grid 래퍼)는 기존 Card 조합으로 충분하면 만들지 말고 이유 보고. 커밋: `feat(ui): StatTile·EmptyState 컴포넌트 추가`
+- [ ] **AH2** fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
+- [ ] **AH3** fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
+  - 완료조건: `/` 진입 시 타일 4개 숫자가 사이드바 배지와 같다. 타일 클릭으로 각 화면 이동.
+- [ ] **AH4** fe — "다음 실행" 카드(대기 큐 A4d 데이터 연결: 맨 위 1개 크게 + 2~4위 작은 행, `지금 실행`은 pipeline 호출 자리만, 빈 상태 EmptyState). 작은 행은 A5a `ListRow` 재사용(선행 시) 또는 최소 마크업. 커밋: `feat(dashboard): 홈에 다음 실행 카드 추가`
+  - 완료조건: 주제_큐.md 대기 맨 위 항목이 카드에 뜨고, 큐 순서를 바꾸면 홈도 바뀐다.
+- [ ] **AH5** fe — "지금 할 일"·"최근 실행" 카드. **의존: B1e(Run 스키마)** — 그 전까지 두 카드 모두 EmptyState. **B1e 뒤로 보류**(지금 만들면 행 구조 재작업). 커밋: `feat(dashboard): 홈에 승인 대기·최근 실행 카드 추가`
+  - 완료조건: 실행 0건에서 두 카드 빈 상태, 레이아웃 안 무너짐.
+- [ ] **AH6** fe — "발행 대기" 카드 빈 상태 + Phase 2 TODO. **Phase 2 데이터 의존, 뒤로 보류.** 커밋: `feat(dashboard): 홈에 발행 대기 카드 자리 추가`
+
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
 
 - [ ] **A5a** ui — ListToolbar·ListRow 패턴(검색·필터·체크박스 슬롯 / 행: 제목+보조+우측 배지·시간). 도메인 무지. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`

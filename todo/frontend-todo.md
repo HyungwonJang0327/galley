@@ -14,6 +14,11 @@
 - AN4 — 큐 탭 4개(?tab=) + 카테고리 필터 (선행 A5a·A5b)
 - AN5 — 행 ⋮ 이동/실행 메뉴
 - AN6 — Phase 2 빈 페이지(/runs/history·/publish)
+- AH2 — 사이드바 홈 항목 + TopBar Galley→/ 링크
+- AH3 — 홈 골격(app/(dashboard)/page.tsx, 기존 redirect 삭제 → AN3/A3c 대체) + 다음 스케줄 유틸 + StatTile 4개
+- AH4 — 홈 "다음 실행" 카드(대기 큐 A4d 연결)
+- AH5 — 홈 "지금 할 일"·"최근 실행" 카드 **(B1e Run 스키마 뒤 보류)**
+- AH6 — 홈 "발행 대기" 카드 빈 상태 **(Phase 2 뒤 보류)**
 - A5b — 상태→Badge variant 매핑 어댑터(`lib/`)
 - A5c — 큐 데이터 페칭(섹션별) → AN4 탭·A5a 행에 공급
 - A6a — 큐 순서 DnD(pragmatic-drag-and-drop)

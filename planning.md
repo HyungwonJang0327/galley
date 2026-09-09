@@ -53,16 +53,17 @@
 
 ## 라우트 (decisions/navigation.md)
 
-| 경로                          | 화면                       | 패턴   | Phase         |
-| ----------------------------- | -------------------------- | ------ | ------------- |
-| /queue                        | 큐(탭 대기/후보/보류/완료) | A      | 1             |
-| /runs                         | 실행(2분할 상세, ?id=)     | B      | 1             |
-| /runs/history                 | 이력(표)                   | A      | 2 (빈 페이지) |
-| /publish                      | 발행 대기(글×채널 3)       | A      | 2 (빈 페이지) |
-| /settings/repos·model·prompts | 설정 폼                    | A 변형 | 2             |
-| /design                       | 컴포넌트 갤러리            | —      | dev 전용      |
+| 경로                          | 화면                       | 패턴           | Phase         |
+| ----------------------------- | -------------------------- | -------------- | ------------- |
+| /                             | 홈(요약 대시보드)          | A 변형(요약형) | 1 (분할)      |
+| /queue                        | 큐(탭 대기/후보/보류/완료) | A              | 1             |
+| /runs                         | 실행(2분할 상세, ?id=)     | B              | 1             |
+| /runs/history                 | 이력(표)                   | A              | 2 (빈 페이지) |
+| /publish                      | 발행 대기(글×채널 3)       | A              | 2 (빈 페이지) |
+| /settings/repos·model·prompts | 설정 폼                    | A 변형         | 2             |
+| /design                       | 컴포넌트 갤러리            | —              | dev 전용      |
 
-- 루트 `/`: 승인 대기 ≥1 → /runs, 아니면 /queue. 홈 화면 없음.
+- 루트 `/`: **홈(요약 대시보드).** redirect 제거(2026-09-09 결정 변경 — decisions/navigation.md). 사이드바 맨 위 단독 "홈" 항목. 구현 분할: 뼈대+다음 실행 먼저, 승인 대기·최근 실행(B1e)·발행 대기(Phase 2) 뒤.
 - 구 경로 /queue/candidates·/queue/done·/runs/active·/publish/zenn·/publish/velog → redirect.
 - TopBar 워크스페이스 탭 제거(워크스페이스 개념 폐기).
 
