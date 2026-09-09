@@ -1,5 +1,7 @@
-import type { ModelAdapter } from './ModelAdapter';
+import type { ModelAdapter, ModelPricing } from './ModelAdapter';
 import { createMockAdapter } from './MockAdapter';
+import { createAnthropicAdapter } from './AnthropicAdapter';
+import { createOpenAiAdapter } from './OpenAiAdapter';
 
 /**
  * 어댑터 id 규칙: `provider:model` (예 `anthropic:claude-opus-5`). Mock만 `mock`.
@@ -56,12 +58,56 @@ export interface ModelEnv {
   OPENAI_API_KEY?: string;
 }
 
+interface ModelSpec {
+  model: string;
+  label: string;
+  pricing: ModelPricing;
+}
+
 /**
- * 프로덕션 레지스트리. 어댑터 추가 = 파일 하나 + 여기 등록 한 줄.
+ * 모델 카탈로그 = 코드 상수. id·단가는 decisions/model-selection.md 표(각 provider 문서에서 확인).
+ * 모델 추가 = 여기 한 줄. 가격 변동 = 코드 수정(외부화는 Phase 2).
+ */
+const ANTHROPIC_MODELS: readonly ModelSpec[] = [
+  {
+    model: 'claude-fable-5-1',
+    label: 'Claude Fable 5.1',
+    pricing: { inputPerMTok: 10, outputPerMTok: 50 },
+  },
+  {
+    model: 'claude-opus-5',
+    label: 'Claude Opus 5',
+    pricing: { inputPerMTok: 5, outputPerMTok: 25 },
+  },
+  {
+    model: 'claude-sonnet-5',
+    label: 'Claude Sonnet 5',
+    pricing: { inputPerMTok: 2, outputPerMTok: 10 },
+  },
+  {
+    model: 'claude-haiku-4-5-20251001',
+    label: 'Claude Haiku 4.5',
+    pricing: { inputPerMTok: 1, outputPerMTok: 5 },
+  },
+];
+
+const OPENAI_MODELS: readonly ModelSpec[] = [
+  { model: 'gpt-5.5', label: 'GPT-5.5', pricing: { inputPerMTok: 5, outputPerMTok: 30 } },
+  { model: 'gpt-5.1', label: 'GPT-5.1', pricing: { inputPerMTok: 1.25, outputPerMTok: 10 } },
+  { model: 'gpt-5-mini', label: 'GPT-5 mini', pricing: { inputPerMTok: 0.25, outputPerMTok: 2 } },
+];
+
+/**
+ * 프로덕션 레지스트리. provider 추가 = 어댑터 파일 하나 + 여기 등록.
  * Mock은 `NODE_ENV=development`에서만 노출(테스트·데모용).
  */
 export function createModelRegistryFromEnv(env: ModelEnv): ModelRegistry {
-  const adapters: ModelAdapter[] = [];
+  const adapters: ModelAdapter[] = [
+    ...ANTHROPIC_MODELS.map((spec) =>
+      createAnthropicAdapter({ ...spec, apiKey: env.ANTHROPIC_API_KEY }),
+    ),
+    ...OPENAI_MODELS.map((spec) => createOpenAiAdapter({ ...spec, apiKey: env.OPENAI_API_KEY })),
+  ];
   if (env.NODE_ENV === 'development') {
     adapters.push(createMockAdapter());
   }
