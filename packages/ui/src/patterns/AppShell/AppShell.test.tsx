@@ -22,4 +22,19 @@ describe('AppShell', () => {
     );
     expect(container.querySelector('[data-collapsed="true"]')).toBeTruthy();
   });
+
+  it('두 행 구조: 루트 아래 header, 그다음 sidebar(aside)와 content(main)를 감싸는 행 하나', () => {
+    const { container } = render(
+      <AppShell topBar={<div>상단</div>} sidebar={<nav>메뉴</nav>}>
+        <p>본문</p>
+      </AppShell>,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.children).toHaveLength(2);
+    expect(root.children[0]?.tagName).toBe('HEADER');
+    const body = root.children[1] as HTMLElement;
+    expect(body.children).toHaveLength(2);
+    expect(body.children[0]?.tagName).toBe('ASIDE');
+    expect(body.children[1]?.tagName).toBe('MAIN');
+  });
 });
