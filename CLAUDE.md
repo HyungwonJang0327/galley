@@ -103,7 +103,7 @@ Galley/
 | 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                     |
 | 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                      |
 | DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
-| 테스트        | Vitest                                                       | 5.0.0                                                 |
+| 테스트        | Vitest + happy-dom + testing-library (ui·dashboard 공통)     | 5.0.0 · happy-dom 20.14.0 · testing-library 16.3.3    |
 | 빌드(ui)      | Vite 라이브러리 모드 (ESM+CJS+스코프 CSS+d.ts) + Changesets  | vite 8.2.2 · vite-plugin-dts 5.1.0 · changesets 3.0.2 |
 | 린트/포맷     | ESLint + Prettier + typescript-eslint                        | eslint 10.10.0 · prettier 3.9.6 · tseslint 8.70.0     |
 | 시크릿·훅     | gitleaks + lefthook (pre-commit + CI)                        | gitleaks 8.30.1 · lefthook 2.1.12                     |
