@@ -1,5 +1,15 @@
-import { Badge, Button, Card, PageHeader } from '@galley/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  ListRow,
+  ListRows,
+  ListToolbar,
+  ListToolbarTab,
+  PageHeader,
+} from '@galley/ui';
 import styles from './page.module.css';
+import { DialogDemo, SelectDemo, SelectDisabledDemo } from './PrimitiveDemos';
 
 // 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 @galley/ui 공개 배럴만
 // 소비해 컴포넌트를 상태별로 렌더한다. 도메인 무지 — 컴포넌트 추가 시 여기에 얹는다.
@@ -78,6 +88,72 @@ export default function DesignPage() {
               </Button>
             }
           />
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>ListToolbar · ListRow</h2>
+          <ListToolbar
+            tabs={
+              <>
+                <ListToolbarTab label="첫째" count={3} isActive />
+                <ListToolbarTab label="둘째" count={12} />
+                <ListToolbarTab label="셋째" />
+              </>
+            }
+            search={<input type="search" placeholder="검색" aria-label="검색" />}
+            filters={
+              <select aria-label="필터">
+                <option>전체</option>
+              </select>
+            }
+          />
+          <ListRows>
+            <ListRow
+              title="제목 · 보조 · 배지가 있는 행"
+              meta="보조 텍스트 · 항목 · 3건"
+              trailing={<Badge variant="info">상태</Badge>}
+            />
+            <ListRow
+              leading={<span aria-hidden="true">⋮⋮</span>}
+              title="leading·trailing 시간·actions가 있는 행"
+              meta="보조 텍스트"
+              trailing={
+                <>
+                  <Badge variant="warning">상태</Badge>
+                  <span>3분 전</span>
+                </>
+              }
+              actions={
+                <Button variant="ghost" size="sm" aria-label="메뉴">
+                  ⋮
+                </Button>
+              }
+            />
+            <ListRow title="선택된 행(isActive)" meta="보조 텍스트" isActive />
+          </ListRows>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Dialog</h2>
+          <div className={styles.row}>
+            <DialogDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Select</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>placeholder → 선택</span>
+            <div className={styles.row}>
+              <SelectDemo />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>disabled</span>
+            <div className={styles.row}>
+              <SelectDisabledDemo />
+            </div>
+          </div>
         </Card>
       </div>
     </>
