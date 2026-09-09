@@ -14,7 +14,7 @@
 - [x] `@galley/pipeline`·`apps/dashboard` 스캐폴드 (2026-09-08 `2dc3c2a`·`efe8223`)
 - [x] CI·gitleaks·main 보호 (2026-09-08 `2f638db`·`151ce31`)
 - [x] **셸·Select 유지보수 fix**(사용자 스펙, PR #41): AppShell Content만 스크롤 (2026-09-10 `f6d3ef6`) · Select 팝업 폭/높이·트리거 폭·공통 ItemContent (2026-09-10 `97fe37a`). 규칙은 decisions/layout.md 갱신 이력.
-- [x] **dashboard 테스트 인프라 + 레이아웃 실측 스크립트**(planning 미결 /decide 1-A·2-A, chore/dashboard-test-infra): vitest+happy-dom+testing-library (2026-09-10 `b108712`) · `scripts/verify-layout/` + `verify:layout` (2026-09-10 `270db9a`, 10회 연속 68/68). decisions/dashboard-testing.md · layout-measurement.md.
+- [x] **dashboard 테스트 인프라 + 레이아웃 실측 스크립트**(planning 미결 /decide 1-A·2-A, chore/dashboard-test-infra): vitest+happy-dom+testing-library (2026-09-10 `a40bdd2`) · `scripts/verify-layout/` + `verify:layout` (2026-09-10 `bdf9d24`, 10회 연속 68/68). PR #43. decisions/dashboard-testing.md · layout-measurement.md.
 
 ---
 

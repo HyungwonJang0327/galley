@@ -33,4 +33,4 @@ AppShell 스크롤 구조·Select 팝업을 검증한 CDP 실측 스크립트를
 ## 갱신 이력
 
 - 2026-09-10 최초 결정(planning 미결 "실측 스크립트 리포 반영" 해소). 완료 조건 규칙과 CI 통합 조건(10회 연속 통과 후 별도 결정)은 사용자 지정.
-- 2026-09-10 구현(`270db9a`) 후 로컬 `--no-build` 10회 연속 68/68 통과(23~24s/회) 확인 → 2-B(CI 통합) 결정 전제 충족. 구현 중 확인: `next start`는 SIGTERM으로 안 끝나 SIGKILL 폴백 필요, 잘못된 Chrome 경로는 spawn 'error' 처리 없이는 크래시.
+- 2026-09-10 구현(`bdf9d24`, PR #43) 후 로컬 `--no-build` 10회 연속 68/68 통과(23~24s/회) 확인 → 2-B(CI 통합) 결정 전제 충족. 선택지 제시(A: `verify`와 병렬 별도 잡 + 실패 시 스크린샷 artifact 추천), **결정 대기**. 구현 중 확인: `next start`는 SIGTERM으로 안 끝나 SIGKILL 폴백 필요, 잘못된 Chrome 경로는 spawn 'error' 처리 없이는 크래시.
