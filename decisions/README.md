@@ -47,3 +47,5 @@
 - branch-convention — 브랜치 이름(type/scope-desc)·Rebase merge
 - branch-protection — main 표준 보호(PR·CI 필수·force-push 금지)
 - component-gallery — in-app /design 갤러리(셸 안, A3 이후)
+- dashboard-testing — apps/dashboard 단위 테스트(vitest+happy-dom+testing-library, ui와 동일 스택)
+- layout-measurement — 레이아웃 실측 스크립트(headless Chrome CDP, `verify:layout` 수동 실행, CI 통합은 10회 연속 통과 후 별도 결정)

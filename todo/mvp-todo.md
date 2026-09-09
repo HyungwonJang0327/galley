@@ -6,6 +6,7 @@
 - 상태: `[ ]` 대기 · `[~]` 진행 · `[x]` 완료
 - 🔒 = **직접 작성**(사용자 구현, 에이전트는 테스트·리뷰만 — decisions/core-modules.md)
 - 담당: ui=ui-engineer · fe=frontend · pl=pipeline · ts=tester
+- 완료 조건 공통: 레이아웃 컴포넌트(AppShell·Sidebar·TopBar·ListRow 등)를 건드리거나 갤러리(`/design`)를 바꾸는 항목은 `pnpm --filter dashboard verify:layout` 통과까지(decisions/layout-measurement.md).
 
 ## 완료 (7-2 기반)
 
@@ -65,7 +66,7 @@
 - [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 미완이라 보류(가짜 데이터/행 금지). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
 - [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). **의존: AN4 행**(A4b·A5a). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
-  - **선행 UM2**(ui): Base UI Menu 래퍼 — 아이템은 Select와 같은 공통 `ItemContent`({ label, description?, meta? }) 사용(2026-09-10 Select 수정에서 분리).
+  - **선행 UM2**(ui): Base UI Menu 래퍼 — 아이템은 Select와 같은 공통 `ItemContent`({ label, description?, meta? }) 사용(2026-09-10 Select 수정에서 분리). 갤러리 섹션 추가 + `verify:layout` 통과.
   - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
 - [x] **AN6** (2026-09-09 `6bd4c6c`) fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
   - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재(200 스모크), 설정 3개는 기존 유지. 메뉴 링크 유효.
@@ -77,7 +78,9 @@
 목록형(A)의 변형 "요약형". **분할 구현**: 카드 6개 중 4개가 Run(B1e)·Phase 2 데이터라 영구 빈 상태 → 지금은 뼈대+실데이터(대기 큐, A4d)만. 승인 대기·최근 실행·발행 대기 카드는 데이터 도착 후(AN4/AN5 선례: 가짜 데이터 금지). 각 항목 = 커밋 하나.
 
 - [ ] **AH1** ui — `StatTile`(label·value·href·tone default|warning·icon 슬롯) + `EmptyState`(한 줄 메시지+선택 액션 버튼, 큐·실행·발행 빈 상태 재사용). 테스트·스토리. `CardGrid`(columns·비율 grid 래퍼)는 기존 Card 조합으로 충분하면 만들지 말고 이유 보고. 커밋: `feat(ui): StatTile·EmptyState 컴포넌트 추가`
+  - 완료조건: 갤러리 섹션 추가, `verify:layout` 통과.
 - [ ] **AH2** fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
+  - 완료조건: Sidebar·TopBar 변경이므로 `verify:layout` 통과.
 - [ ] **AH3** fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
   - 완료조건: `/` 진입 시 타일 4개 숫자가 사이드바 배지와 같다. 타일 클릭으로 각 화면 이동.
 - [ ] **AH4** fe — "다음 실행" 카드(대기 큐 A4d 데이터 연결: 맨 위 1개 크게 + 2~4위 작은 행, `지금 실행`은 pipeline 호출 자리만, 빈 상태 EmptyState). 작은 행은 A5a `ListRow` 재사용(선행 시) 또는 최소 마크업. 커밋: `feat(dashboard): 홈에 다음 실행 카드 추가`
@@ -125,7 +128,7 @@
   - 완료조건 충족: 고정 usage → costUsd 단가표 일치(provider별) · 키 제거 시 해당 provider `available:false`(테스트).
 - [x] **UM1** (2026-09-09 `165c120`·`e8ed197`·`6c471b4`, feat/ui-primitives-dialog-select) ui — `@base-ui/react` 1.8.0 + `lucide-react` 1.43.0 설치·Vite external·`"use client"` 번들 배너(ui-package-boundary) → `Dialog`(제어형 open·title 접근성 이름·description·children·footer·trigger render·closeLabel) → `Select`(단일, items: value·label·description·trailing·disabled·disabledReason=title). 토큰 `--ui-color-backdrop`·`--ui-dialog-width`·`--ui-control-height`. 테스트 12개·스토리. BM6·BM8·BM9·BE12가 소비. 커밋: `chore(ui): Base UI·lucide 설치와 "use client" 배너 보존` · `feat(ui): Dialog 프리미티브 추가` · `feat(ui): Select 프리미티브 추가`
 - [ ] **BM4** pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계에 모델과 비용 기록 컬럼 추가` _(BW1과 한 마이그레이션으로 합칠 수 있음)_
-- [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
+- [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
 - [ ] **BM6** fe — 실행 시작 Dialog(모델 Select, available=false 비활성+툴팁, 예상 비용 미표시) + 진입점 3곳(큐 행 ⋮·맨 위 실행·홈 다음 실행) 연결. **선행: ui Dialog·Select 프리미티브(UM1).** 커밋: `feat(dashboard): 실행 시작 시 모델 선택 Dialog 추가`
   - 완료조건: 세 진입점 모두 같은 Dialog, 선택 modelId가 Run에 저장, available=false는 선택 불가.
 - [ ] **BM7** fe — 실행 상세 타임라인에 모델 label·비용(USD 4자리) 표시(단계 모델이 Run과 다르면 그 줄에만 label). 커밋: `feat(dashboard): 실행 상세에 모델과 비용 표시`
@@ -143,7 +146,7 @@
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
 - [ ] **BW4** fe — 수정 지시·승인을 Run 상태 변경으로(대시보드 write → 워커 pickup). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
 - [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
-- [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
+- [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
 ### BE. 근거 수집 구조 — [B] Phase 1-B (decisions/evidence-collection.md · 2026-09-09 확정)
 
@@ -179,7 +182,7 @@
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
-- [ ] **B2a** ui — SplitPane·TimelineItem·ActionBar 패턴(도메인 무지). 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
+- [ ] **B2a** ui — SplitPane·TimelineItem·ActionBar 패턴(도메인 무지). 갤러리 섹션 추가 + `verify:layout` 통과. 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
 - [ ] **B2b** fe — 실행·재실행·승인 Route Handler(pipeline 함수 호출만). 커밋: `feat(run): 실행·재실행·승인 Route Handler 추가`
 - [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(**6단계** 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
 - [ ] **B2d** fe — 하단 ActionBar(수정 지시 입력 + 승인) → Route Handler 배선. 커밋: `feat(run): 실행 상세 수정 지시·승인 배선`

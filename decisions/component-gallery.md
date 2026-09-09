@@ -36,3 +36,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-10 갤러리를 바꾸는 항목의 완료 조건에 `pnpm --filter dashboard verify:layout` 통과 추가 — 실측 스크립트가 갤러리의 aria-label·구조에 결합되어 있어 갤러리를 바꾸면 스크립트도 같이 맞춘다(decisions/layout-measurement.md).
