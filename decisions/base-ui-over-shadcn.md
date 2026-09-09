@@ -24,3 +24,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-09 **패키지명 변경 반영**: 설치는 `@base-ui/react` 1.8.0(정확 핀, `@galley/ui` dependencies + Vite external). 구 `@base-ui-components/react`는 1.0.0-rc.0에서 정지. 서브패스 import(`@base-ui/react/dialog`·`/select`). 첫 프리미티브 Dialog·Select(UM1). lucide-react 1.43.0 같이 설치.
