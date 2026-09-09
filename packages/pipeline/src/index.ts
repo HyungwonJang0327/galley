@@ -7,3 +7,13 @@ export { parsedQueueToRows, importQueueFromFile } from './queue/importQueue';
 export type { QueueItemRow } from './queue/importQueue';
 export type { Storage } from './storage/Storage';
 export { LocalFsStorage } from './storage/LocalFsStorage';
+export type {
+  ModelAdapter,
+  ModelProvider,
+  ModelPricing,
+  ModelUsage,
+  GenerateInput,
+  GenerateResult,
+} from './model/ModelAdapter';
+export { createMockAdapter } from './model/MockAdapter';
+export type { MockAdapterOptions } from './model/MockAdapter';
