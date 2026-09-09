@@ -94,3 +94,72 @@ describe('createModelRegistryFromEnv', () => {
     expect(INDEXING_DEFAULT_MODEL_ID).toBe('anthropic:claude-haiku-4-5-20251001');
   });
 });
+
+describe('createModelRegistryFromEnv — provider 어댑터 7개', () => {
+  const EXPECTED = [
+    {
+      id: 'anthropic:claude-fable-5-1',
+      label: 'Claude Fable 5.1',
+      pricing: { inputPerMTok: 10, outputPerMTok: 50 },
+    },
+    {
+      id: 'anthropic:claude-opus-5',
+      label: 'Claude Opus 5',
+      pricing: { inputPerMTok: 5, outputPerMTok: 25 },
+    },
+    {
+      id: 'anthropic:claude-sonnet-5',
+      label: 'Claude Sonnet 5',
+      pricing: { inputPerMTok: 2, outputPerMTok: 10 },
+    },
+    {
+      id: 'anthropic:claude-haiku-4-5-20251001',
+      label: 'Claude Haiku 4.5',
+      pricing: { inputPerMTok: 1, outputPerMTok: 5 },
+    },
+    { id: 'openai:gpt-5.5', label: 'GPT-5.5', pricing: { inputPerMTok: 5, outputPerMTok: 30 } },
+    { id: 'openai:gpt-5.1', label: 'GPT-5.1', pricing: { inputPerMTok: 1.25, outputPerMTok: 10 } },
+    {
+      id: 'openai:gpt-5-mini',
+      label: 'GPT-5 mini',
+      pricing: { inputPerMTok: 0.25, outputPerMTok: 2 },
+    },
+  ];
+
+  test('id·label·단가가 decisions/model-selection 표와 순서대로 일치한다(프로덕션은 Mock 없음)', () => {
+    const registry = createModelRegistryFromEnv({ NODE_ENV: 'production' });
+
+    expect(registry.list().map(({ id, label, pricing }) => ({ id, label, pricing }))).toEqual(
+      EXPECTED,
+    );
+  });
+
+  test('default는 Opus 5, indexingDefault는 Haiku 4.5로 해석된다', () => {
+    const registry = createModelRegistryFromEnv({});
+
+    expect(registry.default().id).toBe(DEFAULT_MODEL_ID);
+    expect(registry.indexingDefault().id).toBe(INDEXING_DEFAULT_MODEL_ID);
+  });
+
+  test('API 키가 있는 provider의 어댑터만 available:true', () => {
+    const onlyAnthropic = createModelRegistryFromEnv({ ANTHROPIC_API_KEY: 'sk-a' });
+    const onlyOpenAi = createModelRegistryFromEnv({ OPENAI_API_KEY: 'sk-o' });
+    const none = createModelRegistryFromEnv({});
+
+    const availableIds = (r: ReturnType<typeof createModelRegistryFromEnv>) =>
+      r
+        .list()
+        .filter((a) => a.available)
+        .map((a) => a.id);
+
+    expect(availableIds(onlyAnthropic)).toEqual(EXPECTED.slice(0, 4).map((m) => m.id));
+    expect(availableIds(onlyOpenAi)).toEqual(EXPECTED.slice(4).map((m) => m.id));
+    expect(availableIds(none)).toEqual([]);
+  });
+
+  test('provider 어댑터 뒤에 development에서만 Mock이 붙는다', () => {
+    const dev = createModelRegistryFromEnv({ NODE_ENV: 'development' });
+
+    expect(dev.list().map((a) => a.id)).toEqual([...EXPECTED.map((m) => m.id), 'mock']);
+  });
+});
