@@ -14,7 +14,13 @@ export default defineConfig({
       cssFileName: 'index',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      // Base UI(서브패스 import)·lucide는 런타임 의존성으로 소비자가 한 벌만 갖는다.
+      external: ['react', 'react-dom', 'react/jsx-runtime', /^@base-ui\/react/, 'lucide-react'],
+      output: {
+        // Rollup은 모듈 지시어를 버린다. 상태 있는 프리미티브(Dialog·Select)가 RSC 소비자에서
+        // 깨지지 않도록 번들 전체를 클라이언트로 표시(decisions/ui-package-boundary.md).
+        banner: '"use client";',
+      },
     },
     cssCodeSplit: false,
     sourcemap: true,
