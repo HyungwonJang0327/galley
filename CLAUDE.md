@@ -58,10 +58,10 @@ Galley/
 │     ├─ app/
 │     │  ├─ (dashboard)/       # 라우트 그룹: TopBar+Sidebar 공유, userId="local" 컨텍스트 자리
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
+│     │  │  ├─ page.tsx        # 홈(요약 대시보드) — 루트 / (목록형 A의 변형 "요약형", decisions/navigation·layout)
 │     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A)
 │     │  │  └─ runs/           # 실행 상세(2분할)·이력 (패턴 B)
-│     │  ├─ api/               # Route Handlers → @galley/pipeline 호출만
-│     │  └─ page.tsx           # 승인 대기≥1→/runs, else /queue redirect (루트 page.tsx는 redirect 전용)
+│     │  └─ api/               # Route Handlers → @galley/pipeline 호출만
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
 ├─ packages/
 │  ├─ ui/                      # @galley/ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)
@@ -108,7 +108,7 @@ Galley/
 - **`~/Desktop/blog`의 기존 파일을 덮어쓰지 않는다.** 산출물은 새 슬러그 폴더(`posts/<슬러그>/`)에만 쓴다.
   - 예외: `주제_큐.md`는 Galley가 쓸 수 있는 유일한 기존 파일. 단 **섹션 구조(대기/후보/보류/완료)·줄 순서를 깨지 않는다.**
 - **공개 발행 API(velog 공개, Zenn 公開)를 호출하는 코드를 만들지 않는다.** Zenn은 `published:false`(下書き)까지만.
-- **루트 `page.tsx`는 `/queue` redirect 전용.** 여기에 화면을 그리지 않는다.
+- **루트 `/`는 홈(요약 대시보드).** `app/(dashboard)/page.tsx`가 셸 안에서 그린다. redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md). 목록형(A)의 변형 "요약형"이며 새 패턴이 아니다.
 - **`packages/ui`에 도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다.
 - **`@galley/ui` 딥 임포트 금지**(`@galley/ui/src/...` ✗). 공개 배럴만.
 - **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·SQLite 경로는 `.env`.
