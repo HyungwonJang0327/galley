@@ -12,6 +12,7 @@
 - [x] 모노레포 뼈대 + `@galley/ui` 폴더 구조·tsup·exports·no-restricted-imports (2026-09-08 `bf79030`)
 - [x] `@galley/pipeline`·`apps/dashboard` 스캐폴드 (2026-09-08 `2dc3c2a`·`efe8223`)
 - [x] CI·gitleaks·main 보호 (2026-09-08 `2f638db`·`151ce31`)
+- [x] **셸·Select 유지보수 fix**(사용자 스펙, PR #41): AppShell Content만 스크롤 (2026-09-10 `f6d3ef6`) · Select 팝업 폭/높이·트리거 폭·공통 ItemContent (2026-09-10 `97fe37a`). 규칙은 decisions/layout.md 갱신 이력.
 
 ---
 

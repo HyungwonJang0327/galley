@@ -103,7 +103,7 @@
 ### 7. 구현 매핑
 
 - `app/(dashboard)/layout.tsx` 하나에 TopBar·Sidebar 고정. 루트 `/`는 `app/(dashboard)/page.tsx` = 홈(요약형). redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md).
-- `@galley/ui`(도메인 단어 없음): components/ Button·Badge·Card·PageHeader / patterns/ AppShell·SidebarGroup·SidebarItem·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar / primitives/ Tabs·Menu·Checkbox·Tooltip·Dialog·Select.
+- `@galley/ui`(도메인 단어 없음): components/ Button·Badge·Card·PageHeader / patterns/ AppShell·SidebarGroup·SidebarItem·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar / primitives/ Tabs·Menu·Checkbox·Tooltip·Dialog·Select(+ 내부 공통 ItemContent, 배럴 비노출).
 - `apps/dashboard`: 라우트, 사이드바 메뉴 정의(라벨·경로·아이콘 배열 1개), 상태→Badge variant 매핑, 데이터 페칭.
 
 ## 기각된 대안
@@ -121,3 +121,5 @@
 - 2026-09-08 IA 재정비: 사이드바를 사용 흐름 순으로 재구성(§3), TopBar 워크스페이스 탭 제거(§2), 화면별 레이아웃 추가(§4). decisions/navigation.md 신설. 사용자 프롬프트가 §3 고정 결정 변경 승인.
 - 2026-09-09 홈 화면 추가: 목록형(A)의 변형 **"요약형"**(§4 화면별 적용). 루트 `/`=홈으로 결정 변경(decisions/navigation.md 갱신 이력)에 따라 §7 구현 매핑도 redirect→홈으로 갱신. 셋째 패턴은 만들지 않음(요약형은 A 변형).
 - 2026-09-09 근거 수집 구조(decisions/evidence-collection.md): 타임라인 단계 5→**6**(근거 검증을 본문 직후에 추가). 실행 상세에 근거 수집·검증 줄 펼침 표시, 좌 목록·홈 "지금 할 일"에 "근거 없음 n", 큐 행에 "근거 n건"·⋮ "근거 편집", 설정 리포 연결 행 확장. 패턴 추가 없음.
+- 2026-09-10 **셸 스크롤 구조 확정**(사용자 스펙, PR #41): AppShell 루트 = `100dvh` 두 행 grid(`--ui-topbar-height` / 1fr, overflow hidden), 두 번째 행 = `--ui-sidebar-width` | 1fr(min-height 0). **TopBar·Sidebar 고정, 스크롤은 Content(·Sidebar 자체) 안에서만** — html/body는 `height 100%; overflow hidden`으로 문서 스크롤 없음. 패딩은 Content 안쪽 래퍼(스크롤바는 Content 우측 끝). 접힘은 열 폭만 변경.
+- 2026-09-10 **Select 규칙 확정**(사용자 스펙, PR #41): 팝업 `width: max-content; min-width: var(--anchor-width)`, 상한 토큰 `--ui-select-popup-max-width`(min(480px, 100vw−32)) · `--ui-select-popup-max-height`(min(360px, 100vh−32)) + 세로 스크롤(열릴 때 선택 항목 보임). **트리거 폭은 부모가 정한다**(width 100%·min-width 0, 값 nowrap+ellipsis) — 앱은 컨테이너로 폭 지정. 아이템 레이아웃은 공통 **`ItemContent`**({ label, description?, meta? }: 본문 열 라벨 line-clamp 2 + overflow-wrap anywhere / 보조 한 줄 ellipsis / 우측 메타 tabular-nums)로 Select·Menu(UM2)가 공유. Menu는 Phase 1 큐 ⋮(AN5) 직전에 만든다.
