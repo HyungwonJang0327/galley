@@ -1,0 +1,49 @@
+.content {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+/* 본문 열: 줄어들 수 있어야(min-width 0) 보조 텍스트가 ellipsis로 잘린다. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+/* 라벨: 두 줄까지, 그 이상은 ellipsis. */
+.label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-leading-tight);
+}
+
+/* 보조: 한 줄, 넘치면 ellipsis. */
+.description {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+  font-weight: var(--ui-weight-regular);
+  line-height: var(--ui-leading-tight);
+}
+
+/* 우측 메타: 줄어들지 않고 오른쪽 끝. */
+.meta {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

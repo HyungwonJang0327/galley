@@ -1,9 +1,11 @@
+/* 트리거 폭은 부모가 정한다(width 100%·min-width 0). 내용이 늘리지 않고 값은 ellipsis. */
 .trigger {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--ui-space-2);
-  min-width: 160px;
+  width: 100%;
+  min-width: 0;
   height: var(--ui-control-height);
   padding: 0 var(--ui-space-2) 0 var(--ui-space-3);
   border: 1px solid var(--ui-color-border);
@@ -48,15 +50,22 @@
   color: var(--ui-color-text-muted);
 }
 
+/* Positioner는 위치만. 폭은 팝업이 정한다(트리거 폭에 묶지 않는다). */
 .positioner {
   z-index: 1;
   outline: 0;
 }
 
+/* 팝업: 내용 폭으로 넓어지되(max-content) 트리거보다 좁아지지 않고(--anchor-width), 상한은 토큰.
+   높이도 토큰 상한(뷰포트 여유 --available-height와 작은 쪽) 안에서 세로 스크롤. 열릴 때 선택 항목은
+   Base UI(floating-ui 리스트 내비)가 보이는 위치로 스크롤한다. */
 .popup {
+  box-sizing: border-box;
+  width: max-content;
   min-width: var(--anchor-width);
-  max-height: var(--available-height);
-  overflow: auto;
+  max-width: var(--ui-select-popup-max-width);
+  max-height: min(var(--ui-select-popup-max-height), var(--available-height));
+  overflow-y: auto;
   padding: var(--ui-space-1);
   border: 1px solid var(--ui-color-border);
   border-radius: var(--ui-radius-md);
@@ -72,9 +81,9 @@
   flex-direction: column;
 }
 
+/* 항목: [indicator] + ItemContent(본문 열 / 우측 메타). */
 .item {
-  display: grid;
-  grid-template-columns: var(--ui-space-4) 1fr auto;
+  display: flex;
   align-items: center;
   gap: var(--ui-space-2);
   padding: var(--ui-space-2) var(--ui-space-2);
@@ -89,6 +98,10 @@
   color: var(--ui-color-accent);
 }
 
+.item[data-highlighted] span {
+  color: inherit;
+}
+
 .item[data-disabled] {
   color: var(--ui-color-text-muted);
   cursor: not-allowed;
@@ -97,35 +110,7 @@
 .indicator {
   display: inline-flex;
   justify-content: center;
+  width: var(--ui-space-4);
+  flex-shrink: 0;
   color: var(--ui-color-accent);
-}
-
-.itemBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-1);
-  min-width: 0;
-}
-
-.itemText {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: var(--ui-weight-medium);
-}
-
-.itemDescription {
-  color: var(--ui-color-text-muted);
-  font-size: var(--ui-text-xs);
-}
-
-.item[data-highlighted] .itemDescription,
-.item[data-highlighted] .itemTrailing {
-  color: var(--ui-color-accent);
-}
-
-.itemTrailing {
-  color: var(--ui-color-text-muted);
-  font-size: var(--ui-text-xs);
-  white-space: nowrap;
 }

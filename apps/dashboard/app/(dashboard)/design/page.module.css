@@ -34,3 +34,8 @@
   font-size: var(--ui-text-sm);
   color: var(--ui-color-text-muted);
 }
+
+/* 트리거 폭은 부모가 정한다 — 긴 선택값 데모용 고정 폭 컨테이너 */
+.selectBox {
+  width: 200px;
+}
