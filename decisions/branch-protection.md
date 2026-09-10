@@ -5,7 +5,7 @@
 `main`에 표준 보호를 적용한다:
 
 - **PR 필수** — 직접 push 금지, 브랜치→PR로만 머지.
-- **상태 체크 필수** — CI(`verify`, `gitleaks`)가 통과해야 머지.
+- **상태 체크 필수** — CI(`verify`, `gitleaks`, `layout`)가 통과해야 머지. strict(브랜치가 main 최신이어야 머지).
 - **force-push·브랜치 삭제 금지.**
 - 저장소 머지 옵션은 **Rebase만 허용**(squash·merge commit 비활성).
 - 리뷰 필수는 끔(솔로라 자기 PR 승인 불가).
@@ -33,3 +33,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-10 필수 상태 체크에 `layout`(레이아웃 실측 잡, decisions/layout-measurement.md 2-B) 추가. PR #45에서 초록 3회 확인 뒤 사용자가 GitHub 설정에서 등록. API로 확인한 값: contexts `verify`·`gitleaks`·`layout`, strict.
