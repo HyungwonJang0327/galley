@@ -65,7 +65,7 @@
   - 완료조건: 메뉴 7개(주제:큐 / 실행:실행·이력 / 발행:발행 대기 / 설정:리포·모델·프롬프트) + 외부 2개 렌더, /queue/candidates·/queue/done·/runs/active·/publish/zenn·/publish/velog 5개가 전부 새 경로로 redirect(308 스모크 확인), 배지 자리 있음(값 미주입. 실값은 사이드바 서버 컴포넌트에서 직접 조회).
 - [x] **AN3** (2026-09-09 `2b4a51a`) fe — 루트 진입 분기(승인 대기 ≥1 → /runs, else /queue). 커밋: `feat(dashboard): 루트 진입 시 승인 대기 여부로 분기`
   - 완료조건: 루트 `/`가 승인 대기 유무로 분기(스모크 `/`→`/queue`). Run 스키마(B1e) 전까지 카운트 0/더미(`getPendingApprovalCount`) → 사실상 /queue. 홈 화면 없음.
-- [ ] **AN4** fe — 큐 화면 탭 4개(?tab=) + 카테고리 필터. **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 완료(2026-09-09), A5b 매핑도 완료(2026-09-11) → 착수 가능(가짜 데이터/행 금지는 그대로). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
+- [x] **AN4** (2026-09-11 `adce8ba`·`d3ac9e2`·`15460c7`, feat/queue-tabs, A5c와 한 PR) fe — 큐 화면 탭 4개(?tab= waiting·candidates·hold·done) + 후보 탭 카테고리 필터(?category=). 검색·"다음 실행" 표시·DnD는 범위 밖(A6a 등). **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 완료(2026-09-09), A5b 매핑도 완료(2026-09-11) → 착수 가능(가짜 데이터/행 금지는 그대로). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
 - [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). **의존: AN4 행**(A4b·A5a). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
   - **선행 UM2**(ui): Base UI Menu 래퍼 — 아이템은 Select와 같은 공통 `ItemContent`({ label, description?, meta? }) 사용(2026-09-10 Select 수정에서 분리). 갤러리 섹션 추가 + `verify:layout` 통과.
@@ -95,7 +95,7 @@
 
 - [x] **A5a** (2026-09-09 `e9ca423`, feat/ui-list-patterns) ui — `ListToolbar`(tabs·search·filters 슬롯) + `ListToolbarTab`(?tab= 링크 탭: label·count·isActive·render) / `ListRow`(<li>: leading·title·meta·trailing·actions 슬롯, isActive) + `ListRows`(<ul>). 행 전체는 링크 아님(제목을 앱이 Link로 감쌈). 테스트 13개·스토리. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
 - [x] **A5b** (2026-09-11 `c3efdbe`, PR #49) fe — 큐 상태→Badge variant 매핑 `lib/queue-status-badge.ts`(`queueStatusBadgeVariant`): 대기 info · 후보/보류 neutral · 완료 success(보류는 decisions/layout.md §5 누락 → 사용자 결정 neutral, `080cecf`). Run 상태(실행 중·승인 대기·실패)는 B1e 뒤. 테스트 4개. 커밋: `feat(dashboard): 큐 상태→Badge variant 매핑 추가`
-- [ ] **A5c** fe — 큐 데이터 페칭(pipeline에서 섹션별 주제 로드) → AN4 탭 + A5a 행에 공급. (기존 "3화면" 폐지 — 1화면+탭은 AN4.) 커밋: `feat(dashboard): 큐 데이터 페칭 배선`
+- [x] **A5c** (2026-09-11 `d67705f`·`06ce55e`, AN4와 한 PR) fe — 큐 데이터 페칭(pipeline `loadQueueSections`: 요청마다 파일→DB 재적재 후 섹션별 읽기) → AN4 탭 + A5a 행에 공급. 선행으로 env 위치 결정(루트 `.env` — decisions/env-location.md, `55ff2eb`·`eb1715b`). (기존 "3화면" 폐지 — 1화면+탭은 AN4.) 커밋: `feat(dashboard): 큐 데이터 페칭 배선`
   - 완료조건: 대기/후보/보류/완료 섹션 데이터가 탭별로 렌더된다.
 
 ### A6. 큐 편집 — [B] Phase 1-A #4

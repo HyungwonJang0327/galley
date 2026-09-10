@@ -8,6 +8,8 @@
   - 대시보드: `apps/dashboard/next.config.mjs`가 `process.loadEnvFile(<루트>/.env)`로 읽는다. 파일이 없으면 건너뛴다(CI에는 `.env`가 없다).
   - Prisma CLI: `packages/pipeline` 스크립트가 `node --env-file=../../.env`로 prisma를 실행한다. `prisma generate`(postinstall)는 `DATABASE_URL` 없이 돈다.
   - 워커·인덱싱 CLI(Phase 1-B): 같은 방식(`node --env-file`).
+- 이미 설정된 환경 변수가 `.env`보다 우선한다(`process.loadEnvFile`·`--env-file` 모두 덮어쓰지 않음 — 2026-09-11 확인). 픽스처·CI는 셸 env로 값을 바꿔 쓸 수 있다.
+- `DATABASE_URL`의 상대경로(`file:./dev.db`)는 Prisma CLI·대시보드 런타임 모두 `packages/pipeline/prisma/schema.prisma` 기준으로 풀린다(2026-09-11 임시 DB로 확인). 어느 프로세스가 읽어도 같은 DB다.
 - 패키지별 `.env`(`apps/dashboard/.env`·`packages/pipeline/.env`)는 두지 않는다.
 - 루트 `package.json` `engines.node`를 `>=20.12`로 올린다(`process.loadEnvFile`이 들어온 버전. `--env-file`은 20.6).
 
