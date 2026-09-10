@@ -88,5 +88,5 @@
 ## 미결 질문
 
 - ~~apps/dashboard 단위 테스트 인프라 도입 여부~~ **해소(2026-09-10)** → decisions/dashboard-testing.md(vitest+happy-dom+testing-library, ui와 동일). ~~레이아웃 실측 스크립트 리포 반영~~ **해소(2026-09-10)** → decisions/layout-measurement.md(`apps/dashboard/scripts/verify-layout/`, 수동 `verify:layout`).
-- ~~실측 스크립트 CI 통합(2-B)~~ **해소(2026-09-10)** → decisions/layout-measurement.md 결정 변경: CI `layout` 잡을 `verify`와 병렬로 항상 실행 + 실패 시 스크린샷 artifact(A). required check 등록은 몇 PR 초록 확인 뒤 사용자가 GitHub 설정에서.
+- ~~실측 스크립트 CI 통합(2-B)~~ **해소(2026-09-10)** → decisions/layout-measurement.md 결정 변경: CI `layout` 잡을 `verify`와 병렬로 항상 실행 + 실패 시 스크린샷 artifact(A). required check 등록 완료(2026-09-10, 사용자 — decisions/branch-protection.md).
 - ~~사이드바 IA 재정비~~ **해소(2026-09-08)** → decisions/navigation.md 확정. layout.md §2~§4·라우트 표·CLAUDE.md·todo AN1~6 반영. 구현은 승인 후 AN1부터.
