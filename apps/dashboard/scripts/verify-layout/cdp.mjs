@@ -49,6 +49,19 @@ const CHROME_CANDIDATES = {
 const onPath = (name) =>
   (process.env.PATH ?? '').split(delimiter).some((dir) => dir && existsSync(join(dir, name)));
 
+/**
+ * 임시 프로필 폴더 정리. Linux에서는 브라우저 프로세스가 끝난 뒤에도 자식(GPU·네트워크 등)이 프로필에
+ * 잠깐 쓰기 때문에 rmdir이 ENOTEMPTY로 경합한다 → 재시도. 정리 실패는 실측 결과와 무관하므로 던지지 않는다
+ * (finally에서 던지면 결과 출력 전에 죽고, launchChrome 실패 경로에서는 원래 오류를 가린다).
+ */
+export function removeDir(dir) {
+  try {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (error) {
+    console.warn(`임시 폴더 정리 실패(무시): ${dir} — ${error.message}`);
+  }
+}
+
 export function findChrome() {
   if (process.env.GALLEY_CHROME) return process.env.GALLEY_CHROME;
   const found = (CHROME_CANDIDATES[process.platform] ?? []).find((candidate) =>
@@ -96,7 +109,7 @@ export async function launchChrome({ windowSize = '1400,900' } = {}) {
         chrome.kill();
       });
     }
-    rmSync(profile, { recursive: true, force: true });
+    removeDir(profile);
   };
 
   try {
