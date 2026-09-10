@@ -22,6 +22,7 @@
 | ⑨    | 시크릿 스캔          | gitleaks (CI + pre-commit)                            | decisions/secret-scanning.md              |
 | ⑩    | dashboard 테스트     | vitest + happy-dom + testing-library (ui와 동일)      | decisions/dashboard-testing.md            |
 | ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트 + CI `layout` 잡(병렬)   | decisions/layout-measurement.md           |
+| ⑫    | 환경 변수 파일       | 루트 `.env` 하나 (Node 내장 로더)                     | decisions/env-location.md                 |
 | 공통 | 모노레포             | pnpm (apps/dashboard + @galley/ui + @galley/pipeline) | decisions/monorepo.md                     |
 | 공통 | UI 기반              | Base UI(헤드리스), shadcn/ui 기각                     | decisions/base-ui-over-shadcn.md          |
 

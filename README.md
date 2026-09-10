@@ -38,7 +38,8 @@ packages/pipeline   @galley/pipeline — 단계 실행·상태머신·모델 어
 
 ```bash
 pnpm install
-cp .env.example .env          # 경로·키 채우기
+cp .env.example .env          # 루트 하나만(decisions/env-location.md). BLOG_DIR·DATABASE_URL 등 채우기
+pnpm --filter @galley/pipeline db migrate deploy  # SQLite 스키마 적용(루트 .env의 DATABASE_URL)
 pnpm --filter dashboard dev    # 대시보드 로컬 실행
 pnpm lint && pnpm typecheck && pnpm test
 pnpm --filter @galley/ui build # 디자인 시스템 단독 빌드
