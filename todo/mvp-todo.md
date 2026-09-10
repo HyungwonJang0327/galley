@@ -94,7 +94,7 @@
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
 
 - [x] **A5a** (2026-09-09 `e9ca423`, feat/ui-list-patterns) ui — `ListToolbar`(tabs·search·filters 슬롯) + `ListToolbarTab`(?tab= 링크 탭: label·count·isActive·render) / `ListRow`(<li>: leading·title·meta·trailing·actions 슬롯, isActive) + `ListRows`(<ul>). 행 전체는 링크 아님(제목을 앱이 Link로 감쌈). 테스트 13개·스토리. 커밋: `feat(ui): ListToolbar·ListRow 패턴 추가`
-- [x] **A5b** (2026-09-11 `c2b2780`, feat/dashboard-status-badge) fe — 큐 상태→Badge variant 매핑 `lib/queue-status-badge.ts`(`queueStatusBadgeVariant`): 대기 info · 후보/보류 neutral · 완료 success(보류는 decisions/layout.md §5 누락 → 사용자 결정 neutral, `b823564`). Run 상태(실행 중·승인 대기·실패)는 B1e 뒤. 테스트 4개. 커밋: `feat(dashboard): 큐 상태→Badge variant 매핑 추가`
+- [x] **A5b** (2026-09-11 `c3efdbe`, PR #49) fe — 큐 상태→Badge variant 매핑 `lib/queue-status-badge.ts`(`queueStatusBadgeVariant`): 대기 info · 후보/보류 neutral · 완료 success(보류는 decisions/layout.md §5 누락 → 사용자 결정 neutral, `080cecf`). Run 상태(실행 중·승인 대기·실패)는 B1e 뒤. 테스트 4개. 커밋: `feat(dashboard): 큐 상태→Badge variant 매핑 추가`
 - [ ] **A5c** fe — 큐 데이터 페칭(pipeline에서 섹션별 주제 로드) → AN4 탭 + A5a 행에 공급. (기존 "3화면" 폐지 — 1화면+탭은 AN4.) 커밋: `feat(dashboard): 큐 데이터 페칭 배선`
   - 완료조건: 대기/후보/보류/완료 섹션 데이터가 탭별로 렌더된다.
 
