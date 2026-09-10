@@ -94,7 +94,7 @@
 
 ### 5. 상태 배지 색 (도메인↔variant 매핑은 apps/dashboard 어댑터. ui는 variant 이름만)
 
-후보 회색 / 대기 블루 / 실행 중 블루+펄스 / 승인 대기 주황 / 완료 초록 / 실패 빨강. 배지는 작게 텍스트 옆.
+후보 회색 / 보류 회색 / 대기 블루 / 실행 중 블루+펄스 / 승인 대기 주황 / 완료 초록 / 실패 빨강. 배지는 작게 텍스트 옆.
 
 ### 6. 안 가져오는 것
 
@@ -124,3 +124,4 @@
 - 2026-09-10 **셸 스크롤 구조 확정**(사용자 스펙, PR #41): AppShell 루트 = `100dvh` 두 행 grid(`--ui-topbar-height` / 1fr, overflow hidden), 두 번째 행 = `--ui-sidebar-width` | 1fr(min-height 0). **TopBar·Sidebar 고정, 스크롤은 Content(·Sidebar 자체) 안에서만** — html/body는 `height 100%; overflow hidden`으로 문서 스크롤 없음. 패딩은 Content 안쪽 래퍼(스크롤바는 Content 우측 끝). 접힘은 열 폭만 변경.
 - 2026-09-10 **Select 규칙 확정**(사용자 스펙, PR #41): 팝업 `width: max-content; min-width: var(--anchor-width)`, 상한 토큰 `--ui-select-popup-max-width`(min(480px, 100vw−32)) · `--ui-select-popup-max-height`(min(360px, 100vh−32)) + 세로 스크롤(열릴 때 선택 항목 보임). **트리거 폭은 부모가 정한다**(width 100%·min-width 0, 값 nowrap+ellipsis) — 앱은 컨테이너로 폭 지정. 아이템 레이아웃은 공통 **`ItemContent`**({ label, description?, meta? }: 본문 열 라벨 line-clamp 2 + overflow-wrap anywhere / 보조 한 줄 ellipsis / 우측 메타 tabular-nums)로 Select·Menu(UM2)가 공유. Menu는 Phase 1 큐 ⋮(AN5) 직전에 만든다.
 - 2026-09-10 셸 스크롤·Select 규칙의 자동 검증은 실측 스크립트 `pnpm --filter dashboard verify:layout`(decisions/layout-measurement.md). 레이아웃 컴포넌트·갤러리를 바꾸는 항목의 완료 조건.
+- 2026-09-11 §5에 **보류 회색** 추가(A5b 구현 중 발견한 누락 — 큐 상태 4개 중 보류만 색이 없었음). 사용자 결정 `neutral`: 후보와 같이 "진행하지 않는 주제", 주황은 승인 대기 전용으로 남긴다. 기각: 주황(승인 대기와 신호 겹침)·빨강(실패와 겹침, 과함).
