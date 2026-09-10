@@ -153,7 +153,7 @@ Galley/
 `todo/{역할}-todo 확인 → 브랜치(type/scope-desc) → 구현 → 테스트 → 기능 최소 단위마다 즉시 커밋 → /log → PR → CI 초록 → rebase merge → 브랜치 삭제`
 
 - main은 보호됨(직접 push 금지, PR·CI 필수, force-push 금지). 브랜치·머지 규칙은 [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md) 브랜치 절.
-- 레이아웃 컴포넌트(AppShell·Sidebar·TopBar·ListRow 등)를 건드리거나 갤러리(`/design`)를 바꾸면 `pnpm --filter dashboard verify:layout` 통과가 완료 조건(decisions/layout-measurement.md). 스크립트는 갤러리 aria-label에 결합되어 있으니 갤러리를 바꾸면 스크립트도 맞춘다.
+- 레이아웃 컴포넌트(AppShell·Sidebar·TopBar·ListRow 등)를 건드리거나 갤러리(`/design`)를 바꾸면 `pnpm --filter dashboard verify:layout` 통과가 완료 조건(decisions/layout-measurement.md). 스크립트는 갤러리 aria-label에 결합되어 있으니 갤러리를 바꾸면 스크립트도 맞춘다. CI `layout` 잡이 PR마다 같은 스크립트를 돌린다(실패 시 스크린샷 artifact).
 
 ## 8. 커밋 단위 규칙
 

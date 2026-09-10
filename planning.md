@@ -21,7 +21,7 @@
 | ⑧    | turborepo            | 미도입(pnpm --filter)                                 | decisions/turborepo.md                    |
 | ⑨    | 시크릿 스캔          | gitleaks (CI + pre-commit)                            | decisions/secret-scanning.md              |
 | ⑩    | dashboard 테스트     | vitest + happy-dom + testing-library (ui와 동일)      | decisions/dashboard-testing.md            |
-| ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트(수동, CI 보류)           | decisions/layout-measurement.md           |
+| ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트 + CI `layout` 잡(병렬)   | decisions/layout-measurement.md           |
 | 공통 | 모노레포             | pnpm (apps/dashboard + @galley/ui + @galley/pipeline) | decisions/monorepo.md                     |
 | 공통 | UI 기반              | Base UI(헤드리스), shadcn/ui 기각                     | decisions/base-ui-over-shadcn.md          |
 
@@ -88,5 +88,5 @@
 ## 미결 질문
 
 - ~~apps/dashboard 단위 테스트 인프라 도입 여부~~ **해소(2026-09-10)** → decisions/dashboard-testing.md(vitest+happy-dom+testing-library, ui와 동일). ~~레이아웃 실측 스크립트 리포 반영~~ **해소(2026-09-10)** → decisions/layout-measurement.md(`apps/dashboard/scripts/verify-layout/`, 수동 `verify:layout`).
-- **실측 스크립트 CI 통합(2-B).** 전제였던 로컬 10회 연속 통과는 확인됨(2026-09-10, `--no-build` 68/68 ×10, 23~24s/회). 선택지 제시됨(A: `verify`와 병렬 별도 잡 추천 — worklog 2026-09-10), 결정 대기.
+- ~~실측 스크립트 CI 통합(2-B)~~ **해소(2026-09-10)** → decisions/layout-measurement.md 결정 변경: CI `layout` 잡을 `verify`와 병렬로 항상 실행 + 실패 시 스크린샷 artifact(A). required check 등록은 몇 PR 초록 확인 뒤 사용자가 GitHub 설정에서.
 - ~~사이드바 IA 재정비~~ **해소(2026-09-08)** → decisions/navigation.md 확정. layout.md §2~§4·라우트 표·CLAUDE.md·todo AN1~6 반영. 구현은 승인 후 AN1부터.
