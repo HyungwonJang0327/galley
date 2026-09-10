@@ -24,6 +24,30 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
+  # 레이아웃 실측(decisions/layout-measurement.md): dashboard 프로덕션 빌드 → next start → /design 을
+  # 러너 기본 설치 Chrome(google-chrome)으로 열어 AppShell 스크롤·Select 팝업을 실측. verify와 병렬.
+  layout:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @galley/ui build
+      - run: pnpm --filter dashboard verify:layout --out ${{ runner.temp }}/layout-shots
+      # 실패 원인 진단용 스크린샷(shell-scroll.png · select-N.png)
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-screenshots
+          path: ${{ runner.temp }}/layout-shots
+          if-no-files-found: ignore
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:
