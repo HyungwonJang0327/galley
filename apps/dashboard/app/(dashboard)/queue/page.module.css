@@ -1,0 +1,10 @@
+.note {
+  margin: 0;
+  padding-block: var(--ui-space-5);
+  color: var(--ui-color-text-muted);
+}
+
+/* Select 트리거 폭은 부모가 정한다(decisions/layout.md Select 규칙). */
+.filter {
+  width: calc(var(--ui-space-6) * 6);
+}
