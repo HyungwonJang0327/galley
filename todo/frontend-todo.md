@@ -14,6 +14,7 @@
 - AN4 — 큐 탭 4개(?tab=) + 카테고리 필터 (선행 A5a·A5b)
 - AN5 — 행 ⋮ 이동/실행 메뉴
 - AN6 — Phase 2 빈 페이지(/runs/history·/publish)
+- AN7 — 큐 헤더 "파일에서 다시 불러오기"(파일→DB 수동 재적재, AI 호출 없음)
 - AH2 — 사이드바 홈 항목 + TopBar Galley→/ 링크
 - AH3 — 홈 골격(app/(dashboard)/page.tsx, 기존 redirect 삭제 → AN3/A3c 대체) + 다음 스케줄 유틸 + StatTile 4개
 - AH4 — 홈 "다음 실행" 카드(대기 큐 A4d 연결)

@@ -60,7 +60,7 @@
 
 **큐 /queue — 목록형(A)**
 
-- h1 "주제". 우측 `주제 추가`(보조) + `맨 위 실행`(주요, 블루).
+- h1 "주제". 우측 `주제 추가`(보조) + `맨 위 실행`(주요, 블루) + `파일에서 다시 불러오기`(보조, 결과 한 줄 표시 — decisions/queue-sync-direction.md 수동 갱신 버튼).
 - 툴바: 탭(대기 n / 후보 n / 보류 / 완료) · 검색 · 카테고리 필터. 카테고리 = 주제_큐.md 후보 섹션 `###` 소제목. 탭 4개 = md 섹션 4개 1:1.
 - 행 = 제목 · 보조(카테고리 · 근거 리포 · **근거 n건**) · 우측 상태 배지 · ⋮(대기로 / 후보로 / 보류로 / **근거 편집** / 지금 실행). "근거 편집" = 연결된 분석 글 목록 보기·추가·제거 Dialog(리포 인덱스 검색 포함).
 - 대기 탭만 DnD, 맨 위 행에 "다음 실행" 표시. 완료 탭 행 = 제목 · 완료일 · 실행 상세 링크(/runs?id=).
@@ -126,3 +126,4 @@
 - 2026-09-10 셸 스크롤·Select 규칙의 자동 검증은 실측 스크립트 `pnpm --filter dashboard verify:layout`(decisions/layout-measurement.md). 레이아웃 컴포넌트·갤러리를 바꾸는 항목의 완료 조건.
 - 2026-09-11 §5에 **보류 회색** 추가(A5b 구현 중 발견한 누락 — 큐 상태 4개 중 보류만 색이 없었음). 사용자 결정 `neutral`: 후보와 같이 "진행하지 않는 주제", 주황은 승인 대기 전용으로 남긴다. 기각: 주황(승인 대기와 신호 겹침)·빨강(실패와 겹침, 과함).
 - 2026-09-12 **Menu 규칙 확정**(UM2, 에이전트 기본값을 사용자가 그대로 확정): 데이터형 API — `items`(항목 id·label·description?·meta?·disabled?·disabledReason? | `{ type: 'separator' }`) · `onSelect(id)`(고르면 닫힘) · `trigger`(요소, props·ref를 DOM 버튼까지 넘겨야 함 — 래퍼 컴포넌트 금지) · `align` 기본 `end`(행 끝 ⋮) · open 비제어. 아이템은 Select와 같은 `ItemContent`. 팝업 `width: max-content; min-width: max(var(--anchor-width), --ui-menu-popup-min-width)`, 상한 `--ui-menu-popup-max-width`, 높이는 `--available-height` 안 스크롤. 토큰 `--ui-menu-popup-min-width` **160px** · `--ui-menu-popup-max-width` **min(320px, 100vw−32)** — Select(480)보다 좁게: 액션 메뉴는 짧은 동사 라벨, ⋮ 트리거가 작아 최소 폭 필요. 자동 검증은 verify:layout `menu.mjs`.
+- 2026-09-12 §4 큐 헤더에 `파일에서 다시 불러오기`(보조) 추가 — 사용자 결정(queue-sync-direction 수동 갱신 버튼). TopBar 전역 버튼안은 기각(§2 유지).
