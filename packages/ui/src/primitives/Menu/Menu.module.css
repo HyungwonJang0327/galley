@@ -1,0 +1,55 @@
+/* Positioner는 위치만. 폭은 팝업이 정한다. */
+.positioner {
+  z-index: 1;
+  outline: 0;
+}
+
+/* 팝업: 내용 폭(max-content)으로 넓어지되 트리거·최소 폭 토큰보다 좁아지지 않고, 상한은 토큰.
+   높이는 뷰포트 여유(--available-height) 안에서 세로 스크롤. */
+.popup {
+  box-sizing: border-box;
+  width: max-content;
+  min-width: max(var(--anchor-width), var(--ui-menu-popup-min-width));
+  max-width: var(--ui-menu-popup-max-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  padding: var(--ui-space-1);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-color-surface);
+  box-shadow: var(--ui-shadow-popover);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  outline: 0;
+}
+
+/* 항목: ItemContent(본문 열 / 우측 메타). Select 항목과 같은 여백·강조. */
+.item {
+  display: flex;
+  align-items: center;
+  padding: var(--ui-space-2);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-color-text);
+  cursor: default;
+  outline: 0;
+}
+
+.item[data-highlighted] {
+  background-color: var(--ui-color-accent-tint);
+  color: var(--ui-color-accent);
+}
+
+.item[data-highlighted] span {
+  color: inherit;
+}
+
+.item[data-disabled] {
+  color: var(--ui-color-text-muted);
+  cursor: not-allowed;
+}
+
+.separator {
+  height: 1px;
+  margin: var(--ui-space-1) 0;
+  background-color: var(--ui-color-border);
+}
