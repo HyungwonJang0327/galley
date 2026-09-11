@@ -8,6 +8,7 @@
 - A2a Button · A2b Badge · A2c Card · A2d PageHeader (각 폴더+테스트+스토리)
 - A3a — AppShell·SidebarGroup·SidebarItem·TopBarChip 패턴(표현 전용, `isActive` prop)
 - A5a — ListToolbar·ListRow 패턴 (큐 탭 화면 AN4가 소비)
+- UM2 — Menu 프리미티브(Base UI 래퍼, Select와 ItemContent 공유). 큐 행 ⋮(AN5)가 소비. 갤러리 섹션 + `verify:layout` 포함.
 - AH1 — StatTile(label·value·href·tone default|warning·icon 슬롯) · EmptyState(메시지+선택 액션 버튼). 테스트·스토리. CardGrid는 기존 Card 조합으로 충분하면 생략하고 이유 보고. (홈 요약형이 소비)
 
 ## Phase 1-B

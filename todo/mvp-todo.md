@@ -68,7 +68,7 @@
 - [x] **AN4** (2026-09-11 `1f53733`·`1319787`·`46ca187`, PR #51, A5c와 한 PR) fe — 큐 화면 탭 4개(?tab= waiting·candidates·hold·done) + 후보 탭 카테고리 필터(?category=). 검색·"다음 실행" 표시·DnD는 범위 밖(A6a 등). **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 완료(2026-09-09), A5b 매핑도 완료(2026-09-11) → 착수 가능(가짜 데이터/행 금지는 그대로). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
 - [ ] **AN5** fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). **의존: AN4 행**(A4b·A5a). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
-  - **선행 UM2**(ui): Base UI Menu 래퍼 — 아이템은 Select와 같은 공통 `ItemContent`({ label, description?, meta? }) 사용(2026-09-10 Select 수정에서 분리). 갤러리 섹션 추가 + `verify:layout` 통과.
+  - [x] **선행 UM2** (2026-09-11 `84c2010`·`a302325`·`45c5def`, feat/ui-primitives-menu) ui — Base UI Menu 래퍼 `Menu`(items: 항목 id·label·description·meta·disabled·disabledReason | `{ type: 'separator' }` · onSelect(id) · trigger render · align 기본 end · 비제어 open). 아이템은 Select와 같은 공통 `ItemContent`. 토큰 `--ui-menu-popup-min-width`·`--ui-menu-popup-max-width`. 테스트 6개·스토리. 갤러리 섹션(ListRow ⋮ 3행 + 하단 뒤집힘) + `verify:layout` 105/105. 커밋: `feat(ui): Menu 프리미티브 추가` · `feat(dashboard): 갤러리에 Menu 섹션 추가` · `chore(dashboard): 레이아웃 실측에 Menu 팝업 검사 추가`
   - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
 - [x] **AN6** (2026-09-09 `6bd4c6c`) fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
   - 완료조건: /runs/history·/publish 자리 페이지(Placeholder) 존재(200 스모크), 설정 3개는 기존 유지. 메뉴 링크 유효.
