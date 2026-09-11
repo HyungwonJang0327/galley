@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Dialog, Select } from '@galley/ui';
-import type { SelectItem } from '@galley/ui';
+import { Button, Dialog, ListRow, ListRows, Menu, Select } from '@galley/ui';
+import type { MenuEntry, SelectItem } from '@galley/ui';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.
 
@@ -128,4 +128,79 @@ export function SelectLongValueDemo() {
 /** 화면 하단: 아래 공간이 모자라면 팝업이 위로 뒤집힌다. */
 export function SelectAtBottomDemo() {
   return <StatefulSelect items={WITH_DESCRIPTION_META} label="화면 하단" />;
+}
+
+// Menu 데모 — 트리거 aria-label은 verify:layout(menu.mjs)이 찾는 이름이다.
+const MENU_BASIC: MenuEntry[] = [
+  { id: 'first', label: '첫째' },
+  { id: 'second', label: '둘째' },
+  { id: 'third', label: '셋째', disabled: true, disabledReason: '사용할 수 없는 항목' },
+  { type: 'separator' },
+  { id: 'fourth', label: '넷째' },
+];
+const MENU_DESCRIPTION_META: MenuEntry[] = [
+  { id: 'first', label: '첫째', description: '보조 텍스트 A', meta: '⌘1' },
+  { id: 'second', label: '둘째', description: '보조 텍스트 B', meta: '⌘2' },
+];
+const MENU_LONG: MenuEntry[] = [
+  {
+    id: 'long',
+    label: '아주 긴 라벨 텍스트가 여기에 들어가면 두 줄까지만 보이고 그 이상은 잘린다 사십자',
+    description: '보조 텍스트도 길어지면 한 줄에서 말줄임표로 잘린다 · 두 번째 조각 · 세 번째 조각',
+  },
+  {
+    id: 'path',
+    label: 'packages/pipeline/src/evidence/collectors/repository-index/incremental-reindex-job.ts',
+  },
+];
+
+function labelOf(items: MenuEntry[], id: string): string {
+  const item = items.find((entry) => !('type' in entry) && entry.id === id);
+  return item && !('type' in item) ? item.label : id;
+}
+
+// 요소를 직접 넘긴다 — Menu가 트리거 props·ref를 병합하므로 props를 버리는 래퍼 컴포넌트는 안 된다.
+function menuTrigger(label: string) {
+  return (
+    <Button variant="ghost" size="sm" aria-label={label}>
+      ⋮
+    </Button>
+  );
+}
+
+/** 행 끝 ⋮ 메뉴. 고른 항목을 행 보조 텍스트에 보여준다. */
+function MenuRow({ title, label, items }: { title: string; label: string; items: MenuEntry[] }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  return (
+    <ListRow
+      title={title}
+      meta={selected ? `선택: ${selected}` : '⋮를 눌러 메뉴 열기'}
+      actions={
+        <Menu
+          trigger={menuTrigger(label)}
+          items={items}
+          onSelect={(id) => setSelected(labelOf(items, id))}
+        />
+      }
+    />
+  );
+}
+
+export function MenuRowsDemo() {
+  return (
+    <ListRows>
+      <MenuRow title="라벨만 · disabled · 구분선" label="메뉴 기본" items={MENU_BASIC} />
+      <MenuRow title="라벨 + 보조 + 메타" label="메뉴 보조와 메타" items={MENU_DESCRIPTION_META} />
+      <MenuRow
+        title="긴 라벨(40자) · 긴 보조 · 공백 없는 경로"
+        label="메뉴 긴 라벨"
+        items={MENU_LONG}
+      />
+    </ListRows>
+  );
+}
+
+/** 화면 하단: 아래 공간이 모자라면 팝업이 위로 뒤집힌다. */
+export function MenuAtBottomDemo() {
+  return <Menu trigger={menuTrigger('메뉴 화면 하단')} items={MENU_BASIC} onSelect={() => {}} />;
 }
