@@ -12,7 +12,9 @@ import { getQueueSections } from '../../../lib/queue-data';
 import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
+import { reloadQueueAction } from './actions';
 import { CategoryFilter } from './CategoryFilter';
+import { ReloadQueueButton } from './ReloadQueueButton';
 import styles from './page.module.css';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -25,7 +27,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   if (!result.ok) {
     return (
       <>
-        <PageHeader title="큐" />
+        <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
         <Card>
           <p className={styles.note} role="alert">
             {result.error.message}
@@ -40,7 +42,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   return (
     <>
-      <PageHeader title="큐" />
+      <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
       <Card>
         <ListToolbar
           aria-label="큐 섹션"
