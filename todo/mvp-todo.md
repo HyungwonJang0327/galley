@@ -16,7 +16,7 @@
 - [x] **셸·Select 유지보수 fix**(사용자 스펙, PR #41): AppShell Content만 스크롤 (2026-09-10 `f6d3ef6`) · Select 팝업 폭/높이·트리거 폭·공통 ItemContent (2026-09-10 `97fe37a`). 규칙은 decisions/layout.md 갱신 이력.
 - [x] **dashboard 테스트 인프라 + 레이아웃 실측 스크립트**(planning 미결 /decide 1-A·2-A, chore/dashboard-test-infra): vitest+happy-dom+testing-library (2026-09-10 `a40bdd2`) · `scripts/verify-layout/` + `verify:layout` (2026-09-10 `bdf9d24`, 10회 연속 68/68). PR #43. decisions/dashboard-testing.md · layout-measurement.md.
 - [x] **레이아웃 실측 CI 통합**(planning 미결 /decide 2-B → A, ci/layout-job): decisions/layout-measurement.md 결정 변경(수동 → CI `layout` 잡, 2026-09-10 `eb4809b`) · `ci.yml` `layout` 잡(`verify`와 병렬 + 실패 시 `layout-screenshots` artifact, 2026-09-10 `9f27a05`) · CI 1차 실패(Linux 프로필 정리 ENOTEMPTY) fix `removeDir` + 테스트(2026-09-10 `7434578`) · 2차 실패(러너 한글 폰트 없음) `fonts-nanum` 설치(2026-09-10 `33d3b74`). PR #45. required check 등록(2026-09-10, 사용자) → 문서 반영 branch-protection·layout-measurement·CLAUDE.md §7 (2026-09-11 `e599926`, PR #47).
-- [x] **실측 Chrome 기동 대기 30초**(사용자 결정, fix/dashboard-chrome-wait): CI `layout`이 `timeout: DevToolsActivePort`로 2회 실패(PR #55·#57) → `cdp.mjs` DevToolsActivePort 대기 15→30초 (2026-09-12 `d269bc0`). decisions/layout-measurement.md 갱신 이력.
+- [x] **실측 Chrome 기동 대기 30초**(사용자 결정, fix/dashboard-chrome-wait): CI `layout`이 `timeout: DevToolsActivePort`로 2회 실패(PR #55·#57) → `cdp.mjs` DevToolsActivePort 대기 15→30초 (2026-09-12 `01de33d`, PR #58). decisions/layout-measurement.md 갱신 이력.
 
 ---
 
