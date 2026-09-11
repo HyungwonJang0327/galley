@@ -11,6 +11,8 @@ import {
 import styles from './page.module.css';
 import {
   DialogDemo,
+  MenuAtBottomDemo,
+  MenuRowsDemo,
   SelectAtBottomDemo,
   SelectDemo,
   SelectDisabledDemo,
@@ -212,7 +214,19 @@ export default function DesignPage() {
         </Card>
 
         <Card>
-          <h2 className={styles.sectionTitle}>Select · 화면 하단</h2>
+          <h2 className={styles.sectionTitle}>Menu</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              행 끝 ⋮ 메뉴(align end): 라벨만·disabled·구분선 / 라벨+보조+메타 / 긴 라벨·긴
+              보조·공백 없는 경로
+            </span>
+            <MenuRowsDemo />
+          </div>
+        </Card>
+
+        {/* 페이지 맨 아래 카드여야 한다 — verify:layout이 main을 끝까지 스크롤해 뒤집힘을 잰다. */}
+        <Card>
+          <h2 className={styles.sectionTitle}>화면 하단 · Select · Menu</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
               페이지 맨 아래에서 열면 팝업이 위로 뒤집힌다(Base UI 충돌 회피)
@@ -221,6 +235,7 @@ export default function DesignPage() {
               <div className={styles.selectBox}>
                 <SelectAtBottomDemo />
               </div>
+              <MenuAtBottomDemo />
             </div>
           </div>
         </Card>
