@@ -119,7 +119,8 @@ export async function launchChrome({ windowSize = '1400,900' } = {}) {
           const file = join(profile, 'DevToolsActivePort');
           return existsSync(file) ? Number(readFileSync(file, 'utf8').split('\n')[0]) : 0;
         },
-        { label: 'DevToolsActivePort' },
+        // CI 러너에서 Chrome 기동이 기본 15초를 넘긴 적이 있어(2026-09-12, 2회) 30초까지 기다린다.
+        { tries: 120, label: 'DevToolsActivePort' },
       ),
       died,
     ]);
