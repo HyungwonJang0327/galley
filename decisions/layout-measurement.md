@@ -2,9 +2,9 @@
 
 ## 결정
 
-AppShell 스크롤 구조·Select 팝업을 검증한 CDP 실측 스크립트를 리포에 둔다.
+AppShell 스크롤 구조·Select·Menu 팝업을 검증한 CDP 실측 스크립트를 리포에 둔다.
 
-- 위치: `apps/dashboard/scripts/verify-layout/` — `run.mjs`(진입점) · `cdp.mjs`(Chrome 실행·CDP 연결 공통) · `shell-scroll.mjs` · `select.mjs`(검사 모듈). 실행: `pnpm --filter dashboard verify:layout`.
+- 위치: `apps/dashboard/scripts/verify-layout/` — `run.mjs`(진입점) · `cdp.mjs`(Chrome 실행·CDP 연결 공통) · `shell-scroll.mjs` · `select.mjs` · `menu.mjs`(검사 모듈). 실행: `pnpm --filter dashboard verify:layout`.
 - 동작: 프로덕션 빌드(`next build`) → `next start` → `/design`을 headless Chrome으로 열어 실측 → PASS/FAIL 목록 + 종료 코드. `--no-build`(기존 `.next` 재사용) · `--url <base>`(떠 있는 서버 사용) · `--out <dir>`(스크린샷) 옵션.
 - **CI 통합(2-B, 2026-09-10 결정 변경 — 처음엔 수동·CI 미포함이었고 로컬 10회 연속 통과 확인 뒤 별도 결정으로 미뤄 둔 것을 채택)**: `.github/workflows/ci.yml`의 **`layout` 잡**이 `verify`와 **병렬로 항상** 실행된다(install → `@galley/ui` build → **한글 폰트 `fonts-nanum` 설치** → `verify:layout --out`). 러너에 CJK 폰트가 없으면 한글이 notdef 박스로 그려져 텍스트 폭 검사가 실제와 다르게 판정된다. 실패 시 스크린샷(`shell-scroll.png`·`select-N.png`)을 artifact `layout-screenshots`로 올린다. dashboard `next build`가 CI에 들어가는 첫 지점이기도 하다. **required check로 등록됨**(2026-09-10, 사용자가 GitHub 설정에서) — `layout`이 빨간 PR은 머지할 수 없다(decisions/branch-protection.md).
 - **완료 조건 규칙**: 레이아웃 컴포넌트(AppShell·Sidebar·TopBar·ListRow·ListToolbar 등 `packages/ui` patterns)를 건드리는 todo 항목과, 갤러리(`/design`)를 바꾸는 항목의 완료 조건에 "`pnpm --filter dashboard verify:layout` 통과"를 넣는다. 스크립트가 갤러리의 `aria-label`·구조에 결합되어 있으므로 갤러리를 바꾸면 스크립트도 같이 맞춘다.
@@ -40,3 +40,4 @@ AppShell 스크롤 구조·Select 팝업을 검증한 CDP 실측 스크립트를
 - 2026-09-10 구현(`bdf9d24`, PR #43) 후 로컬 `--no-build` 10회 연속 68/68 통과(23~24s/회) 확인 → 2-B(CI 통합) 결정 전제 충족. 선택지 제시(A: `verify`와 병렬 별도 잡 + 실패 시 스크린샷 artifact 추천). 구현 중 확인: `next start`는 SIGTERM으로 안 끝나 SIGKILL 폴백 필요, 잘못된 Chrome 경로는 spawn 'error' 처리 없이는 크래시.
 - 2026-09-10 **결정 변경(2-B)**: 수동·CI 미포함 → **CI `layout` 잡(A, `verify`와 병렬 + 실패 시 스크린샷 artifact)**. 사용자 결정. 기각 B(경로 필터)·C(`verify` 스텝)·D(수동 유지). 로컬 수동 실행 완료 조건 규칙은 그대로. required check 등록은 초록 확인 뒤 별도. CI에서 드러난 Linux 차이 2건: (1) 브라우저 종료 뒤 자식 프로세스가 프로필에 써서 `rmSync`가 ENOTEMPTY → `removeDir`(재시도 + 실패는 경고, 정리 실패가 결과·원래 오류를 가리지 않게), (2) 러너에 한글 폰트 없음 → `fonts-nanum` 설치 스텝.
 - 2026-09-10 `layout`을 **required check로 등록**(PR #45 초록 3회 뒤, 사용자가 GitHub 설정에서). decisions/branch-protection.md 필수 체크 목록 갱신.
+- 2026-09-11 검사 모듈 `menu.mjs` 추가(UM2 — 갤러리 Menu 섹션과 함께, 결정 변경 없음). 트리거는 `button[aria-label]`, 열린 팝업은 `[role="menu"][data-open]`로 찾는다. 갤러리 "화면 하단" 카드는 Select·Menu가 공유하며 페이지 맨 아래여야 한다. 이 스크립트가 happy-dom이 못 잡는 "트리거 래퍼가 props를 버려 메뉴가 안 열림"을 잡았다(worklog 2026-09-11).
