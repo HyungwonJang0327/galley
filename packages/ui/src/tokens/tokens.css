@@ -83,6 +83,11 @@
     360px,
     calc(100vh - var(--ui-space-6))
   ); /* 넘치면 팝업 안에서 스크롤 */
+  --ui-menu-popup-min-width: 160px; /* 작은 트리거(⋮)에서도 이 폭 이상 */
+  --ui-menu-popup-max-width: min(
+    320px,
+    calc(100vw - var(--ui-space-6))
+  ); /* 팝업은 내용 폭, 이 값까지 */
 }
 
 /* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */
