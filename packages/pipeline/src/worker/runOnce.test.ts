@@ -1,10 +1,10 @@
 // 워커 틱 테스트. tick을 직접 여러 번 불러 상태 변화를 본다 — 타이머도 실제 DB도 없다.
 // 비결정성(시각·id)은 deps로 들어오므로 clock을 앞으로 돌려 heartbeat 만료를 만든다.
 import { describe, it, expect, vi } from 'vitest';
-import { HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS, runOnce } from './runOnce';
-import { createMockStepRunner } from '../steps/MockStepRunner';
-import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine';
-import type { ClaimedRun, StepOutcome, WorkerDeps, WorkerRepo } from './WorkerDeps';
+import { HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS, runOnce } from './runOnce.ts';
+import { createMockStepRunner } from '../steps/MockStepRunner.ts';
+import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine.ts';
+import type { ClaimedRun, StepOutcome, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
 
 /** 손으로 옮기는 시계. `advance`로 원하는 만큼 시간을 흘린다. */
 function fakeClock(start = new Date('2026-09-13T00:00:00Z')) {

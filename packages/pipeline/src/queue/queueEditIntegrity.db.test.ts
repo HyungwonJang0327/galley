@@ -7,11 +7,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { importQueueFromFile } from './importQueue';
-import { moveQueueTopic } from './moveQueue';
-import { parseQueue, serializeQueue, type QueueStatus } from './queueFile';
-import { reorderQueueTopic } from './reorderQueue';
-import type { Storage } from '../storage/Storage';
+import { importQueueFromFile } from './importQueue.ts';
+import { moveQueueTopic } from './moveQueue.ts';
+import { parseQueue, serializeQueue, type QueueStatus } from './queueFile.ts';
+import { reorderQueueTopic } from './reorderQueue.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 const STATUSES: QueueStatus[] = ['대기', '후보', '보류', '완료'];

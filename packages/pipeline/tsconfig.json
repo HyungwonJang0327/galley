@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    // Node 24가 타입 스트리핑으로 이 패키지를 그대로 돌린다 — 상대 import에 .ts 확장자가
+    // 필수라 tsc도 허용해야 한다(noEmit일 때만 켤 수 있다). decisions/node-runtime.md
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "bin"]
 }

@@ -1,12 +1,18 @@
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Storage } from './Storage';
+import type { Storage } from './Storage.ts';
 
 const QUEUE_FILENAME = '주제_큐.md';
 
 // BLOG_DIR 아래 파일을 읽고 쓰는 Storage 구현. blogDir는 주입(env는 호출부에서 전달).
 export class LocalFsStorage implements Storage {
-  constructor(private readonly blogDir: string) {}
+  // 파라미터 프로퍼티(`constructor(private x)`)는 Node 타입 스트리핑이 거부한다
+  // — 이 패키지는 빌드 없이 그대로 돈다(decisions/node-runtime.md).
+  private readonly blogDir: string;
+
+  constructor(blogDir: string) {
+    this.blogDir = blogDir;
+  }
 
   private get queuePath(): string {
     return join(this.blogDir, QUEUE_FILENAME);

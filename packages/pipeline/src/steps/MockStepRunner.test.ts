@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { createMockStepRunner } from './MockStepRunner';
-import { StepFailure, toStepFailure } from './StepRunner';
-import { STEP_ORDER } from '../run/stateMachine';
+import { createMockStepRunner } from './MockStepRunner.ts';
+import { StepFailure, toStepFailure } from './StepRunner.ts';
+import { STEP_ORDER } from '../run/stateMachine.ts';
 
 const ctx = (step: (typeof STEP_ORDER)[number], extra: Partial<{ instruction: string }> = {}) => ({
   runId: 'run_1',

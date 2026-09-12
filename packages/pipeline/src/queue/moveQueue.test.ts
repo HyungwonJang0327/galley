@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { moveTopic } from './moveQueue';
-import { parseQueue, serializeQueue } from './queueFile';
+import { moveTopic } from './moveQueue.ts';
+import { parseQueue, serializeQueue } from './queueFile.ts';
 
 const SAMPLE = `# 큐
 

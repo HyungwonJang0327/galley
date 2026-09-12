@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { parsedQueueToRows } from './importQueue';
-import type { ParsedQueue } from './queueFile';
+import { parsedQueueToRows } from './importQueue.ts';
+import type { ParsedQueue } from './queueFile.ts';
 
 describe('parsedQueueToRows', () => {
   test('섹션별 status와 0기반 order를 매기고 category·completedOn을 보존한다', () => {

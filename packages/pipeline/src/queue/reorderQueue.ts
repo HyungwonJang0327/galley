@@ -1,9 +1,9 @@
 // 섹션 안 순서 변경(대기 탭 DnD) → 주제_큐.md 재작성 → DB 재적재.
 // 섹션 간 이동은 moveQueue.ts. 여기서는 같은 섹션 안에서 위치만 바꾼다.
 import type { PrismaClient } from '@prisma/client';
-import type { Storage } from '../storage/Storage';
-import { importQueueFromFile } from './importQueue';
-import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile';
+import type { Storage } from '../storage/Storage.ts';
+import { importQueueFromFile } from './importQueue.ts';
+import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
 
 export interface ReorderQueueTopicInput {
   /** 순서를 바꿀 섹션. */

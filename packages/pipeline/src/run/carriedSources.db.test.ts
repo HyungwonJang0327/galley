@@ -6,8 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { resolveCarriedSources } from './carriedSources';
-import { STEP_ORDER, STEP_ORIGIN, STEP_STATUS, planRerun, type StepName } from './stateMachine';
+import { resolveCarriedSources } from './carriedSources.ts';
+import { STEP_ORDER, STEP_ORIGIN, STEP_STATUS, planRerun, type StepName } from './stateMachine.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

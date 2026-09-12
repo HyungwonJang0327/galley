@@ -7,14 +7,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { createPrismaWorkerRepo } from './PrismaWorkerRepo';
-import { HEARTBEAT_TIMEOUT_MS, runOnce } from './runOnce';
-import { createMockStepRunner } from '../steps/MockStepRunner';
-import { RUN_STATUS, STEP_ORDER, STEP_STATUS } from '../run/stateMachine';
-import { startRun } from '../run/startRun';
-import { createModelRegistry } from '../model/ModelRegistry';
-import type { ModelAdapter } from '../model/ModelAdapter';
-import type { WorkerDeps } from './WorkerDeps';
+import { createPrismaWorkerRepo } from './PrismaWorkerRepo.ts';
+import { HEARTBEAT_TIMEOUT_MS, runOnce } from './runOnce.ts';
+import { createMockStepRunner } from '../steps/MockStepRunner.ts';
+import { RUN_STATUS, STEP_ORDER, STEP_STATUS } from '../run/stateMachine.ts';
+import { startRun } from '../run/startRun.ts';
+import { createModelRegistry } from '../model/ModelRegistry.ts';
+import type { ModelAdapter } from '../model/ModelAdapter.ts';
+import type { WorkerDeps } from './WorkerDeps.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

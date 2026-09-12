@@ -1,7 +1,7 @@
-import type { ModelAdapter, ModelPricing } from './ModelAdapter';
-import { createMockAdapter } from './MockAdapter';
-import { createAnthropicAdapter } from './AnthropicAdapter';
-import { createOpenAiAdapter } from './OpenAiAdapter';
+import type { ModelAdapter, ModelPricing } from './ModelAdapter.ts';
+import { createMockAdapter } from './MockAdapter.ts';
+import { createAnthropicAdapter } from './AnthropicAdapter.ts';
+import { createOpenAiAdapter } from './OpenAiAdapter.ts';
 
 /**
  * 어댑터 id 규칙: `provider:model` (예 `anthropic:claude-opus-5`). Mock만 `mock`.

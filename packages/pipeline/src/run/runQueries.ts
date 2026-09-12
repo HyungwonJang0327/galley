@@ -1,7 +1,7 @@
 // 실행(Run) 조회 — 홈 타일·사이드바 배지·실행 목록이 쓰는 최소 집합.
 // 상태 어휘와 전이는 상태 머신(stateMachine.ts)이 소유하고, 여기서는 읽기만 한다.
 import type { PrismaClient } from '@prisma/client';
-import { RUN_STATUS } from './stateMachine';
+import { RUN_STATUS } from './stateMachine.ts';
 
 export interface RunSummary {
   id: string;

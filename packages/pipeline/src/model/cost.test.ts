@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { calculateCostUsd } from './cost';
+import { calculateCostUsd } from './cost.ts';
 
 describe('calculateCostUsd', () => {
   test('입력·출력 토큰에 백만 토큰당 단가를 곱해 합산한다', () => {

@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
-import { createAnthropicAdapter } from './AnthropicAdapter';
-import type { AnthropicMessagesClient } from './AnthropicAdapter';
+import { createAnthropicAdapter } from './AnthropicAdapter.ts';
+import type { AnthropicMessagesClient } from './AnthropicAdapter.ts';
 
 const PRICING = { inputPerMTok: 5, outputPerMTok: 25 };
 

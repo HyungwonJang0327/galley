@@ -2,8 +2,8 @@
 // 부분(클레임·순서·heartbeat·재시도·비용 기록)은 이걸로 CI에서 반복 검증한다.
 // 단계마다 **결정적인** 산출물을 돌려준다 — 같은 입력이면 같은 결과여야 diff가 의미 있다.
 // (decisions/run-execution-model.md)
-import { STEP_ORDER, type StepName } from '../run/stateMachine';
-import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner';
+import { STEP_ORDER, type StepName } from '../run/stateMachine.ts';
+import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 
 /** 단계별 산출물 파일 이름. 실제 파일 쓰기는 B3a가 한다 — 여기서는 내용만 만든다. */
 const ARTIFACT_NAME: Record<StepName, string> = {

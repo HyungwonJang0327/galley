@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { parseQueue, serializeQueue } from './queueFile';
+import { parseQueue, serializeQueue } from './queueFile.ts';
 
 const SAMPLE = `# 블로그 주제 큐
 

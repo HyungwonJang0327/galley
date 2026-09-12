@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { moveQueueTopic } from './moveQueue';
-import { parseQueue } from './queueFile';
-import type { Storage } from '../storage/Storage';
+import { moveQueueTopic } from './moveQueue.ts';
+import { parseQueue } from './queueFile.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

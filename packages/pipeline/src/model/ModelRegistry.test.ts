@@ -4,9 +4,9 @@ import {
   createModelRegistryFromEnv,
   DEFAULT_MODEL_ID,
   INDEXING_DEFAULT_MODEL_ID,
-} from './ModelRegistry';
-import { createMockAdapter } from './MockAdapter';
-import type { ModelAdapter } from './ModelAdapter';
+} from './ModelRegistry.ts';
+import { createMockAdapter } from './MockAdapter.ts';
+import type { ModelAdapter } from './ModelAdapter.ts';
 
 /** 테스트용 스텁 어댑터(generate는 호출하지 않는다). */
 function stub(id: string, provider: ModelAdapter['provider'] = 'anthropic'): ModelAdapter {

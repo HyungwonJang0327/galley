@@ -2,7 +2,7 @@
 // 범위(fresh/carried)는 순수 함수 planRerun이 정하고, 출처는 이전 Run의 기록을 읽어야 하므로
 // 여기(리포지토리)에 있다. 재실행 확인 API 하나가 둘을 조합해 화면에 넘긴다.
 import type { PrismaClient } from '@prisma/client';
-import { STEP_ORIGIN, isStepName, type StepName } from './stateMachine';
+import { STEP_ORIGIN, isStepName, type StepName } from './stateMachine.ts';
 
 /**
  * 직전 Run의 단계 기록에서 carried 단계들의 출처 Run을 찾는다.

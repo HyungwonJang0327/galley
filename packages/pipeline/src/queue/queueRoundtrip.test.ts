@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseQueue, serializeQueue } from './queueFile';
+import { parseQueue, serializeQueue } from './queueFile.ts';
 
 // 실제 주제_큐.md 구조(서문·후보 카테고리·완료 날짜)를 본뜬 픽스처.
 const raw = readFileSync(new URL('./__fixtures__/주제_큐.sample.md', import.meta.url), 'utf8');
