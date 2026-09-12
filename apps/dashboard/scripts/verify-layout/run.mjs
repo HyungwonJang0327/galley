@@ -12,6 +12,7 @@ import { launchChrome, waitFor } from './cdp.mjs';
 import { verifyMenu } from './menu.mjs';
 import { verifySelect } from './select.mjs';
 import { verifyShellScroll } from './shell-scroll.mjs';
+import { verifySplitPane } from './split-pane.mjs';
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const nextBin = createRequire(import.meta.url).resolve('next/dist/bin/next');
@@ -99,7 +100,7 @@ async function main() {
     });
     const browser = await launchChrome();
     try {
-      for (const verify of [verifyShellScroll, verifySelect, verifyMenu]) {
+      for (const verify of [verifyShellScroll, verifySelect, verifyMenu, verifySplitPane]) {
         const page = await browser.openPage(`${base}/design`);
         try {
           await page.waitForReady();
