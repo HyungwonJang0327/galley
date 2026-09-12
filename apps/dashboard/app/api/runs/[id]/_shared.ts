@@ -1,11 +1,20 @@
 // /api/runs/[id]/* 세 핸들러가 같이 쓰는 것 — 응답 봉투, 본문 파싱, 코드→HTTP 상태.
 // 상태 표는 decisions/error-handling.md "HTTP 상태 매핑": 형식 400 · 없음 404 · 상태 충돌 409 · 그 밖 500.
 import { INSTRUCTION_MAX_LENGTH, isStepName, type StepName } from '@galley/pipeline';
+import type {
+  RunApproveErrorCode,
+  RunRerunPlanErrorCode,
+  RunReviseErrorCode,
+} from '../../../../lib/run-commands';
 
 /** Next 16 동적 라우트 — `params`는 Promise다. */
 export type RouteContext = { params: Promise<{ id: string }> };
 
-export const STATUS_OF: Record<string, number> = {
+/** 세 핸들러가 낼 수 있는 코드 전부. 어댑터에 코드가 늘면 아래 표가 타입으로 깨진다. */
+export type ErrorCode =
+  'INVALID_BODY' | RunApproveErrorCode | RunReviseErrorCode | RunRerunPlanErrorCode;
+
+const STATUS_OF: Record<ErrorCode, number> = {
   INVALID_BODY: 400,
   INSTRUCTION_TOO_LONG: 400,
   UNKNOWN_MODEL: 400,
@@ -14,10 +23,13 @@ export const STATUS_OF: Record<string, number> = {
   NOT_PENDING_APPROVAL: 409,
   NOT_LATEST_ATTEMPT: 409,
   CARRIED_STEP_NOT_SUCCEEDED: 409,
+  RUN_APPROVE_FAILED: 500,
+  RUN_REVISE_FAILED: 500,
+  RUN_RERUN_PLAN_FAILED: 500,
 };
 
-export function fail(code: string, message: string): Response {
-  return Response.json({ ok: false, error: { code, message } }, { status: STATUS_OF[code] ?? 500 });
+export function fail(code: ErrorCode, message: string): Response {
+  return Response.json({ ok: false, error: { code, message } }, { status: STATUS_OF[code] });
 }
 
 export function ok(data: unknown, status = 200): Response {
