@@ -48,6 +48,7 @@ export {
   STEP_STATUS,
   STEP_ORIGIN,
   isStepName,
+  isRunStatus,
   nextAction,
   planRerun,
   applyCommand,
@@ -86,6 +87,18 @@ export type {
 export { startRun } from './run/startRun.ts';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun.ts';
 export { startRerun } from './run/startRerun.ts';
+export { approveRun, reviseRun, previewRerun } from './run/runCommands.ts';
+export type {
+  ApproveRunFailure,
+  ApproveRunResult,
+  ReviseRunInput,
+  ReviseRunFailure,
+  ReviseRunResult,
+  PreviewRerunInput,
+  PreviewRerunFailure,
+  PreviewRerunResult,
+  RerunPreview,
+} from './run/runCommands.ts';
 export type { StartRerunInput, StartRerunFailure, StartRerunResult } from './run/startRerun.ts';
 export { loadQueueSections } from './queue/loadQueue.ts';
 export { countTopicsByStatus } from './queue/queueCounts.ts';

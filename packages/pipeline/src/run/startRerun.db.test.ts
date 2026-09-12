@@ -263,7 +263,7 @@ describe('startRerun', () => {
     expect(await prisma.run.count()).toBe(1);
   });
 
-  test('같은 주제의 다른 Run이 실행 중이면 거절한다', async () => {
+  test('최신 시도가 실행 중일 때 옛 Run에서 갈라지려 해도 최신 시도 가드에 걸린다', async () => {
     const done = await finishedRun({ status: RUN_STATUS.done });
     await finishedRun({ status: RUN_STATUS.running });
 
@@ -273,7 +273,7 @@ describe('startRerun', () => {
       instruction: '',
     });
 
-    expect(result).toEqual({ ok: false, code: 'RUN_ALREADY_ACTIVE' });
+    expect(result).toEqual({ ok: false, code: 'NOT_LATEST_ATTEMPT' });
     expect(await prisma.run.count()).toBe(2);
   });
 
@@ -317,13 +317,28 @@ describe('startRerun', () => {
       data: { status: RUN_STATUS.done, finishedAt: new Date() },
     });
 
+    // 세 번째 시도는 최신(두 번째)에서 갈라진다.
     const chosen = await startRerun(deps(), {
-      previousRunId: previous.id,
+      previousRunId: inherited.run.id,
       plan,
       instruction: '',
       modelId: 'mock:other',
     });
     expect(chosen).toMatchObject({ ok: true, run: { modelId: 'mock:other', attempt: 3 } });
+  });
+
+  test('최신 시도가 아닌 Run에서는 갈라지지 못한다', async () => {
+    const first = await finishedRun({ status: RUN_STATUS.revised });
+    await finishedRun({ status: RUN_STATUS.pendingApproval });
+
+    const result = await startRerun(deps(), {
+      previousRunId: first.id,
+      plan: planRerun({ instruction: '' }),
+      instruction: '',
+    });
+
+    expect(result).toEqual({ ok: false, code: 'NOT_LATEST_ATTEMPT' });
+    expect(await prisma.run.count()).toBe(2);
   });
 
   test('API 키 없는 모델·모르는 모델이면 만들지 않는다', async () => {
