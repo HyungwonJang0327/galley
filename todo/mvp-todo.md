@@ -82,8 +82,9 @@
 
 목록형(A)의 변형 "요약형". **분할 구현**: 카드 6개 중 4개가 Run(B1e)·Phase 2 데이터라 영구 빈 상태 → 지금은 뼈대+실데이터(대기 큐, A4d)만. 승인 대기·최근 실행·발행 대기 카드는 데이터 도착 후(AN4/AN5 선례: 가짜 데이터 금지). 각 항목 = 커밋 하나.
 
-- [ ] **AH1** ui — `StatTile`(label·value·href·tone default|warning·icon 슬롯) + `EmptyState`(한 줄 메시지+선택 액션 버튼, 큐·실행·발행 빈 상태 재사용). 테스트·스토리. `CardGrid`(columns·비율 grid 래퍼)는 기존 Card 조합으로 충분하면 만들지 말고 이유 보고. 커밋: `feat(ui): StatTile·EmptyState 컴포넌트 추가`
-  - 완료조건: 갤러리 섹션 추가, `verify:layout` 통과.
+- [x] **AH1** (2026-09-12 `8e09fb5`·`30d7465`, feat/ui-stat-tile-empty-state) ui — `StatTile`(label·value·href·tone default|warning·icon 슬롯) + `EmptyState`(한 줄 메시지+선택 액션 버튼, 큐·실행·발행 빈 상태 재사용). 테스트·스토리. `CardGrid`(columns·비율 grid 래퍼)는 기존 Card 조합으로 충분하면 만들지 말고 이유 보고. 커밋: `feat(ui): StatTile·EmptyState 컴포넌트 추가`
+  - 완료조건: 갤러리 섹션 추가, `verify:layout` 통과. → 갤러리 카드 2장(타일 6개·빈 상태 2종), `verify:layout` 105/105.
+  - 구현 메모: `tone`은 `default|muted|warning`(muted는 layout §4 "0이면 회색"을 앱이 지정하게 추가) · 링크는 `href` 또는 `render`(SidebarItem과 같은 방식, ui는 next 미의존) · 토큰 `--ui-text-stat` 26px 신설(기존 최대 22px) · **CardGrid 안 만듦** — 타일 배치는 앱 grid 4줄로 충분(갤러리에서 확인). tone·토큰·생략은 사용자 확인 대기(worklog 2026-09-12).
 - [ ] **AH2** fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
   - 완료조건: Sidebar·TopBar 변경이므로 `verify:layout` 통과.
 - [ ] **AH3** fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
