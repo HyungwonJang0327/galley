@@ -1,0 +1,40 @@
+.title {
+  margin: 0 0 var(--ui-space-4);
+  font-size: var(--ui-text-h2);
+  font-weight: var(--ui-weight-semibold);
+}
+
+/* 맨 위 주제: 제목·카테고리 + 우측 액션. 아래 작은 행들과 선으로 나눈다. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+  padding-bottom: var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.topBody {
+  min-width: 0;
+}
+
+.topTitle {
+  margin: 0;
+  font-size: var(--ui-text-title);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.topMeta {
+  margin: var(--ui-space-1) 0 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  flex-shrink: 0;
+}
