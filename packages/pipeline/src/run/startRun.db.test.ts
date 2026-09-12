@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import type { ModelAdapter } from '../model/ModelAdapter';
 import { createModelRegistry } from '../model/ModelRegistry';
-import { RUN_STATUS } from './runQueries';
+import { RUN_STATUS } from './stateMachine';
 import { startRun } from './startRun';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));

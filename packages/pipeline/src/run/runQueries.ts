@@ -1,14 +1,7 @@
 // 실행(Run) 조회 — 홈 타일·사이드바 배지·실행 목록이 쓰는 최소 집합.
-// 상태값 검증·전이는 상태 머신(B1a 🔒)이 맡고, 여기서는 읽기만 한다.
+// 상태 어휘와 전이는 상태 머신(stateMachine.ts)이 소유하고, 여기서는 읽기만 한다.
 import type { PrismaClient } from '@prisma/client';
-
-/** 검수 상태(사람이 보는 상태). 값 검증은 상태 머신 몫이라 여기선 상수만 둔다. */
-export const RUN_STATUS = {
-  running: '실행 중',
-  pendingApproval: '승인 대기',
-  done: '완료',
-  failed: '실패',
-} as const;
+import { RUN_STATUS } from './stateMachine';
 
 export interface RunSummary {
   id: string;
