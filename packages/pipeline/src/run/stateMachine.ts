@@ -97,37 +97,54 @@ export function nextAction(steps: readonly StepState[]): NextAction {
   return todo ? { kind: 'runStep', step: todo } : { kind: 'awaitApproval' };
 }
 
-/** 이 단어가 수정 지시에 있으면 근거 수집까지 다시 돈다(요구사항 4). */
+/** 단계 지정이 없을 때, 이 단어가 지시에 있으면 근거 수집부터 다시 돈다. */
 const EVIDENCE_KEYWORDS = ['근거', '커밋', '코드'] as const;
 
+export interface RerunInput {
+  /** 사용자가 단계 Select로 지정한 시작 단계. 지정이 텍스트 판단보다 우선한다. */
+  startStep?: StepName;
+  /** 수정 지시. 시작 단계 지정이 없을 때만 읽는다. */
+  instruction: string;
+}
+
 export interface RerunPlan {
-  /** 다시 돌릴 단계(`STEP_ORDER` 순서). */
-  steps: readonly StepName[];
-  /** 이전 산출물을 유지한 채 `건너뜀`으로 표시할 단계(요구사항 3). */
-  skipped: readonly StepName[];
+  /** 이번 재실행이 시작하는 단계. */
+  startStep: StepName;
+  /** 이번에 다시 도는 단계 = 시작 단계와 그 뒤 전부(`STEP_ORDER` 순). */
+  fresh: readonly StepName[];
+  /** 범위 밖이라 이전 결과를 그대로 쓰는 앞 단계(`STEP_ORDER` 순). */
+  carried: readonly StepName[];
 }
 
 /**
- * 재실행 범위 = (대상 단계, 수정 지시) → 다시 돌릴 단계들(요구사항 4).
- * 본문을 고치면 근거 검증도 자동으로 다시 돈다. 근거 수집은 기본 건너뛰고,
- * 대상으로 지정했거나 지시에 근거·커밋·코드가 있을 때만 포함한다.
+ * 재실행 범위 — **시작 단계와 그 뒤 전부**(decisions/evidence-collection.md 재실행 규칙).
+ * 본문 입력은 EvidenceBundle뿐이고 링크드인·Zenn은 본문 파생, 발행정보 근거 목록도 같은 번들에서
+ * 나온다. 앞만 다시 돌고 뒤를 두면 산출물이 서로 어긋난 채 남는다.
+ *
+ * `carried`까지 함께 돌려주는 것은 **재실행 확인 UI가 "다시 도는 단계"와 "이전 결과 유지"를 둘 다**
+ * 보여주기 때문이다. 호출부가 시작 인덱스를 다시 다룰 일이 없도록 출처를 여기 하나로 둔다.
+ * 그 이전 결과를 **누가 생산했는지**(`sourceRunId`)는 DB를 봐야 하므로 여기 없다 —
+ * `resolveCarriedSources`(리포지토리)가 답한다.
+ *
+ * 첫 실행에는 태우지 않는다. `evidence`가 시작이면 `carried`가 비고, `publishInfo`만 돌면
+ * `fresh`가 하나다 — 둘 다 규칙의 자연스러운 결과라 따로 분기하지 않는다.
  */
-export function planRerun(target: StepName, instruction: string): RerunPlan {
-  const steps = new Set<StepName>([target]);
-  if (target === 'velog') steps.add('verify');
-  if (EVIDENCE_KEYWORDS.some((keyword) => instruction.includes(keyword))) steps.add('evidence');
+export function planRerun(input: RerunInput): RerunPlan {
+  const startStep =
+    input.startStep ??
+    (EVIDENCE_KEYWORDS.some((keyword) => input.instruction.includes(keyword))
+      ? 'evidence'
+      : 'velog');
+  const at = STEP_ORDER.indexOf(startStep);
 
-  return {
-    steps: STEP_ORDER.filter((name) => steps.has(name)),
-    skipped: steps.has('evidence') ? [] : ['evidence'],
-  };
+  return { startStep, fresh: STEP_ORDER.slice(at), carried: STEP_ORDER.slice(0, at) };
 }
 
 export type RunCommand =
   /** 사람이 승인 — 실행을 끝낸다. */
   | { type: 'approve' }
-  /** 사람이 수정 지시 — 대상 단계부터 다시 돈다. */
-  | { type: 'revise'; target: StepName; instruction: string };
+  /** 사람이 수정 지시 — 시작 단계부터 다시 돈다(`startStep` 생략 시 지시 텍스트로 판단). */
+  | ({ type: 'revise' } & RerunInput);
 
 /** 승인 대기가 아닌 실행에 승인·수정 지시가 온 경우(이미 끝났거나 아직 도는 중). */
 export type CommandFailure = 'NOT_PENDING_APPROVAL';
@@ -148,6 +165,6 @@ export function applyCommand(status: RunStatus, command: RunCommand): CommandRes
   return {
     ok: true,
     status: RUN_STATUS.running,
-    rerun: planRerun(command.target, command.instruction),
+    rerun: planRerun({ startStep: command.startStep, instruction: command.instruction }),
   };
 }

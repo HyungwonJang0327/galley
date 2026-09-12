@@ -43,6 +43,7 @@ export type {
   StepOrigin,
   StepState,
   NextAction,
+  RerunInput,
   RerunPlan,
   RunCommand,
   CommandFailure,
