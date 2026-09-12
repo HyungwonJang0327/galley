@@ -28,7 +28,7 @@
 
 ## Phase 1-B
 
-- B2c — 실행 상세 2분할 화면
+- 🔒 B2c — 실행 상세 2분할 화면 ← **직접 작성 핵심 모듈, 구현 금지**(사용자 작성, AI는 테스트·리뷰만)
 - B2d — 하단 ActionBar 배선
 - B2e — 타임라인 펼침 산출물 마크다운 미리보기
 - BM5 — Settings.defaultModelId + TopBar 칩 label 표시
@@ -36,7 +36,7 @@
 - BM7 — 실행 상세 타임라인 모델·비용 표시
 - BM8 — 재실행 시 모델 변경(ActionBar Select)
 - BM9 — TopBar 칩 클릭 기본 모델 변경
-- BW4 — 수정 지시·승인·재실행을 Run 상태 변경으로(워커 pickup, B2b에서 미룬 몫 — 선행 🔒 B1a)
+- BW4 — 수정 지시·승인·재실행을 Run 상태 변경으로(워커 pickup, B2b에서 미룬 몫 — 선행 B1a)
 - BW6 — TopBar 워커 생존 점
 - BE12 — 큐 행 ⋮ "근거 편집" Dialog + 실행 Dialog(BM6) 근거 목록·0건 경고 (decisions/evidence-collection.md, 선행 BE7·UM1)
 - BE13 — 실행 상세 타임라인 6줄: 근거 수집·근거 검증 줄 펼침 표시 + 좌 목록·홈 "지금 할 일" "근거 없음 n" (선행 B2c·BE10)
