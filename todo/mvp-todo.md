@@ -191,7 +191,7 @@
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
-- [ ] **B2a** ui — SplitPane·TimelineItem·ActionBar 패턴(도메인 무지). 갤러리 섹션 추가 + `verify:layout` 통과. 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
+- [x] **B2a** (2026-09-12 `eea0de8`·`e9715ac`·`cb38e7c`, feat/ui-run-patterns) ui — SplitPane(좌 고정폭 토큰 320px / 우 헤더·본문·하단 바, 좌우 독립 스크롤) · TimelineItem+TimelineItems(상태 마커 4종 pending/active/done/failed, 슬롯 중심 — 단계명·토큰 문구는 앱이 조립, 펼침은 비제어 기본 + `open`으로 제어 가능) · ActionBar(SplitPane footer에선 grid 고정, 그냥 넣으면 sticky). 토큰 4개 추가. 갤러리 조합 섹션(데모는 `PrimitiveDemos.tsx` — 서버 컴포넌트에 두면 펼침이 동작하지 않는다) + `verify:layout` 105→**117 전부 통과**(새 검사 12개). ui 79→97. 산출물 마크다운 렌더는 B2e. 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
 - [ ] **B2b** fe — 실행·재실행·승인 Route Handler(pipeline 함수 호출만). 커밋: `feat(run): 실행·재실행·승인 Route Handler 추가`
 - [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(**6단계** 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
 - [ ] **B2d** fe — 하단 ActionBar(수정 지시 입력 + 승인) → Route Handler 배선. 커밋: `feat(run): 실행 상세 수정 지시·승인 배선`
