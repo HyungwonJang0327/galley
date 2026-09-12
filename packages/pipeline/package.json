@@ -11,6 +11,7 @@
     "db": "node --env-file=../../.env node_modules/prisma/build/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:smoke": "vitest run --config vitest.smoke.config.ts",
     "worker": "node --env-file=../../.env bin/worker.ts"
   },
   "devDependencies": {
