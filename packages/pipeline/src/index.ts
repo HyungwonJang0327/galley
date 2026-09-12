@@ -5,6 +5,13 @@ export { parseQueue, serializeQueue } from './queue/queueFile';
 export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile';
 export { parsedQueueToRows, importQueueFromFile } from './queue/importQueue';
 export type { QueueItemRow } from './queue/importQueue';
+export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue';
+export type {
+  MovableStatus,
+  MoveQueueTopicInput,
+  MoveQueueFailure,
+  MoveQueueResult,
+} from './queue/moveQueue';
 export { loadQueueSections } from './queue/loadQueue';
 export type { QueueEntry, QueueSections } from './queue/loadQueue';
 export type { Storage } from './storage/Storage';
