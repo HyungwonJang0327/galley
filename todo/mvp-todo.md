@@ -123,7 +123,7 @@
 - [ ] **B1b** ts — 상태 머신 전이 테스트(정상·수정 재실행·불가 전이). 커밋: `test(pipeline): 상태 머신 전이 테스트`
 - [ ] 🔒 **B1c** 모델 어댑터 인터페이스 → **BM1~BM3로 재구성**(인터페이스 🔒 + Mock·레지스트리·Claude 2개). 아래 BM 참조.
 - [ ] **B1d** ts — 어댑터 목 토큰·비용 테스트 → **BM1·BM3에 흡수**.
-- [x] **B1e** (2026-09-12 `3173156`·`82d6613`·`7f98371`·`baa3889`, feat/run-schema) pl — Run 스키마 → **BM4·BW1과 한 마이그레이션**(`20260912051726_add_run_and_run_step`). 주제는 `topicSlug`(제목 파생, id ✗ — 재적재 안정) + `topicTitle` 스냅샷. 단계는 `RunStep` 행 + 이름 문자열(enum 금지), `@@unique([runId, order])`. 슬러그 파생 `topicSlug()`는 BE6에서 앞당김(로마자 변환 안 함 — 한국어 제목이 뭉개진다). 최소 조회(승인 대기 카운트·최근 실행·주제별 최근)와 대시보드 배선까지. 상태 전이·검증은 🔒 B1a 몫.
+- [x] **B1e** (2026-09-12 `01c721c`·`aae1a24`·`2d84a3a`·`f1facfc`·fix `de089c7`, feat/run-schema, PR #74) pl — Run 스키마 → **BM4·BW1과 한 마이그레이션**(`20260912051726_add_run_and_run_step`). 주제는 `topicSlug`(제목 파생, id ✗ — 재적재 안정) + `topicTitle` 스냅샷. 단계는 `RunStep` 행 + 이름 문자열(enum 금지), `@@unique([runId, order])`. 슬러그 파생 `topicSlug()`는 BE6에서 앞당김(로마자 변환 안 함 — 한국어 제목이 뭉개진다). 최소 조회(승인 대기 카운트·최근 실행·주제별 최근)와 대시보드 배선까지. 상태 전이·검증은 🔒 B1a 몫.
 - [ ] **B1f** pl — 단계 실행 오케스트레이션 → **BW2 워커 루프가 담당**(별도 프로세스 — decisions/run-location.md).
 
 ### BM. 실행별 모델 선택 — [B] Phase 1-B (decisions/model-selection.md) · B1↔B2 사이
@@ -136,7 +136,7 @@
 - [x] **BM3** (2026-09-09 `5bfe98e`·`de00f27`·`7bff8af`·`455c666`·`5a9122e`, feat/model-adapters) pl — SDK 설치(`@anthropic-ai/sdk` 0.124.0 · `openai` 7.12.1) → `calculateCostUsd` → `createAnthropicAdapter`(messages.create 비스트리밍, refusal 에러) → `createOpenAiAdapter`(Responses API, error·refusal 에러) → 카탈로그 7개(Claude 4 + GPT 3, decisions/model-selection 표) 레지스트리 등록. 클라이언트 주입 가짜로 테스트 21개, 실 API 호출 없음. `.env.example`에 OPENAI_API_KEY. provider 팩토리는 배럴 비노출. 커밋: `chore(pipeline): @anthropic-ai/sdk·openai SDK 설치` · `feat(model): usage→비용 계산 함수 추가` · `feat(model): Claude 어댑터 추가` · `feat(model): GPT 어댑터 추가` · `feat(model): Claude 4개·GPT 3개를 레지스트리에 등록`
   - 완료조건 충족: 고정 usage → costUsd 단가표 일치(provider별) · 키 제거 시 해당 provider `available:false`(테스트).
 - [x] **UM1** (2026-09-09 `165c120`·`e8ed197`·`6c471b4`, feat/ui-primitives-dialog-select) ui — `@base-ui/react` 1.8.0 + `lucide-react` 1.43.0 설치·Vite external·`"use client"` 번들 배너(ui-package-boundary) → `Dialog`(제어형 open·title 접근성 이름·description·children·footer·trigger render·closeLabel) → `Select`(단일, items: value·label·description·trailing·disabled·disabledReason=title). 토큰 `--ui-color-backdrop`·`--ui-dialog-width`·`--ui-control-height`. 테스트 12개·스토리. BM6·BM8·BM9·BE12가 소비. 커밋: `chore(ui): Base UI·lucide 설치와 "use client" 배너 보존` · `feat(ui): Dialog 프리미티브 추가` · `feat(ui): Select 프리미티브 추가`
-- [x] **BM4** (2026-09-12 `82d6613`, feat/run-schema, B1e·BW1과 한 마이그레이션) pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
+- [x] **BM4** (2026-09-12 `aae1a24`, feat/run-schema, PR #74, B1e·BW1과 한 마이그레이션) pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
 - [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
 - [ ] **BM6** fe — 실행 시작 Dialog(모델 Select, available=false 비활성+툴팁, 예상 비용 미표시) + 진입점 3곳(큐 행 ⋮·맨 위 실행·홈 다음 실행) 연결. **선행: ui Dialog·Select 프리미티브(UM1).** 커밋: `feat(dashboard): 실행 시작 시 모델 선택 Dialog 추가`
   - 완료조건: 세 진입점 모두 같은 Dialog, 선택 modelId가 Run에 저장, available=false는 선택 불가.
@@ -149,7 +149,7 @@
 
 별도 워커 프로세스. **선행: 상태 머신(B1a 🔒)·Run 스키마(BM4).** 대시보드는 Run을 queued로 만들 뿐. 각 항목 = 커밋 하나.
 
-- [x] **BW1** (2026-09-12 `82d6613`, feat/run-schema, B1e·BM4와 한 마이그레이션) pl — Run 실행 상태(`workerState` queued/running/interrupted) + `workerId`·`heartbeat` 컬럼 + 마이그레이션. 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
+- [x] **BW1** (2026-09-12 `aae1a24`, feat/run-schema, PR #74, B1e·BM4와 한 마이그레이션) pl — Run 실행 상태(`workerState` queued/running/interrupted) + `workerId`·`heartbeat` 컬럼 + 마이그레이션. 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
 - [ ] **BW2** pl — 워커 루프(`bin/worker.ts`): queued→running 클레임, 단계 오케스트레이션(레지스트리 어댑터 호출·RunStep 기록·heartbeat), 동시 1개. 폴링 2s·heartbeat 5s. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
 - [ ] **BW3** pl — 중단 감지·재개(heartbeat 30s 공백→interrupted, 완료 단계 다음부터; 기동 시+깨어날 때 검사, 단계는 원자적). 커밋: `feat(pipeline): 워커 중단 감지와 단계 재개 추가`
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
@@ -171,7 +171,7 @@
   - 완료조건: BE3와 동일 포인터 검증 + change 분석 글에 period가 있다.
 - [ ] **BE5** pl — 증분 재인덱싱(HEAD 비교 → `stale`, 바뀐 경로·새 커밋 범위만) + `--full` + CLI `bin/index.ts`(`pnpm --filter @galley/pipeline index <path> [--name --alias --read-only --model --full]`, 모델 기본 = 레지스트리 `indexingDefault` Haiku 4.5, 사용 모델을 `Repo.lastIndexModelId`에 기록). 커밋: `feat(pipeline): 증분 재인덱싱과 index CLI 추가`
   - 완료조건: 픽스처 리포에 커밋 하나 추가 후 재인덱싱하면 **바뀐 경로의 분석 글만 갱신**된다(테스트). 읽기 전용 리포에서 쓰기 명령 0(리포 git status 불변 테스트).
-- [ ] **BE6** pl — `주제_큐.md` 괄호 힌트 파서 확장(리포 이름·alias·키워드·기간 추출, 괄호 형식 불변) + 테스트. ~~주제 슬러그 파생~~ → **B1e에서 이미 구현**(`topicSlug()`, 2026-09-12 `3173156`). 커밋: `feat(queue): 주제 항목에서 리포·키워드·기간 추출`
+- [ ] **BE6** pl — `주제_큐.md` 괄호 힌트 파서 확장(리포 이름·alias·키워드·기간 추출, 괄호 형식 불변) + 테스트. ~~주제 슬러그 파생~~ → **B1e에서 이미 구현**(`topicSlug()`, 2026-09-12 `01c721c`). 커밋: `feat(queue): 주제 항목에서 리포·키워드·기간 추출`
   - 완료조건: `(spacehome, react-router)` `(vendor manager, 2024.03)` `(spacehome + vendor manager)` `(2024.07)` 4형이 파싱되고 라운드트립(A4c)이 그대로 통과.
 - [ ] **BE7** pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
   - 완료조건: 픽스처 인덱스 + 큐에서 키워드 겹치는 분석 글만 연결. 재적재(전체 리셋) 후에도 `manual` 링크 유지(테스트).
