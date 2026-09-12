@@ -103,6 +103,13 @@ function measureExpression(label) {
     }
     if (!listbox) return JSON.stringify({ error: 'listbox not open' });
     const popup = listbox.closest('[class*="popup"]') || listbox.parentElement;
+    // Base UI는 팝업을 연 뒤 비동기로 선택 항목까지 스크롤한다(직후 scrollTop 0 → 곧 이동).
+    // 멈춘 뒤에 재야 "열릴 때 선택 항목이 보임"을 실제로 검사한다.
+    for (let i = 0, last = -1; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (popup.scrollTop === last) break;
+      last = popup.scrollTop;
+    }
     const rect = (el) => { const b = el.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), left: Math.round(b.left), right: Math.round(b.right), width: Math.round(b.width), height: Math.round(b.height) }; };
     const lineHeight = (el) => parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.25;
     const options = [...listbox.querySelectorAll('[role="option"]')].map((o) => {
