@@ -68,7 +68,7 @@
   - 완료조건: 루트 `/`가 승인 대기 유무로 분기(스모크 `/`→`/queue`). Run 스키마(B1e) 전까지 카운트 0/더미(`getPendingApprovalCount`) → 사실상 /queue. 홈 화면 없음.
 - [x] **AN4** (2026-09-11 `1f53733`·`1319787`·`46ca187`, PR #51, A5c와 한 PR) fe — 큐 화면 탭 4개(?tab= waiting·candidates·hold·done) + 후보 탭 카테고리 필터(?category=). 검색·"다음 실행" 표시·DnD는 범위 밖(A6a 등). **의존: A4b(주제_큐.md 파서)·A5a(ListToolbar·ListRow)** — 둘 다 완료(2026-09-09), A5b 매핑도 완료(2026-09-11) → 착수 가능(가짜 데이터/행 금지는 그대로). 커밋: `feat(queue): 큐 화면에 대기·후보·보류·완료 탭 추가`
   - 완료조건: 탭 4개가 주제_큐.md 섹션 4개와 1:1로 읽히고, ?tab=로 새로고침해도 유지. 카테고리 = 후보 섹션 `###` 소제목.
-- [x] **AN5** (2026-09-12 `af0f151`, feat/queue-row-menu, A6b·A6c와 한 PR) fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). 현재 섹션 뺀 이동 2개 + 구분선 + "지금 실행"(BM6 전이라 비활성). 완료 탭 행에는 메뉴 없음(사용자 결정 — 완료일이 사라짐). 행 모델에 섹션 내 위치(`index`). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
+- [x] **AN5** (2026-09-12 `3792b18`, feat/queue-row-menu, PR #60, A6b·A6c와 한 PR) fe — 행 ⋮ 메뉴(섹션 이동 / 지금 실행). 현재 섹션 뺀 이동 2개 + 구분선 + "지금 실행"(BM6 전이라 비활성). 완료 탭 행에는 메뉴 없음(사용자 결정 — 완료일이 사라짐). 행 모델에 섹션 내 위치(`index`). 커밋: `feat(queue): 주제 행 이동 메뉴 추가`
   - [x] **선행 UM2** (2026-09-11 `eb3df11`·`8aea198`·`925d54c`, feat/ui-primitives-menu, PR #54) ui — Base UI Menu 래퍼 `Menu`(items: 항목 id·label·description·meta·disabled·disabledReason | `{ type: 'separator' }` · onSelect(id) · trigger render · align 기본 end · 비제어 open). 아이템은 Select와 같은 공통 `ItemContent`. 토큰 `--ui-menu-popup-min-width`·`--ui-menu-popup-max-width`. 테스트 6개·스토리. 갤러리 섹션(ListRow ⋮ 3행 + 하단 뒤집힘) + `verify:layout` 105/105. 커밋: `feat(ui): Menu 프리미티브 추가` · `feat(dashboard): 갤러리에 Menu 섹션 추가` · `chore(dashboard): 레이아웃 실측에 Menu 팝업 검사 추가`
   - 완료조건: 행 ⋮에서 대기로/후보로/보류로/지금 실행 노출·배선. (파일 반영 로직은 A6c와 연계.)
 - [x] **AN6** (2026-09-09 `6bd4c6c`) fe — Phase 2 빈 페이지 신설(/runs/history·/publish). 커밋: `chore(dashboard): Phase 2 빈 페이지 라우트 추가`
@@ -104,8 +104,8 @@
 ### A6. 큐 편집 — [B] Phase 1-A #4
 
 - [ ] **A6a** fe — pragmatic-drag-and-drop 도입 + 대기 큐 순서 변경 UI. 커밋: `feat(dashboard): 큐 순서 변경 DnD 추가`
-- [x] **A6b** (2026-09-12 `3812663`, feat/queue-row-menu, AN5와 한 PR) fe — 섹션 이동(후보↔대기↔보류) 액션: `lib/queue-move.ts`(BLOG_DIR Storage·실패 문구) + Server Action `moveQueueRowAction`(성공 시에만 `revalidatePath('/', 'layout')`). 커밋: `feat(queue): 큐 섹션 이동 액션 추가`
-- [x] **A6c** (2026-09-12 `0cc9797`, feat/queue-row-menu, AN5와 한 PR) pl — 편집 결과를 주제_큐.md에 반영 + DB 재적재: `queue/moveQueue.ts`(`moveTopic` 순수 + `moveQueueTopic`). 위치 규칙·카테고리·동시 변경 방어는 decisions/queue-sync-direction.md "섹션 이동 규칙". 커밋: `feat(queue): 큐 섹션 이동과 주제_큐.md 반영 추가`
+- [x] **A6b** (2026-09-12 `6557b14`, feat/queue-row-menu, PR #60, AN5와 한 PR) fe — 섹션 이동(후보↔대기↔보류) 액션: `lib/queue-move.ts`(BLOG_DIR Storage·실패 문구) + Server Action `moveQueueRowAction`(성공 시에만 `revalidatePath('/', 'layout')`). 커밋: `feat(queue): 큐 섹션 이동 액션 추가`
+- [x] **A6c** (2026-09-12 `3b2d1b4`, feat/queue-row-menu, PR #60, AN5와 한 PR) pl — 편집 결과를 주제_큐.md에 반영 + DB 재적재: `queue/moveQueue.ts`(`moveTopic` 순수 + `moveQueueTopic`). 위치 규칙·카테고리·동시 변경 방어는 decisions/queue-sync-direction.md "섹션 이동 규칙". 커밋: `feat(queue): 큐 섹션 이동과 주제_큐.md 반영 추가`
 - [ ] **A6d** ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). **A6a(DnD) 뒤로 남김** — 섹션 이동 경로는 A6c 통합 테스트(임시 SQLite + 메모리 Storage)가 덮는다. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
   - 완료조건([B]#4): 순서 DnD·섹션 이동이 되고 주제_큐.md에 반영, 어긋남 0.
 
