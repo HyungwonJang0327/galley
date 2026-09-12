@@ -119,8 +119,8 @@
 
 ### B1. 상태 머신 + 모델 어댑터 + 실행 이력 — [B] Phase 1-B #5
 
-- [ ] **B1a** pl — 단계 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). **2026-09-12 🔒 해제** — 직접 작성 모듈 (a)가 B2c로 교체되며 AI 구현 + 사용자 리뷰로 전환(decisions/core-modules.md 갱신 이력). 요구사항은 decisions/evidence-collection.md "상태 머신 인터페이스 요구사항" 6개가 고정 스펙이라 AI가 설계를 새로 하지 않는다. **단계 6개**(근거 수집·본문·근거 검증·링크드인·Zenn·발행정보) + 단계 결과 표시용 플래그(근거 검증 unsupported는 실패 아님) — decisions/evidence-collection.md. 커밋: `feat(pipeline): 단계 상태 머신과 승인 게이트 추가`
-- [ ] **B1b** ts — 상태 머신 전이 테스트(정상·수정 재실행·불가 전이). 커밋: `test(pipeline): 상태 머신 전이 테스트`
+- [x] **B1a** (2026-09-12 `793df16`, feat/run-state-machine, PR #81) pl — 단계 상태 머신 + 승인 게이트. 순수 함수 3개: `nextAction`(다음에 돌 단계 / 승인 대기 / 실패) · `planRerun`(수정 지시 → 다시 돌릴 단계) · `applyCommand`(승인 게이트). DB·모델·실행 상태(queued/running/interrupted)를 모른다. 상태 어휘 `STEP_ORDER`(영어 키)·`RUN_STATUS`·`STEP_STATUS`(`건너뜀` 추가) 소유권을 여기로 옮기고 runQueries는 읽기만. 스키마 주석도 같은 어휘로(마이그레이션 없음). **2026-09-12 🔒 해제** — 직접 작성 모듈 (a)가 B2c로 교체되며 AI 구현 + 사용자 리뷰로 전환(decisions/core-modules.md 갱신 이력). 요구사항은 decisions/evidence-collection.md "상태 머신 인터페이스 요구사항" 6개가 고정 스펙이라 AI가 설계를 새로 하지 않는다. **단계 6개**(근거 수집·본문·근거 검증·링크드인·Zenn·발행정보) + 단계 결과 표시용 플래그(근거 검증 unsupported는 실패 아님) — decisions/evidence-collection.md. 커밋: `feat(pipeline): 단계 상태 머신과 승인 게이트 추가`
+- [x] **B1b** (2026-09-12 `19245e3`, feat/run-state-machine, PR #81) ts — 상태 머신 전이 테스트 24개(정상 진행·중단 뒤 재개·실패·건너뜀·표시용 플래그 무시 / 재실행 범위 4종 / 승인 대기가 아닌 실행의 승인·수정 지시 거절). pipeline 99→123. 커밋: `test(pipeline): 상태 머신 전이 테스트`
 - [ ] 🔒 **B1c** 모델 어댑터 인터페이스 → **BM1~BM3로 재구성**(인터페이스 🔒 + Mock·레지스트리·Claude 2개). 아래 BM 참조.
 - [ ] **B1d** ts — 어댑터 목 토큰·비용 테스트 → **BM1·BM3에 흡수**.
 - [x] **B1e** (2026-09-12 `01c721c`·`aae1a24`·`2d84a3a`·`f1facfc`·fix `de089c7`, feat/run-schema, PR #74) pl — Run 스키마 → **BM4·BW1과 한 마이그레이션**(`20260912051726_add_run_and_run_step`). 주제는 `topicSlug`(제목 파생, id ✗ — 재적재 안정) + `topicTitle` 스냅샷. 단계는 `RunStep` 행 + 이름 문자열(enum 금지), `@@unique([runId, order])`. 슬러그 파생 `topicSlug()`는 BE6에서 앞당김(로마자 변환 안 함 — 한국어 제목이 뭉개진다). 최소 조회(승인 대기 카운트·최근 실행·주제별 최근)와 대시보드 배선까지. 상태 전이·검증은 🔒 B1a 몫.
@@ -147,19 +147,19 @@
 
 ### BW. 워커 실행 — [B] Phase 1-B (decisions/run-location.md) · B1↔B2 사이
 
-별도 워커 프로세스. **선행: 상태 머신(B1a 🔒)·Run 스키마(BM4).** 대시보드는 Run을 queued로 만들 뿐. 각 항목 = 커밋 하나.
+별도 워커 프로세스. **선행: 상태 머신(B1a ✅)·Run 스키마(BM4).** 대시보드는 Run을 queued로 만들 뿐. 각 항목 = 커밋 하나.
 
 - [x] **BW1** (2026-09-12 `aae1a24`, feat/run-schema, PR #74, B1e·BM4와 한 마이그레이션) pl — Run 실행 상태(`workerState` queued/running/interrupted) + `workerId`·`heartbeat` 컬럼 + 마이그레이션. 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
 - [ ] **BW2** pl — 워커 루프(`bin/worker.ts`): queued→running 클레임, 단계 오케스트레이션(레지스트리 어댑터 호출·RunStep 기록·heartbeat), 동시 1개. 폴링 2s·heartbeat 5s. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
 - [ ] **BW3** pl — 중단 감지·재개(heartbeat 30s 공백→interrupted, 완료 단계 다음부터; 기동 시+깨어날 때 검사, 단계는 원자적). 커밋: `feat(pipeline): 워커 중단 감지와 단계 재개 추가`
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
-- [ ] **BW4** fe — 수정 지시·승인·**재실행**을 Run 상태 변경으로(대시보드 write → 워커 pickup). B2b에서 미룬 재실행·승인 Route Handler가 여기 들어온다(전이는 🔒 B1a 함수 호출). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
+- [ ] **BW4** fe — 수정 지시·승인·**재실행**을 Run 상태 변경으로(대시보드 write → 워커 pickup). B2b에서 미룬 재실행·승인 Route Handler가 여기 들어온다(전이는 `applyCommand` 호출). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
 - [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
 - [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
 ### BE. 근거 수집 구조 — [B] Phase 1-B (decisions/evidence-collection.md · 2026-09-09 확정)
 
-캐시(리포 인덱스)는 "어디를 볼지", 내용은 항상 원본에서. 단계 5→6(근거 검증). **선행: BM1~BM3(Mock 어댑터·레지스트리)**, BE8~BE11·BE14는 B1a(🔒 상태 머신)·BW2(워커 루프). 제품 코드는 승인 후. 각 항목 = 커밋 하나. 테스트는 전부 **tmpdir 픽스처 git 리포**(회사 리포 미열람).
+캐시(리포 인덱스)는 "어디를 볼지", 내용은 항상 원본에서. 단계 5→6(근거 검증). **선행: BM1~BM3(Mock 어댑터·레지스트리)**, BE8~BE11·BE14는 B1a(상태 머신 ✅)·BW2(워커 루프). 제품 코드는 승인 후. 각 항목 = 커밋 하나. 테스트는 전부 **tmpdir 픽스처 git 리포**(회사 리포 미열람).
 
 - [ ] **BE1** pl — 스키마: `Repo`(aliases·lastIndexModelId 포함) · `RepoAnalysis`(pointers JSON ≥ 1) · `IndexJob`(modelId) · `TopicAnalysisLink`(topicSlug 키) · `QueueItem.repoNames/keywords/period` + 마이그레이션. 커밋: `feat(pipeline): 리포 인덱스와 주제 연결 스키마 추가`
   - 완료조건: `prisma validate`·마이그레이션 적용. pointers 빈 배열 저장은 접근 함수에서 거부(테스트).
