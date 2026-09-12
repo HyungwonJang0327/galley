@@ -51,6 +51,22 @@ jobs:
           path: ${{ runner.temp }}/layout-shots
           if-no-files-found: ignore
 
+  # 워커 프로세스 스모크(decisions/run-execution-model.md §3): 실제 `node bin/worker.ts`를 띄우고
+  # SIGTERM → 종료 코드 0·"워커 종료" 로그 한 줄만 단언(타이밍 단언 없음). 기본 스위트(verify)와 분리.
+  # required check로 둔다. 한 번이라도 흔들리면 즉시 informational로 내리고 원인은 워커 종료 경로에서
+  # 찾는다 — 종료 코드와 로그만 보는 테스트는 결정적이어야 정상이다(2026-09-13 결정).
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @galley/pipeline test:smoke
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:
