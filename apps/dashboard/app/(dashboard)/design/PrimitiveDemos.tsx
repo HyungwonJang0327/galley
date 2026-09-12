@@ -1,8 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Dialog, ListRow, ListRows, Menu, Select } from '@galley/ui';
+import {
+  ActionBar,
+  Badge,
+  Button,
+  Dialog,
+  ListRow,
+  ListRows,
+  Menu,
+  Select,
+  SplitPane,
+  TimelineItem,
+  TimelineItems,
+} from '@galley/ui';
 import type { MenuEntry, SelectItem } from '@galley/ui';
+import styles from './page.module.css';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.
 
@@ -203,4 +216,103 @@ export function MenuRowsDemo() {
 /** 화면 하단: 아래 공간이 모자라면 팝업이 위로 뒤집힌다. */
 export function MenuAtBottomDemo() {
   return <Menu trigger={menuTrigger('메뉴 화면 하단')} items={MENU_BASIC} onSelect={() => {}} />;
+}
+
+/**
+ * 2분할 상세형(B) 골격 데모. TimelineItem 펼침이 클라이언트 상태라 여기에 둔다.
+ * verify:layout이 aria-label과 data-demo에 결합해 실측한다 — 바꾸면 split-pane.mjs도 맞춘다.
+ */
+export function SplitPaneDemo() {
+  return (
+    <div className={styles.splitPaneBox}>
+      <SplitPane
+        listLabel="목록 영역"
+        detailLabel="상세 영역"
+        header={
+          <div className={styles.pad}>
+            <strong>항목 제목</strong> <Badge variant="warning">상태</Badge>
+          </div>
+        }
+        footer={
+          <ActionBar
+            label="하단 액션 바"
+            actions={
+              <>
+                <Button variant="secondary" size="sm">
+                  보조
+                </Button>
+                <Button size="sm">주요</Button>
+              </>
+            }
+          >
+            <input aria-label="지시 입력" placeholder="지시 입력" />
+          </ActionBar>
+        }
+        list={
+          <ListRows>
+            {Array.from({ length: 10 }, (_, i) => (
+              <ListRow
+                key={i}
+                title={`항목 ${i + 1}`}
+                meta="보조 · 텍스트"
+                trailing={<Badge variant={i === 0 ? 'info' : 'neutral'}>상태</Badge>}
+                isActive={i === 0}
+              />
+            ))}
+          </ListRows>
+        }
+      >
+        <TimelineItems data-demo="상세 본문">
+          <TimelineItem
+            status="done"
+            statusLabel="완료"
+            title="첫째 줄(펼침 있음)"
+            meta="12초 · 1.2k 토큰"
+            trailing={
+              <Button variant="ghost" size="sm">
+                보기
+              </Button>
+            }
+          >
+            펼침 영역. 내용은 앱이 넣는다.
+          </TimelineItem>
+          <TimelineItem
+            status="done"
+            statusLabel="완료"
+            title="둘째 줄"
+            meta="8초 · 900 토큰"
+            trailing={<Badge variant="success">완료</Badge>}
+          />
+          <TimelineItem
+            status="active"
+            statusLabel="진행 중"
+            title="셋째 줄"
+            meta="진행 중"
+            trailing={
+              <Badge variant="info" pulse>
+                진행
+              </Badge>
+            }
+          />
+          <TimelineItem
+            status="failed"
+            statusLabel="실패"
+            title="넷째 줄"
+            meta="3초 · 오류"
+            trailing={<Badge variant="danger">실패</Badge>}
+          />
+          <TimelineItem status="pending" statusLabel="대기" title="다섯째 줄" meta="대기" />
+          <TimelineItem status="pending" statusLabel="대기" title="여섯째 줄" meta="대기" />
+          <TimelineItem status="pending" statusLabel="대기" title="일곱째 줄" meta="대기" />
+          <TimelineItem
+            status="pending"
+            statusLabel="대기"
+            title="여덟째 줄(마지막 — 세로선 끊김)"
+            meta="대기"
+            isLast
+          />
+        </TimelineItems>
+      </SplitPane>
+    </div>
+  );
 }
