@@ -2,11 +2,27 @@
 // 그 사이에 끼어들 수 없다. bin/worker.ts는 이걸 반복해서 부르는 껍데기일 뿐이다.
 // (decisions/run-execution-model.md)
 import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
-import { toStepFailure } from '../steps/StepRunner.ts';
+import { StepFailure, toStepFailure } from '../steps/StepRunner.ts';
 import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
 
 /** heartbeat가 이만큼 끊기면 중단으로 본다(decisions/run-location.md). */
 export const HEARTBEAT_TIMEOUT_MS = 30_000;
+
+/**
+ * 단계를 도는 동안 이 간격으로 heartbeat를 쓴다(decisions/run-location.md "heartbeat 쓰기 5s").
+ * 시도 시작에만 쓰면 30초 넘게 걸리는 실제 모델 단계는 돌고 있는데도 중단으로 회수된다.
+ *
+ * **워커의 타이머로 쓴다, StepRunner 협조에 기대지 않는다** — 구현이 `beat()`를 빼먹는 순간
+ * 그 단계는 조용히 회수된다(decisions/run-location.md 함정).
+ */
+export const HEARTBEAT_INTERVAL_MS = 5_000;
+
+/**
+ * 단계 하나의 최대 실행 시간. **heartbeat와 별개다** — heartbeat는 "프로세스가 살아 있다"만
+ * 증명하고 단계가 실제로 진척 중인지는 모른다. 멈춘 모델 호출을 잡는 건 이 타임아웃이다.
+ * 넘기면 `STEP_TIMEOUT`(재시도 가능)으로 그 시도를 끊는다.
+ */
+export const STEP_TIMEOUT_MS = 10 * 60_000;
 
 /** 재시도 가능한 실패를 한 단계에서 몇 번까지 다시 해보는가. 정책은 워커가 정한다. */
 export const MAX_STEP_ATTEMPTS = 3;
@@ -80,12 +96,45 @@ async function runStep(
   const stepRef = { runId: run.id, step };
   await deps.repo.startStep(run.id, step, deps.clock.now());
 
-  const controller = new AbortController();
-  signal?.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
+  // 단계가 도는 동안 살아 있음을 계속 알린다. 쓰기 실패는 로그만 — 다음 박동이 다시 쓴다.
+  const stopHeartbeat = deps.timers.every(HEARTBEAT_INTERVAL_MS, () => {
+    deps.repo.beat(run.id, deps.clock.now()).catch((error: unknown) => {
+      deps.logger.error('heartbeat 쓰기 실패', {
+        ...stepRef,
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    });
+  });
+  try {
+    return await attemptStep(deps, run, step, signal);
+  } finally {
+    stopHeartbeat();
+  }
+}
+
+async function attemptStep(
+  deps: WorkerDeps,
+  run: ClaimedRun,
+  step: StepName,
+  signal?: AbortSignal,
+): Promise<TickResult> {
+  const stepRef = { runId: run.id, step };
 
   for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
     const startedAt = deps.clock.now();
     await deps.repo.beat(run.id, startedAt);
+
+    // 시도마다 새 signal — 바깥 종료 신호와 단계 타임아웃 둘 중 먼저 오는 쪽이 끊는다.
+    const controller = new AbortController();
+    const onAbort = () => controller.abort(signal?.reason);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    let timedOut = false;
+    const cancelTimeout = deps.timers.after(STEP_TIMEOUT_MS, () => {
+      timedOut = true;
+      controller.abort(
+        new StepFailure('STEP_TIMEOUT', '단계가 제한 시간 안에 끝나지 않았습니다.', true),
+      );
+    });
 
     try {
       const result = await deps.stepRunner.run({
@@ -110,7 +159,10 @@ async function runStep(
       deps.logger.info('단계 완료', { ...stepRef, attempt });
       return { outcome: 'completed', stepRef };
     } catch (error) {
-      const failure = toStepFailure(error);
+      // 구현이 signal.reason을 던지든 자기 AbortError를 던지든, 타임아웃이면 타임아웃으로 기록한다.
+      const failure = timedOut
+        ? new StepFailure('STEP_TIMEOUT', '단계가 제한 시간 안에 끝나지 않았습니다.', true)
+        : toStepFailure(error);
       const last = attempt === MAX_STEP_ATTEMPTS || !failure.retryable;
       deps.logger.error('단계 실패', {
         ...stepRef,
@@ -138,6 +190,9 @@ async function runStep(
       );
       await deps.repo.failRun(run.id, finishedAt);
       return { outcome: 'failed', stepRef };
+    } finally {
+      cancelTimeout();
+      signal?.removeEventListener('abort', onAbort);
     }
   }
 

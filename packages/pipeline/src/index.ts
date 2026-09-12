@@ -72,7 +72,13 @@ export { StepFailure, toStepFailure } from './steps/StepRunner.ts';
 export type { StepRunner, StepContext, StepResult } from './steps/StepRunner.ts';
 export { createMockStepRunner } from './steps/MockStepRunner.ts';
 export type { MockStepRunnerOptions } from './steps/MockStepRunner.ts';
-export { runOnce, HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS } from './worker/runOnce.ts';
+export {
+  runOnce,
+  HEARTBEAT_TIMEOUT_MS,
+  HEARTBEAT_INTERVAL_MS,
+  STEP_TIMEOUT_MS,
+  MAX_STEP_ATTEMPTS,
+} from './worker/runOnce.ts';
 export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo.ts';
 export type { TickResult, TickOutcome } from './worker/runOnce.ts';
 export type {
@@ -82,6 +88,7 @@ export type {
   StepOutcome,
   Clock,
   Ids,
+  Timers,
   Logger,
 } from './worker/WorkerDeps.ts';
 export { startRun } from './run/startRun.ts';
