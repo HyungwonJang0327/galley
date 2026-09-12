@@ -12,8 +12,9 @@ import { getQueueSections } from '../../../lib/queue-data';
 import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
-import { moveQueueRowAction, reloadQueueAction } from './actions';
+import { moveQueueRowAction, reloadQueueAction, reorderQueueRowAction } from './actions';
 import { CategoryFilter } from './CategoryFilter';
+import { DraggableQueueRows } from './DraggableQueueRows';
 import { QueueRowMenu } from './QueueRowMenu';
 import { ReloadQueueButton } from './ReloadQueueButton';
 import styles from './page.module.css';
@@ -64,7 +65,16 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             ) : undefined
           }
         />
-        {view.rows.length > 0 ? (
+        {view.rows.length > 0 && view.active.status === '대기' ? (
+          // 대기 탭만 드래그로 순서 변경(사용자 결정 2026-09-12). 후보는 ### 소제목 때문에 불가.
+          <DraggableQueueRows
+            rows={view.rows}
+            status={view.active.status}
+            badgeVariant={badgeVariant}
+            move={moveQueueRowAction}
+            reorder={reorderQueueRowAction}
+          />
+        ) : view.rows.length > 0 ? (
           <ListRows>
             {view.rows.map((row) => (
               <ListRow
