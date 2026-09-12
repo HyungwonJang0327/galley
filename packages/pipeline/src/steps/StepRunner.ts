@@ -35,6 +35,12 @@ export interface StepResult {
 
 export interface StepRunner {
   run(ctx: StepContext): Promise<StepResult>;
+  /**
+   * 이 단계가 쓰다 만 산출물을 버린다. 워커가 종료 신호로 단계를 **반환**할 때 부른다 —
+   * 단계는 pending으로 돌아가 처음부터 다시 도니 반쯤 쓴 파일이 남으면 안 된다.
+   * 파일을 쓰는 구현(B3a)이 채운다. 쓰지 않는 구현은 생략한다.
+   */
+  discard?(ctx: Pick<StepContext, 'runId' | 'step' | 'topic'>): Promise<void>;
 }
 
 /**

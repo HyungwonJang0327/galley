@@ -37,7 +37,9 @@ export type TickOutcome =
   /** 단계가 영구 실패해 실행을 실패로 돌렸다. */
   | 'failed'
   /** 끊긴 실행을 회수했다. */
-  | 'recovered';
+  | 'recovered'
+  /** 종료 신호를 받아 돌던 단계를 반환했다(실패가 아니다 — 다음 기동이 그 단계부터 다시 돈다). */
+  | 'released';
 
 export interface TickResult {
   outcome: TickOutcome;
@@ -52,6 +54,8 @@ export interface TickResult {
  * 그 사이에 승인·취소가 끼어들 수 있고, 테스트도 단계 단위로 본다.
  */
 export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<TickResult> {
+  // 이미 종료 중이면 새로 잡지 않는다.
+  if (signal?.aborted) return { outcome: 'idle' };
   const now = deps.clock.now();
 
   const reclaimed = await deps.repo.reclaimStale(new Date(now.getTime() - HEARTBEAT_TIMEOUT_MS));
@@ -121,6 +125,9 @@ async function attemptStep(
   const stepRef = { runId: run.id, step };
 
   for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
+    // 재시도 사이에 종료 신호가 왔으면 새 시도를 시작하지 않고 반환한다.
+    if (signal?.aborted) return releaseStep(deps, run, step);
+
     const startedAt = deps.clock.now();
     await deps.repo.beat(run.id, startedAt);
 
@@ -159,6 +166,9 @@ async function attemptStep(
       deps.logger.info('단계 완료', { ...stepRef, attempt });
       return { outcome: 'completed', stepRef };
     } catch (error) {
+      // 종료 신호로 끊긴 것은 실패가 아니다 — 무엇을 던졌든 단계를 반환하고 나간다.
+      if (signal?.aborted) return releaseStep(deps, run, step);
+
       // 구현이 signal.reason을 던지든 자기 AbortError를 던지든, 타임아웃이면 타임아웃으로 기록한다.
       const failure = timedOut
         ? new StepFailure('STEP_TIMEOUT', '단계가 제한 시간 안에 끝나지 않았습니다.', true)
@@ -198,4 +208,28 @@ async function attemptStep(
 
   // MAX_STEP_ATTEMPTS가 0 이하가 아니면 닿지 않는다.
   return { outcome: 'failed', stepRef };
+}
+
+/**
+ * 단계를 반환한다: 쓰다 만 산출물을 버리고(StepRunner.discard) 단계·실행을 되돌린다.
+ * finishStep을 부르지 않으므로 시도 횟수에 세지 않는다 — 종료는 실패가 아니다.
+ * 버리기가 실패해도 반환은 한다 — 다음 기동이 그 단계를 처음부터 다시 돌며 덮어쓴다.
+ */
+async function releaseStep(deps: WorkerDeps, run: ClaimedRun, step: StepName): Promise<TickResult> {
+  const stepRef = { runId: run.id, step };
+  try {
+    await deps.stepRunner.discard?.({
+      runId: run.id,
+      step,
+      topic: { id: run.topicId, title: run.topicTitle, slug: run.topicSlug },
+    });
+  } catch (error) {
+    deps.logger.error('산출물 버리기 실패', {
+      ...stepRef,
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+  await deps.repo.release(run.id, step, deps.clock.now());
+  deps.logger.info('종료 신호로 단계를 반환했다', stepRef);
+  return { outcome: 'released', stepRef };
 }

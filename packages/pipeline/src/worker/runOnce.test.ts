@@ -117,6 +117,7 @@ function fakeRepo(options: { pendingApproval?: boolean } = {}) {
     outcomes: [] as { step: StepName; outcome: StepOutcome }[],
     awaited: false,
     failed: false,
+    released: [] as { step: StepName; at: Date }[],
     staleBefore: null as Date | null,
     reclaim: 0,
   };
@@ -155,6 +156,11 @@ function fakeRepo(options: { pendingApproval?: boolean } = {}) {
       const found = steps.find((s) => s.name === step);
       if (found) found.status = outcome.status;
       state.outcomes.push({ step, outcome });
+    },
+    async release(_runId, step, now) {
+      const found = steps.find((s) => s.name === step);
+      if (found) found.status = STEP_STATUS.pending;
+      state.released.push({ step, at: now });
     },
     async awaitApproval() {
       state.awaited = true;
@@ -488,5 +494,112 @@ describe('runOnce — 단계 타임아웃', () => {
 
     expect(d.timersRef.afters).toHaveLength(1);
     expect(d.timersRef.afters[0]?.cancelled).toBe(true);
+  });
+});
+
+describe('runOnce — 종료 신호(클레임 반환)', () => {
+  it('단계 도중 종료 신호가 오면 산출물을 버리고 단계를 반환한다 — 실패로 기록하지 않는다', async () => {
+    const { repo, state } = fakeRepo();
+    const blocking = blockingRunner();
+    const discarded: { runId: string; step: StepName }[] = [];
+    const runner: StepRunner = {
+      ...blocking.runner,
+      async discard(ctx) {
+        discarded.push({ runId: ctx.runId, step: ctx.step });
+      },
+    };
+    const d = deps({ repo, stepRunner: runner });
+    const controller = new AbortController();
+    await runOnce(d, controller.signal); // 잡는 틱
+
+    const started = blocking.nextCall();
+    const tick = runOnce(d, controller.signal);
+    await started;
+    controller.abort(new Error('SIGTERM'));
+
+    const result = await tick;
+    expect(result).toEqual({ outcome: 'released', stepRef: { runId: 'run_1', step: 'evidence' } });
+    expect(discarded).toEqual([{ runId: 'run_1', step: 'evidence' }]);
+    expect(state.released).toEqual([{ step: 'evidence', at: d.clock.now() }]);
+    // finishStep·failRun이 불리지 않았다 — 시도 횟수에 세지 않고 실패도 아니다.
+    expect(state.outcomes).toHaveLength(0);
+    expect(state.failed).toBe(false);
+    expect(state.steps[0]?.status).toBe(STEP_STATUS.pending);
+    // heartbeat 타이머도 멈췄다.
+    expect(d.timersRef.everies[0]?.stopped).toBe(true);
+  });
+
+  it('구현이 signal을 무시하고 자기 에러를 던져도 종료 중이면 반환이다', async () => {
+    const { repo, state } = fakeRepo();
+    const blocking = blockingRunner({ onAbort: 'ownAbortError' });
+    const d = deps({ repo, stepRunner: blocking.runner });
+    const controller = new AbortController();
+    await runOnce(d, controller.signal);
+
+    const started = blocking.nextCall();
+    const tick = runOnce(d, controller.signal);
+    await started;
+    controller.abort(new Error('SIGINT'));
+
+    expect((await tick).outcome).toBe('released');
+    expect(state.outcomes).toHaveLength(0);
+  });
+
+  it('재시도 사이에 종료 신호가 오면 새 시도를 시작하지 않고 반환한다', async () => {
+    const { repo, state } = fakeRepo();
+    const controller = new AbortController();
+    let calls = 0;
+    const runner: StepRunner = {
+      async run(ctx) {
+        calls += 1;
+        // 첫 시도가 실패하면서 종료 신호가 "그새" 온 상황.
+        controller.abort(new Error('SIGTERM'));
+        return createMockStepRunner({
+          failAt: { step: ctx.step, code: 'TIMEOUT', retryable: true },
+        }).run(ctx);
+      },
+    };
+    const d = deps({ repo, stepRunner: runner });
+    await runOnce(d, controller.signal);
+
+    const result = await runOnce(d, controller.signal);
+
+    expect(result.outcome).toBe('released');
+    expect(calls).toBe(1);
+    expect(state.outcomes).toHaveLength(0);
+  });
+
+  it('산출물 버리기가 실패해도 반환은 한다(다음 기동이 덮어쓴다)', async () => {
+    const { repo, state } = fakeRepo();
+    const blocking = blockingRunner();
+    const runner: StepRunner = {
+      ...blocking.runner,
+      discard: () => Promise.reject(new Error('EACCES')),
+    };
+    const d = deps({ repo, stepRunner: runner });
+    const controller = new AbortController();
+    await runOnce(d, controller.signal);
+
+    const started = blocking.nextCall();
+    const tick = runOnce(d, controller.signal);
+    await started;
+    controller.abort(new Error('SIGTERM'));
+
+    expect((await tick).outcome).toBe('released');
+    expect(state.released).toHaveLength(1);
+    expect(d.logger.error).toHaveBeenCalledWith(
+      '산출물 버리기 실패',
+      expect.objectContaining({ detail: 'EACCES' }),
+    );
+  });
+
+  it('이미 종료 중이면 새로 잡지 않는다', async () => {
+    const { repo, state } = fakeRepo();
+    const d = deps({ repo });
+    const controller = new AbortController();
+    controller.abort();
+
+    expect(await runOnce(d, controller.signal)).toEqual({ outcome: 'idle' });
+    expect(state.claimed).toBe(false);
   });
 });

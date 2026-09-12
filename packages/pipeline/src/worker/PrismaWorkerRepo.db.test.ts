@@ -209,6 +209,55 @@ describe('실패와 회수', () => {
     expect(evidence.status).toBe(STEP_STATUS.succeeded);
   });
 
+  test('종료 신호로 반환한 단계는 다음 기동이 30초를 기다리지 않고 바로 그 단계부터 돈다', async () => {
+    const run = await queueAndStart();
+    const discarded: string[] = [];
+    let block: (() => void) | null = null;
+    const started = new Promise<void>((resolve) => {
+      block = resolve;
+    });
+    const mock = createMockStepRunner({ onDiscard: (ctx) => discarded.push(ctx.step) });
+    const first = makeDeps({
+      stepRunner: {
+        run: async (ctx) => {
+          if (ctx.step === 'velog') {
+            block?.();
+            await new Promise((_, reject) =>
+              ctx.signal.addEventListener('abort', () => reject(ctx.signal.reason), { once: true }),
+            );
+          }
+          return mock.run(ctx);
+        },
+        discard: mock.discard,
+      },
+    });
+    const controller = new AbortController();
+    await runOnce(first.deps, controller.signal); // 잡기
+    await runOnce(first.deps, controller.signal); // evidence 완료
+    const tick = runOnce(first.deps, controller.signal); // velog 도중
+    await started;
+    controller.abort(new Error('SIGTERM'));
+    expect((await tick).outcome).toBe('released');
+    expect(discarded).toEqual(['velog']);
+
+    const afterRelease = await prisma.run.findUniqueOrThrow({
+      where: { id: run.id },
+      include: { steps: { orderBy: { order: 'asc' } } },
+    });
+    expect(afterRelease).toMatchObject({ workerState: 'interrupted', workerId: null });
+    expect(afterRelease.steps[1]).toMatchObject({
+      name: 'velog',
+      status: STEP_STATUS.pending,
+      startedAt: null,
+      attemptCount: 0,
+    });
+
+    // 새 프로세스(새 workerId). 시계를 옮기지 않아도 바로 잡는다.
+    const second = makeDeps({ workerId: 'worker_2' });
+    expect((await runOnce(second.deps)).outcome).toBe('claimed');
+    expect((await runOnce(second.deps)).stepRef?.step).toBe('velog');
+  });
+
   test('잡을 실행이 없으면 idle', async () => {
     const { deps } = makeDeps();
 

@@ -96,6 +96,21 @@ export function createPrismaWorkerRepo(prisma: PrismaClient): WorkerRepo {
       });
     },
 
+    /**
+     * 반환은 두 줄을 되돌린다 — 단계는 pending(시작 시각 비움, 시도 횟수는 finishStep이 안 불렸으니
+     * 그대로), 실행은 interrupted. 30초 heartbeat 공백을 기다리지 않고 다음 기동이 바로 잡는다.
+     */
+    async release(runId, step, now) {
+      await prisma.runStep.updateMany({
+        where: { runId, name: step, status: STEP_STATUS.running },
+        data: { status: STEP_STATUS.pending, startedAt: null },
+      });
+      await prisma.run.updateMany({
+        where: { id: runId, workerState: 'running' },
+        data: { workerState: 'interrupted', workerId: null, heartbeat: now },
+      });
+    },
+
     async awaitApproval(runId, now) {
       await prisma.run.update({
         where: { id: runId },
