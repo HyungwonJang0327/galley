@@ -1,15 +1,25 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
-const { getQueueSections } = vi.hoisted(() => ({ getQueueSections: vi.fn() }));
+const { getQueueSections, countPendingApproval } = vi.hoisted(() => ({
+  getQueueSections: vi.fn(),
+  countPendingApproval: vi.fn(),
+}));
 
 vi.mock('./queue-data', () => ({ getQueueSections }));
+// 실제 SQLite 대신 pipeline 경계만 가짜로(조회 자체는 pipeline 통합 테스트가 본다).
+vi.mock('@galley/pipeline', () => ({ prisma: {}, countPendingApproval }));
 
 import { getNavCounts } from './nav-counts';
 
 const topic = (title: string) => ({ title, category: null, completedOn: null });
 
+beforeEach(() => {
+  countPendingApproval.mockResolvedValue(0);
+});
+
 afterEach(() => {
   getQueueSections.mockReset();
+  countPendingApproval.mockReset();
 });
 
 describe('getNavCounts', () => {
@@ -32,6 +42,16 @@ describe('getNavCounts', () => {
 
     expect((await getNavCounts(sections)).waiting).toBe(1);
     expect(getQueueSections).not.toHaveBeenCalled();
+  });
+
+  it('승인 대기는 Run 조회 결과를 그대로 쓴다', async () => {
+    getQueueSections.mockResolvedValue({
+      ok: true,
+      data: { 대기: [], 후보: [], 보류: [], 완료: [] },
+    });
+    countPendingApproval.mockResolvedValue(3);
+
+    expect((await getNavCounts()).pendingApproval).toBe(3);
   });
 
   it('큐를 못 읽으면 대기는 0(화면은 안내 문구를 따로 그린다)', async () => {
