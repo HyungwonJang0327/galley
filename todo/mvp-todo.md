@@ -153,7 +153,7 @@
 - [ ] **BW2** pl — 워커 루프(`bin/worker.ts`): queued→running 클레임, 단계 오케스트레이션(레지스트리 어댑터 호출·RunStep 기록·heartbeat), 동시 1개. 폴링 2s·heartbeat 5s. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
 - [ ] **BW3** pl — 중단 감지·재개(heartbeat 30s 공백→interrupted, 완료 단계 다음부터; 기동 시+깨어날 때 검사, 단계는 원자적). 커밋: `feat(pipeline): 워커 중단 감지와 단계 재개 추가`
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
-- [ ] **BW4** fe — 수정 지시·승인을 Run 상태 변경으로(대시보드 write → 워커 pickup). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
+- [ ] **BW4** fe — 수정 지시·승인·**재실행**을 Run 상태 변경으로(대시보드 write → 워커 pickup). B2b에서 미룬 재실행·승인 Route Handler가 여기 들어온다(전이는 🔒 B1a 함수 호출). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
 - [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
 - [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
@@ -192,7 +192,7 @@
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
 - [x] **B2a** (2026-09-12 `fcd5c5f`·`61d515e`·`29bf5cf`, feat/ui-run-patterns, PR #76) ui — SplitPane(좌 고정폭 토큰 320px / 우 헤더·본문·하단 바, 좌우 독립 스크롤) · TimelineItem+TimelineItems(상태 마커 4종 pending/active/done/failed, 슬롯 중심 — 단계명·토큰 문구는 앱이 조립, 펼침은 비제어 기본 + `open`으로 제어 가능) · ActionBar(SplitPane footer에선 grid 고정, 그냥 넣으면 sticky). 토큰 4개 추가. 갤러리 조합 섹션(데모는 `PrimitiveDemos.tsx` — 서버 컴포넌트에 두면 펼침이 동작하지 않는다) + `verify:layout` 105→**117 전부 통과**(새 검사 12개). ui 79→97. 산출물 마크다운 렌더는 B2e. 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
-- [ ] **B2b** fe — 실행·재실행·승인 Route Handler(pipeline 함수 호출만). 커밋: `feat(run): 실행·재실행·승인 Route Handler 추가`
+- [x] **B2b** (2026-09-12 `681d57f`·`a35ff2c`, feat/run-start-api, PR #79) fe — **실행 시작만**: `POST /api/runs`(이 프로젝트 첫 Route Handler, 본문 `title` 필수·`modelId` 선택) → `startRun()`(pipeline)이 Run을 `queued`로 생성. 모델은 레지스트리·API 키 확인, 같은 주제의 끝나지 않은 실행(`finishedAt` null)이 있으면 거절(409). 입력 오류 400·그 밖 500. **재실행·승인은 Run 상태 전이라 🔒 B1a 뒤 BW4로 미룸**(사용자 결정 2026-09-12 — 임시 전이 코드를 앱에 두지 않는다). decisions/run-location.md "실행 시작 API". 커밋: `feat(pipeline): 주제를 queued Run으로 올리는 startRun 추가` · `feat(dashboard): 실행 시작 Route Handler(POST /api/runs) 추가`
 - [ ] **B2c** fe — 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(**6단계** 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가`
 - [ ] **B2d** fe — 하단 ActionBar(수정 지시 입력 + 승인) → Route Handler 배선. 커밋: `feat(run): 실행 상세 수정 지시·승인 배선`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
