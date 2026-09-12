@@ -1,0 +1,11 @@
+.menu {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+/* 실패 문구는 행 안에서 짧게. 성공하면 화면이 다시 그려져 문구가 남지 않는다. */
+.error {
+  color: var(--ui-color-danger-fg);
+  font-size: var(--ui-text-xs);
+}

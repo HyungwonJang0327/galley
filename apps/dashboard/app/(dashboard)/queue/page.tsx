@@ -12,8 +12,9 @@ import { getQueueSections } from '../../../lib/queue-data';
 import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
-import { reloadQueueAction } from './actions';
+import { moveQueueRowAction, reloadQueueAction } from './actions';
 import { CategoryFilter } from './CategoryFilter';
+import { QueueRowMenu } from './QueueRowMenu';
 import { ReloadQueueButton } from './ReloadQueueButton';
 import styles from './page.module.css';
 
@@ -65,12 +66,23 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         />
         {view.rows.length > 0 ? (
           <ListRows>
-            {view.rows.map((row, index) => (
+            {view.rows.map((row) => (
               <ListRow
-                key={`${index}-${row.title}`}
+                key={`${row.index}-${row.title}`}
                 title={row.title}
                 meta={row.meta}
                 trailing={<Badge variant={badgeVariant}>{view.active.status}</Badge>}
+                // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
+                actions={
+                  view.active.status === '완료' ? undefined : (
+                    <QueueRowMenu
+                      title={row.title}
+                      status={view.active.status}
+                      index={row.index}
+                      move={moveQueueRowAction}
+                    />
+                  )
+                }
               />
             ))}
           </ListRows>

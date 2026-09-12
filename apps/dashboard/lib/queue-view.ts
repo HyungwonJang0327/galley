@@ -22,6 +22,8 @@ export interface QueueRowView {
   title: string;
   /** 보조 텍스트: 완료 탭은 완료일, 나머지는 카테고리. */
   meta: string | undefined;
+  /** 섹션 안에서의 0기반 위치(카테고리 필터 전 기준). 행 ⋮ 이동이 파일에서 항목을 찾는 키. */
+  index: number;
 }
 
 export interface QueueView {
@@ -54,9 +56,13 @@ export function buildQueueView(
     active,
     categories,
     category,
-    rows: filterByCategory(topics, category).map((topic) => ({
+    rows: filterByCategory(
+      topics.map((topic, index) => ({ ...topic, index })),
+      category,
+    ).map((topic) => ({
       title: topic.title,
       meta: rowMeta(active, topic),
+      index: topic.index,
     })),
   };
 }
