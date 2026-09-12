@@ -107,7 +107,7 @@
 
 ### A6. 큐 편집 — [B] Phase 1-A #4
 
-- [x] **A6a** (2026-09-12 `2ff4541`·`6ac03d4`·`2c4098d`·`7e06d14`·fix `eb46992`, feat/queue-reorder-dnd) fe — pragmatic-drag-and-drop 도입 + 대기 큐 순서 변경 UI. 사용자 결정: 대기 탭 안에서만 · 놓자마자 저장 · 키보드 이동은 범위 밖. **후보는 `UNSUPPORTED_SECTION`으로 거부**(### 소제목 때문에 카테고리가 생김). 드래그 조작 자동 검증은 불가(합성 DragEvent는 `isTrusted: false`) → 수동 확인(사용자 결정). 커밋: `feat(dashboard): 큐 순서 변경 DnD 추가`
+- [x] **A6a** (2026-09-12 `3d80d35`·`067d487`·`64e8464`·`63f2f36`·fix `fba39c5`, feat/queue-reorder-dnd, PR #70) fe — pragmatic-drag-and-drop 도입 + 대기 큐 순서 변경 UI. 사용자 결정: 대기 탭 안에서만 · 놓자마자 저장 · 키보드 이동은 범위 밖. **후보는 `UNSUPPORTED_SECTION`으로 거부**(### 소제목 때문에 카테고리가 생김). 드래그 조작 자동 검증은 불가(합성 DragEvent는 `isTrusted: false`) → 수동 확인(사용자 결정). 커밋: `feat(dashboard): 큐 순서 변경 DnD 추가`
 - [x] **A6b** (2026-09-12 `6557b14`, feat/queue-row-menu, PR #60, AN5와 한 PR) fe — 섹션 이동(후보↔대기↔보류) 액션: `lib/queue-move.ts`(BLOG_DIR Storage·실패 문구) + Server Action `moveQueueRowAction`(성공 시에만 `revalidatePath('/', 'layout')`). 커밋: `feat(queue): 큐 섹션 이동 액션 추가`
 - [x] **A6c** (2026-09-12 `3b2d1b4`, feat/queue-row-menu, PR #60, AN5와 한 PR) pl — 편집 결과를 주제_큐.md에 반영 + DB 재적재: `queue/moveQueue.ts`(`moveTopic` 순수 + `moveQueueTopic`). 위치 규칙·카테고리·동시 변경 방어는 decisions/queue-sync-direction.md "섹션 이동 규칙". 커밋: `feat(queue): 큐 섹션 이동과 주제_큐.md 반영 추가`
 - [ ] **A6d** ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). 섹션 이동(A6c)·순서 변경(A6a) 경로는 각각 pipeline 통합 테스트(임시 SQLite + 메모리 Storage)가 덮는다 → 남은 범위는 **여러 편집을 연달아 한 뒤에도 파일↔DB가 어긋나지 않는지**. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
