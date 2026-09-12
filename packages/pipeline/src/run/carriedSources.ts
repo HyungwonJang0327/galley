@@ -1,7 +1,7 @@
 // carried 단계의 출처 조회 — "이 단계의 이전 결과를 실제로 생산한 Run은 어디인가".
 // 범위(fresh/carried)는 순수 함수 planRerun이 정하고, 출처는 이전 Run의 기록을 읽어야 하므로
 // 여기(리포지토리)에 있다. 재실행 확인 API 하나가 둘을 조합해 화면에 넘긴다.
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { STEP_ORIGIN, isStepName, type StepName } from './stateMachine.ts';
 
 /**
@@ -14,9 +14,12 @@ import { STEP_ORIGIN, isStepName, type StepName } from './stateMachine.ts';
  *
  * 기록이 없거나 carried인데 `sourceRunId`가 비어 있는 단계는 Map에서 빠진다 — 화면은
  * 시각 없이 그리면 된다(없는 출처를 지어내지 않는다).
+ *
+ * `TransactionClient`를 받는다 — `startRerun`이 새 Run을 만드는 **같은 트랜잭션 안에서** 직전 Run의
+ * 행을 읽어야 승계 사슬이 일관된다. `PrismaClient`도 그대로 넘길 수 있다.
  */
 export async function resolveCarriedSources(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   previousRunId: string,
   steps: readonly StepName[],
 ): Promise<Map<StepName, string>> {
