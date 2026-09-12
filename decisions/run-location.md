@@ -11,6 +11,13 @@
 - 실행 상태(`queued`/`running`/`interrupted`)는 도메인 상태(승인 대기/완료/실패)와 **함께** Run에 얹히고, 전이는 상태 머신(B1a, 🔒 사용자 작성)이 소유한다.
 - **폴링 2s · heartbeat 쓰기 5s · heartbeat 타임아웃 30s.**
 
+## 실행 시작 API (2026-09-12 추가)
+
+- 대시보드의 실행 시작 표면은 **Route Handler `POST /api/runs`**다(큐 편집은 Server Action, 실행은 Route Handler — 워커·CLI도 같은 표면을 쓸 수 있다). 본문 `title`(필수) · `modelId`(선택, 없으면 레지스트리 기본).
+- 핸들러는 `startRun()`(@galley/pipeline)을 부를 뿐이고, **Run을 `queued`로 만드는 것까지만** 한다. **재실행·승인은 Run 상태 전이라 상태 머신(B1a 🔒) 뒤로 미룬다** — 임시 전이 코드를 앱에 두지 않는다.
+- **같은 주제의 끝나지 않은 실행이 있으면 만들지 않는다.** 판정 기준은 `finishedAt`이 비었는지 하나 — `workerState` 값(queued/running/interrupted)을 앱이 해석하지 않고, 중단된 실행은 워커가 재개하므로 새로 만들면 같은 주제가 두 번 돈다.
+- 모델은 **레지스트리에 있고 API 키가 있을 때만** 받는다(없는 id·키 없는 모델은 큐에 올리기 전에 거절 — 워커가 반드시 실패할 실행을 만들지 않는다).
+
 ## 중단·재개 (잠자기 / 재시작 / 강제 종료 구분 없음)
 
 - heartbeat가 타임아웃(30s) 끊긴 `running`은 `interrupted`로 바꾸고, **완료된 단계 산출물 다음부터 재개**한다. 이 검사는 **워커 기동 시**와 **워커 자신이 깨어났을 때**(heartbeat 공백 감지) 둘 다 한다. 잠자기·재시작·강제 종료를 구분하지 않는다 — 전부 같은 경로다.
@@ -45,3 +52,4 @@ launchd → systemd / 컨테이너. **워커 코드는 그대로.**
 ## 갱신 이력
 
 - 2026-09-09 최초 결정(결정 ② "같은 프로세스"를 별도 워커로 변경). 워커 실행·heartbeat·중단 재개·launchd 설치 문서. decisions/pipeline-execution-location.md에 변경 표시.
+- 2026-09-12 "실행 시작 API" 절 추가(B2b). 표면은 Route Handler `POST /api/runs`, 범위는 생성까지만(재실행·승인은 B1a 뒤), 중복 방지 기준은 `finishedAt`, 모델은 레지스트리·API 키 확인. 기존 결정과 충돌 없음(생성만 한다는 원칙을 API 수준으로 구체화).
