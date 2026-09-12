@@ -6,10 +6,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import type { ModelAdapter } from '../model/ModelAdapter';
-import { createModelRegistry } from '../model/ModelRegistry';
-import { RUN_STATUS } from './stateMachine';
-import { startRun } from './startRun';
+import type { ModelAdapter } from '../model/ModelAdapter.ts';
+import { createModelRegistry } from '../model/ModelRegistry.ts';
+import { RUN_STATUS } from './stateMachine.ts';
+import { startRun } from './startRun.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

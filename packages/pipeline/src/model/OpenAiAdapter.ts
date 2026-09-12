@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import type { GenerateInput, GenerateResult, ModelAdapter, ModelPricing } from './ModelAdapter';
-import { calculateCostUsd } from './cost';
+import type { GenerateInput, GenerateResult, ModelAdapter, ModelPricing } from './ModelAdapter.ts';
+import { calculateCostUsd } from './cost.ts';
 
 /** 어댑터가 쓰는 SDK 표면만(Responses API). 테스트는 가짜를 주입한다. */
 export interface OpenAiResponsesClient {

@@ -7,8 +7,8 @@ import {
   STEP_STATUS,
   isStepName,
   isStepStatus,
-} from '../run/stateMachine';
-import type { ClaimedRun, WorkerRepo } from './WorkerDeps';
+} from '../run/stateMachine.ts';
+import type { ClaimedRun, WorkerRepo } from './WorkerDeps.ts';
 
 /** 워커가 아직 놓지 않은 실행 상태 — 이 둘만 집어간다. */
 const CLAIMABLE = ['queued', 'interrupted'];

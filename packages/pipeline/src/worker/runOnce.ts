@@ -1,9 +1,9 @@
 // 워커의 한 틱. **한 tick = 한 단계**만 처리한다 — 여러 단계를 이어 물면 승인·취소·heartbeat가
 // 그 사이에 끼어들 수 없다. bin/worker.ts는 이걸 반복해서 부르는 껍데기일 뿐이다.
 // (decisions/run-execution-model.md)
-import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine';
-import { toStepFailure } from '../steps/StepRunner';
-import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps';
+import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
+import { toStepFailure } from '../steps/StepRunner.ts';
+import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
 
 /** heartbeat가 이만큼 끊기면 중단으로 본다(decisions/run-location.md). */
 export const HEARTBEAT_TIMEOUT_MS = 30_000;

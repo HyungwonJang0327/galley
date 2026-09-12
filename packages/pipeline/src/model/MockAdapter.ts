@@ -1,4 +1,4 @@
-import type { GenerateInput, GenerateResult, ModelAdapter } from './ModelAdapter';
+import type { GenerateInput, GenerateResult, ModelAdapter } from './ModelAdapter.ts';
 
 export interface MockAdapterOptions {
   /** generate가 항상 돌려줄 고정 텍스트. */

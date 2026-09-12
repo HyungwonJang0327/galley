@@ -2,9 +2,9 @@
 // (decisions/run-location.md: 대시보드는 워커에 신호를 보내지 않는다).
 // 검수 상태(status)와 전이 규칙은 상태 머신(B1a)이 소유하므로 여기서는 스키마 기본값을 그대로 둔다.
 import type { PrismaClient } from '@prisma/client';
-import type { ModelRegistry } from '../model/ModelRegistry';
-import { topicSlug } from '../queue/topicSlug';
-import type { RunSummary } from './runQueries';
+import type { ModelRegistry } from '../model/ModelRegistry.ts';
+import { topicSlug } from '../queue/topicSlug.ts';
+import type { RunSummary } from './runQueries.ts';
 
 export interface StartRunInput {
   /** 주제 키 = `QueueItem.id`. 내용에서 파생되지 않아 제목이 바뀌어도 이력이 끊기지 않는다. */

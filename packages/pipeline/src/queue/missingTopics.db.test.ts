@@ -10,10 +10,10 @@ import {
   acknowledgeMissingTopic,
   listMissingTopics,
   restoreMissingTopicToHold,
-} from './missingTopics';
-import { importQueueFromFile } from './importQueue';
-import { RUN_STATUS } from '../run/stateMachine';
-import type { Storage } from '../storage/Storage';
+} from './missingTopics.ts';
+import { importQueueFromFile } from './importQueue.ts';
+import { RUN_STATUS } from '../run/stateMachine.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

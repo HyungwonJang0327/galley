@@ -1,9 +1,9 @@
 // 큐 화면용 로드: 파일(SoT)을 DB에 재적재한 뒤 DB에서 섹션별로 읽는다.
 // decisions/queue-sync-direction.md "로드 시 파일을 다시 읽어 DB 갱신".
 import type { PrismaClient } from '@prisma/client';
-import type { Storage } from '../storage/Storage';
-import { importQueueFromFile } from './importQueue';
-import type { QueueStatus } from './queueFile';
+import type { Storage } from '../storage/Storage.ts';
+import { importQueueFromFile } from './importQueue.ts';
+import type { QueueStatus } from './queueFile.ts';
 
 /** 화면에 보여 줄 주제 한 줄. */
 export interface QueueEntry {

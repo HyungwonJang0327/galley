@@ -1,9 +1,9 @@
 // 큐 섹션 이동(대기↔후보↔보류) → 주제_큐.md 재작성 → DB 재적재.
 // 파일이 진실(SoT)이므로 DB만 바꾸지 않는다 — decisions/queue-sync-direction.md.
 import type { PrismaClient } from '@prisma/client';
-import type { Storage } from '../storage/Storage';
-import { importQueueFromFile } from './importQueue';
-import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile';
+import type { Storage } from '../storage/Storage.ts';
+import { importQueueFromFile } from './importQueue.ts';
+import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
 
 /** 이동할 수 있는 섹션. 완료는 발행까지 끝난 기록이라 이동 대상이 아니다(완료일이 사라진다). */
 export const MOVABLE_STATUSES = ['대기', '후보', '보류'] as const;

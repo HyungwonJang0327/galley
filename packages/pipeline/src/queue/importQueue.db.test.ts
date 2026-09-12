@@ -7,9 +7,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import { HOLD_REASON_REMOVED, disposeMissing, importQueueFromFile } from './importQueue';
-import { RUN_STATUS } from '../run/stateMachine';
-import type { Storage } from '../storage/Storage';
+import { HOLD_REASON_REMOVED, disposeMissing, importQueueFromFile } from './importQueue.ts';
+import { RUN_STATUS } from '../run/stateMachine.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

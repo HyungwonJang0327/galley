@@ -4,6 +4,9 @@
     "jsx": "preserve",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
+    // @galley/pipeline을 소스(.ts)로 소비하는데, 그 패키지는 Node 24가 직접 돌려야 해서
+    // 상대 import에 .ts 확장자를 쓴다. 여기서도 허용해야 타입 체크가 통과한다.
+    "allowImportingTsExtensions": true,
     "incremental": true,
     "plugins": [{ "name": "next" }]
   },

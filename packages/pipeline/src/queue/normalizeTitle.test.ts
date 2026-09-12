@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeTopicTitle } from './normalizeTitle';
+import { normalizeTopicTitle } from './normalizeTitle.ts';
 
 describe('normalizeTopicTitle', () => {
   it('괄호 힌트를 뺀 제목 본문만 남긴다', () => {

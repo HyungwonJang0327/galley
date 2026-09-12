@@ -6,7 +6,7 @@
 // 무엇을 하는지는 여기 구현이 안다. (decisions/run-execution-model.md)
 //
 // 구현은 BE8~BE11이 단계별로 채운다. 지금은 Mock 하나뿐이다.
-import type { StepName } from '../run/stateMachine';
+import type { StepName } from '../run/stateMachine.ts';
 
 export interface StepContext {
   runId: string;
@@ -45,14 +45,17 @@ export interface StepRunner {
  * — 단계 구현이 실제로 내는 것만 늘린다.
  */
 export class StepFailure extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    /** 일시적 실패(네트워크·레이트리밋·5xx·타임아웃)면 true. 입력·설정 문제면 false. */
-    readonly retryable: boolean,
-  ) {
+  // 파라미터 프로퍼티는 Node 타입 스트리핑이 거부한다 — 필드를 따로 선언한다
+  // (decisions/node-runtime.md 제약 목록).
+  readonly code: string;
+  /** 일시적 실패(네트워크·레이트리밋·5xx·타임아웃)면 true. 입력·설정 문제면 false. */
+  readonly retryable: boolean;
+
+  constructor(code: string, message: string, retryable: boolean) {
     super(message);
     this.name = 'StepFailure';
+    this.code = code;
+    this.retryable = retryable;
   }
 }
 

@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest';
 import { mkdtemp, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { LocalFsStorage } from './LocalFsStorage';
+import { LocalFsStorage } from './LocalFsStorage.ts';
 
 async function withTempDir(fn: (dir: string) => Promise<void>): Promise<void> {
   const dir = await mkdtemp(join(tmpdir(), 'galley-'));

@@ -1,4 +1,4 @@
-import type { ModelPricing, ModelUsage } from './ModelAdapter';
+import type { ModelPricing, ModelUsage } from './ModelAdapter.ts';
 
 const TOKENS_PER_MTOK = 1_000_000;
 

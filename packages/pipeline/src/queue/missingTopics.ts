@@ -3,10 +3,10 @@
 // 그대로 내리면 이력이 붙은 항목이 조용히 보류로 가고 새 항목이 생겨 Run 이력이 갈라진다.
 // (decisions/queue-sync-direction.md "사라진 줄 처리")
 import type { PrismaClient } from '@prisma/client';
-import { importQueueFromFile } from './importQueue';
-import { parseQueue, serializeQueue } from './queueFile';
-import { RUN_STATUS } from '../run/stateMachine';
-import type { Storage } from '../storage/Storage';
+import { importQueueFromFile } from './importQueue.ts';
+import { parseQueue, serializeQueue } from './queueFile.ts';
+import { RUN_STATUS } from '../run/stateMachine.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 export interface MissingTopic {
   id: string;

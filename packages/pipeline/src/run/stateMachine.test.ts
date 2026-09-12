@@ -11,7 +11,7 @@ import {
   nextAction,
   planRerun,
   type StepState,
-} from './stateMachine';
+} from './stateMachine.ts';
 
 /** 단계 목록을 "여기까지 완료"로 만든다. 나머지는 대기. */
 const doneUpTo = (count: number): StepState[] =>

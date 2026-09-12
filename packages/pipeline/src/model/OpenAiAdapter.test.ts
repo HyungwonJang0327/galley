@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import type OpenAI from 'openai';
-import { createOpenAiAdapter } from './OpenAiAdapter';
-import type { OpenAiResponsesClient } from './OpenAiAdapter';
+import { createOpenAiAdapter } from './OpenAiAdapter.ts';
+import type { OpenAiResponsesClient } from './OpenAiAdapter.ts';
 
 const PRICING = { inputPerMTok: 1.25, outputPerMTok: 10 };
 

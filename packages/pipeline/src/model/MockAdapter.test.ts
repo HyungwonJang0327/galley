@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { createMockAdapter } from './MockAdapter';
-import type { ModelAdapter } from './ModelAdapter';
+import { createMockAdapter } from './MockAdapter.ts';
+import type { ModelAdapter } from './ModelAdapter.ts';
 
 describe('createMockAdapter', () => {
   test('provider mock · 단가 0 · 항상 available인 어댑터를 만든다', () => {

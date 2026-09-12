@@ -1,8 +1,8 @@
 // runOnce가 바깥과 닿는 면 전부. **비결정성을 여기로 민다** — runOnce 안에서 Date.now()·
 // randomUUID를 직접 부르지 않는다. 그래야 heartbeat 만료·타임아웃을 실제 시간을 흘리지 않고
 // 테스트한다(decisions/run-execution-model.md "루프는 runOnce(deps)").
-import type { StepName, StepStatus } from '../run/stateMachine';
-import type { StepRunner } from '../steps/StepRunner';
+import type { StepName, StepStatus } from '../run/stateMachine.ts';
+import type { StepRunner } from '../steps/StepRunner.ts';
 
 export interface Clock {
   now(): Date;

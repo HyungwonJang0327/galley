@@ -3,10 +3,10 @@
 // 정규화 제목으로 기존 항목을 찾아 갱신하고, 못 찾은 줄만 새로 만든다.
 // 파일에서 사라진 줄은 지우지 않는다. (decisions/queue-sync-direction.md)
 import type { PrismaClient } from '@prisma/client';
-import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile';
-import { normalizeTopicTitle } from './normalizeTitle';
-import { RUN_STATUS } from '../run/stateMachine';
-import type { Storage } from '../storage/Storage';
+import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { normalizeTopicTitle } from './normalizeTitle.ts';
+import { RUN_STATUS } from '../run/stateMachine.ts';
+import type { Storage } from '../storage/Storage.ts';
 
 const STATUS_ORDER: QueueStatus[] = ['대기', '후보', '보류', '완료'];
 

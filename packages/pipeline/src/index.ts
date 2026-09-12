@@ -1,43 +1,43 @@
 // @galley/pipeline — 단계 실행·상태 머신·모델 어댑터·Storage·Zenn push (서버 전용)
 // 골격만. 구현은 Phase 1-B (핵심 모듈 a·b는 사용자 직접 작성 — decisions/core-modules.md).
-export { prisma } from './db';
-export { parseQueue, serializeQueue } from './queue/queueFile';
-export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile';
+export { prisma } from './db.ts';
+export { parseQueue, serializeQueue } from './queue/queueFile.ts';
+export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile.ts';
 export {
   parsedQueueToRows,
   importQueueFromFile,
   disposeMissing,
   HOLD_REASON_REMOVED,
-} from './queue/importQueue';
-export type { QueueItemRow, MissingDisposition } from './queue/importQueue';
-export { normalizeTopicTitle } from './queue/normalizeTitle';
+} from './queue/importQueue.ts';
+export type { QueueItemRow, MissingDisposition } from './queue/importQueue.ts';
+export { normalizeTopicTitle } from './queue/normalizeTitle.ts';
 export {
   listMissingTopics,
   restoreMissingTopicToHold,
   acknowledgeMissingTopic,
-} from './queue/missingTopics';
-export type { MissingTopic, MissingTopicFailure, MissingTopicResult } from './queue/missingTopics';
-export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue';
-export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue';
+} from './queue/missingTopics.ts';
+export type { MissingTopic, MissingTopicFailure, MissingTopicResult } from './queue/missingTopics.ts';
+export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue.ts';
+export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue.ts';
 export type {
   ReorderQueueTopicInput,
   ReorderQueueFailure,
   ReorderQueueResult,
-} from './queue/reorderQueue';
+} from './queue/reorderQueue.ts';
 export type {
   MovableStatus,
   MoveQueueTopicInput,
   MoveQueueFailure,
   MoveQueueResult,
-} from './queue/moveQueue';
-export { topicSlug } from './queue/topicSlug';
+} from './queue/moveQueue.ts';
+export { topicSlug } from './queue/topicSlug.ts';
 export {
   countRunsByStatus,
   countPendingApproval,
   listRecentRuns,
   findLatestRunForTopic,
-} from './run/runQueries';
-export type { RunSummary } from './run/runQueries';
+} from './run/runQueries.ts';
+export type { RunSummary } from './run/runQueries.ts';
 export {
   STEP_ORDER,
   RUN_STATUS,
@@ -47,7 +47,7 @@ export {
   nextAction,
   planRerun,
   applyCommand,
-} from './run/stateMachine';
+} from './run/stateMachine.ts';
 export type {
   StepName,
   RunStatus,
@@ -60,15 +60,15 @@ export type {
   RunCommand,
   CommandFailure,
   CommandResult,
-} from './run/stateMachine';
-export { resolveCarriedSources } from './run/carriedSources';
-export { StepFailure, toStepFailure } from './steps/StepRunner';
-export type { StepRunner, StepContext, StepResult } from './steps/StepRunner';
-export { createMockStepRunner } from './steps/MockStepRunner';
-export type { MockStepRunnerOptions } from './steps/MockStepRunner';
-export { runOnce, HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS } from './worker/runOnce';
-export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo';
-export type { TickResult, TickOutcome } from './worker/runOnce';
+} from './run/stateMachine.ts';
+export { resolveCarriedSources } from './run/carriedSources.ts';
+export { StepFailure, toStepFailure } from './steps/StepRunner.ts';
+export type { StepRunner, StepContext, StepResult } from './steps/StepRunner.ts';
+export { createMockStepRunner } from './steps/MockStepRunner.ts';
+export type { MockStepRunnerOptions } from './steps/MockStepRunner.ts';
+export { runOnce, HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS } from './worker/runOnce.ts';
+export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo.ts';
+export type { TickResult, TickOutcome } from './worker/runOnce.ts';
 export type {
   WorkerDeps,
   WorkerRepo,
@@ -77,14 +77,14 @@ export type {
   Clock,
   Ids,
   Logger,
-} from './worker/WorkerDeps';
-export { startRun } from './run/startRun';
-export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
-export { loadQueueSections } from './queue/loadQueue';
-export { countTopicsByStatus } from './queue/queueCounts';
-export type { QueueEntry, QueueSections } from './queue/loadQueue';
-export type { Storage } from './storage/Storage';
-export { LocalFsStorage } from './storage/LocalFsStorage';
+} from './worker/WorkerDeps.ts';
+export { startRun } from './run/startRun.ts';
+export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun.ts';
+export { loadQueueSections } from './queue/loadQueue.ts';
+export { countTopicsByStatus } from './queue/queueCounts.ts';
+export type { QueueEntry, QueueSections } from './queue/loadQueue.ts';
+export type { Storage } from './storage/Storage.ts';
+export { LocalFsStorage } from './storage/LocalFsStorage.ts';
 export type {
   ModelAdapter,
   ModelProvider,
@@ -92,13 +92,13 @@ export type {
   ModelUsage,
   GenerateInput,
   GenerateResult,
-} from './model/ModelAdapter';
-export { createMockAdapter } from './model/MockAdapter';
-export type { MockAdapterOptions } from './model/MockAdapter';
+} from './model/ModelAdapter.ts';
+export { createMockAdapter } from './model/MockAdapter.ts';
+export type { MockAdapterOptions } from './model/MockAdapter.ts';
 export {
   createModelRegistry,
   createModelRegistryFromEnv,
   DEFAULT_MODEL_ID,
   INDEXING_DEFAULT_MODEL_ID,
-} from './model/ModelRegistry';
-export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry';
+} from './model/ModelRegistry.ts';
+export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry.ts';

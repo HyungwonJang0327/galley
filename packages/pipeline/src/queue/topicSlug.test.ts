@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { topicSlug } from './topicSlug';
+import { topicSlug } from './topicSlug.ts';
 
 describe('topicSlug', () => {
   test('같은 제목이면 언제나 같은 슬러그(재적재에도 안정)', () => {
