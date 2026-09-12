@@ -16,6 +16,7 @@
 - [x] **셸·Select 유지보수 fix**(사용자 스펙, PR #41): AppShell Content만 스크롤 (2026-09-10 `f6d3ef6`) · Select 팝업 폭/높이·트리거 폭·공통 ItemContent (2026-09-10 `97fe37a`). 규칙은 decisions/layout.md 갱신 이력.
 - [x] **dashboard 테스트 인프라 + 레이아웃 실측 스크립트**(planning 미결 /decide 1-A·2-A, chore/dashboard-test-infra): vitest+happy-dom+testing-library (2026-09-10 `a40bdd2`) · `scripts/verify-layout/` + `verify:layout` (2026-09-10 `bdf9d24`, 10회 연속 68/68). PR #43. decisions/dashboard-testing.md · layout-measurement.md.
 - [x] **레이아웃 실측 CI 통합**(planning 미결 /decide 2-B → A, ci/layout-job): decisions/layout-measurement.md 결정 변경(수동 → CI `layout` 잡, 2026-09-10 `eb4809b`) · `ci.yml` `layout` 잡(`verify`와 병렬 + 실패 시 `layout-screenshots` artifact, 2026-09-10 `9f27a05`) · CI 1차 실패(Linux 프로필 정리 ENOTEMPTY) fix `removeDir` + 테스트(2026-09-10 `7434578`) · 2차 실패(러너 한글 폰트 없음) `fonts-nanum` 설치(2026-09-10 `33d3b74`). PR #45. required check 등록(2026-09-10, 사용자) → 문서 반영 branch-protection·layout-measurement·CLAUDE.md §7 (2026-09-11 `e599926`, PR #47).
+- [x] **실측 Select 팝업 스크롤 대기**(AH2 중 발견, feat/dashboard-home-nav): Base UI가 팝업을 연 뒤 비동기로 선택 항목까지 스크롤하는데 `select.mjs`가 그 전에 측정 → 페이지가 길어지자 "[항목 40개] 열릴 때 선택 항목이 보임" 2회 실패(제품 회귀 아님). `popup.scrollTop` 안정 대기 추가 (2026-09-12 `8b4c0a4`). decisions/layout-measurement.md 갱신 이력.
 - [x] **실측 Chrome 기동 대기 30초**(사용자 결정, fix/dashboard-chrome-wait): CI `layout`이 `timeout: DevToolsActivePort`로 2회 실패(PR #55·#57) → `cdp.mjs` DevToolsActivePort 대기 15→30초 (2026-09-12 `01de33d`, PR #58). decisions/layout-measurement.md 갱신 이력.
 
 ---
@@ -85,7 +86,7 @@
 - [x] **AH1** (2026-09-12 `eb06069`·`14b6760`, feat/ui-stat-tile-empty-state, PR #62) ui — `StatTile`(label·value·href·tone default|warning·icon 슬롯) + `EmptyState`(한 줄 메시지+선택 액션 버튼, 큐·실행·발행 빈 상태 재사용). 테스트·스토리. `CardGrid`(columns·비율 grid 래퍼)는 기존 Card 조합으로 충분하면 만들지 말고 이유 보고. 커밋: `feat(ui): StatTile·EmptyState 컴포넌트 추가`
   - 완료조건: 갤러리 섹션 추가, `verify:layout` 통과. → 갤러리 카드 2장(타일 6개·빈 상태 2종), `verify:layout` 105/105.
   - 구현 메모: `tone`은 `default|muted|warning`(muted는 layout §4 "0이면 회색"을 앱이 지정하게 추가) · 링크는 `href` 또는 `render`(SidebarItem과 같은 방식, ui는 next 미의존) · 토큰 `--ui-text-stat` 26px 신설(기존 최대 22px) · **CardGrid 안 만듦** — 타일 배치는 앱 grid 4줄로 충분(갤러리에서 확인). tone·토큰·생략은 사용자 확인 대기(worklog 2026-09-12).
-- [ ] **AH2** fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
+- [x] **AH2** (2026-09-12 `eb20aa1`, feat/dashboard-home-nav) fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. `HOME_ITEM`은 `NAV_GROUPS` 밖(SidebarGroup은 라벨 필수), 구분선은 앱 CSS(`Sidebar.module.css`), 워드마크 링크는 `color: inherit`·밑줄 없음·포커스 링. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
   - 완료조건: Sidebar·TopBar 변경이므로 `verify:layout` 통과.
 - [ ] **AH3** fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
   - 완료조건: `/` 진입 시 타일 4개 숫자가 사이드바 배지와 같다. 타일 클릭으로 각 화면 이동.
