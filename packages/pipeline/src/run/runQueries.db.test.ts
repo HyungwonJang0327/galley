@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 import { countPendingApproval, findLatestRunForTopic, listRecentRuns } from './runQueries';
 import { RUN_STATUS } from './stateMachine';
 
@@ -25,8 +25,15 @@ beforeAll(async () => {
   prisma = new PrismaClient({ datasources: { db: { url } } });
 });
 
+/** 주제 두 개를 미리 만든다 — Run은 QueueItem.id를 키로 가리킨다. */
+let topicA: string;
+let topicB: string;
+
 beforeEach(async () => {
   await prisma.run.deleteMany();
+  await prisma.queueItem.deleteMany();
+  topicA = (await prisma.queueItem.create({ data: { title: '무한 스크롤', order: 0 } })).id;
+  topicB = (await prisma.queueItem.create({ data: { title: '다른 주제', order: 1 } })).id;
 });
 
 afterAll(async () => {
@@ -34,9 +41,13 @@ afterAll(async () => {
   await rm(dbDir, { recursive: true, force: true });
 });
 
-const createRun = (overrides: Partial<Parameters<typeof prisma.run.create>[0]['data']> = {}) =>
+/** 관계 없이 스칼라만 넣는 형태로 고정한다 — 유니온이면 overrides 타입이 흐려진다. */
+type RunSeed = Partial<Prisma.RunUncheckedCreateInput>;
+
+const createRun = (overrides: RunSeed = {}) =>
   prisma.run.create({
     data: {
+      topicId: topicA,
       topicSlug: '무한-스크롤',
       topicTitle: '무한 스크롤',
       modelId: 'anthropic:claude-opus-5',
@@ -48,7 +59,7 @@ const createRun = (overrides: Partial<Parameters<typeof prisma.run.create>[0]['d
 describe('Run 조회', () => {
   test('승인 대기 개수만 센다', async () => {
     await createRun({ status: RUN_STATUS.pendingApproval });
-    await createRun({ status: RUN_STATUS.pendingApproval, topicSlug: '다른-주제' });
+    await createRun({ status: RUN_STATUS.pendingApproval, topicId: topicB });
     await createRun({ status: RUN_STATUS.running });
     await createRun({ status: RUN_STATUS.done });
 
@@ -67,26 +78,27 @@ describe('Run 조회', () => {
     expect((await listRecentRuns(prisma, 2)).map((r) => r.topicSlug)).toEqual(['b', 'c']);
   });
 
-  test('주제 슬러그로 가장 최근 실행을 찾는다(제목이 바뀌어도 슬러그가 키)', async () => {
-    await createRun({ topicSlug: '무한-스크롤', startedAt: new Date('2026-09-01T00:00:00Z') });
-    await createRun({ topicSlug: '무한-스크롤', startedAt: new Date('2026-09-05T00:00:00Z') });
-    await createRun({ topicSlug: '다른-주제', startedAt: new Date('2026-09-09T00:00:00Z') });
+  test('주제의 마지막 시도를 찾는다(제목·슬러그가 바뀌어도 topicId가 키)', async () => {
+    await createRun({ attempt: 1, topicSlug: '무한-스크롤' });
+    // 제목을 다듬어 슬러그가 바뀐 두 번째 시도 — 같은 주제다.
+    await createRun({ attempt: 2, topicSlug: '무한-스크롤-개선기' });
+    await createRun({ topicId: topicB, topicSlug: '다른-주제' });
 
-    const latest = await findLatestRunForTopic(prisma, '무한-스크롤');
+    const latest = await findLatestRunForTopic(prisma, topicA);
 
-    expect(latest?.startedAt).toEqual(new Date('2026-09-05T00:00:00Z'));
+    expect(latest).toMatchObject({ attempt: 2, topicSlug: '무한-스크롤-개선기' });
   });
 
   test('없는 주제면 null', async () => {
-    expect(await findLatestRunForTopic(prisma, '없는-주제')).toBeNull();
+    expect(await findLatestRunForTopic(prisma, 'no-such-topic')).toBeNull();
   });
 
   test('단계는 실행에 딸리고, 실행을 지우면 함께 지워진다', async () => {
     const run = await createRun();
     await prisma.runStep.createMany({
       data: [
-        { runId: run.id, name: '근거 수집', order: 0 },
-        { runId: run.id, name: '벨로그 본문', order: 1 },
+        { runId: run.id, name: 'evidence', order: 0 },
+        { runId: run.id, name: 'velog', order: 1 },
       ],
     });
 
@@ -97,7 +109,7 @@ describe('Run 조회', () => {
 
   test('같은 실행에 같은 순서의 단계를 두 번 넣지 못한다', async () => {
     const run = await createRun();
-    await prisma.runStep.create({ data: { runId: run.id, name: '근거 수집', order: 0 } });
+    await prisma.runStep.create({ data: { runId: run.id, name: 'evidence', order: 0 } });
 
     await expect(
       prisma.runStep.create({ data: { runId: run.id, name: '중복', order: 0 } }),

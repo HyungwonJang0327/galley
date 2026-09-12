@@ -19,6 +19,17 @@ model QueueItem {
   // 대기 | 후보 | 보류 | 완료 — 값 검증은 애플리케이션 레벨.
   status    String   @default("대기")
   order     Int
+  // 보류로 내린 사유: removed-from-file | manual — 보류 탭에서 구분해 보여준다.
+  // (decisions/queue-sync-direction.md 사라진 줄 처리)
+  holdReason String?
+
+  // 파일에서 사라진 것이 감지된 시각. Run이 붙어 있어 **자동으로 내리지 않고** 확인을 기다리는
+  // 항목의 표시다. 줄이 돌아오면 비운다. Run이 없는 항목은 곧바로 보류로 내리므로 여기 남지 않는다.
+  missingSince DateTime?
+
+  // 이 주제의 실행들. 파일에서 사라져도 QueueItem을 지우지 않는 이유다.
+  runs Run[]
+
   // 후보 섹션 ### 소제목(있을 때만). 파서 QueueTopic.category 보존.
   category    String?
   // 완료 항목의 날짜 접두 YYYY-MM-DD(완료 항목만). 파서 QueueTopic.completedOn 보존.
@@ -35,9 +46,19 @@ model QueueItem {
 model Run {
   id String @id @default(cuid())
 
-  // 주제 키(제목 파생 슬러그) + 그때의 제목(표시용 스냅샷).
+  // 주제 키 = QueueItem.id. 내용에서 파생되지 않아 제목·URL 슬러그가 바뀌어도 이력이 끊기지 않는다
+  // (decisions/queue-sync-direction.md 2026-09-12 결정 변경). 큐 항목은 파일에서 사라져도 지우지 않는다.
+  topicId String
+  topic   QueueItem @relation(fields: [topicId], references: [id])
+
+  // 그 실행 시점의 슬러그·제목. **키가 아니라 사실 기록**이다 — 이 Run이 어느 폴더(posts/<슬러그>/)에
+  // 썼는지 알아야 하고, 슬러그가 바뀌어도 과거 Run의 폴더는 여전히 옛 슬러그다.
   topicSlug  String
   topicTitle String
+
+  // 이 주제의 몇 번째 시도인가(topicId 기준, 1부터). 재실행은 새 Run이다
+  // — decisions/run-execution-model.md. "몇 번 만에 승인됐는가"가 핵심 기록이다.
+  attempt Int @default(1)
 
   // 검수 상태: running | pendingApproval | done | failed — 어휘는 상태 머신 RUN_STATUS가 소유.
   // 저장값은 영어, 화면 한국어 라벨은 앱이 붙인다(decisions/db-value-language.md).
@@ -60,8 +81,9 @@ model Run {
 
   steps RunStep[]
 
-  // 홈·사이드바 카운트(검수 상태별), 주제별 이력 조회.
+  // 홈·사이드바 카운트(검수 상태별), 주제별 이력 조회(목록은 주제 단위로 묶고 최신 Run을 대표로).
   @@index([status, startedAt])
+  @@index([topicId, attempt])
   @@index([topicSlug, startedAt])
 }
 

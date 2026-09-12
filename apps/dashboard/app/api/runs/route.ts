@@ -5,9 +5,10 @@ import { startRunForTopic, type RunStartErrorCode } from '../../../lib/run-start
 
 type ErrorCode = RunStartErrorCode | 'INVALID_BODY';
 
-/** 코드 → HTTP 상태. 입력 문제는 400, 이미 도는 주제는 409, 그 밖은 500. */
+/** 코드 → HTTP 상태. 입력 문제는 400, 없는 주제는 404, 이미 도는 주제는 409, 그 밖은 500. */
 const STATUS: Record<ErrorCode, number> = {
   INVALID_BODY: 400,
+  TOPIC_NOT_FOUND: 404,
   EMPTY_TITLE: 400,
   UNKNOWN_MODEL: 400,
   MODEL_UNAVAILABLE: 400,
@@ -20,17 +21,18 @@ function fail(code: ErrorCode, message: string): Response {
 }
 
 interface StartRunBody {
-  title: string;
+  /** 주제 키 = QueueItem.id. 제목이 아니라 id로 받는다 — 제목은 바뀔 수 있다. */
+  topicId: string;
   modelId?: string;
 }
 
 /** 본문 검증은 여기서만 한다(pipeline은 이미 타입이 맞는 입력을 받는다). */
 function parseBody(body: unknown): StartRunBody | null {
   if (typeof body !== 'object' || body === null) return null;
-  const { title, modelId } = body as Record<string, unknown>;
-  if (typeof title !== 'string') return null;
+  const { topicId, modelId } = body as Record<string, unknown>;
+  if (typeof topicId !== 'string' || topicId === '') return null;
   if (modelId !== undefined && typeof modelId !== 'string') return null;
-  return modelId === undefined ? { title } : { title, modelId };
+  return modelId === undefined ? { topicId } : { topicId, modelId };
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -42,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const input = parseBody(raw);
-  if (!input) return fail('INVALID_BODY', 'title(문자열)이 필요합니다. modelId는 선택입니다.');
+  if (!input) return fail('INVALID_BODY', 'topicId(문자열)가 필요합니다. modelId는 선택입니다.');
 
   const result = await startRunForTopic(input);
   if (!result.ok) return fail(result.error.code, result.error.message);

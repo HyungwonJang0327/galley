@@ -12,6 +12,10 @@ export type RunStartErrorCode = StartRunFailure | 'RUN_START_FAILED';
 /** 화면·API가 그대로 쓰는 직렬화 형태(Date는 ISO 문자열). */
 export interface StartedRun {
   id: string;
+  /** 주제 키(QueueItem.id) — 목록은 이 키로 묶는다. */
+  topicId: string;
+  /** 이 주제의 몇 번째 시도인가. */
+  attempt: number;
   topicSlug: string;
   topicTitle: string;
   status: string;
@@ -24,6 +28,7 @@ export type RunStartResult =
   | { ok: false; error: { code: RunStartErrorCode; message: string } };
 
 const FAILURE_MESSAGE: Record<StartRunFailure, string> = {
+  TOPIC_NOT_FOUND: '큐에 없는 주제입니다. 파일에서 다시 불러온 뒤 시도해 주세요.',
   EMPTY_TITLE: '주제 제목이 비어 있습니다.',
   UNKNOWN_MODEL: '등록되지 않은 모델입니다.',
   MODEL_UNAVAILABLE: '이 모델의 API 키가 .env에 없습니다.',
@@ -31,7 +36,7 @@ const FAILURE_MESSAGE: Record<StartRunFailure, string> = {
 };
 
 export async function startRunForTopic(input: {
-  title: string;
+  topicId: string;
   modelId?: string;
 }): Promise<RunStartResult> {
   try {
@@ -45,6 +50,8 @@ export async function startRunForTopic(input: {
       ok: true,
       data: {
         id: run.id,
+        topicId: run.topicId,
+        attempt: run.attempt,
         topicSlug: run.topicSlug,
         topicTitle: run.topicTitle,
         status: run.status,
