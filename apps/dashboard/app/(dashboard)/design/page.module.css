@@ -39,3 +39,10 @@
 .selectBox {
   width: 200px;
 }
+
+/* 홈 행 1 배치(같은 폭 타일). 이 grid면 충분해 ui에 CardGrid를 두지 않았다 — todo AH1. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ui-space-4);
+}
