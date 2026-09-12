@@ -3,8 +3,14 @@
 export { prisma } from './db';
 export { parseQueue, serializeQueue } from './queue/queueFile';
 export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile';
-export { parsedQueueToRows, importQueueFromFile } from './queue/importQueue';
-export type { QueueItemRow } from './queue/importQueue';
+export {
+  parsedQueueToRows,
+  importQueueFromFile,
+  disposeMissing,
+  HOLD_REASON_REMOVED,
+} from './queue/importQueue';
+export type { QueueItemRow, MissingDisposition } from './queue/importQueue';
+export { normalizeTopicTitle } from './queue/normalizeTitle';
 export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue';
 export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue';
 export type {
