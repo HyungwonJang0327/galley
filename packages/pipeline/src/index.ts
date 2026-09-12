@@ -62,6 +62,10 @@ export type {
   CommandResult,
 } from './run/stateMachine';
 export { resolveCarriedSources } from './run/carriedSources';
+export { StepFailure, toStepFailure } from './steps/StepRunner';
+export type { StepRunner, StepContext, StepResult } from './steps/StepRunner';
+export { createMockStepRunner } from './steps/MockStepRunner';
+export type { MockStepRunnerOptions } from './steps/MockStepRunner';
 export { startRun } from './run/startRun';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
 export { loadQueueSections } from './queue/loadQueue';
