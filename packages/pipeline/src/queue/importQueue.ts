@@ -112,10 +112,10 @@ export async function importQueueFromFile(deps: {
 
   await deps.prisma.$transaction(async (tx) => {
     for (const { id, row } of updates) {
-      // 줄이 돌아왔으니 사라짐 표시와 자동 보류 사유를 지운다.
+      // 줄이 돌아왔으니 사라짐 표시·확인 기록·자동 보류 사유를 지운다.
       await tx.queueItem.update({
         where: { id },
-        data: { ...row, missingSince: null, holdReason: null },
+        data: { ...row, missingSince: null, missingAck: null, holdReason: null },
       });
     }
     if (creates.length > 0) await tx.queueItem.createMany({ data: creates });
@@ -131,6 +131,8 @@ export async function importQueueFromFile(deps: {
         }
         continue;
       }
+      // 확인 없이 내린 것이므로 missingSince(= 확인 대기 표시)는 남기지 않는다.
+      // 왜 보류가 됐는지는 holdReason이 말한다.
       await tx.queueItem.update({
         where: { id: item.id },
         data: {
@@ -139,7 +141,7 @@ export async function importQueueFromFile(deps: {
           category: null,
           completedOn: null,
           holdReason: HOLD_REASON_REMOVED,
-          missingSince: now,
+          missingSince: null,
         },
       });
     }

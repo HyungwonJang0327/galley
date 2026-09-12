@@ -115,8 +115,12 @@ describe('importQueueFromFile', () => {
     await importQueueFromFile({ storage: WAITING_ONLY(['A']), prisma });
 
     const gone = await prisma.queueItem.findFirst({ where: { title: 'B' } });
-    expect(gone).toMatchObject({ status: '보류', holdReason: HOLD_REASON_REMOVED });
-    expect(gone?.missingSince).not.toBeNull();
+    // 확인 없이 내렸으므로 missingSince(= 확인 대기 표시)는 남기지 않는다. 이유는 holdReason이 말한다.
+    expect(gone).toMatchObject({
+      status: '보류',
+      holdReason: HOLD_REASON_REMOVED,
+      missingSince: null,
+    });
   });
 
   test('Run이 붙은 줄이 사라지면 내리지 않고 표시만 한다(확인 대기)', async () => {

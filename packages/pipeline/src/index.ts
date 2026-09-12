@@ -11,6 +11,12 @@ export {
 } from './queue/importQueue';
 export type { QueueItemRow, MissingDisposition } from './queue/importQueue';
 export { normalizeTopicTitle } from './queue/normalizeTitle';
+export {
+  listMissingTopics,
+  restoreMissingTopicToHold,
+  acknowledgeMissingTopic,
+} from './queue/missingTopics';
+export type { MissingTopic, MissingTopicFailure, MissingTopicResult } from './queue/missingTopics';
 export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue';
 export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue';
 export type {
