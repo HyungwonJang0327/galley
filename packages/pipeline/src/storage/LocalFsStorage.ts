@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Storage } from './Storage';
 
@@ -16,7 +16,14 @@ export class LocalFsStorage implements Storage {
     return readFile(this.queuePath, 'utf8');
   }
 
+  /**
+   * 임시 파일에 쓴 뒤 rename으로 바꿔 끼운다(원자적). 사용자가 에디터로 같은 파일을 열어 둘 수
+   * 있어서, 쓰다 만 내용이 보이거나 중간에 끊겨 파일이 잘리는 일이 없어야 한다.
+   * 임시 파일은 같은 폴더에 둔다 — 다른 파일시스템이면 rename이 원자적이지 않다.
+   */
   async writeQueueFile(content: string): Promise<void> {
-    await writeFile(this.queuePath, content, 'utf8');
+    const temp = `${this.queuePath}.${process.pid}.tmp`;
+    await writeFile(temp, content, 'utf8');
+    await rename(temp, this.queuePath);
   }
 }
