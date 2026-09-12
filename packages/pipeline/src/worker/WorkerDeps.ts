@@ -67,7 +67,13 @@ export interface WorkerRepo {
 }
 
 export interface WorkerDeps {
+  /**
+   * 이 워커 **프로세스**의 정체성. 기동할 때 한 번 만들고(`ids.next()`) 끝까지 같은 값을 쓴다 —
+   * 틱마다 새로 만들면 앞 틱에 잡아 둔 실행을 자기 것으로 알아보지 못한다.
+   */
+  workerId: string;
   clock: Clock;
+  /** 워커 id·그 밖의 식별자 생성. 기동 시 한 번 쓰인다. */
   ids: Ids;
   logger: Logger;
   repo: WorkerRepo;

@@ -83,9 +83,10 @@ function deps(
   const clock = fakeClock();
   let n = 0;
   return {
+    workerId: 'worker_1',
     clock,
     clockRef: clock,
-    ids: { next: () => `worker_${(n += 1)}` },
+    ids: { next: () => `id_${(n += 1)}` },
     logger: { info: vi.fn(), error: vi.fn() },
     repo: fakeRepo().repo,
     stepRunner: createMockStepRunner(),

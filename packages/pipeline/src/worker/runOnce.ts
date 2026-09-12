@@ -44,14 +44,13 @@ export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<T
     return { outcome: 'recovered' };
   }
 
-  const workerId = deps.ids.next();
-  const claimed = await deps.repo.claimRun(workerId, now);
+  const claimed = await deps.repo.claimRun(deps.workerId, now);
   if (claimed === null) return { outcome: 'idle' };
 
   const { run } = claimed;
   if (claimed.justClaimed) {
     await deps.repo.beat(run.id, now);
-    deps.logger.info('실행을 잡았다', { runId: run.id, workerId });
+    deps.logger.info('실행을 잡았다', { runId: run.id, workerId: deps.workerId });
     return { outcome: 'claimed' };
   }
 

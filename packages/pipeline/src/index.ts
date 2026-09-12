@@ -67,6 +67,7 @@ export type { StepRunner, StepContext, StepResult } from './steps/StepRunner';
 export { createMockStepRunner } from './steps/MockStepRunner';
 export type { MockStepRunnerOptions } from './steps/MockStepRunner';
 export { runOnce, HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS } from './worker/runOnce';
+export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo';
 export type { TickResult, TickOutcome } from './worker/runOnce';
 export type {
   WorkerDeps,
