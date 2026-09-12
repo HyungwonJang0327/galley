@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { loadQueueSections } from './loadQueue';
+import { countTopicsByStatus } from './queueCounts';
 import type { Storage } from '../storage/Storage';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -85,5 +86,16 @@ describe('loadQueueSections', () => {
     expect(next.대기.map((topic) => topic.title)).toEqual(['새글']);
     expect(next.후보).toEqual([]);
     expect(next.완료).toEqual([]);
+  });
+});
+
+describe('countTopicsByStatus', () => {
+  test('적재하지 않고 DB만 센다(셸 배지가 쓰는 경로)', async () => {
+    await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
+
+    // 파일이 바뀌어도 다시 적재하기 전까지는 마지막 적재 기준이다.
+    expect(await countTopicsByStatus(prisma, '대기')).toBe(2);
+    expect(await countTopicsByStatus(prisma, '후보')).toBe(1);
+    expect(await countTopicsByStatus(prisma, '완료')).toBe(1);
   });
 });
