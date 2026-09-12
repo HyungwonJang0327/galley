@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import {
   RUN_STATUS,
   STEP_ORDER,
+  STEP_ORIGIN,
   STEP_STATUS,
   applyCommand,
   isStepName,
@@ -72,11 +73,29 @@ describe('nextAction — 다음에 돌 단계', () => {
     expect(nextAction(steps)).toEqual({ kind: 'fail', step: 'velog' });
   });
 
-  it('건너뛴 단계는 끝난 것으로 보고 넘어간다', () => {
+  it('이전 결과를 가져온(carried) 단계도 끝난 것으로 본다', () => {
     const steps = doneUpTo(6);
-    steps[0] = { name: 'evidence', status: STEP_STATUS.skipped };
+    steps[0] = {
+      name: 'evidence',
+      status: STEP_STATUS.succeeded,
+      origin: STEP_ORIGIN.carried,
+    };
 
     expect(nextAction(steps)).toEqual({ kind: 'awaitApproval' });
+  });
+
+  it('출처(origin)는 생명주기(status)와 직교한다 — 재실행 중 시작 단계가 실패한 모습', () => {
+    // 본문부터 재실행하다 본문이 실패: 앞은 이전 결과, 시작 단계는 이번에 돌다 실패, 뒤는 아직.
+    const steps: StepState[] = [
+      { name: 'evidence', status: STEP_STATUS.succeeded, origin: STEP_ORIGIN.carried },
+      { name: 'velog', status: STEP_STATUS.failed, origin: STEP_ORIGIN.fresh },
+      { name: 'verify', status: STEP_STATUS.pending },
+      { name: 'linkedin', status: STEP_STATUS.pending },
+      { name: 'zenn', status: STEP_STATUS.pending },
+      { name: 'publishInfo', status: STEP_STATUS.pending },
+    ];
+
+    expect(nextAction(steps)).toEqual({ kind: 'fail', step: 'velog' });
   });
 
   it('근거 검증에 unsupported가 있어도 전이에 영향이 없다(표시용 플래그)', () => {
