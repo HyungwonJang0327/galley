@@ -17,7 +17,7 @@ import {
 const doneUpTo = (count: number): StepState[] =>
   STEP_ORDER.map((name, index) => ({
     name,
-    status: index < count ? STEP_STATUS.done : STEP_STATUS.pending,
+    status: index < count ? STEP_STATUS.succeeded : STEP_STATUS.pending,
   }));
 
 describe('STEP_ORDER', () => {
@@ -46,7 +46,7 @@ describe('nextAction — 다음에 돌 단계', () => {
   });
 
   it('목록에 없는 단계는 대기로 친다', () => {
-    expect(nextAction([{ name: 'evidence', status: STEP_STATUS.done }])).toEqual({
+    expect(nextAction([{ name: 'evidence', status: STEP_STATUS.succeeded }])).toEqual({
       kind: 'runStep',
       step: 'velog',
     });
@@ -83,7 +83,7 @@ describe('nextAction — 다음에 돌 단계', () => {
     const steps = doneUpTo(6);
     steps[2] = {
       name: 'verify',
-      status: STEP_STATUS.done,
+      status: STEP_STATUS.succeeded,
       flags: { unsupported: 3, uncertain: 1 },
     };
 
