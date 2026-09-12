@@ -27,6 +27,8 @@ export {
   findLatestRunForTopic,
 } from './run/runQueries';
 export type { RunSummary } from './run/runQueries';
+export { startRun } from './run/startRun';
+export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
 export { loadQueueSections } from './queue/loadQueue';
 export type { QueueEntry, QueueSections } from './queue/loadQueue';
 export type { Storage } from './storage/Storage';
