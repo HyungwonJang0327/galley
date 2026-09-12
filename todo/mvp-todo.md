@@ -110,7 +110,7 @@
 - [x] **A6a** (2026-09-12 `3d80d35`·`067d487`·`64e8464`·`63f2f36`·fix `fba39c5`, feat/queue-reorder-dnd, PR #70) fe — pragmatic-drag-and-drop 도입 + 대기 큐 순서 변경 UI. 사용자 결정: 대기 탭 안에서만 · 놓자마자 저장 · 키보드 이동은 범위 밖. **후보는 `UNSUPPORTED_SECTION`으로 거부**(### 소제목 때문에 카테고리가 생김). 드래그 조작 자동 검증은 불가(합성 DragEvent는 `isTrusted: false`) → 수동 확인(사용자 결정). 커밋: `feat(dashboard): 큐 순서 변경 DnD 추가`
 - [x] **A6b** (2026-09-12 `6557b14`, feat/queue-row-menu, PR #60, AN5와 한 PR) fe — 섹션 이동(후보↔대기↔보류) 액션: `lib/queue-move.ts`(BLOG_DIR Storage·실패 문구) + Server Action `moveQueueRowAction`(성공 시에만 `revalidatePath('/', 'layout')`). 커밋: `feat(queue): 큐 섹션 이동 액션 추가`
 - [x] **A6c** (2026-09-12 `3b2d1b4`, feat/queue-row-menu, PR #60, AN5와 한 PR) pl — 편집 결과를 주제_큐.md에 반영 + DB 재적재: `queue/moveQueue.ts`(`moveTopic` 순수 + `moveQueueTopic`). 위치 규칙·카테고리·동시 변경 방어는 decisions/queue-sync-direction.md "섹션 이동 규칙". 커밋: `feat(queue): 큐 섹션 이동과 주제_큐.md 반영 추가`
-- [x] **A6d** (2026-09-12 `7c23d6b`, test/queue-edit-integrity) ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). 연속 편집만 덮는다(단일 편집은 A6a·A6c 통합 테스트): 매 단계 파일 파싱 결과와 DB 행 전체 대조 · 서문·완료일·카테고리 보존 · 재직렬화 동일(표기 드리프트 없음) · 밖에서 파일이 바뀐 경우 거부 후 재적재로 복구. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
+- [x] **A6d** (2026-09-12 `9c0cf7e`, test/queue-edit-integrity, PR #72) ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). 연속 편집만 덮는다(단일 편집은 A6a·A6c 통합 테스트): 매 단계 파일 파싱 결과와 DB 행 전체 대조 · 서문·완료일·카테고리 보존 · 재직렬화 동일(표기 드리프트 없음) · 밖에서 파일이 바뀐 경우 거부 후 재적재로 복구. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
   - 완료조건([B]#4): 순서 DnD·섹션 이동이 되고 주제_큐.md에 반영, 어긋남 0.
 
 ---
