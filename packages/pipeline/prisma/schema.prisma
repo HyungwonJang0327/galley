@@ -79,6 +79,14 @@ model Run {
   // (decisions/model-selection.md) 총비용은 저장하지 않고 단계 합으로 구한다.
   modelId String
 
+  // 재실행일 때만 채운다(첫 실행은 둘 다 null). 재실행은 새 Run이고 이 둘이 "왜 여기서부터 다시
+  // 돌았는지"를 설명한다 — 시도 이력의 핵심 정보다(decisions/run-execution-model.md).
+  // instruction: 사용자가 입력한 수정 지시 **원문 그대로**(정규화하지 않는다). 워커가 StepContext로 넘긴다.
+  // startStep: planRerun이 정한 시작 단계(Select 지정이든 텍스트 판단이든 최종 결과만). fresh 행의
+  //   첫 번째와 같지만, 이력·타임라인 헤더에서 매번 유도하는 것보다 적어 두는 것이 싸다.
+  instruction String?
+  startStep   String?
+
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
   createdAt  DateTime  @default(now())
