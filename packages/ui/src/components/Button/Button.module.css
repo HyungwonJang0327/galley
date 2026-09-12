@@ -9,6 +9,8 @@
   font-weight: var(--ui-weight-medium);
   line-height: 1;
   cursor: pointer;
+  /* render로 링크(<a>)를 넘겼을 때 브라우저 기본 밑줄이 나오지 않게. */
+  text-decoration: none;
   transition:
     background-color 0.12s ease,
     border-color 0.12s ease;
