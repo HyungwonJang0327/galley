@@ -10,6 +10,10 @@ export { Card } from './components/Card';
 export type { CardProps } from './components/Card';
 export { PageHeader } from './components/PageHeader';
 export type { PageHeaderProps } from './components/PageHeader';
+export { StatTile } from './components/StatTile';
+export type { StatTileProps } from './components/StatTile';
+export { EmptyState } from './components/EmptyState';
+export type { EmptyStateProps } from './components/EmptyState';
 
 export { AppShell } from './patterns/AppShell';
 export type { AppShellProps } from './patterns/AppShell';

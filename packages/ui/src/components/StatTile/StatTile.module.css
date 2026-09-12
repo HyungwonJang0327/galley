@@ -1,0 +1,69 @@
+/* 타일 자체가 카드 표면이다(홈 행 1에 grid로 나란히 놓인다). 색 블록·배경색 금지. */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-5);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-lg);
+  background-color: var(--ui-color-surface);
+  box-shadow: var(--ui-shadow-card);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  text-decoration: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--ui-color-text-muted);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
+
+.value {
+  font-size: var(--ui-text-stat);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 값 톤: 색만 바꾼다(배경 블록 없음). */
+.muted .value {
+  color: var(--ui-color-text-muted);
+}
+
+.warning .value {
+  color: var(--ui-color-warning-fg);
+}
+
+/* 링크 타일: 우하단 화살표 + hover/focus 표시. */
+.arrow {
+  position: absolute;
+  right: var(--ui-space-3);
+  bottom: var(--ui-space-3);
+  color: var(--ui-color-text-muted);
+}
+
+.link:hover {
+  background-color: var(--ui-color-bg);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: 1px;
+}
