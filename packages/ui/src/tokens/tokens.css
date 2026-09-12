@@ -53,6 +53,7 @@
   --ui-text-body: 14px; /* 본문 13~14 */
   --ui-text-h2: 16px;
   --ui-text-title: 22px; /* 페이지 제목 20~22 */
+  --ui-text-stat: 26px; /* 홈 요약 타일 숫자 24~28 (layout.md §4) */
   --ui-leading-tight: 1.25;
   --ui-leading-normal: 1.5;
   --ui-weight-regular: 400;
