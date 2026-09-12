@@ -88,8 +88,9 @@
   - 구현 메모: `tone`은 `default|muted|warning`(muted는 layout §4 "0이면 회색"을 앱이 지정하게 추가) · 링크는 `href` 또는 `render`(SidebarItem과 같은 방식, ui는 next 미의존) · 토큰 `--ui-text-stat` 26px 신설(기존 최대 22px) · **CardGrid 안 만듦** — 타일 배치는 앱 grid 4줄로 충분(갤러리에서 확인). tone·토큰·생략은 사용자 확인 대기(worklog 2026-09-12).
 - [x] **AH2** (2026-09-12 `38dd8e7`, feat/dashboard-home-nav, PR #64) fe — 사이드바 맨 위 단독 "홈" 항목(lucide LayoutDashboard)+구분선, TopBar Galley→/ 링크. `HOME_ITEM`은 `NAV_GROUPS` 밖(SidebarGroup은 라벨 필수), 구분선은 앱 CSS(`Sidebar.module.css`), 워드마크 링크는 `color: inherit`·밑줄 없음·포커스 링. 커밋: `feat(dashboard): 사이드바에 홈 항목 추가`
   - 완료조건: Sidebar·TopBar 변경이므로 `verify:layout` 통과.
-- [ ] **AH3** fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
-  - 완료조건: `/` 진입 시 타일 4개 숫자가 사이드바 배지와 같다. 타일 클릭으로 각 화면 이동.
+- [x] **AH3** (2026-09-12 `bf1e337`·`c943b1c`·`cef422b`·`51fc941`, feat/dashboard-home) fe — 홈 페이지 골격: `app/(dashboard)/page.tsx`(기존 `app/page.tsx` redirect 삭제) · h1 "홈" · 다음 스케줄 시각(수·토 18:00 중 가까운 쪽, TZ .env, **계산 apps/dashboard 유틸**) · StatTile 4개. 카운트는 배지와 같은 소스(`lib/nav-counts`, 대기 n은 A4d `QueueItem`, 승인 대기·발행·비용은 더미/"—"). 갱신=서버 렌더+네비게이션. 커밋: `feat(dashboard): 홈 페이지 골격과 요약 타일 추가`
+  - 완료조건: `/` 진입 시 타일 4개 숫자가 사이드바 배지와 같다. 타일 클릭으로 각 화면 이동. → 픽스처 실측 8/8(타일 값 = 큐 배지, 대기 타일→`/queue?tab=waiting`).
+  - 구현 메모(사용자 결정): 사이드바 배지도 함께 채움(레이아웃 서버에서 조회 → `Sidebar`에 경로별 배지 맵, 0은 미표시) · 시간대 키 `TZ=Asia/Seoul`(.env.example 추가) · 데이터 없는 타일은 **`0`**(에이전트는 "—" 추천, 사용자가 0 선택) · 스케줄 계산은 시간대 인자를 받는 앱 유틸 `lib/schedule.ts`.
 - [ ] **AH4** fe — "다음 실행" 카드(대기 큐 A4d 데이터 연결: 맨 위 1개 크게 + 2~4위 작은 행, `지금 실행`은 pipeline 호출 자리만, 빈 상태 EmptyState). 작은 행은 A5a `ListRow` 재사용(선행 시) 또는 최소 마크업. 커밋: `feat(dashboard): 홈에 다음 실행 카드 추가`
   - 완료조건: 주제_큐.md 대기 맨 위 항목이 카드에 뜨고, 큐 순서를 바꾸면 홈도 바뀐다.
 - [ ] **AH5** fe — "지금 할 일"·"최근 실행" 카드. **의존: B1e(Run 스키마)** — 그 전까지 두 카드 모두 EmptyState. **B1e 뒤로 보류**(지금 만들면 행 구조 재작업). 커밋: `feat(dashboard): 홈에 승인 대기·최근 실행 카드 추가`
