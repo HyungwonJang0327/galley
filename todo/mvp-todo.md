@@ -153,7 +153,7 @@
 별도 워커 프로세스. **선행: 상태 머신(B1a ✅)·Run 스키마(BM4).** 대시보드는 Run을 queued로 만들 뿐. 각 항목 = 커밋 하나.
 
 - [x] **BW1** (2026-09-12 `aae1a24`, feat/run-schema, PR #74, B1e·BM4와 한 마이그레이션) pl — Run 실행 상태(`workerState` queued/running/interrupted) + `workerId`·`heartbeat` 컬럼 + 마이그레이션. 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
-- [ ] **BW2** pl — 워커 루프(`bin/worker.ts`): queued→running 클레임, 단계 오케스트레이션(레지스트리 어댑터 호출·RunStep 기록·heartbeat), 동시 1개. 폴링 2s·heartbeat 5s. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
+- [x] **BW2** (2026-09-13, feat/worker-tick, PR #87) pl — 워커 루프. **오케스트레이션만** 하고 단계 내용은 `StepRunner` 뒤(모든 단계가 모델 호출이 아니다) — Mock으로 토큰 없이 CI에서 돈다. `runOnce(deps)`는 비결정성을 전부 deps로 밀고(**clock·ids**) **한 tick = 한 단계**, 반환 `{ outcome, stepRef? }`. 잡는 틱을 따로 떼 승인·취소가 끼어들 틈을 준다. 클레임은 조건부 `updateMany`+count로 원자적, **검수 상태가 `실행 중`인 것만** 집어간다(승인 대기를 다시 집어가던 것을 통합 테스트가 잡음). `bin/worker.ts`는 타이머·SIGTERM·종료만. **Node 24 타입 스트리핑으로 빌드 없이 실행**(decisions/node-runtime.md). pipeline 168→200. 커밋: `feat(pipeline): 워커 프로세스 실행 루프 추가`
 - [ ] **BW3** pl — 중단 감지·재개(heartbeat 30s 공백→interrupted, 완료 단계 다음부터; 기동 시+깨어날 때 검사, 단계는 원자적). 커밋: `feat(pipeline): 워커 중단 감지와 단계 재개 추가`
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
 - [ ] **BW4** fe — 수정 지시·승인·**재실행**을 Run 상태 변경으로(대시보드 write → 워커 pickup). B2b에서 미룬 재실행·승인 Route Handler가 여기 들어온다(전이는 `applyCommand` 호출). _(B2b/B2d와 연동)_ 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
@@ -226,6 +226,7 @@ Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·
 
 - [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
 
+- [ ] **TD6** pl — `@galley/pipeline`을 **Node에서 패키지 이름으로** import하게 되면(별도 CLI 등) `exports`가 빌드 산출물을 가리켜야 한다 — `node_modules` 안의 TS는 Node가 거부한다. 지금은 워커가 같은 패키지를 상대 경로로 읽어 문제가 없다. decisions/node-runtime.md 제약 3. 커밋: `build(pipeline): 배포용 빌드 산출물 추가`
 - [ ] **TD5** fe — **배포 전** `lib/` 어댑터의 `*_FAILED` 문구에서 예외 문구를 뗀다(`실행을 시작하지 못했습니다: SQLITE_BUSY` → 뒷부분 제거, 원인은 서버 로그로). 로컬 디버깅에는 좋지만 배포하면 내부 사정이 새어 나간다. 지금은 로컬 전용이라 **배포를 실제로 할 때** 한다. decisions/error-handling.md "배포 때 다시 볼 것". 커밋: `refactor(dashboard): 실패 문구에서 내부 사정 제거`
 - [ ] **TD2** ui+fe — 실패 표시가 앱에 흩어져 있다: `role="alert"` + 각 파일의 `.error` CSS가 4곳(큐 화면·행 ⋮ 메뉴·드래그 목록·다시 불러오기 버튼)에 복제. `@galley/ui`에 표현 전용 컴포넌트(예: `InlineAlert` — 도메인 단어 없이 tone·children만)로 모으고 앱은 문구만 넘긴다. **ui 추가이므로 갤러리 섹션 + `verify:layout`까지가 완료 조건.** decisions/error-handling.md 미결. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
 
