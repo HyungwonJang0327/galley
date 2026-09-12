@@ -9,10 +9,18 @@ import {
   PageHeader,
 } from '@galley/ui';
 import { getQueueSections } from '../../../lib/queue-data';
+import { getMissingTopics } from '../../../lib/queue-missing';
 import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
-import { moveQueueRowAction, reloadQueueAction, reorderQueueRowAction } from './actions';
+import {
+  keepMissingTopicAction,
+  moveMissingTopicToHoldAction,
+  moveQueueRowAction,
+  reloadQueueAction,
+  reorderQueueRowAction,
+} from './actions';
+import { MissingTopicsNotice } from './MissingTopicsNotice';
 import { CategoryFilter } from './CategoryFilter';
 import { DraggableQueueRows } from './DraggableQueueRows';
 import { QueueRowMenu } from './QueueRowMenu';
@@ -25,6 +33,9 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 // 요청마다 파일→DB 재적재 후 읽는다(decisions/queue-sync-direction.md). 로직은 lib/queue-view.
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   const [params, result] = await Promise.all([searchParams, getQueueSections()]);
+  // 확인 대기는 **적재가 끝난 뒤** 읽는다 — 사라짐 표시를 남기는 것이 그 적재다.
+  // 병렬로 읽으면 방금 사라진 항목이 한 박자 늦게 뜬다. 실패해도 큐 목록은 막지 않는다.
+  const missing = await getMissingTopics();
 
   if (!result.ok) {
     return (
@@ -45,6 +56,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   return (
     <>
       <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
+      {missing.ok ? (
+        <MissingTopicsNotice
+          topics={missing.data}
+          moveToHold={moveMissingTopicToHoldAction}
+          keep={keepMissingTopicAction}
+        />
+      ) : null}
       <Card>
         <ListToolbar
           aria-label="큐 섹션"
