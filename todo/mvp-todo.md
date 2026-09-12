@@ -113,7 +113,7 @@
 - [x] **A6d** (2026-09-12 `9c0cf7e`, test/queue-edit-integrity, PR #72) ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). 연속 편집만 덮는다(단일 편집은 A6a·A6c 통합 테스트): 매 단계 파일 파싱 결과와 DB 행 전체 대조 · 서문·완료일·카테고리 보존 · 재직렬화 동일(표기 드리프트 없음) · 밖에서 파일이 바뀐 경우 거부 후 재적재로 복구. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
   - 완료조건([B]#4): 순서 DnD·섹션 이동이 되고 주제_큐.md에 반영, 어긋남 0.
 
-- [x] **A6e** (2026-09-13 `41754c0`·`dedc3ef`·`65438c6`, feat/queue-missing-confirm, PR #86) fe+pl — **"파일에서 사라짐" 확인 UI**: `missingSince`가 찍힌 항목(= Run이 붙어 있어 자동으로 내리지 않은 것)을 큐 화면에 띄우고 `보류로 옮기기` / `그대로 두기`를 받는다. 제목 오타 수정이 파서에겐 "삭제 + 추가"로 보여 이력이 갈라지는 것을 사람이 막는 자리다. 보류 탭은 `holdReason`으로 `removed-from-file`과 `manual`을 구분해 보여준다(되살릴지 판단). decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 파일에서 사라진 항목 확인 UI 추가`
+- [x] **A6e** (2026-09-13 `911069c`·`5739f7e`·`f813d14`, feat/queue-missing-confirm, PR #86) fe+pl — **"파일에서 사라짐" 확인 UI**: `missingSince`가 찍힌 항목(= Run이 붙어 있어 자동으로 내리지 않은 것)을 큐 화면에 띄우고 `보류로 옮기기` / `그대로 두기`를 받는다. 제목 오타 수정이 파서에겐 "삭제 + 추가"로 보여 이력이 갈라지는 것을 사람이 막는 자리다. 보류 탭은 `holdReason`으로 `removed-from-file`과 `manual`을 구분해 보여준다(되살릴지 판단). decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 파일에서 사라진 항목 확인 UI 추가`
 
 ---
 
@@ -222,7 +222,7 @@ Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·
 ## 정리 대기 (기술 부채 — 결정은 났고 적용이 남은 것)
 
 - [ ] **TD3** fe — 보류 탭에서 `holdReason`을 구분해 보여준다(`removed-from-file` = 파일에서 사라져 내려온 것 / `manual` = 사람이 옮긴 것). 되살릴지 판단하는 근거다. A6e에서 데이터는 준비됐고 표시만 남았다. decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 보류 탭에 보류 사유 표시`
-- [x] **TD4** (2026-09-13 `fa5844a`, feat/queue-missing-confirm, PR #86) fe — 셸(`getNavCounts`)이 매 요청 큐를 **재적재**하던 것 제거. 배지는 DB만 읽어도 되는데 파일 읽기+DB 쓰기가 모든 라우트에서 일어나고, 페이지 적재와 병렬로 돌아 직렬화(`importChain`)에 의존하게 만든다. 적재는 큐·홈 화면과 `파일에서 다시 불러오기`에만 두고 셸은 읽기만. 커밋: `perf(dashboard): 셸 배지를 재적재 없이 DB에서 읽기`
+- [x] **TD4** (2026-09-13 `a11d852`, feat/queue-missing-confirm, PR #86) fe — 셸(`getNavCounts`)이 매 요청 큐를 **재적재**하던 것 제거. 배지는 DB만 읽어도 되는데 파일 읽기+DB 쓰기가 모든 라우트에서 일어나고, 페이지 적재와 병렬로 돌아 직렬화(`importChain`)에 의존하게 만든다. 적재는 큐·홈 화면과 `파일에서 다시 불러오기`에만 두고 셸은 읽기만. 커밋: `perf(dashboard): 셸 배지를 재적재 없이 DB에서 읽기`
 
 - [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
 
