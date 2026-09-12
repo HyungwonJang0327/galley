@@ -71,9 +71,11 @@
 - 좌 320px: 검색 → 탭(진행 중 / 완료) → 체크박스 "승인 대기만 보기" → 항목 목록(6단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 상태 배지 옆 작은 텍스트 "근거 없음 n" · 시간, 선택=?id=).
 - 우: 헤더(주제명 + 상태 배지 + ⋮: 중단 / 처음부터 재실행 / 산출물 폴더 경로 복사) → 타임라인 6줄 → 하단 고정 ActionBar.
   - 타임라인 한 줄 = 단계명 · 상태 아이콘 · 소요 · 토큰 · `보기`(첫 실행) / `diff`(재실행 후). 펼치면 그 단계 산출물 마크다운 렌더(검수는 읽어야 하므로 필수).
+  - **결과 출처 표기(`fresh` / `carried`)**: 이번 재실행에서 다시 돈 단계(`fresh`)는 평소 표기 그대로. 시작 단계보다 앞이라 이번 범위에 없던 단계(`carried`)는 **연한 회색 체크 + 보조 텍스트 "이전 결과 · {원래 실행 시각}"**. **"건너뜀"이라는 문구는 쓰지 않는다** — 누락처럼 읽히지만 실제로는 유효한 이전 결과다. 첫 실행은 전부 `fresh`라 이 표기가 없다. (evidence-collection 요구사항 3)
   - **근거 수집 줄**: 보조 텍스트 "linked n · discovered n". 펼치면 EvidenceBundle 항목 목록(경로 · 커밋 · 조각 미리보기).
   - **근거 검증 줄**: 배지 "근거 없음 n · 불확실 n"(unsupported ≥ 1이면 주황). 펼치면 주장 목록 + 상태 + 근거 링크. 본문 미리보기의 unsupported 밑줄은 Phase 2(evidence-collection).
-  - ActionBar = 단계 Select + 수정 지시 input + `재실행`(보조) / `승인`(주요, Dialog 확인). 재실행 규칙(근거 수집 기본 건너뜀 · 본문 재실행 시 검증 자동)은 evidence-collection.
+  - ActionBar = 단계 Select + 수정 지시 input + `재실행`(보조) / `승인`(주요, Dialog 확인). 재실행 규칙은 **"시작 단계 + 이후 전부"**(evidence-collection) — Select 지정이 우선, 없으면 지시에 "근거·커밋·코드"가 있으면 근거 수집부터, 없으면 본문부터.
+  - **재실행 확인 Dialog**: 비용이 커지므로 실행 전에 다시 돌 단계를 보여준다 — "다시 도는 단계: 근거 수집 → 본문 → 검증 → 링크드인 → Zenn → 발행정보". 승인 Dialog와 같은 확인 패턴.
 - 빈 상태: 실행 없으면 "큐에서 실행" 안내 + /queue 링크.
 
 **이력 /runs/history — 목록형 표(A) · Phase 2**
@@ -120,6 +122,7 @@
 - 2026-09-08 최초 결정(스펙 요약본 반영).
 - 2026-09-08 IA 재정비: 사이드바를 사용 흐름 순으로 재구성(§3), TopBar 워크스페이스 탭 제거(§2), 화면별 레이아웃 추가(§4). decisions/navigation.md 신설. 사용자 프롬프트가 §3 고정 결정 변경 승인.
 - 2026-09-09 홈 화면 추가: 목록형(A)의 변형 **"요약형"**(§4 화면별 적용). 루트 `/`=홈으로 결정 변경(decisions/navigation.md 갱신 이력)에 따라 §7 구현 매핑도 redirect→홈으로 갱신. 셋째 패턴은 만들지 않음(요약형은 A 변형).
+- 2026-09-12 재실행 규칙 교체(decisions/evidence-collection.md 갱신 이력): 타임라인에 결과 출처 표기 추가(`carried` = 연한 회색 체크 + "이전 결과 · 시각", "건너뜀" 문구 금지) · ActionBar 재실행을 "시작 단계 + 이후 전부"로 · 재실행 확인 Dialog(다시 도는 단계 목록)를 실행 전에.
 - 2026-09-09 근거 수집 구조(decisions/evidence-collection.md): 타임라인 단계 5→**6**(근거 검증을 본문 직후에 추가). 실행 상세에 근거 수집·검증 줄 펼침 표시, 좌 목록·홈 "지금 할 일"에 "근거 없음 n", 큐 행에 "근거 n건"·⋮ "근거 편집", 설정 리포 연결 행 확장. 패턴 추가 없음.
 - 2026-09-10 **셸 스크롤 구조 확정**(사용자 스펙, PR #41): AppShell 루트 = `100dvh` 두 행 grid(`--ui-topbar-height` / 1fr, overflow hidden), 두 번째 행 = `--ui-sidebar-width` | 1fr(min-height 0). **TopBar·Sidebar 고정, 스크롤은 Content(·Sidebar 자체) 안에서만** — html/body는 `height 100%; overflow hidden`으로 문서 스크롤 없음. 패딩은 Content 안쪽 래퍼(스크롤바는 Content 우측 끝). 접힘은 열 폭만 변경.
 - 2026-09-10 **Select 규칙 확정**(사용자 스펙, PR #41): 팝업 `width: max-content; min-width: var(--anchor-width)`, 상한 토큰 `--ui-select-popup-max-width`(min(480px, 100vw−32)) · `--ui-select-popup-max-height`(min(360px, 100vh−32)) + 세로 스크롤(열릴 때 선택 항목 보임). **트리거 폭은 부모가 정한다**(width 100%·min-width 0, 값 nowrap+ellipsis) — 앱은 컨테이너로 폭 지정. 아이템 레이아웃은 공통 **`ItemContent`**({ label, description?, meta? }: 본문 열 라벨 line-clamp 2 + overflow-wrap anywhere / 보조 한 줄 ellipsis / 우측 메타 tabular-nums)로 Select·Menu(UM2)가 공유. Menu는 Phase 1 큐 ⋮(AN5) 직전에 만든다.
