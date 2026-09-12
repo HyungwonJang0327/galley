@@ -21,23 +21,26 @@ export function isStepName(value: string): value is StepName {
   return (STEP_ORDER as readonly string[]).includes(value);
 }
 
-/** 검수 상태(사람이 보는 실행 상태). `Run.status`에 그대로 저장된다. */
+/**
+ * 검수 상태(사람이 보는 실행 상태). `Run.status`에 그대로 저장된다.
+ * 값은 영어, 화면 한국어 라벨은 앱이 붙인다 — decisions/db-value-language.md.
+ */
 export const RUN_STATUS = {
-  running: '실행 중',
-  pendingApproval: '승인 대기',
-  done: '완료',
-  failed: '실패',
+  running: 'running',
+  pendingApproval: 'pendingApproval',
+  done: 'done',
+  failed: 'failed',
 } as const;
 
 export type RunStatus = (typeof RUN_STATUS)[keyof typeof RUN_STATUS];
 
-/** 단계 상태. `RunStep.status`에 그대로 저장된다. `건너뜀`은 재실행에서만 생긴다(요구사항 3). */
+/** 단계 상태. `RunStep.status`에 그대로 저장된다. `skipped`는 재실행에서만 생긴다(요구사항 3). */
 export const STEP_STATUS = {
-  pending: '대기',
-  running: '실행 중',
-  done: '완료',
-  failed: '실패',
-  skipped: '건너뜀',
+  pending: 'pending',
+  running: 'running',
+  succeeded: 'succeeded',
+  failed: 'failed',
+  skipped: 'skipped',
 } as const;
 
 export type StepStatus = (typeof STEP_STATUS)[keyof typeof STEP_STATUS];

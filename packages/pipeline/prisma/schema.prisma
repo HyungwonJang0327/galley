@@ -39,8 +39,9 @@ model Run {
   topicSlug  String
   topicTitle String
 
-  // 검수 상태: 실행 중 | 승인 대기 | 완료 | 실패 — 어휘는 상태 머신 RUN_STATUS가 소유.
-  status String @default("실행 중")
+  // 검수 상태: running | pendingApproval | done | failed — 어휘는 상태 머신 RUN_STATUS가 소유.
+  // 저장값은 영어, 화면 한국어 라벨은 앱이 붙인다(decisions/db-value-language.md).
+  status String @default("running")
 
   // 워커 실행 상태: queued | running | interrupted — 대시보드는 queued로만 만든다.
   // (decisions/run-location.md) heartbeat 공백으로 중단을 감지한다.
@@ -76,9 +77,9 @@ model RunStep {
   name  String
   order Int
 
-  // 대기 | 실행 중 | 완료 | 실패 | 건너뜀 — 어휘는 상태 머신 STEP_STATUS가 소유.
-  // 건너뜀은 재실행에서 근거 수집을 건너뛸 때만 생긴다(이전 산출물 유지).
-  status String @default("대기")
+  // pending | running | succeeded | failed | skipped — 어휘는 상태 머신 STEP_STATUS가 소유.
+  // skipped는 재실행에서 근거 수집을 건너뛸 때만 생긴다(이전 산출물 유지).
+  status String @default("pending")
 
   // 이 단계를 실행한 모델과 사용량·비용(재실행 시 단계마다 다를 수 있다).
   modelId      String?
