@@ -1,0 +1,64 @@
+/* 목록 위에 끼는 안내 카드. 경고 톤이지만 배지처럼 튀지는 않게 — 답하면 사라진다. */
+.notice {
+  margin-bottom: var(--ui-space-4);
+  border-left: 3px solid var(--ui-color-warning-fg);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+  font-weight: 600;
+}
+
+.hint {
+  margin: var(--ui-space-1) 0 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+}
+
+.error {
+  margin: var(--ui-space-2) 0 0;
+  color: var(--ui-color-danger-fg);
+  font-size: var(--ui-text-xs);
+}
+
+.list {
+  margin: var(--ui-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+}
+
+.text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-2);
+  min-width: 0;
+}
+
+.topic {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--ui-space-2);
+  flex-shrink: 0;
+}
