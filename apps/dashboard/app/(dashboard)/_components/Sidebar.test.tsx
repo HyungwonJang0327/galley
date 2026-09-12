@@ -20,6 +20,16 @@ describe('Sidebar', () => {
     expect(screen.getAllByRole('link')[0]).toBe(home);
   });
 
+  it('배지 값이 있으면 항목에 표시하고, 0은 표시하지 않는다', () => {
+    render(
+      <SidebarProvider>
+        <Sidebar badges={{ '/queue': 3, '/runs': 0 }} />
+      </SidebarProvider>,
+    );
+    expect(screen.getByRole('link', { name: /큐/ }).textContent).toContain('3');
+    expect(screen.getByRole('link', { name: /^실행/ }).textContent).not.toContain('0');
+  });
+
   it('현재 URL과 같은 항목만 aria-current="page"', () => {
     render(
       <SidebarProvider>
