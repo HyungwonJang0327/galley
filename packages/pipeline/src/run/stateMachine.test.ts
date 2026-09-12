@@ -10,7 +10,6 @@ import {
   isStepName,
   nextAction,
   planRerun,
-  type StepName,
   type StepState,
 } from './stateMachine';
 
@@ -110,37 +109,55 @@ describe('nextAction — 다음에 돌 단계', () => {
   });
 });
 
-describe('planRerun — 수정 지시가 다시 돌릴 단계', () => {
-  it('본문을 고치면 근거 검증도 자동으로 다시 돈다', () => {
-    expect(planRerun('velog', '문장을 더 짧게')).toEqual({
-      steps: ['velog', 'verify'],
-      skipped: ['evidence'],
+describe('planRerun — 재실행 범위', () => {
+  it.each(STEP_ORDER)('%s부터 시작하면 fresh + carried가 6단계와 정확히 맞는다', (startStep) => {
+    const plan = planRerun({ startStep, instruction: '아무 지시' });
+
+    // 속성: 두 목록을 이으면 STEP_ORDER 그대로다 — 빠짐·중복·순서 어긋남이 한 번에 걸린다.
+    expect([...plan.carried, ...plan.fresh]).toEqual([...STEP_ORDER]);
+    expect(plan.startStep).toBe(startStep);
+    expect(plan.fresh[0]).toBe(startStep);
+    expect(plan.carried).not.toContain(startStep);
+  });
+
+  it('근거 수집이 시작이면 carried가 비고 6단계 전부 다시 돈다', () => {
+    const plan = planRerun({ startStep: 'evidence', instruction: '다시' });
+
+    expect(plan.carried).toEqual([]);
+    expect(plan.fresh).toEqual([...STEP_ORDER]);
+  });
+
+  it('마지막 단계만 돌면 fresh가 하나, 앞 다섯은 carried', () => {
+    const plan = planRerun({ startStep: 'publishInfo', instruction: '제목만 바꿔' });
+
+    expect(plan.fresh).toEqual(['publishInfo']);
+    expect(plan.carried).toEqual(['evidence', 'velog', 'verify', 'linkedin', 'zenn']);
+  });
+
+  describe('시작 단계 결정', () => {
+    it('단계 지정이 있으면 그 단계가 시작', () => {
+      expect(planRerun({ startStep: 'linkedin', instruction: '더 캐주얼하게' }).startStep).toBe(
+        'linkedin',
+      );
     });
-  });
 
-  it('나머지 단계는 그 단계만 다시 돈다', () => {
-    expect(planRerun('linkedin', '더 캐주얼하게')).toEqual({
-      steps: ['linkedin'],
-      skipped: ['evidence'],
+    it('단계 지정은 지시 텍스트보다 우선한다', () => {
+      // 지시에 "근거"가 있어도 지정이 이긴다.
+      expect(planRerun({ startStep: 'zenn', instruction: '근거를 다시 봐' }).startStep).toBe(
+        'zenn',
+      );
     });
-  });
 
-  it.each(['근거', '커밋', '코드'])('지시에 "%s"가 있으면 근거 수집까지 포함한다', (keyword) => {
-    expect(planRerun('velog', `${keyword}가 부실해`)).toEqual({
-      steps: ['evidence', 'velog', 'verify'],
-      skipped: [],
+    it.each(['근거', '커밋', '코드'])(
+      '지정이 없고 지시에 "%s"가 있으면 근거 수집부터',
+      (keyword) => {
+        expect(planRerun({ instruction: `${keyword}가 부실해` }).startStep).toBe('evidence');
+      },
+    );
+
+    it('지정도 없고 키워드도 없으면 본문부터', () => {
+      expect(planRerun({ instruction: '문장을 더 짧게' }).startStep).toBe('velog');
     });
-  });
-
-  it('근거 수집을 대상으로 지정하면 지시와 무관하게 포함한다', () => {
-    expect(planRerun('evidence', '다시')).toEqual({ steps: ['evidence'], skipped: [] });
-  });
-
-  it('돌릴 단계는 언제나 STEP_ORDER 순서다', () => {
-    const { steps } = planRerun('velog', '근거 보강');
-    const positions = steps.map((step: StepName) => STEP_ORDER.indexOf(step));
-
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 });
 
@@ -156,14 +173,27 @@ describe('applyCommand — 승인 게이트', () => {
     expect(
       applyCommand(RUN_STATUS.pendingApproval, {
         type: 'revise',
-        target: 'velog',
+        startStep: 'velog',
         instruction: '문장을 더 짧게',
       }),
     ).toEqual({
       ok: true,
       status: RUN_STATUS.running,
-      rerun: { steps: ['velog', 'verify'], skipped: ['evidence'] },
+      rerun: {
+        startStep: 'velog',
+        fresh: ['velog', 'verify', 'linkedin', 'zenn', 'publishInfo'],
+        carried: ['evidence'],
+      },
     });
+  });
+
+  it('단계 지정 없이 수정 지시하면 지시 텍스트로 시작 단계를 정한다', () => {
+    const result = applyCommand(RUN_STATUS.pendingApproval, {
+      type: 'revise',
+      instruction: '커밋을 다시 확인해',
+    });
+
+    expect(result).toMatchObject({ ok: true, rerun: { startStep: 'evidence', carried: [] } });
   });
 
   it.each([RUN_STATUS.running, RUN_STATUS.done, RUN_STATUS.failed])(
@@ -178,7 +208,7 @@ describe('applyCommand — 승인 게이트', () => {
 
   it('완료된 실행에는 수정 지시도 통하지 않는다', () => {
     expect(
-      applyCommand(RUN_STATUS.done, { type: 'revise', target: 'velog', instruction: '고쳐줘' }),
+      applyCommand(RUN_STATUS.done, { type: 'revise', startStep: 'velog', instruction: '고쳐줘' }),
     ).toEqual({ ok: false, code: 'NOT_PENDING_APPROVAL' });
   });
 });
