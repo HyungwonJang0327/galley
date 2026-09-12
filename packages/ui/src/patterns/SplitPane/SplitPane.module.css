@@ -1,0 +1,39 @@
+/* 좌 고정폭 | 우 1fr. min-height:0이 핵심 — 자식이 내용 높이로 늘어나면 각 영역 스크롤이 죽는다. */
+.pane {
+  display: grid;
+  grid-template-columns: var(--ui-splitpane-list-width) 1fr;
+  height: 100%;
+  min-height: var(--ui-splitpane-min-height);
+  min-width: 0;
+  color: var(--ui-color-text);
+  font-size: var(--ui-text-body);
+}
+
+.list {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--ui-color-border);
+}
+
+/* 우: 헤더 / 본문(늘어남) / 하단 바. 본문만 스크롤한다. */
+.detail {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.header {
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.body {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.footer {
+  border-top: 1px solid var(--ui-color-border);
+}

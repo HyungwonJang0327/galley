@@ -27,6 +27,16 @@ export { ListToolbar, ListToolbarTab } from './patterns/ListToolbar';
 export type { ListToolbarProps, ListToolbarTabProps } from './patterns/ListToolbar';
 export { ListRow, ListRows } from './patterns/ListRow';
 export type { ListRowProps, ListRowsProps } from './patterns/ListRow';
+export { SplitPane } from './patterns/SplitPane';
+export type { SplitPaneProps } from './patterns/SplitPane';
+export { TimelineItem, TimelineItems } from './patterns/TimelineItem';
+export type {
+  TimelineItemProps,
+  TimelineItemsProps,
+  TimelineStatus,
+} from './patterns/TimelineItem';
+export { ActionBar } from './patterns/ActionBar';
+export type { ActionBarProps } from './patterns/ActionBar';
 
 export { Dialog } from './primitives/Dialog';
 export type { DialogProps } from './primitives/Dialog';
