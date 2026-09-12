@@ -6,12 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
-import {
-  RUN_STATUS,
-  countPendingApproval,
-  findLatestRunForTopic,
-  listRecentRuns,
-} from './runQueries';
+import { countPendingApproval, findLatestRunForTopic, listRecentRuns } from './runQueries';
+import { RUN_STATUS } from './stateMachine';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 

@@ -20,13 +20,32 @@ export type {
 } from './queue/moveQueue';
 export { topicSlug } from './queue/topicSlug';
 export {
-  RUN_STATUS,
   countRunsByStatus,
   countPendingApproval,
   listRecentRuns,
   findLatestRunForTopic,
 } from './run/runQueries';
 export type { RunSummary } from './run/runQueries';
+export {
+  STEP_ORDER,
+  RUN_STATUS,
+  STEP_STATUS,
+  isStepName,
+  nextAction,
+  planRerun,
+  applyCommand,
+} from './run/stateMachine';
+export type {
+  StepName,
+  RunStatus,
+  StepStatus,
+  StepState,
+  NextAction,
+  RerunPlan,
+  RunCommand,
+  CommandFailure,
+  CommandResult,
+} from './run/stateMachine';
 export { startRun } from './run/startRun';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
 export { loadQueueSections } from './queue/loadQueue';
