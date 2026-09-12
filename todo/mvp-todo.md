@@ -217,6 +217,8 @@
 
 Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
 
+- [x] **A7** (2026-09-12 `33fa287`, feat/worker-loop, PR #85) fe — **페이지 단위 실패 화면**: `app/not-found.tsx`(셸을 `AppFrame`으로 직접 두른다 — 매칭 실패는 라우트 그룹 레이아웃을 타지 않는다) · `(dashboard)/error.tsx`(클라이언트 경계, 그룹 안이라 셸 유지, 내부 사정은 콘솔로만) · `(dashboard)/loading.tsx` · `app/global-error.tsx`(최소). 셸 조립은 `_components/AppFrame.tsx` 한 곳. `verify:layout` 117→**125**(404 검사 8개, `verify.path`로 검사별 경로 선택). decisions/error-handling.md "페이지 단위 실패". 커밋: `feat(dashboard): 404·에러·로딩 화면을 셸 안에서 그리기`
+
 ## 정리 대기 (기술 부채 — 결정은 났고 적용이 남은 것)
 
 - [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
