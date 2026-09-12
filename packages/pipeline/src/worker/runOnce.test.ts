@@ -1,10 +1,100 @@
 // 워커 틱 테스트. tick을 직접 여러 번 불러 상태 변화를 본다 — 타이머도 실제 DB도 없다.
 // 비결정성(시각·id)은 deps로 들어오므로 clock을 앞으로 돌려 heartbeat 만료를 만든다.
 import { describe, it, expect, vi } from 'vitest';
-import { HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS, runOnce } from './runOnce.ts';
+import {
+  HEARTBEAT_INTERVAL_MS,
+  HEARTBEAT_TIMEOUT_MS,
+  MAX_STEP_ATTEMPTS,
+  STEP_TIMEOUT_MS,
+  runOnce,
+} from './runOnce.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
+import type { StepContext, StepResult, StepRunner } from '../steps/StepRunner.ts';
 import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine.ts';
-import type { ClaimedRun, StepOutcome, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
+import type { ClaimedRun, StepOutcome, Timers, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
+
+/**
+ * 손으로 발화시키는 타이머. 실제 시간은 흐르지 않는다 — 테스트가 `fireEvery`/`fireAfter`로
+ * 원하는 순간에 박동·타임아웃을 일으킨다.
+ */
+function fakeTimers() {
+  const everies: { ms: number; fn: () => void; stopped: boolean }[] = [];
+  const afters: { ms: number; fn: () => void; cancelled: boolean }[] = [];
+  const timers: Timers = {
+    every(ms, fn) {
+      const entry = { ms, fn, stopped: false };
+      everies.push(entry);
+      return () => {
+        entry.stopped = true;
+      };
+    },
+    after(ms, fn) {
+      const entry = { ms, fn, cancelled: false };
+      afters.push(entry);
+      return () => {
+        entry.cancelled = true;
+      };
+    },
+  };
+  return {
+    timers,
+    everies,
+    afters,
+    /** 살아 있는 반복 타이머를 전부 한 번 발화. */
+    fireEvery() {
+      for (const e of everies) if (!e.stopped) e.fn();
+    },
+    /** 아직 취소되지 않은 일회 타이머를 전부 발화(각각 한 번만). */
+    fireAfter() {
+      for (const a of afters) {
+        if (a.cancelled) continue;
+        a.cancelled = true;
+        a.fn();
+      }
+    },
+  };
+}
+
+/**
+ * 호출될 때마다 `nextCall()`이 깨어나고, 테스트가 `release()`·타임아웃으로 끝낼 때까지 끝나지
+ * 않는 StepRunner — 단계 도중의 시간을 만든다. 마이크로태스크 개수를 세지 않고 "구현이 불렸다"는
+ * 순간을 기다리므로 runOnce 내부 await 개수가 바뀌어도 테스트가 흔들리지 않는다.
+ */
+function blockingRunner(options: { onAbort?: 'reason' | 'ownAbortError' } = {}) {
+  const calls: StepContext[] = [];
+  let resolveCurrent: ((r: StepResult) => void) | null = null;
+  let waiters: ((ctx: StepContext) => void)[] = [];
+  const runner: StepRunner = {
+    run(ctx) {
+      calls.push(ctx);
+      const pending = waiters;
+      waiters = [];
+      for (const w of pending) w(ctx);
+      return new Promise<StepResult>((resolve, reject) => {
+        resolveCurrent = resolve;
+        ctx.signal.addEventListener(
+          'abort',
+          () =>
+            reject(
+              options.onAbort === 'ownAbortError'
+                ? new DOMException('중단', 'AbortError')
+                : ctx.signal.reason,
+            ),
+          { once: true },
+        );
+      });
+    },
+  };
+  return {
+    runner,
+    calls,
+    nextCall: () => new Promise<StepContext>((resolve) => waiters.push(resolve)),
+    release(result: StepResult = { artifacts: {} }) {
+      resolveCurrent?.(result);
+      resolveCurrent = null;
+    },
+  };
+}
 
 /** 손으로 옮기는 시계. `advance`로 원하는 만큼 시간을 흘린다. */
 function fakeClock(start = new Date('2026-09-13T00:00:00Z')) {
@@ -77,16 +167,20 @@ function fakeRepo(options: { pendingApproval?: boolean } = {}) {
   return { repo, state };
 }
 
-function deps(
-  overrides: Partial<WorkerDeps> = {},
-): WorkerDeps & { clockRef: ReturnType<typeof fakeClock> } {
+function deps(overrides: Partial<WorkerDeps> = {}): WorkerDeps & {
+  clockRef: ReturnType<typeof fakeClock>;
+  timersRef: ReturnType<typeof fakeTimers>;
+} {
   const clock = fakeClock();
+  const timers = fakeTimers();
   let n = 0;
   return {
     workerId: 'worker_1',
     clock,
     clockRef: clock,
+    timersRef: timers,
     ids: { next: () => `id_${(n += 1)}` },
+    timers: timers.timers,
     logger: { info: vi.fn(), error: vi.fn() },
     repo: fakeRepo().repo,
     stepRunner: createMockStepRunner(),
@@ -303,5 +397,96 @@ describe('runOnce — heartbeat', () => {
     await runOnce(d);
 
     expect(state.beats).toHaveLength(MAX_STEP_ATTEMPTS + 1);
+  });
+});
+
+describe('runOnce — 단계 도중 heartbeat', () => {
+  it('단계가 도는 동안 5초 간격 타이머로 계속 알리고, 끝나면 멈춘다', async () => {
+    const { repo, state } = fakeRepo();
+    const blocking = blockingRunner();
+    const d = deps({ repo, stepRunner: blocking.runner });
+    await runOnce(d); // 잡는 틱(박동 1)
+
+    const started = blocking.nextCall();
+    const tick = runOnce(d);
+    await started; // 시도 시작 박동 1 → 2. 이제 단계가 "오래" 돈다.
+    expect(state.beats).toHaveLength(2);
+    expect(d.timersRef.everies[0]?.ms).toBe(HEARTBEAT_INTERVAL_MS);
+
+    d.clockRef.advance(HEARTBEAT_INTERVAL_MS);
+    d.timersRef.fireEvery();
+    d.clockRef.advance(HEARTBEAT_INTERVAL_MS);
+    d.timersRef.fireEvery();
+    await Promise.resolve();
+    expect(state.beats).toHaveLength(4);
+    expect(state.beats[3]).toEqual(d.clock.now());
+
+    blocking.release();
+    await tick;
+    expect(d.timersRef.everies[0]?.stopped).toBe(true);
+    // 멈춘 뒤 발화해도 더 쓰지 않는다.
+    d.timersRef.fireEvery();
+    await Promise.resolve();
+    expect(state.beats).toHaveLength(4);
+  });
+});
+
+describe('runOnce — 단계 타임아웃', () => {
+  it('제한 시간을 넘긴 시도는 STEP_TIMEOUT(재시도 가능)으로 끊고 다시 해본다', async () => {
+    const { repo, state } = fakeRepo();
+    const blocking = blockingRunner();
+    const d = deps({ repo, stepRunner: blocking.runner });
+    await runOnce(d); // 잡는 틱
+
+    const first = blocking.nextCall();
+    const tick = runOnce(d);
+    await first;
+    expect(d.timersRef.afters[0]?.ms).toBe(STEP_TIMEOUT_MS);
+
+    const second = blocking.nextCall();
+    d.timersRef.fireAfter(); // 첫 시도 타임아웃
+    await second; // 두 번째 시도가 시작됐다
+    blocking.release();
+
+    expect((await tick).outcome).toBe('completed');
+    expect(state.outcomes[0]?.outcome).toMatchObject({
+      status: STEP_STATUS.succeeded,
+      attemptCount: 2,
+    });
+    expect(d.logger.error).toHaveBeenCalledWith(
+      '단계 실패',
+      expect.objectContaining({ code: 'STEP_TIMEOUT', retryable: true, attempt: 1 }),
+    );
+  });
+
+  it('구현이 signal.reason 대신 자기 AbortError를 던져도 타임아웃으로 기록한다', async () => {
+    const { repo } = fakeRepo();
+    const blocking = blockingRunner({ onAbort: 'ownAbortError' });
+    const d = deps({ repo, stepRunner: blocking.runner });
+    await runOnce(d);
+
+    let started = blocking.nextCall();
+    const tick = runOnce(d);
+    for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
+      await started;
+      started = blocking.nextCall();
+      d.timersRef.fireAfter();
+    }
+
+    expect((await tick).outcome).toBe('failed');
+    expect(d.logger.error).toHaveBeenCalledWith(
+      '단계 실패',
+      expect.objectContaining({ code: 'STEP_TIMEOUT', attempt: MAX_STEP_ATTEMPTS }),
+    );
+  });
+
+  it('제때 끝나면 타임아웃 타이머를 취소한다', async () => {
+    const d = deps();
+    await runOnce(d);
+
+    await runOnce(d);
+
+    expect(d.timersRef.afters).toHaveLength(1);
+    expect(d.timersRef.afters[0]?.cancelled).toBe(true);
   });
 });

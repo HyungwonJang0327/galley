@@ -21,6 +21,16 @@ const deps: WorkerDeps = {
   workerId: ids.next(),
   clock: { now: () => new Date() },
   ids,
+  timers: {
+    every: (ms, fn) => {
+      const timer = setInterval(fn, ms);
+      return () => clearInterval(timer);
+    },
+    after: (ms, fn) => {
+      const timer = setTimeout(fn, ms);
+      return () => clearTimeout(timer);
+    },
+  },
   logger: {
     info: (message, data) => console.log(JSON.stringify({ level: 'info', message, ...data })),
     error: (message, data) => console.error(JSON.stringify({ level: 'error', message, ...data })),

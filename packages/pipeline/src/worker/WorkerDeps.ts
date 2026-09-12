@@ -12,6 +12,17 @@ export interface Ids {
   next(): string;
 }
 
+/**
+ * 타이머. runOnce는 `setInterval`·`setTimeout`을 직접 부르지 않는다 — 여기로 받아야 테스트가
+ * 손으로 발화시켜 실제 시간을 흘리지 않고 heartbeat·타임아웃을 검증한다.
+ */
+export interface Timers {
+  /** `ms`마다 `fn`을 부른다. 돌려준 함수로 멈춘다. */
+  every(ms: number, fn: () => void): () => void;
+  /** `ms` 뒤에 `fn`을 한 번 부른다. 돌려준 함수로 취소한다. */
+  after(ms: number, fn: () => void): () => void;
+}
+
 export interface Logger {
   info(message: string, data?: Record<string, unknown>): void;
   error(message: string, data?: Record<string, unknown>): void;
@@ -75,6 +86,7 @@ export interface WorkerDeps {
   clock: Clock;
   /** 워커 id·그 밖의 식별자 생성. 기동 시 한 번 쓰인다. */
   ids: Ids;
+  timers: Timers;
   logger: Logger;
   repo: WorkerRepo;
   stepRunner: StepRunner;

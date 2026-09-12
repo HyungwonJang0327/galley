@@ -72,6 +72,8 @@ function makeDeps(overrides: Partial<WorkerDeps> = {}) {
     workerId: overrides.workerId ?? 'worker_1',
     clock: { now: () => current },
     ids: { next: () => `id_${(n += 1)}` },
+    // 단계가 즉시 끝나는 Mock이라 발화할 일이 없다 — 타이머는 등록만 받는다.
+    timers: { every: () => () => {}, after: () => () => {} },
     logger: { info: vi.fn(), error: vi.fn() },
     repo: createPrismaWorkerRepo(prisma),
     stepRunner: createMockStepRunner(),
