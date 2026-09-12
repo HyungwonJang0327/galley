@@ -1,0 +1,128 @@
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* 세로선은 항목 배경에 그린다 — 마커 중앙(gutter의 절반)을 지나 아래 항목까지 이어진다. */
+.item {
+  position: relative;
+  padding-left: var(--ui-timeline-gutter);
+  color: var(--ui-color-text);
+  font-size: var(--ui-text-body);
+}
+
+.item::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--ui-timeline-gutter) / 2);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--ui-color-border);
+}
+
+.last::before {
+  bottom: auto;
+  height: var(--ui-space-5);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-3) 0;
+}
+
+/* 마커는 세로선 위에 올라앉아 선을 끊는다. */
+.marker {
+  position: absolute;
+  left: calc((var(--ui-timeline-gutter) - var(--ui-timeline-marker)) / 2);
+  width: var(--ui-timeline-marker);
+  height: var(--ui-timeline-marker);
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-neutral-fg);
+  box-shadow: 0 0 0 3px var(--ui-color-surface);
+}
+
+.marker[data-status='pending'] {
+  background-color: var(--ui-color-border);
+}
+
+.marker[data-status='active'] {
+  background-color: var(--ui-color-accent);
+}
+
+.marker[data-status='done'] {
+  background-color: var(--ui-color-success-fg);
+}
+
+.marker[data-status='failed'] {
+  background-color: var(--ui-color-danger-fg);
+}
+
+/* 펼침 가능한 줄은 button, 아니면 div — 어느 쪽이든 같은 모양. */
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.body {
+  cursor: pointer;
+}
+
+.title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-leading-tight);
+}
+
+.meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+}
+
+.trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  flex-shrink: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+}
+
+.panel {
+  margin-bottom: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-color-bg);
+  font-size: var(--ui-text-sm);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

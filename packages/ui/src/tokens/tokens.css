@@ -84,6 +84,11 @@
     360px,
     calc(100vh - var(--ui-space-6))
   ); /* 넘치면 팝업 안에서 스크롤 */
+  --ui-splitpane-list-width: 320px; /* 2분할 상세형 좌 목록 폭 (layout.md §4 패턴 B) */
+  --ui-splitpane-min-height: 400px; /* 부모가 높이를 안 주는 곳에서도 하단 고정 영역이 서게 */
+  --ui-timeline-marker: 10px; /* 타임라인 상태 마커 지름 */
+  --ui-timeline-gutter: 24px; /* 마커·세로선이 차지하는 좌측 폭 */
+
   --ui-menu-popup-min-width: 160px; /* 작은 트리거(⋮)에서도 이 폭 이상 */
   --ui-menu-popup-max-width: min(
     320px,

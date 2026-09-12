@@ -1,0 +1,32 @@
+.bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  background-color: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-size: var(--ui-text-body);
+}
+
+/* 컨트롤이 남은 폭을 다 먹고, 그 안에서 입력이 늘어난다. */
+.controls {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.controls > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  flex-shrink: 0;
+}
