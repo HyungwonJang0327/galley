@@ -30,6 +30,11 @@ export const RUN_STATUS = {
   pendingApproval: 'pendingApproval',
   done: 'done',
   failed: 'failed',
+  /**
+   * 승인 대기에서 수정 지시를 받아 **새 시도로 넘어간** Run. 승인된 것(`done`)과 구분해야
+   * "몇 번 만에 승인됐는가"가 남는다. 종결 상태라 `finishedAt`을 채운다(2026-09-13, BW4).
+   */
+  revised: 'revised',
 } as const;
 
 export type RunStatus = (typeof RUN_STATUS)[keyof typeof RUN_STATUS];
@@ -112,6 +117,13 @@ export interface RerunInput {
   instruction: string;
 }
 
+/**
+ * 수정 지시 길이 상한(글자 수). 지시는 `Run.instruction`에 원문 그대로 남고 프롬프트에 들어가므로
+ * 끝없이 길면 안 된다. 미리보기·수정 지시 API가 같은 값으로 거절한다(`INSTRUCTION_TOO_LONG`).
+ * 이 길이는 URL 쿼리에 안전하게 싣기 어려워 미리보기도 POST 본문으로 받는다.
+ */
+export const INSTRUCTION_MAX_LENGTH = 2000;
+
 export interface RerunPlan {
   /** 이번 재실행이 시작하는 단계. */
   startStep: StepName;
@@ -148,12 +160,16 @@ export function planRerun(input: RerunInput): RerunPlan {
 export type RunCommand =
   /** 사람이 승인 — 실행을 끝낸다. */
   | { type: 'approve' }
-  /** 사람이 수정 지시 — 시작 단계부터 다시 돈다(`startStep` 생략 시 지시 텍스트로 판단). */
+  /** 사람이 수정 지시 — 이 Run은 `revised`로 끝나고 **새 Run**이 시작 단계부터 돈다. */
   | ({ type: 'revise' } & RerunInput);
 
 /** 승인 대기가 아닌 실행에 승인·수정 지시가 온 경우(이미 끝났거나 아직 도는 중). */
 export type CommandFailure = 'NOT_PENDING_APPROVAL';
 
+/**
+ * `status`는 **명령을 받은 그 Run**의 다음 상태다. `rerun`이 있으면 새 Run을 만들라는 지시 —
+ * 재실행은 같은 Run의 재시도가 아니라 새 Run이다(decisions/run-execution-model.md §1).
+ */
 export type CommandResult =
   { ok: true; status: RunStatus; rerun?: RerunPlan } | { ok: false; code: CommandFailure };
 
@@ -169,7 +185,7 @@ export function applyCommand(status: RunStatus, command: RunCommand): CommandRes
 
   return {
     ok: true,
-    status: RUN_STATUS.running,
+    status: RUN_STATUS.revised,
     rerun: planRerun({ startStep: command.startStep, instruction: command.instruction }),
   };
 }

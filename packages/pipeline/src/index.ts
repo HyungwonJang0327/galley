@@ -51,6 +51,7 @@ export {
   nextAction,
   planRerun,
   applyCommand,
+  INSTRUCTION_MAX_LENGTH,
 } from './run/stateMachine.ts';
 export type {
   StepName,

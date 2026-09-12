@@ -169,7 +169,7 @@ describe('applyCommand — 승인 게이트', () => {
     });
   });
 
-  it('승인 대기에서 수정 지시하면 다시 실행 중 + 재실행 계획', () => {
+  it('승인 대기에서 수정 지시하면 이 Run은 revised + 새 Run용 재실행 계획', () => {
     expect(
       applyCommand(RUN_STATUS.pendingApproval, {
         type: 'revise',
@@ -178,7 +178,7 @@ describe('applyCommand — 승인 게이트', () => {
       }),
     ).toEqual({
       ok: true,
-      status: RUN_STATUS.running,
+      status: RUN_STATUS.revised,
       rerun: {
         startStep: 'velog',
         fresh: ['velog', 'verify', 'linkedin', 'zenn', 'publishInfo'],
@@ -196,7 +196,7 @@ describe('applyCommand — 승인 게이트', () => {
     expect(result).toMatchObject({ ok: true, rerun: { startStep: 'evidence', carried: [] } });
   });
 
-  it.each([RUN_STATUS.running, RUN_STATUS.done, RUN_STATUS.failed])(
+  it.each([RUN_STATUS.running, RUN_STATUS.done, RUN_STATUS.failed, RUN_STATUS.revised])(
     '%s 실행에는 승인이 통하지 않는다',
     (status) => {
       expect(applyCommand(status, { type: 'approve' })).toEqual({
@@ -210,5 +210,12 @@ describe('applyCommand — 승인 게이트', () => {
     expect(
       applyCommand(RUN_STATUS.done, { type: 'revise', startStep: 'velog', instruction: '고쳐줘' }),
     ).toEqual({ ok: false, code: 'NOT_PENDING_APPROVAL' });
+  });
+
+  it('이미 수정 지시된 실행에 다시 수정 지시하지 못한다(새 시도에서 해야 한다)', () => {
+    expect(applyCommand(RUN_STATUS.revised, { type: 'revise', instruction: '한 번 더' })).toEqual({
+      ok: false,
+      code: 'NOT_PENDING_APPROVAL',
+    });
   });
 });
