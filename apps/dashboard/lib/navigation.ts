@@ -2,6 +2,7 @@
 // 사용 흐름 순: 주제(큐) → 실행 → 발행 → 설정. 상태(대기/후보/보류/완료 등)는
 // 화면 안 탭(?tab=)이라 메뉴에 두지 않는다.
 import {
+  LayoutDashboard,
   Inbox,
   Play,
   History,
@@ -28,6 +29,12 @@ export interface NavGroup {
   label: string;
   items: NavItem[];
 }
+
+/**
+ * 사이드바 맨 위 단독 항목(그룹 없음). 홈은 정보 종류가 아니라 시작점이라 그룹에 넣지 않는다
+ * — decisions/navigation.md. 아래 구분선은 Sidebar가 그린다.
+ */
+export const HOME_ITEM: NavItem = { label: '홈', href: '/', icon: LayoutDashboard };
 
 const BASE_GROUPS: NavGroup[] = [
   {

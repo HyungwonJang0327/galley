@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Inbox, ExternalLink } from 'lucide-react';
-import { isNavItemActive, type NavItem } from './navigation';
+import { HOME_ITEM, isNavItemActive, type NavItem } from './navigation';
 
 const queue: NavItem = { label: '큐', href: '/queue', icon: Inbox };
 const zenn: NavItem = {
@@ -18,6 +18,11 @@ describe('isNavItemActive', () => {
   it('하위 경로·쿼리 없는 다른 경로는 비활성(정확히 일치할 때만)', () => {
     expect(isNavItemActive('/queue/candidates', queue)).toBe(false);
     expect(isNavItemActive('/runs', queue)).toBe(false);
+  });
+
+  it('홈은 루트에서만 활성(다른 화면에서 켜지지 않는다)', () => {
+    expect(isNavItemActive('/', HOME_ITEM)).toBe(true);
+    expect(isNavItemActive('/queue', HOME_ITEM)).toBe(false);
   });
 
   it('외부 링크는 pathname이 같아도 항상 비활성', () => {
