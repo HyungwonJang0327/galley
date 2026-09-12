@@ -221,6 +221,8 @@ Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·
 
 - [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
 
+- [ ] **TD2** ui+fe — 실패 표시가 앱에 흩어져 있다: `role="alert"` + 각 파일의 `.error` CSS가 4곳(큐 화면·행 ⋮ 메뉴·드래그 목록·다시 불러오기 버튼)에 복제. `@galley/ui`에 표현 전용 컴포넌트(예: `InlineAlert` — 도메인 단어 없이 tone·children만)로 모으고 앱은 문구만 넘긴다. **ui 추가이므로 갤러리 섹션 + `verify:layout`까지가 완료 조건.** decisions/error-handling.md 미결. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
+
 ## 상시 역할
 
 - reviewer: 각 기능 PR마다 `/review`.
