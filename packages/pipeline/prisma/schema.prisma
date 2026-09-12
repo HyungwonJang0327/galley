@@ -77,9 +77,18 @@ model RunStep {
   name  String
   order Int
 
-  // pending | running | succeeded | failed | skipped — 어휘는 상태 머신 STEP_STATUS가 소유.
-  // skipped는 재실행에서 근거 수집을 건너뛸 때만 생긴다(이전 산출물 유지).
+  // pending | running | succeeded | failed — 어휘는 상태 머신 STEP_STATUS가 소유.
   status String @default("pending")
+
+  // fresh | carried — 결과 출처(STEP_ORIGIN). status(생명주기)와 **직교한다**:
+  // 재실행 중 시작 단계가 실패하면 앞은 carried+succeeded, 시작 단계는 fresh+failed, 뒤는 pending.
+  // carried 단계도 새 Run의 행으로 저장한다 — 타임라인이 자기 완결적이어야 하고,
+  // 발행정보 근거 목록과의 대조도 같은 Run 안에서 끝나야 한다.
+  origin String @default("fresh")
+
+  // carried일 때 그 결과를 생산한 Run. 화면의 "이전 결과 · {시각}"은 이 Run의 완료 시각을
+  // **참조**한다(시각을 복사해 두지 않는다 — 원본이 바뀌면 같이 바뀌어야 한다).
+  sourceRunId String?
 
   // 이 단계를 실행한 모델과 사용량·비용(재실행 시 단계마다 다를 수 있다).
   modelId      String?

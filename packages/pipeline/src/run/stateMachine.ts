@@ -34,21 +34,39 @@ export const RUN_STATUS = {
 
 export type RunStatus = (typeof RUN_STATUS)[keyof typeof RUN_STATUS];
 
-/** 단계 상태. `RunStep.status`에 그대로 저장된다. `skipped`는 재실행에서만 생긴다(요구사항 3). */
+/** 단계 생명주기. `RunStep.status`에 그대로 저장된다. */
 export const STEP_STATUS = {
   pending: 'pending',
   running: 'running',
   succeeded: 'succeeded',
   failed: 'failed',
-  skipped: 'skipped',
 } as const;
 
 export type StepStatus = (typeof STEP_STATUS)[keyof typeof STEP_STATUS];
+
+/**
+ * 단계 결과의 출처. `RunStep.origin`에 저장된다(요구사항 3).
+ * - `fresh`: 이번 실행에서 다시 돈 단계. 첫 실행은 전부 fresh.
+ * - `carried`: 시작 단계보다 앞이라 이번 재실행 범위에 없던 단계. 이전 실행 결과를 그대로 쓴다.
+ *
+ * **생명주기(`status`)와 직교한다** — 재실행 중 시작 단계가 실패하면 앞은 `carried`+`succeeded`,
+ * 시작 단계는 `fresh`+`failed`, 뒤는 `pending`이다. 단일 enum으로는 표현할 수 없다.
+ * 화면은 carried를 "이전 결과 · {원래 실행 시각}"으로 표시한다 — **"건너뜀"으로 쓰지 않는다**
+ * (누락처럼 읽히지만 유효한 이전 결과다. decisions/layout.md).
+ */
+export const STEP_ORIGIN = {
+  fresh: 'fresh',
+  carried: 'carried',
+} as const;
+
+export type StepOrigin = (typeof STEP_ORIGIN)[keyof typeof STEP_ORIGIN];
 
 /** 한 단계의 현재 모습. `flags`는 화면 표시용이고 전이에 영향을 주지 않는다(요구사항 2). */
 export interface StepState {
   name: StepName;
   status: StepStatus;
+  /** 생략하면 `fresh`(첫 실행). */
+  origin?: StepOrigin;
   flags?: { unsupported: number; uncertain: number };
 }
 
