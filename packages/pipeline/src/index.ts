@@ -66,6 +66,17 @@ export { StepFailure, toStepFailure } from './steps/StepRunner';
 export type { StepRunner, StepContext, StepResult } from './steps/StepRunner';
 export { createMockStepRunner } from './steps/MockStepRunner';
 export type { MockStepRunnerOptions } from './steps/MockStepRunner';
+export { runOnce, HEARTBEAT_TIMEOUT_MS, MAX_STEP_ATTEMPTS } from './worker/runOnce';
+export type { TickResult, TickOutcome } from './worker/runOnce';
+export type {
+  WorkerDeps,
+  WorkerRepo,
+  ClaimedRun,
+  StepOutcome,
+  Clock,
+  Ids,
+  Logger,
+} from './worker/WorkerDeps';
 export { startRun } from './run/startRun';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
 export { loadQueueSections } from './queue/loadQueue';
