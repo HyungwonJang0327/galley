@@ -83,6 +83,18 @@ describe('importQueueFromFile', () => {
     expect(after.map((i) => i.id).sort()).toEqual(before.map((i) => i.id).sort());
   });
 
+  test('동시에 적재해도 행이 중복되지 않는다(셸과 페이지가 병렬로 부른다)', async () => {
+    const storage = WAITING_ONLY(['A', 'B']);
+
+    await Promise.all([
+      importQueueFromFile({ storage, prisma }),
+      importQueueFromFile({ storage, prisma }),
+      importQueueFromFile({ storage, prisma }),
+    ]);
+
+    expect((await prisma.queueItem.findMany()).map((i) => i.title).sort()).toEqual(['A', 'B']);
+  });
+
   test('괄호 힌트만 고치면 같은 항목으로 남는다', async () => {
     await importQueueFromFile({ storage: WAITING_ONLY(['무한 스크롤 (spacehome)']), prisma });
     const [before] = await prisma.queueItem.findMany();
@@ -96,6 +108,24 @@ describe('importQueueFromFile', () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.id).toBe(before?.id);
     expect(items[0]?.title).toBe('무한 스크롤 (spacehome, react-router)');
+  });
+
+  test('같은 제목이 두 섹션에 있어도 각자 자기 섹션 항목과 짝지어진다', async () => {
+    // 파일에 실제로 있는 경우다(대기와 후보에 같은 주제). 생성 순서로만 고르면 id가 뒤바뀐다.
+    const both = fakeStorage(
+      '## 대기\n\n- 같은 제목\n\n## 후보\n\n- 같은 제목\n\n## 보류\n\n## 완료\n',
+    );
+    await importQueueFromFile({ storage: both, prisma });
+    const before = await prisma.queueItem.findMany({ orderBy: { status: 'asc' } });
+    const waitingId = before.find((i) => i.status === '대기')?.id;
+    const candidateId = before.find((i) => i.status === '후보')?.id;
+
+    await importQueueFromFile({ storage: both, prisma });
+
+    const after = await prisma.queueItem.findMany();
+    expect(after).toHaveLength(2);
+    expect(after.find((i) => i.status === '대기')?.id).toBe(waitingId);
+    expect(after.find((i) => i.status === '후보')?.id).toBe(candidateId);
   });
 
   test('새 줄만 새로 만든다', async () => {
