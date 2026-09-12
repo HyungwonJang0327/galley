@@ -71,6 +71,11 @@ export interface WorkerRepo {
   startStep(runId: string, step: StepName, now: Date): Promise<void>;
   /** 단계 결과를 기록한다. 성공이면 실패 기록을 비운다. */
   finishStep(runId: string, step: StepName, outcome: StepOutcome, now: Date): Promise<void>;
+  /**
+   * 종료 신호로 단계를 **반환**한다 — 실패가 아니다. 단계는 `pending`으로(시도 횟수는 그대로),
+   * 실행은 `interrupted`·`workerId` 없음으로 돌아가 다음 기동이 곧바로 집어간다.
+   */
+  release(runId: string, step: StepName, now: Date): Promise<void>;
   /** 6단계가 끝났다 — 승인 대기로. */
   awaitApproval(runId: string, now: Date): Promise<void>;
   /** 단계가 영구 실패했다 — 실행을 실패로. */

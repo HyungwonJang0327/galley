@@ -22,6 +22,8 @@ export interface MockStepRunnerOptions {
   failTimes?: number;
   /** 근거 검증 줄에 띄울 표시용 플래그. 전이에는 영향이 없다. */
   verifyFlags?: { unsupported: number; uncertain: number };
+  /** 워커가 단계를 반환하며 산출물을 버리라고 할 때 불린다(테스트가 호출을 본다). */
+  onDiscard?: (ctx: { runId: string; step: StepName }) => void;
 }
 
 /**
@@ -68,6 +70,9 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
         result.flags = options.verifyFlags;
       }
       return result;
+    },
+    async discard(ctx) {
+      options.onDiscard?.({ runId: ctx.runId, step: ctx.step });
     },
   };
 }
