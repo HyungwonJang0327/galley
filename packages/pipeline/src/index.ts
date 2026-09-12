@@ -18,6 +18,15 @@ export type {
   MoveQueueFailure,
   MoveQueueResult,
 } from './queue/moveQueue';
+export { topicSlug } from './queue/topicSlug';
+export {
+  RUN_STATUS,
+  countRunsByStatus,
+  countPendingApproval,
+  listRecentRuns,
+  findLatestRunForTopic,
+} from './run/runQueries';
+export type { RunSummary } from './run/runQueries';
 export { loadQueueSections } from './queue/loadQueue';
 export type { QueueEntry, QueueSections } from './queue/loadQueue';
 export type { Storage } from './storage/Storage';
