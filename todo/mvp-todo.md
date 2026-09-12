@@ -186,7 +186,11 @@
 - [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
   - 완료조건: 편집 결과가 `TopicAnalysisLink(manual)`로 저장, 큐 행 "근거 n건" 갱신.
 - [ ] **BE13** fe — 실행 상세 타임라인에 근거 수집("linked n · discovered n", 펼침 목록)·근거 검증("근거 없음 n · 불확실 n" 주황 배지, 펼침 주장 목록) 표시 + 좌 목록·홈 "지금 할 일" 작은 텍스트. 커밋: `feat(dashboard): 타임라인에 근거·검증 결과 표시`
-- [ ] **BE14** pl — 재실행 규칙(2026-09-12 교체): **시작 단계 + 이후 전부**. 시작 단계는 Select 지정 우선, 없으면 지시에 "근거"·"커밋"·"코드"가 있으면 `evidence`·없으면 `velog`. 범위 밖 앞 단계는 `carried`(이전 결과 유지, "건너뜀" 아님). 다시 돌 단계 목록을 재실행 확인 UI에 실행 전 표시. **선행: `planRerun`·`STEP_STATUS` 수정**(PR #81 구현은 교체 전 규칙). 커밋: `feat(run): 재실행 범위를 시작 단계 이후 전부로 변경`
+      재실행 규칙(2026-09-12 교체 — decisions/evidence-collection.md): **시작 단계 + 이후 전부**. 시작 단계는 Select 지정 우선, 없으면 지시에 "근거"·"커밋"·"코드"가 있으면 `evidence`·없으면 `velog`. 범위 밖 앞 단계는 `carried`(이전 결과 유지, "건너뜀" 아님). 세 조각으로 나눈다.
+
+- [x] **BE14a** (2026-09-12 `0738196`·`9040797`·`a277121`, feat/run-step-origin, PR #83) pl — 단계 상태를 **생명주기(`status`) × 출처(`origin`) 두 축**으로. `RunStep.origin`(기본 `fresh`)·`sourceRunId`(nullable) 컬럼 + 마이그레이션 2개, `skipped` 제거. 같이 **DB 저장값을 영어로**(decisions/db-value-language.md 신설 — `Run.status` `running|pendingApproval|done|failed`, `RunStep.status` `pending|running|succeeded|failed`). 행 0건이라 값 변환 구문 없음. 두 축 직교(앞 `carried+succeeded` / 시작 `fresh+failed` / 뒤 `pending`)를 스키마 주석·테스트에 고정. pipeline 123→124.
+- [ ] **BE14b** pl — `planRerun`: 시작 단계 결정(Select 우선 → 없으면 지시 텍스트 판단) + **시작 단계 이후 전부** 반환, `RerunPlan.skipped` 제거. 전이 테스트 갱신. 커밋: `feat(run): 재실행 범위를 시작 단계 이후 전부로 변경`
+- [ ] **BE14c** pl — 워커 적용(선행 BW2): 재실행 시 범위 밖 앞 단계를 **새 Run의 행으로 `carried`+`sourceRunId`와 함께 저장**(타임라인 자기 완결). 커밋: `feat(run): 재실행 시 이전 결과를 carried로 이어받기`
   - 완료조건: 세 경우(기본·키워드 포함·단계 지정) 전이 테스트.
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
@@ -209,6 +213,10 @@
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
 Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
+
+## 정리 대기 (기술 부채 — 결정은 났고 적용이 남은 것)
+
+- [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
 
 ## 상시 역할
 

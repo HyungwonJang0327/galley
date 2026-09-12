@@ -13,7 +13,11 @@
 
 ## Phase 1-B
 
-- [x] B1a — 단계 상태 머신 + 승인 게이트 (2026-09-12, PR #81 — 사용자 리뷰 대기)
+- [x] B1a — 단계 상태 머신 + 승인 게이트 (2026-09-12, PR #81)
+- [x] BE14a — 단계 상태를 status × origin 두 축으로 + DB 저장값 영어 (2026-09-12, PR #83)
+- BE14b — planRerun을 "시작 단계 + 이후 전부"로 ← 다음
+- BE14c — 워커가 범위 밖 앞 단계를 carried로 이어받기 (선행 BW2)
+- TD1 — QueueItem.status 한국어 → 영어 (fe와 함께)
 - 🔒 BM1 — 모델 어댑터 **인터페이스만** 사용자 작성 ← 구현 금지. **Mock·레지스트리·Claude 어댑터·비용은 AI가 구현**(인터페이스만 🔒 — decisions/core-modules·model-selection)
 - BM2 — ModelRegistry(list/get/default·available)
 - BM3 — 어댑터 7개(Claude 4 + GPT 3) + 단가 상수(model-selection 표) + usage→cost 테스트. SDK `@anthropic-ai/sdk`·`openai` 설치
