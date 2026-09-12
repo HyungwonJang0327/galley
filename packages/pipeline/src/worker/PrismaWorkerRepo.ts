@@ -118,9 +118,9 @@ export function createPrismaWorkerRepo(prisma: PrismaClient): WorkerRepo {
 }
 
 /**
- * 잡은 실행에 단계 6줄이 없으면 만든다. 첫 실행은 전부 `pending`+`fresh`이고,
- * 재실행(이전 Run이 있는 주제)은 범위 밖 앞 단계를 `carried`로 이어받아야 하는데, 그건
- * **BE14c**가 `planRerun` + `resolveCarriedSources`로 채운다. 지금은 첫 실행만 돈다.
+ * 잡은 실행에 단계 6줄이 없으면 만든다(첫 실행 — 전부 `pending`+`fresh`).
+ * 재실행은 `startRerun`이 Run을 만들 때 carried/fresh 행을 **이미** 함께 만들어 두므로 여기서는
+ * 아무것도 하지 않는다 — 워커는 재실행이라는 개념을 모르고 pending만 잡는다.
  */
 async function ensureSteps(prisma: PrismaClient, runId: string): Promise<void> {
   const existing = await prisma.runStep.count({ where: { runId } });
@@ -133,7 +133,14 @@ async function ensureSteps(prisma: PrismaClient, runId: string): Promise<void> {
 
 async function toClaimedRun(
   prisma: PrismaClient,
-  run: { id: string; topicId: string; topicTitle: string; topicSlug: string; modelId: string },
+  run: {
+    id: string;
+    topicId: string;
+    topicTitle: string;
+    topicSlug: string;
+    modelId: string;
+    instruction: string | null;
+  },
 ): Promise<ClaimedRun> {
   const rows = await prisma.runStep.findMany({
     where: { runId: run.id },
@@ -147,6 +154,8 @@ async function toClaimedRun(
     topicTitle: run.topicTitle,
     topicSlug: run.topicSlug,
     modelId: run.modelId,
+    // 재실행의 수정 지시. null이면 첫 실행 — StepContext에도 자리가 비어 간다.
+    ...(run.instruction !== null ? { instruction: run.instruction } : {}),
     steps: rows.flatMap((row) =>
       isStepName(row.name)
         ? [
