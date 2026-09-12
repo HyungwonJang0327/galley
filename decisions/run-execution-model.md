@@ -60,9 +60,11 @@ StepResult  { artifacts, tokens, cost, model? }
 - **한 tick = 한 단계만** 처리한다. 여러 단계를 이어 물지 않는다 — 그래야 승인 게이트·취소·heartbeat가 tick 사이에 끼어들고, 테스트도 단계 단위로 본다.
 - `runOnce`는 **무엇을 했는지 돌려준다**: `{ outcome: 'idle' | 'claimed' | 'completed' | 'failed' | 'recovered', stepRef? }`. 테스트가 DB를 뒤지지 않고 반환값으로 1차 검증하고, 껍데기는 이 값으로 대기 간격을 정한다(`idle`이면 2초, 진행했으면 즉시 한 번 더).
 - **껍데기의 책임은 타이머·시그널·종료뿐**. `SIGTERM`을 받으면 진행 중 tick의 `AbortSignal`을 끊고 **클레임한 RunStep을 반환한 뒤** 종료한다.
+- **반환(`released`)은 실패가 아니다**(2026-09-13, BW3, 사용자 결정). 종료 신호로 끊긴 단계는 `StepRunner.discard`로 쓰다 만 산출물을 버리고 `pending`으로 되돌린다 — **시도 횟수에 세지 않는다**(finishStep을 부르지 않는다). 실행은 `interrupted`·`workerId` 없음으로 돌아가 다음 기동이 30초 heartbeat 공백을 기다리지 않고 바로 잡는다. 구현이 `signal.reason` 대신 자기 에러를 던져도 종료 중이면 반환이다. 종료 중이면 새 시도·새 클레임을 시작하지 않는다. (전에는 취소가 `ABORTED`/`STEP_FAILED`로 흘러 3번 재시도 뒤 실행이 `failed`가 됐다.)
+- **타이머도 deps**(`timers.every`·`timers.after`, 2026-09-13). 단계 도중 heartbeat(5s)와 단계 타임아웃(10분)이 여기서 나온다 — 테스트는 손으로 발화시키는 가짜 타이머로 실제 시간 없이 검증한다. 상세는 decisions/run-location.md "중단·재개".
 
 **테스트**: tick을 직접 여러 번 불러 상태 변화를 본다. 최소 4가지 — ⑴ 대기 주제 1건 → claim → 완료 → 다음 단계 claim 순서 ⑵ 승인 대기에서는 여러 번 불러도 아무것도 claim하지 않음 ⑶ heartbeat 만료된 claim을 다음 tick이 회수(**clock을 앞으로 돌려** 검증) ⑷ 재시도 가능 에러는 재시도, 영구 실패는 실패로 기록하고 멈춤.
-**프로세스 스모크 1개**는 남긴다 — 실제 프로세스를 띄워 `SIGTERM`에 깨끗이 종료되는지만. **CI 기본 스위트가 아니라 별도 잡**으로 분리하고 타이밍 의존 단언은 넣지 않는다.
+**프로세스 스모크 1개**는 남긴다 — 실제 프로세스를 띄워 `SIGTERM`에 깨끗이 종료되는지만. **CI 기본 스위트가 아니라 별도 잡**으로 분리하고 타이밍 의존 단언은 넣지 않는다. (2026-09-13 구현: `bin/worker.smoke.test.ts` · `pnpm --filter @galley/pipeline test:smoke` · CI `smoke` 잡. **required check로 두되 한 번이라도 흔들리면 즉시 informational로 내린다** — 종료 코드와 로그 한 줄만 단언하는 테스트는 결정적이어야 정상이고, 흔들리면 테스트가 아니라 워커 종료 경로에 버그가 있는 것이다. 사용자 결정.)
 
 **기각**: _프로세스를 통째로 띄워 테스트_ — 느리고 타이밍에 불안정해 CI에서 깜빡거린다(스모크 1개로 축소).
 
@@ -72,6 +74,7 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-13 BW3: §3에 반환(`released`)은 실패가 아님 · 타이머 deps · 스모크 잡 운영 규칙(required, 흔들리면 informational).
 - 2026-09-13 BW4: `revised` 상태 · 최신 시도에서만 재실행 · 승인/수정 지시 두 경로 + POST 미리보기. §1 "따라오는 것"에 추가.
 - 2026-09-13 BE14c: carried 행 생성 시점 = `startRerun`(재실행 Run 생성 시, 한 트랜잭션) + `Run.instruction`·`startStep` 컬럼. §1 "따라오는 것"에 추가.
 - 2026-09-12 최초 결정(BW2 착수 전 3건). decisions/run-location.md(워커 위치·heartbeat)와 evidence-collection.md(재실행 규칙·단계 출처)를 전제로 한 실행 모델 층이다.
