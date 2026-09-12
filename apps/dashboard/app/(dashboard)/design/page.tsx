@@ -2,11 +2,13 @@ import {
   Badge,
   Button,
   Card,
+  EmptyState,
   ListRow,
   ListRows,
   ListToolbar,
   ListToolbarTab,
   PageHeader,
+  StatTile,
 } from '@galley/ui';
 import styles from './page.module.css';
 import {
@@ -221,6 +223,49 @@ export default function DesignPage() {
               보조·공백 없는 경로
             </span>
             <MenuRowsDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>StatTile</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              홈 요약 타일: 링크 / 값 0(muted) / 주의(warning) / 값 없음. 배치는 앱 grid.
+            </span>
+            <div className={styles.tiles}>
+              <StatTile label="대기" value={3} href="/queue?tab=waiting" />
+              <StatTile label="후보" value={0} tone="muted" href="/queue?tab=candidates" />
+              <StatTile label="승인 대기" value={2} tone="warning" href="/runs" />
+              <StatTile label="이번 달 비용" value="—" tone="muted" />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>아이콘 슬롯 / 긴 라벨(한 줄 말줄임)</span>
+            <div className={styles.tiles}>
+              <StatTile
+                label="발행 대기"
+                value={1}
+                icon={<span aria-hidden="true">◆</span>}
+                href="/publish"
+              />
+              <StatTile
+                label="아주 긴 라벨은 한 줄에서 말줄임표로 잘린다"
+                value={12}
+                href="/queue"
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>EmptyState</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>메시지만 / 액션 포함</span>
+            <EmptyState message="검수할 초안이 없습니다." />
+            <EmptyState
+              message="대기 중인 주제가 없습니다. 후보에서 골라 주세요."
+              action={<Button variant="secondary">후보 보기</Button>}
+            />
           </div>
         </Card>
 
