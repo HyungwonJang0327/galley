@@ -26,7 +26,7 @@
 
 ### A1. 디자인 토큰 — ui
 
-- [x] **A1** (2026-09-08 `97b55bb`) color·spacing·typography·radius·shadow를 `--ui-*` CSS 변수로. 레이아웃 스펙 §1(#F5F6F8·카드 흰색·블루 #5B6CFF·본문 13~~14/제목 20~~22)·§5(배지 색) 기준. 라이트 값 + 다크 자리.
+- [x] **A1** (2026-09-08 `97b55bb`) color·spacing·typography·radius·shadow를 `--ui-*` CSS 변수로. 레이아웃 스펙 §1(#F5F6F8·카드 흰색·블루 #5B6CFF·본문 13–14/제목 20–22)·§5(배지 색) 기준. 라이트 값 + 다크 자리.
   - 완료조건: `tokens/`가 CSS 변수 파일 export, ui build 산출물에 CSS 포함, index에서 스타일 진입점 노출. build·typecheck 통과. 하드코딩 색·px 없음.
   - 커밋: `design(ui): 색·간격·타이포·라운드·그림자 토큰 추가`
 
@@ -128,7 +128,7 @@
 
 ### BM. 실행별 모델 선택 — [B] Phase 1-B (decisions/model-selection.md) · B1↔B2 사이
 
-모델은 Run 속성. BM1~~BM3(어댑터 계층)은 Run 스키마와 독립 → B1 초반에 착수 가능. BM4~~BM9는 Run 스키마(BM4)·실행 화면(B2)에 의존. 각 항목 = 커밋 하나.
+모델은 Run 속성. BM1–BM3(어댑터 계층)은 Run 스키마와 독립 → B1 초반에 착수 가능. BM4–BM9는 Run 스키마(BM4)·실행 화면(B2)에 의존. 각 항목 = 커밋 하나.
 
 - [x] 🔒 **BM1** (2026-09-09 `7ced495`·`9f16252`, feat/model-adapter) pl — `ModelAdapter` 인터페이스(**사용자 작성**, rebase 전 `c906727`) + Mock 어댑터(`createMockAdapter`: 고정 텍스트·단가 0·usage 문자 수 어림) + 테스트 4개 + 배럴 export. dev 전용 노출은 레지스트리 몫 → BM2. 커밋: `feat(model): ModelAdapter 인터페이스 추가` · `feat(model): Mock 어댑터 추가`
 - [x] **BM2** (2026-09-09 `666278a`, feat/model-registry) pl — `createModelRegistry`(list/get/default/indexingDefault, id 중복 생성 실패·기본 id 미등록 호출 실패) + `createModelRegistryFromEnv`(Mock은 `NODE_ENV=development`만) + id 규칙 `provider:model` + `DEFAULT_MODEL_ID`(Opus 5)·`INDEXING_DEFAULT_MODEL_ID`(Haiku 4.5) 상수. 테스트 7개. 커밋: `feat(model): 모델 레지스트리 추가`
