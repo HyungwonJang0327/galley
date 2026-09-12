@@ -29,3 +29,68 @@ model QueueItem {
   // 섹션(status)별 정렬 조회 편의를 위한 최소 인덱스.
   @@index([status, order])
 }
+
+// 주제 하나에 대한 한 번의 실행. 주제는 QueueItem.id가 아니라 제목 파생 슬러그로 가리킨다
+// — 큐는 전체 리셋으로 재적재돼 id가 매번 바뀐다. (decisions/queue-sync-direction.md)
+model Run {
+  id String @id @default(cuid())
+
+  // 주제 키(제목 파생 슬러그) + 그때의 제목(표시용 스냅샷).
+  topicSlug  String
+  topicTitle String
+
+  // 검수 상태: 실행 중 | 승인 대기 | 완료 | 실패 — 값 검증은 상태 머신(B1a).
+  status String @default("실행 중")
+
+  // 워커 실행 상태: queued | running | interrupted — 대시보드는 queued로만 만든다.
+  // (decisions/run-location.md) heartbeat 공백으로 중단을 감지한다.
+  workerState String    @default("queued")
+  workerId    String?
+  heartbeat   DateTime?
+
+  // 이 실행의 기본 모델(레지스트리 id `provider:model`). 단계별로 다를 수 있어 RunStep에도 둔다.
+  // (decisions/model-selection.md) 총비용은 저장하지 않고 단계 합으로 구한다.
+  modelId String
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  steps RunStep[]
+
+  // 홈·사이드바 카운트(검수 상태별), 주제별 이력 조회.
+  @@index([status, startedAt])
+  @@index([topicSlug, startedAt])
+}
+
+// 실행 안의 단계 한 줄. 단계 6개(근거 수집·본문·근거 검증·링크드인·Zenn·발행정보)는 이름 문자열로
+// 둔다 — SQLite enum 금지 규칙을 지키고, 단계가 늘어도 마이그레이션이 필요 없다.
+model RunStep {
+  id    String @id @default(cuid())
+  runId String
+  run   Run    @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  // 근거 수집 | 벨로그 본문 | 근거 검증 | 링크드인 | Zenn | 발행정보 — 순서는 order.
+  name  String
+  order Int
+
+  // 대기 | 실행 중 | 완료 | 실패 — 값 검증은 상태 머신(B1a).
+  status String @default("대기")
+
+  // 이 단계를 실행한 모델과 사용량·비용(재실행 시 단계마다 다를 수 있다).
+  modelId      String?
+  inputTokens  Int?
+  outputTokens Int?
+  costUsd      Float?
+  durationMs   Int?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // 실행 상세 타임라인(순서대로), 재실행 시 단계 찾기.
+  @@unique([runId, order])
+  @@index([runId, order])
+}
