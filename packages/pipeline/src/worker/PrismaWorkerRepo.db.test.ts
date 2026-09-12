@@ -19,6 +19,7 @@ import {
 } from '../run/stateMachine.ts';
 import { startRun } from '../run/startRun.ts';
 import { startRerun } from '../run/startRerun.ts';
+import { approveRun, reviseRun } from '../run/runCommands.ts';
 import type { StepContext, StepRunner } from '../steps/StepRunner.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
@@ -292,5 +293,43 @@ describe('재실행', () => {
     const firstRun = await prisma.run.findUniqueOrThrow({ where: { id: first.id } });
     expect(firstRun.instruction).toBeNull();
     expect(firstRun.startStep).toBeNull();
+  });
+});
+
+describe('승인 게이트 → 워커', () => {
+  test('수정 지시로 생긴 다음 시도를 워커가 집어가 돌리고, 직전은 revised로 남는다', async () => {
+    const first = await queueAndStart();
+    const { deps } = makeDeps();
+    for (let i = 0; i < STEP_ORDER.length + 2; i += 1) await runOnce(deps);
+
+    const revised = await reviseRun(
+      { prisma, registry },
+      { runId: first.id, instruction: '검증을 다시', startStep: 'verify' },
+    );
+    if (!revised.ok) throw new Error(revised.code);
+
+    // 잡기 1 + verify·linkedin·zenn·publishInfo 4 + 승인 대기 1.
+    const outcomes = [];
+    for (let i = 0; i < 6; i += 1) outcomes.push((await runOnce(deps)).outcome);
+    expect(outcomes).toEqual([
+      'claimed',
+      'completed',
+      'completed',
+      'completed',
+      'completed',
+      'completed',
+    ]);
+
+    const [previous, next] = await Promise.all([
+      prisma.run.findUniqueOrThrow({ where: { id: first.id } }),
+      prisma.run.findUniqueOrThrow({ where: { id: revised.run.id } }),
+    ]);
+    expect(previous.status).toBe(RUN_STATUS.revised);
+    expect(previous.finishedAt).not.toBeNull();
+    expect(next).toMatchObject({ status: RUN_STATUS.pendingApproval, attempt: 2 });
+
+    // 승인하면 워커는 더 할 일이 없다.
+    expect(await approveRun(prisma, next.id)).toMatchObject({ ok: true });
+    expect((await runOnce(deps)).outcome).toBe('idle');
   });
 });
