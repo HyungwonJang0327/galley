@@ -44,6 +44,11 @@ export const STEP_STATUS = {
 
 export type StepStatus = (typeof STEP_STATUS)[keyof typeof STEP_STATUS];
 
+/** DB에서 읽은 문자열을 단계 상태로 좁힌다(스키마에 enum이 없다). */
+export function isStepStatus(value: string): value is StepStatus {
+  return (Object.values(STEP_STATUS) as readonly string[]).includes(value);
+}
+
 /**
  * 단계 결과의 출처. `RunStep.origin`에 저장된다(요구사항 3).
  * - `fresh`: 이번 실행에서 다시 돈 단계. 첫 실행은 전부 fresh.
