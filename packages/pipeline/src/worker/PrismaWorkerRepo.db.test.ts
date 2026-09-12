@@ -10,8 +10,16 @@ import { PrismaClient } from '@prisma/client';
 import { createPrismaWorkerRepo } from './PrismaWorkerRepo.ts';
 import { HEARTBEAT_TIMEOUT_MS, runOnce } from './runOnce.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
-import { RUN_STATUS, STEP_ORDER, STEP_STATUS } from '../run/stateMachine.ts';
+import {
+  RUN_STATUS,
+  STEP_ORDER,
+  STEP_ORIGIN,
+  STEP_STATUS,
+  planRerun,
+} from '../run/stateMachine.ts';
 import { startRun } from '../run/startRun.ts';
+import { startRerun } from '../run/startRerun.ts';
+import type { StepContext, StepRunner } from '../steps/StepRunner.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import type { WorkerDeps } from './WorkerDeps.ts';
@@ -202,5 +210,87 @@ describe('실패와 회수', () => {
     const { deps } = makeDeps();
 
     expect(await runOnce(deps)).toEqual({ outcome: 'idle' });
+  });
+});
+
+describe('재실행', () => {
+  /** StepRunner가 받은 컨텍스트를 기록해 워커가 무엇을 넘겼는지 본다. */
+  function recordingRunner(): { runner: StepRunner; seen: StepContext[] } {
+    const inner = createMockStepRunner();
+    const seen: StepContext[] = [];
+    return {
+      seen,
+      runner: {
+        run(ctx) {
+          seen.push(ctx);
+          return inner.run(ctx);
+        },
+      },
+    };
+  }
+
+  /** 첫 실행을 승인 대기까지 돌린 뒤, 본문부터 다시 도는 두 번째 시도를 queued로 만든다. */
+  async function rerunFromVelog(instruction: string) {
+    const first = await queueAndStart();
+    const { deps } = makeDeps();
+    for (let i = 0; i < STEP_ORDER.length + 2; i += 1) await runOnce(deps);
+
+    const second = await startRerun(
+      { prisma, registry },
+      { previousRunId: first.id, plan: planRerun({ instruction }), instruction },
+    );
+    if (!second.ok) throw new Error(`재실행이 만들어져야 한다: ${second.code}`);
+    return { first, second: second.run };
+  }
+
+  test('carried 단계는 건너뛰고 시작 단계부터 돌아 승인 대기로 간다', async () => {
+    const { first, second } = await rerunFromVelog('도입부를 짧게');
+    const { deps } = makeDeps();
+
+    expect((await runOnce(deps)).outcome).toBe('claimed');
+    // 근거 수집이 아니라 본문부터.
+    expect((await runOnce(deps)).stepRef).toEqual({ runId: second.id, step: 'velog' });
+    for (let i = 0; i < STEP_ORDER.length - 2; i += 1) await runOnce(deps);
+    expect((await runOnce(deps)).outcome).toBe('completed');
+
+    const after = await prisma.run.findUniqueOrThrow({
+      where: { id: second.id },
+      include: { steps: { orderBy: { order: 'asc' } } },
+    });
+    expect(after.status).toBe(RUN_STATUS.pendingApproval);
+    expect(after.steps[0]).toMatchObject({
+      name: 'evidence',
+      status: STEP_STATUS.succeeded,
+      origin: STEP_ORIGIN.carried,
+      sourceRunId: first.id,
+      // 이번 실행에서 돌지 않았다 — 시각·시도 횟수가 비어 있다.
+      startedAt: null,
+      finishedAt: null,
+      attemptCount: 0,
+    });
+    for (const step of after.steps.slice(1)) {
+      expect(step).toMatchObject({
+        status: STEP_STATUS.succeeded,
+        origin: STEP_ORIGIN.fresh,
+        sourceRunId: null,
+        attemptCount: 1,
+      });
+    }
+  });
+
+  test('StepRunner는 수정 지시를 받고, 첫 실행에서는 받지 않는다', async () => {
+    const { first, second } = await rerunFromVelog('도입부를 짧게');
+    const { runner, seen } = recordingRunner();
+    const { deps } = makeDeps({ stepRunner: runner });
+    for (let i = 0; i < STEP_ORDER.length + 1; i += 1) await runOnce(deps);
+
+    expect(seen.map((ctx) => ctx.step)).toEqual(STEP_ORDER.slice(1));
+    expect(seen.every((ctx) => ctx.runId === second.id)).toBe(true);
+    expect(seen.every((ctx) => ctx.instruction === '도입부를 짧게')).toBe(true);
+
+    // 첫 실행 Run에는 지시가 없다.
+    const firstRun = await prisma.run.findUniqueOrThrow({ where: { id: first.id } });
+    expect(firstRun.instruction).toBeNull();
+    expect(firstRun.startStep).toBeNull();
   });
 });
