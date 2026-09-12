@@ -1,6 +1,27 @@
-// 사이드바 배지·루트 진입 분기용 카운트. decisions/navigation.md: 서버 컴포넌트에서
-// pipeline 함수로 직접 조회. Run 스키마(B1e) 연결 전까지는 0(더미) → 루트는 사실상 /queue.
-export async function getPendingApprovalCount(): Promise<number> {
-  // TODO(B1e): pipeline에서 status='승인 대기' Run 개수를 조회한다.
-  return 0;
+// 홈 타일·사이드바 배지가 함께 쓰는 카운트(서버 전용). 같은 소스여야 둘이 어긋나지 않는다
+// — decisions/navigation.md. Run 스키마(B1e)·발행(Phase 2) 전까지 해당 값은 0.
+import { getQueueSections } from './queue-data';
+
+export interface NavCounts {
+  /** 주제_큐.md 대기 섹션 개수(실데이터). 로드 실패 시 0. */
+  waiting: number;
+  /** 승인 대기 실행 수. B1e 전까지 0. */
+  pendingApproval: number;
+  /** 발행 대기 수. Phase 2 전까지 0. */
+  publishPending: number;
+  /** 이번 달 비용(USD). Phase 2 전까지 0. */
+  monthlyCostUsd: number;
+}
+
+export async function getNavCounts(): Promise<NavCounts> {
+  const queue = await getQueueSections();
+  return {
+    waiting: queue.ok ? queue.data.대기.length : 0,
+    // TODO(B1e): status='승인 대기' Run 개수
+    pendingApproval: 0,
+    // TODO(Phase 2): 승인됐지만 채널 미발행 수
+    publishPending: 0,
+    // TODO(Phase 2): 이번 달 RunStep 비용 합
+    monthlyCostUsd: 0,
+  };
 }

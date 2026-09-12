@@ -1,0 +1,12 @@
+/* 홈 행 1: 같은 폭 타일 4개(layout.md §4). ui에 CardGrid를 두지 않기로 해 앱 grid로 배치. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ui-space-4);
+}
+
+/* h1 우측 보조 텍스트: 다음 자동 실행 시각. */
+.schedule {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
