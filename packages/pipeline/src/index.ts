@@ -84,6 +84,8 @@ export type {
 } from './worker/WorkerDeps.ts';
 export { startRun } from './run/startRun.ts';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun.ts';
+export { startRerun } from './run/startRerun.ts';
+export type { StartRerunInput, StartRerunFailure, StartRerunResult } from './run/startRerun.ts';
 export { loadQueueSections } from './queue/loadQueue.ts';
 export { countTopicsByStatus } from './queue/queueCounts.ts';
 export type { QueueEntry, QueueSections } from './queue/loadQueue.ts';
