@@ -7,7 +7,7 @@ import {
 import { GripVertical } from 'lucide-react';
 import { Badge, ListRow, ListRows } from '@galley/ui';
 import type { MoveQueueTopicInput, QueueStatus, ReorderQueueTopicInput } from '@galley/pipeline';
-import { dropToIndex, type DropEdge } from '../../../lib/queue-drag';
+import { buildReorderInput, type DropEdge } from '../../../lib/queue-drag';
 import type { QueueMoveResult } from '../../../lib/queue-move';
 import type { QueueReorderResult } from '../../../lib/queue-reorder';
 import type { QueueRowView } from '../../../lib/queue-view';
@@ -45,11 +45,12 @@ export function DraggableQueueRows({ rows, status, badgeVariant, move, reorder }
             badgeVariant={badgeVariant}
             isDragging={dragging === row.index}
             onDragStateChange={(active) => setDragging(active ? row.index : null)}
-            onDrop={async (target) => {
-              const to = dropToIndex(target);
-              if (to === null) return;
+            onDrop={async (source, edge) => {
+              // 제목은 끌린 행(source)의 것. 대상 행 제목을 보내면 서버가 불일치로 거부한다.
+              const input = buildReorderInput({ status, source, over: { index: row.index }, edge });
+              if (input === null) return;
               setError(null);
-              const result = await reorder({ status, from: target.from, to, title: row.title });
+              const result = await reorder(input);
               if (!result.ok) setError(result.error.message);
             }}
             move={move}
@@ -74,7 +75,7 @@ function DraggableRow({
   badgeVariant: Props['badgeVariant'];
   isDragging: boolean;
   onDragStateChange: (active: boolean) => void;
-  onDrop: (target: { from: number; over: number; edge: DropEdge }) => void;
+  onDrop: (source: { index: number; title: string }, edge: DropEdge) => void;
   move: Props['move'];
 }) {
   const ref = useRef<HTMLLIElement>(null);
@@ -89,7 +90,8 @@ function DraggableRow({
     const stopDraggable = draggable({
       element,
       dragHandle: handle,
-      getInitialData: () => ({ index: row.index }),
+      // 제목까지 실어 보낸다 — 드롭 시 "끌린 행"이 무엇인지 대상 행에서 알아야 한다.
+      getInitialData: () => ({ index: row.index, title: row.title }),
       onDragStart: () => onDragStateChange(true),
       onDrop: () => onDragStateChange(false),
     });
@@ -108,8 +110,10 @@ function DraggableRow({
         const y = location.current.input.clientY;
         const where: DropEdge = y < rect.top + rect.height / 2 ? 'top' : 'bottom';
         setEdge(null);
-        const from = source.data.index;
-        if (typeof from === 'number') onDrop({ from, over: row.index, edge: where });
+        const { index, title } = source.data;
+        if (typeof index === 'number' && typeof title === 'string') {
+          onDrop({ index, title }, where);
+        }
       },
     });
 
