@@ -113,6 +113,8 @@
 - [x] **A6d** (2026-09-12 `9c0cf7e`, test/queue-edit-integrity, PR #72) ts — 편집→파일 반영 무결성 테스트(양방향 어긋남 0). 연속 편집만 덮는다(단일 편집은 A6a·A6c 통합 테스트): 매 단계 파일 파싱 결과와 DB 행 전체 대조 · 서문·완료일·카테고리 보존 · 재직렬화 동일(표기 드리프트 없음) · 밖에서 파일이 바뀐 경우 거부 후 재적재로 복구. 커밋: `test(queue): 큐 편집 파일 반영 무결성 테스트`
   - 완료조건([B]#4): 순서 DnD·섹션 이동이 되고 주제_큐.md에 반영, 어긋남 0.
 
+- [ ] **A6e** fe — **"파일에서 사라짐" 확인 UI**(선행 B1g 완료): `missingSince`가 찍힌 항목(= Run이 붙어 있어 자동으로 내리지 않은 것)을 큐 화면에 띄우고 `보류로 옮기기` / `그대로 두기`를 받는다. 제목 오타 수정이 파서에겐 "삭제 + 추가"로 보여 이력이 갈라지는 것을 사람이 막는 자리다. 보류 탭은 `holdReason`으로 `removed-from-file`과 `manual`을 구분해 보여준다(되살릴지 판단). decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 파일에서 사라진 항목 확인 UI 추가`
+
 ---
 
 ## Phase 1-B · 2주차 (파이프라인 + 실행 상세)
@@ -137,6 +139,7 @@
   - 완료조건 충족: 고정 usage → costUsd 단가표 일치(provider별) · 키 제거 시 해당 provider `available:false`(테스트).
 - [x] **UM1** (2026-09-09 `165c120`·`e8ed197`·`6c471b4`, feat/ui-primitives-dialog-select) ui — `@base-ui/react` 1.8.0 + `lucide-react` 1.43.0 설치·Vite external·`"use client"` 번들 배너(ui-package-boundary) → `Dialog`(제어형 open·title 접근성 이름·description·children·footer·trigger render·closeLabel) → `Select`(단일, items: value·label·description·trailing·disabled·disabledReason=title). 토큰 `--ui-color-backdrop`·`--ui-dialog-width`·`--ui-control-height`. 테스트 12개·스토리. BM6·BM8·BM9·BE12가 소비. 커밋: `chore(ui): Base UI·lucide 설치와 "use client" 배너 보존` · `feat(ui): Dialog 프리미티브 추가` · `feat(ui): Select 프리미티브 추가`
 - [x] **BM4** (2026-09-12 `aae1a24`, feat/run-schema, PR #74, B1e·BW1과 한 마이그레이션) pl — 스키마: `Run.modelId` + `RunStep`(modelId·inputTokens·outputTokens·costUsd·durationMs) 컬럼 + 마이그레이션. totalCost는 미저장(합산). 커밋: `feat(run): 실행·단계 스키마와 모델·비용·워커 상태 컬럼 추가`
+- [x] **B1g** (2026-09-12 `760c83d`·`af28cc8`, feat/worker-loop, PR #85) pl — **주제 키를 `QueueItem.id`로 전환**(decisions/queue-sync-direction.md 2026-09-12 변경): `Run { topicId(FK), topicSlug, topicTitle, attempt }` + `QueueItem { holdReason, missingSince }` + 마이그레이션. `startRun`·`POST /api/runs`가 제목 대신 `topicId`를 받고 없는 주제는 404. **적재를 전체 리셋 → 매칭 upsert**(괄호 힌트 뺀 제목 본문 기준): 사라진 줄은 지우지 않고 `disposeMissing`이 `keep-done`/`await-confirm`/`hold`로 나눈다. pipeline 138→153. 확인 UI는 A6e. 커밋: `feat(run): 주제 키를 QueueItem.id로 전환하고 attempt 추가` · `refactor(queue): 큐 적재를 매칭 upsert로`
 - [ ] **BM5** fe — `Settings.defaultModelId`(SQLite settings 테이블) + TopBar 칩에 label 표시(변경은 BM9). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): 기본 모델 설정과 TopBar 칩 표시`
 - [ ] **BM6** fe — 실행 시작 Dialog(모델 Select, available=false 비활성+툴팁, 예상 비용 미표시) + 진입점 3곳(큐 행 ⋮·맨 위 실행·홈 다음 실행) 연결. **선행: ui Dialog·Select 프리미티브(UM1).** 커밋: `feat(dashboard): 실행 시작 시 모델 선택 Dialog 추가`
   - 완료조건: 세 진입점 모두 같은 Dialog, 선택 modelId가 Run에 저장, available=false는 선택 불가.

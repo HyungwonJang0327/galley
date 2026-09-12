@@ -16,6 +16,8 @@
 - [x] B1a — 단계 상태 머신 + 승인 게이트 (2026-09-12, PR #81)
 - [x] BE14a — 단계 상태를 status × origin 두 축으로 + DB 저장값 영어 (2026-09-12, PR #83)
 - [x] BE14b — planRerun "시작 단계 + 이후 전부" + resolveCarriedSources (2026-09-12, PR #84)
+- [x] B1g — 주제 키 topicId 전환 + 큐 적재 매칭 upsert (2026-09-12, PR #85)
+- BW2 — 워커 루프(runOnce + bin 껍데기) ← 다음
 - BE14c — 워커가 범위 밖 앞 단계를 carried로 이어받기 (선행 BW2)
 - TD1 — QueueItem.status 한국어 → 영어 (fe와 함께)
 - 🔒 BM1 — 모델 어댑터 **인터페이스만** 사용자 작성 ← 구현 금지. **Mock·레지스트리·Claude 어댑터·비용은 AI가 구현**(인터페이스만 🔒 — decisions/core-modules·model-selection)
