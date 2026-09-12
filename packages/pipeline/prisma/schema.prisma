@@ -65,7 +65,8 @@ model Run {
   // — decisions/run-execution-model.md. "몇 번 만에 승인됐는가"가 핵심 기록이다.
   attempt Int @default(1)
 
-  // 검수 상태: running | pendingApproval | done | failed — 어휘는 상태 머신 RUN_STATUS가 소유.
+  // 검수 상태: running | pendingApproval | done | failed | revised — 어휘는 상태 머신 RUN_STATUS가 소유.
+  // revised = 승인 대기에서 수정 지시를 받아 새 시도로 넘어간 Run(종결, finishedAt 채움).
   // 저장값은 영어, 화면 한국어 라벨은 앱이 붙인다(decisions/db-value-language.md).
   status String @default("running")
 
