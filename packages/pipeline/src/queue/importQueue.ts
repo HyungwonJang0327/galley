@@ -51,6 +51,7 @@ export type MissingDisposition =
 interface ExistingItem {
   id: string;
   title: string;
+  status: string;
   missingSince: Date | null;
   runs: { status: string }[];
 }
@@ -61,10 +62,7 @@ export function disposeMissing(item: { runs: { status: string }[] }): MissingDis
   return item.runs.length > 0 ? 'await-confirm' : 'hold';
 }
 
-/**
- * 정규화 제목 → 아직 매칭되지 않은 기존 항목들. 같은 정규화 제목이 여럿이면 먼저 만든 것부터
- * 하나씩 꺼내 쓴다(줄 순서가 바뀌어도 같은 항목끼리 짝이 맞는다).
- */
+/** 정규화 제목 → 아직 매칭되지 않은 기존 항목들(먼저 만든 것부터). */
 function indexByTitle(items: readonly ExistingItem[]): Map<string, ExistingItem[]> {
   const index = new Map<string, ExistingItem[]>();
   for (const item of items) {
@@ -77,16 +75,56 @@ function indexByTitle(items: readonly ExistingItem[]): Map<string, ExistingItem[
 }
 
 /**
+ * 그 줄에 짝지을 기존 항목 하나를 꺼낸다. 같은 제목이 여러 섹션에 있을 수 있으므로
+ * (파일에 실제로 그런 경우가 있다) **같은 섹션에 있던 항목을 먼저** 고른다 —
+ * 생성 순서로만 고르면 대기/후보의 id가 서로 뒤바뀌어 실행 이력이 엉뚱한 줄에 붙는다.
+ */
+function takeMatch(
+  bucket: ExistingItem[] | undefined,
+  status: QueueStatus,
+): ExistingItem | undefined {
+  if (bucket === undefined || bucket.length === 0) return undefined;
+  const sameSection = bucket.findIndex((item) => item.status === status);
+  const at = sameSection === -1 ? 0 : sameSection;
+  return bucket.splice(at, 1)[0];
+}
+
+/**
+ * 적재를 직렬화한다. 한 요청에서 셸(사이드바 배지)과 페이지가 **병렬로** 적재를 부르는데,
+ * 둘이 동시에 `existing`을 읽으면 서로의 삽입을 보지 못해 같은 줄이 두 행으로 생긴다.
+ * (전체 리셋일 때는 뒤 삭제가 앞 삽입을 덮어써서 가려져 있던 문제다.)
+ */
+let importChain: Promise<void> = Promise.resolve();
+
+/**
  * 주제_큐.md를 읽어 DB에 반영한다. 매칭된 줄은 갱신, 없는 줄은 생성, 사라진 줄은
  * `disposeMissing`이 정한 대로 — 어느 경우에도 행을 지우지 않는다.
+ *
+ * 동시에 불리면 **차례로** 돈다(위 `importChain`). 파일이 진실이라 뒤 호출이 같은 결과를 낸다.
  */
-export async function importQueueFromFile(deps: {
+export function importQueueFromFile(deps: {
   storage: Storage;
   prisma: PrismaClient;
 }): Promise<void> {
+  const next = importChain.then(
+    () => runImport(deps),
+    () => runImport(deps),
+  );
+  // 앞 호출이 실패해도 뒤 호출이 막히지 않게 체인 자체는 항상 이어 둔다.
+  importChain = next.catch(() => {});
+  return next;
+}
+
+async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Promise<void> {
   const rows = parsedQueueToRows(parseQueue(await deps.storage.readQueueFile()));
   const existing: ExistingItem[] = await deps.prisma.queueItem.findMany({
-    select: { id: true, title: true, missingSince: true, runs: { select: { status: true } } },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      missingSince: true,
+      runs: { select: { status: true } },
+    },
     orderBy: { createdAt: 'asc' },
   });
 
@@ -96,8 +134,7 @@ export async function importQueueFromFile(deps: {
   const creates: QueueItemRow[] = [];
 
   for (const row of rows) {
-    const bucket = byTitle.get(normalizeTopicTitle(row.title));
-    const item = bucket?.shift();
+    const item = takeMatch(byTitle.get(normalizeTopicTitle(row.title)), row.status);
     if (item) {
       matched.add(item.id);
       updates.push({ id: item.id, row });
