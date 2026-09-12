@@ -27,6 +27,13 @@ describe('getNavCounts', () => {
     });
   });
 
+  it('이미 읽은 섹션을 주면 다시 적재하지 않는다', async () => {
+    const sections = { 대기: [topic('가')], 후보: [], 보류: [], 완료: [] };
+
+    expect((await getNavCounts(sections)).waiting).toBe(1);
+    expect(getQueueSections).not.toHaveBeenCalled();
+  });
+
   it('큐를 못 읽으면 대기는 0(화면은 안내 문구를 따로 그린다)', async () => {
     getQueueSections.mockResolvedValue({
       ok: false,

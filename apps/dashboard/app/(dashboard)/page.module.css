@@ -5,6 +5,11 @@
   gap: var(--ui-space-4);
 }
 
+/* 행 2 — 지금은 "다음 실행" 카드만 전체 폭(사용자 결정). 좌 "지금 할 일"은 AH5(B1e 뒤). */
+.cards {
+  margin-top: var(--ui-space-5);
+}
+
 /* h1 우측 보조 텍스트: 다음 자동 실행 시각. */
 .schedule {
   color: var(--ui-color-text-muted);
