@@ -40,6 +40,18 @@
   width: 200px;
 }
 
+/* SplitPane은 부모가 준 높이를 채운다 — 갤러리에서는 토큰 최소 높이로 잘라 스크롤을 만든다. */
+.splitPaneBox {
+  height: var(--ui-splitpane-min-height);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  overflow: hidden;
+}
+
+.pad {
+  padding: var(--ui-space-3) var(--ui-space-4);
+}
+
 /* 홈 행 1 배치(같은 폭 타일). 이 grid면 충분해 ui에 CardGrid를 두지 않았다 — todo AH1. */
 .tiles {
   display: grid;

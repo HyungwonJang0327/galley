@@ -25,6 +25,7 @@ import {
   SelectLongDemo,
   SelectWithDescriptionDemo,
   SelectWithDescriptionMetaDemo,
+  SplitPaneDemo,
 } from './PrimitiveDemos';
 
 // 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 @galley/ui 공개 배럴만
@@ -277,6 +278,21 @@ export default function DesignPage() {
               message="대기 중인 주제가 없습니다. 후보에서 골라 주세요."
               action={<Button variant="secondary">후보 보기</Button>}
             />
+          </div>
+        </Card>
+
+        {/*
+          2분할 상세형(B) 골격. verify:layout이 이 섹션의 aria-label과 data-demo에 결합해
+          좌 폭·좌우 독립 스크롤·하단 바 고정·펼침을 실측한다 — 바꾸면 split-pane.mjs도 맞춘다.
+        */}
+        <Card>
+          <h2 className={styles.sectionTitle}>SplitPane · TimelineItem · ActionBar</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              좌 고정폭 목록 / 우 헤더·타임라인·하단 바. 좌우가 각각 따로 스크롤하고, 줄을 펼쳐도
+              하단 바는 제자리.
+            </span>
+            <SplitPaneDemo />
           </div>
         </Card>
 
