@@ -49,6 +49,7 @@ export type {
   CommandFailure,
   CommandResult,
 } from './run/stateMachine';
+export { resolveCarriedSources } from './run/carriedSources';
 export { startRun } from './run/startRun';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun';
 export { loadQueueSections } from './queue/loadQueue';
