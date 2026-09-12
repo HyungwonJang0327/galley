@@ -16,7 +16,11 @@ export {
   restoreMissingTopicToHold,
   acknowledgeMissingTopic,
 } from './queue/missingTopics.ts';
-export type { MissingTopic, MissingTopicFailure, MissingTopicResult } from './queue/missingTopics.ts';
+export type {
+  MissingTopic,
+  MissingTopicFailure,
+  MissingTopicResult,
+} from './queue/missingTopics.ts';
 export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue.ts';
 export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue.ts';
 export type {
