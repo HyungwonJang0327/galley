@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ChevronDown, Menu } from 'lucide-react';
 import { TopBarChip } from '@galley/ui';
 import { useSidebarCollapse } from './SidebarProvider';
@@ -16,7 +17,9 @@ export function TopBar() {
         <TopBarChip onClick={toggle} aria-label="사이드바 접기/펼치기" aria-expanded={!collapsed}>
           <Menu size={18} aria-hidden="true" />
         </TopBarChip>
-        <span className={styles.wordmark}>Galley</span>
+        <Link href="/" className={styles.wordmark}>
+          Galley
+        </Link>
       </div>
       <div className={styles.right}>
         <TopBarChip trailing={<ChevronDown size={14} aria-hidden="true" />}>

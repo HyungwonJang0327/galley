@@ -7,6 +7,19 @@ import { SidebarProvider } from './SidebarProvider';
 vi.mock('next/navigation', () => ({ usePathname: () => '/runs' }));
 
 describe('Sidebar', () => {
+  it('맨 위에 홈 항목(루트 링크)이 있고, 다른 화면에서는 활성이 아니다', () => {
+    render(
+      <SidebarProvider>
+        <Sidebar />
+      </SidebarProvider>,
+    );
+    const home = screen.getByRole('link', { name: '홈' });
+    expect(home.getAttribute('href')).toBe('/');
+    expect(home.getAttribute('aria-current')).toBeNull();
+    // 그룹 밖 단독 항목이라 첫 번째 링크다.
+    expect(screen.getAllByRole('link')[0]).toBe(home);
+  });
+
   it('현재 URL과 같은 항목만 aria-current="page"', () => {
     render(
       <SidebarProvider>

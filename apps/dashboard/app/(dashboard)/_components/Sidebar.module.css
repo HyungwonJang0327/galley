@@ -1,0 +1,6 @@
+/* 홈 단독 항목 영역. 여백은 SidebarGroup과 같게 맞추고, 아래 구분선으로 메뉴 그룹과 나눈다.
+   구분선 한 줄뿐이라 @galley/ui에 컴포넌트를 두지 않았다(todo AH2). */
+.home {
+  padding: var(--ui-space-2) var(--ui-space-2) var(--ui-space-3);
+  border-bottom: 1px solid var(--ui-color-border);
+}
