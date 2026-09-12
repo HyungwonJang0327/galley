@@ -118,6 +118,7 @@ Galley/
 - **스타일 토큰**: 색·간격·타이포·라운드·그림자는 `tokens/`의 CSS 변수(`--ui-*`)만 참조. **하드코딩 색·px 금지.**
 - **타입**: `strict`. `any` 금지(불가피하면 `unknown`+좁히기). 도메인 타입은 앱/파이프라인에, ui는 표현 props 타입만.
 - **상태 관리**: 서버 상태는 서버(Route Handler/Server Component)에서. 클라 상태 최소화. 사이드바 접힘·활성은 URL/localStorage(서버 상태로 만들지 않음).
+- **DB 저장값은 영어**(상태·종류 같은 열거값). 표시 한국어는 `apps/dashboard` 라벨 매핑에서 붙인다. 예외는 **사람이 쓴 글과 제목**(본문·수정 지시·주제 제목·큐 항목 제목)과 **파일 형식**(`주제_큐.md` 섹션 머리글) — 파일 → DB 경계에서 옮긴다. decisions/db-value-language.md
 - **에러 응답 형태**: Route Handler는 `{ ok: false, error: { code, message } }` / 성공은 `{ ok: true, data }`. 던지지 말고 형태로 반환.
 
 ## 5. 중요 — 이 프로젝트 함정
