@@ -37,4 +37,20 @@ describe('Button', () => {
     render(<Button variant={variant}>{variant}</Button>);
     expect(screen.getByRole('button', { name: variant })).toBeTruthy();
   });
+
+  it('render를 주면 그 요소로 렌더하고 children을 넣는다(버튼 모양 링크)', () => {
+    render(<Button render={<a href="/queue" />}>큐 편집</Button>);
+
+    const link = screen.getByRole('link', { name: '큐 편집' });
+    expect(link.getAttribute('href')).toBe('/queue');
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('render 요소의 className을 병합한다', () => {
+    render(
+      <Button render={<a href="/queue" data-testid="link" className="own" />}>큐 편집</Button>,
+    );
+
+    expect(screen.getByTestId('link').className).toContain('own');
+  });
 });
