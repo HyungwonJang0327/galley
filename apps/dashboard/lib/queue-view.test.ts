@@ -34,8 +34,8 @@ describe('buildQueueView', () => {
     const view = buildQueueView(sections, {});
     expect(view.active.status).toBe('대기');
     expect(view.rows).toEqual([
-      { title: '대기1', meta: undefined },
-      { title: '대기2', meta: '프론트' },
+      { title: '대기1', meta: undefined, index: 0 },
+      { title: '대기2', meta: '프론트', index: 1 },
     ]);
   });
 
@@ -53,6 +53,11 @@ describe('buildQueueView', () => {
     expect(view.rows.map((row) => row.title)).toEqual(['후보1', '후보3']);
   });
 
+  it('행 위치는 필터 전 섹션 기준이다(이동이 파일에서 항목을 찾는 키)', () => {
+    const view = buildQueueView(sections, { tab: 'candidates', category: '프론트' });
+    expect(view.rows.map((row) => row.index)).toEqual([0, 2]);
+  });
+
   it('다른 탭의 ?category=는 무시한다', () => {
     const view = buildQueueView(sections, { tab: 'waiting', category: '프론트' });
     expect(view.category).toBeUndefined();
@@ -67,7 +72,7 @@ describe('buildQueueView', () => {
 
   it('완료 탭 보조 텍스트는 완료일', () => {
     expect(buildQueueView(sections, { tab: 'done' }).rows).toEqual([
-      { title: '완료1', meta: '2026-09-01' },
+      { title: '완료1', meta: '2026-09-01', index: 0 },
     ]);
   });
 });
