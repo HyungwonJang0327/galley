@@ -95,7 +95,7 @@ Galley/
 
 | 영역          | 선택                                                         | 버전 (2026-09-08 기준)                                |
 | ------------- | ------------------------------------------------------------ | ----------------------------------------------------- |
-| 패키지 매니저 | pnpm (workspace: apps/\*, packages/\*)                       | 10.26.2 (node ≥20)                                    |
+| 패키지 매니저 | pnpm (workspace: apps/\*, packages/\*)                       | 10.26.2 (node ≥24)                                    |
 | 앱            | Next.js App Router + React                                   | next 16.3.4 · react 19.2.8                            |
 | 언어          | TypeScript (strict)                                          | 6.0.3 (7.x 보류 — decisions/toolchain-pins.md)        |
 | 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | @base-ui/react 1.8.0 · lucide-react 1.43.0            |
@@ -138,6 +138,10 @@ Galley/
 - **요약만으로 본문을 쓰지 않는다. 본문 단계 입력은 EvidenceBundle뿐**(주제 + 원본 조각 + 어투 프롬프트). 리포 경로·분석 글 원문이 들어갈 자리를 입력 타입에 두지 않는다 — decisions/evidence-collection.md.
 - **읽기 전용 리포에 쓰기 금지.** 인덱싱·근거 수집은 `git show`·`git log` 등 읽기 명령만. 파일·브랜치·git 상태를 바꾸는 명령을 리포 경로에서 실행하지 않는다. 테스트는 tmpdir 픽스처 리포로만(회사 리포 미열람은 그대로).
 - **식별 정보 필터는 `.galley/redact.json` 한 곳.** 인덱싱(summary·note)과 EvidenceBundle(snippet) 양쪽이 같은 함수를 쓴다. 패턴을 코드에 흩어 두지 않는다.
+- **Node 24 LTS 필수**(`engines >=24`). 워커는 빌드·런처 없이 `node bin/worker.ts`로 돈다 — Node가 타입만 걷어낸다(decisions/node-runtime.md). 그래서 `packages/pipeline`에는 세 가지 제약이 있다:
+  - **상대 import에 `.ts` 확장자 필수**(`from './foo.ts'`). 빠뜨리면 워커만 `ERR_MODULE_NOT_FOUND`로 죽는다(테스트·빌드는 통과한다).
+  - **`enum`·런타임 `namespace`·생성자 파라미터 프로퍼티 금지**(`constructor(private x)` ✗ → 필드 선언). `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`.
+  - **`node_modules` 안의 TS는 Node가 거부한다.** 워커는 같은 패키지를 상대 경로로 읽으므로 지금은 괜찮지만, Node에서 `@galley/pipeline`을 **패키지 이름으로** import하려면 빌드 산출물이 필요하다.
 - **macOS 전용 명령(`open`, `pbcopy`)·경로 구분자 가정 금지.**
 - `.env*`(except `.env.example`)·`.mcp.json`·`.claude/settings.local.json`은 gitignore.
 - **pnpm 10은 네이티브 패키지 빌드 스크립트를 차단.** 새 네이티브 도구(esbuild·lefthook 등) 추가 시 `pnpm.onlyBuiltDependencies`에 넣어야 빌드된다. (decisions/toolchain-pins.md)
