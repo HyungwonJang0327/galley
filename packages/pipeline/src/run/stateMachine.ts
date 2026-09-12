@@ -39,6 +39,11 @@ export const RUN_STATUS = {
 
 export type RunStatus = (typeof RUN_STATUS)[keyof typeof RUN_STATUS];
 
+/** DB에서 읽은 문자열을 검수 상태로 좁힌다(스키마에 enum이 없다). */
+export function isRunStatus(value: string): value is RunStatus {
+  return (Object.values(RUN_STATUS) as readonly string[]).includes(value);
+}
+
 /** 단계 생명주기. `RunStep.status`에 그대로 저장된다. */
 export const STEP_STATUS = {
   pending: 'pending',

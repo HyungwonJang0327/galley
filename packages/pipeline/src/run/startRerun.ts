@@ -4,7 +4,7 @@
 //
 // 그래서 워커는 첫 실행과 똑같이 pending만 잡는다 — 워커 코드에 "재실행"이라는 개념이 들어가지 않는다
 // (워커는 오케스트레이션만). 확인 UI가 보여준 계획(`planRerun`)과 실제 행이 같은 계산에서 나온다.
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
 import { resolveCarriedSources } from './carriedSources.ts';
 import type { RunSummary } from './runQueries.ts';
@@ -32,8 +32,8 @@ export type StartRerunFailure =
   | 'RUN_NOT_FOUND'
   /** 직전 Run이 아직 실행 중 — 안 끝난 단계를 "이전 결과"로 가져올 수 없다 */
   | 'RUN_IN_PROGRESS'
-  /** 같은 주제의 다른 Run이 실행 중 */
-  | 'RUN_ALREADY_ACTIVE'
+  /** 직전 Run이 그 주제의 최신 시도가 아님 — 이미 수정 지시된 Run에서 또 갈라지지 못한다 */
+  | 'NOT_LATEST_ATTEMPT'
   /** 계획이 6단계를 순서대로 덮지 않음(carried+fresh ≠ STEP_ORDER) */
   | 'INVALID_PLAN'
   /** 이어받을 단계가 직전 Run에서 성공하지 않았음(실패한 Run은 실패 단계부터만 다시 돌 수 있다) */
@@ -76,9 +76,22 @@ export async function startRerun(
   deps: { prisma: PrismaClient; registry: ModelRegistry },
   input: StartRerunInput,
 ): Promise<StartRerunResult> {
+  return deps.prisma.$transaction((tx) => startRerunIn(tx, deps.registry, input));
+}
+
+/**
+ * `startRerun`의 본체 — 호출자가 연 트랜잭션 안에서 돈다. 수정 지시(`reviseRun`)가 직전 Run의
+ * 종결과 새 Run 생성을 **한 트랜잭션**으로 묶기 위해 이 형태를 쓴다. 아무것도 쓰지 않고 실패하면
+ * 값으로 돌려주므로 호출자가 롤백을 따로 신경 쓸 일이 없다.
+ */
+export async function startRerunIn(
+  tx: Prisma.TransactionClient,
+  registry: ModelRegistry,
+  input: StartRerunInput,
+): Promise<StartRerunResult> {
   if (!isWholePipeline(input.plan)) return { ok: false, code: 'INVALID_PLAN' };
 
-  return deps.prisma.$transaction(async (tx) => {
+  {
     const previous = await tx.run.findUnique({
       where: { id: input.previousRunId },
       select: {
@@ -94,18 +107,22 @@ export async function startRerun(
     if (!previous) return { ok: false, code: 'RUN_NOT_FOUND' };
     if (previous.status === RUN_STATUS.running) return { ok: false, code: 'RUN_IN_PROGRESS' };
 
-    const adapter = input.modelId
-      ? deps.registry.get(input.modelId)
-      : deps.registry.get(previous.modelId);
-    if (!adapter) return { ok: false, code: 'UNKNOWN_MODEL' };
-    if (!adapter.available) return { ok: false, code: 'MODEL_UNAVAILABLE' };
-
-    // 직전 Run 자체는 승인 대기라 finishedAt이 비어 있을 수 있다 — startRun과 달리 "실행 중"만 본다.
-    const active = await tx.run.findFirst({
-      where: { topicId: previous.topicId, status: RUN_STATUS.running },
+    // 재실행은 그 주제의 **최신 시도에서만** 갈라진다(사용자 결정 2026-09-13). 이미 수정 지시돼
+    // 다음 시도로 넘어간 Run에서 또 갈라지면 사슬이 두 갈래가 되고 "몇 번째 시도"가 흐려진다.
+    // 이 가드 덕에 "같은 주제의 다른 Run이 실행 중"은 따로 볼 필요가 없다 — 활성일 수 있는 건
+    // 직전 Run 자신뿐이고 그건 위 RUN_IN_PROGRESS가 잡는다.
+    const latest = await tx.run.findFirst({
+      where: { topicId: previous.topicId },
+      orderBy: { attempt: 'desc' },
       select: { id: true },
     });
-    if (active) return { ok: false, code: 'RUN_ALREADY_ACTIVE' };
+    if (latest !== null && latest.id !== previous.id) {
+      return { ok: false, code: 'NOT_LATEST_ATTEMPT' };
+    }
+
+    const adapter = input.modelId ? registry.get(input.modelId) : registry.get(previous.modelId);
+    if (!adapter) return { ok: false, code: 'UNKNOWN_MODEL' };
+    if (!adapter.available) return { ok: false, code: 'MODEL_UNAVAILABLE' };
 
     const previousStatus = new Map(previous.steps.map((step) => [step.name, step.status]));
     const allCarriedSucceeded = input.plan.carried.every(
@@ -146,5 +163,5 @@ export async function startRerun(
       select: RUN_SUMMARY_SELECT,
     });
     return { ok: true, run };
-  });
+  }
 }
