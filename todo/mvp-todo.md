@@ -188,7 +188,7 @@
 - [ ] **BE13** fe — 실행 상세 타임라인에 근거 수집("linked n · discovered n", 펼침 목록)·근거 검증("근거 없음 n · 불확실 n" 주황 배지, 펼침 주장 목록) 표시 + 좌 목록·홈 "지금 할 일" 작은 텍스트. 커밋: `feat(dashboard): 타임라인에 근거·검증 결과 표시`
       재실행 규칙(2026-09-12 교체 — decisions/evidence-collection.md): **시작 단계 + 이후 전부**. 시작 단계는 Select 지정 우선, 없으면 지시에 "근거"·"커밋"·"코드"가 있으면 `evidence`·없으면 `velog`. 범위 밖 앞 단계는 `carried`(이전 결과 유지, "건너뜀" 아님). 세 조각으로 나눈다.
 
-- [x] **BE14a** (2026-09-12 `0738196`·`9040797`·`a277121`, feat/run-step-origin, PR #83) pl — 단계 상태를 **생명주기(`status`) × 출처(`origin`) 두 축**으로. `RunStep.origin`(기본 `fresh`)·`sourceRunId`(nullable) 컬럼 + 마이그레이션 2개, `skipped` 제거. 같이 **DB 저장값을 영어로**(decisions/db-value-language.md 신설 — `Run.status` `running|pendingApproval|done|failed`, `RunStep.status` `pending|running|succeeded|failed`). 행 0건이라 값 변환 구문 없음. 두 축 직교(앞 `carried+succeeded` / 시작 `fresh+failed` / 뒤 `pending`)를 스키마 주석·테스트에 고정. pipeline 123→124.
+- [x] **BE14a** (2026-09-12 `8b66d55`·`633fd92`·`1a8e31c`, feat/run-step-origin, PR #83) pl — 단계 상태를 **생명주기(`status`) × 출처(`origin`) 두 축**으로. `RunStep.origin`(기본 `fresh`)·`sourceRunId`(nullable) 컬럼 + 마이그레이션 2개, `skipped` 제거. 같이 **DB 저장값을 영어로**(decisions/db-value-language.md 신설 — `Run.status` `running|pendingApproval|done|failed`, `RunStep.status` `pending|running|succeeded|failed`). 행 0건이라 값 변환 구문 없음. 두 축 직교(앞 `carried+succeeded` / 시작 `fresh+failed` / 뒤 `pending`)를 스키마 주석·테스트에 고정. pipeline 123→124.
 - [ ] **BE14b** pl — `planRerun`: 시작 단계 결정(Select 우선 → 없으면 지시 텍스트 판단) + **시작 단계 이후 전부** 반환, `RerunPlan.skipped` 제거. 전이 테스트 갱신. 커밋: `feat(run): 재실행 범위를 시작 단계 이후 전부로 변경`
 - [ ] **BE14c** pl — 워커 적용(선행 BW2): 재실행 시 범위 밖 앞 단계를 **새 Run의 행으로 `carried`+`sourceRunId`와 함께 저장**(타임라인 자기 완결). 커밋: `feat(run): 재실행 시 이전 결과를 carried로 이어받기`
   - 완료조건: 세 경우(기본·키워드 포함·단계 지정) 전이 테스트.
