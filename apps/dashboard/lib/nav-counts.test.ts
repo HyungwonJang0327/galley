@@ -54,6 +54,22 @@ describe('getNavCounts', () => {
     expect((await getNavCounts()).pendingApproval).toBe(3);
   });
 
+  // 이 카운트는 셸 레이아웃이 매 요청 부른다 — 던지면 모든 화면이 500이 된다(CI에서 발견).
+  it('DB가 없거나 조회가 실패해도 0으로 두고 나머지는 그대로 준다', async () => {
+    getQueueSections.mockResolvedValue({
+      ok: true,
+      data: { 대기: [topic('가')], 후보: [], 보류: [], 완료: [] },
+    });
+    countPendingApproval.mockRejectedValue(new Error('no such table: Run'));
+
+    expect(await getNavCounts()).toEqual({
+      waiting: 1,
+      pendingApproval: 0,
+      publishPending: 0,
+      monthlyCostUsd: 0,
+    });
+  });
+
   it('큐를 못 읽으면 대기는 0(화면은 안내 문구를 따로 그린다)', async () => {
     getQueueSections.mockResolvedValue({
       ok: false,

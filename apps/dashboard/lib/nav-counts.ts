@@ -15,6 +15,18 @@ export interface NavCounts {
 }
 
 /**
+ * DB가 아직 없거나(마이그레이션 전) 조회가 실패해도 화면 전체가 죽지 않게 0으로 둔다.
+ * 이 카운트는 셸 레이아웃이 매 요청 부르므로, 던지면 모든 화면이 500이 된다.
+ */
+async function safePendingApproval(): Promise<number> {
+  try {
+    return await countPendingApproval(prisma);
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * preloaded를 주면 큐를 다시 적재하지 않는다 — 홈처럼 이미 섹션을 읽은 화면이
  * 같은 요청에서 파일→DB 재적재를 두 번 하지 않게.
  */
@@ -23,7 +35,7 @@ export async function getNavCounts(preloaded?: QueueSections): Promise<NavCounts
     preloaded !== undefined ? { ok: true as const, data: preloaded } : await getQueueSections();
   return {
     waiting: queue.ok ? queue.data.대기.length : 0,
-    pendingApproval: await countPendingApproval(prisma),
+    pendingApproval: await safePendingApproval(),
     // TODO(Phase 2): 승인됐지만 채널 미발행 수
     publishPending: 0,
     // TODO(Phase 2): 이번 달 RunStep 비용 합
