@@ -17,6 +17,8 @@ BW2(워커 루프) 착수 전에 정한 세 가지. 셋 다 "층을 늘리지 �
 - **`applyCommand` 확장**: 재실행 지시를 받으면 상태 전이만이 아니라 **"새 Run 생성" 지시와 `RerunPlan`을 함께** 돌려준다.
 - **산출물 충돌**: 사람이 읽는 5개 파일(벨로그 본문·링크드인·Zenn·발행정보·썸네일)은 `posts/<슬러그>/` 루트에 **최신본만** 둔다(경로가 안정적이어야 하고 열어야 할 파일이 늘면 안 된다). **Run별 부산물**(`evidence.json`·`verification.json`·단계 로그)은 `posts/<슬러그>/runs/<runId>/`에 남기고 **덮어쓰지 않는다.**
 - BE14a의 `origin`/`sourceRunId`와 BE14c는 이 결정과 맞는다 — 되돌릴 것 없다.
+- **carried 행은 재실행 Run을 만드는 시점에 함께 만든다**(2026-09-13, BE14c). `startRerun({ previousRunId, plan, instruction, modelId? })`가 새 Run과 단계 행 6개를 **한 트랜잭션**에서 만든다 — 앞은 `carried`+`succeeded`+`sourceRunId`(`resolveCarriedSources`를 같은 트랜잭션에서 불러 승계 사슬이 일관), 시작 단계부터는 `pending`+`fresh`. **워커는 첫 실행과 똑같이 pending만 잡고 "재실행"이라는 개념을 모른다** — §2 "워커는 오케스트레이션만"을 지키는 가장 큰 이유다. 확인 UI가 보여준 `planRerun` 결과와 실제 행이 같은 계산에서 나온다(두 번 계산하지 않는다). 가드: 직전 Run이 실행 중이면 거부(안 끝난 단계를 "이전 결과"로 가져오게 된다) — 재실행은 승인 대기·실패·완료에서만. 이어받을 단계가 직전 Run에서 성공하지 않았어도 거부(실패한 Run은 실패 단계부터만). 직전 Run의 검수 상태는 건드리지 않는다 — 종결은 승인 게이트 배선(BW4)의 몫. **기각**: _워커가 잡을 때 채우기_ — 워커가 재실행을 인지해야 하고 계획을 UI와 워커가 두 번 계산한다.
+- **`Run.instruction`·`Run.startStep`**(2026-09-13). instruction은 사용자 입력 원문 그대로(정규화하지 않음), startStep은 `planRerun`이 정한 최종 결과. 첫 실행은 둘 다 null. 지시를 안 남기면 Run이 "왜 여기서부터 다시 돌았는지"를 설명 못 한다 — 시도 이력의 핵심 정보다. startStep은 fresh 첫 행에서 유도할 수 있지만 이력·타임라인 헤더에서 매번 유도하는 것보다 적는 게 싸다. 흐름: `startRerun`이 저장 → 워커가 `ClaimedRun`에서 읽어 `StepContext.instruction`으로 넘긴다(carried 단계는 돌지 않으니 받지 않는다). **기각**: _BW4로 미루기_ — 마이그레이션 한 번 더, 그 사이 `StepContext.instruction` 경로가 한 번도 안 돈 채 남는다.
 
 **기각**: _같은 Run에서 단계만 재실행_ — 버전 개념이 별도로 필요해져 층만 늘어난다.
 
@@ -68,4 +70,5 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-13 BE14c: carried 행 생성 시점 = `startRerun`(재실행 Run 생성 시, 한 트랜잭션) + `Run.instruction`·`startStep` 컬럼. §1 "따라오는 것"에 추가.
 - 2026-09-12 최초 결정(BW2 착수 전 3건). decisions/run-location.md(워커 위치·heartbeat)와 evidence-collection.md(재실행 규칙·단계 출처)를 전제로 한 실행 모델 층이다.
