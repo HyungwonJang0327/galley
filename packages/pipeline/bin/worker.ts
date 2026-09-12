@@ -51,10 +51,14 @@ const sleep = (ms: number) =>
   new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, ms);
     // 쉬는 중에 신호가 오면 곧바로 깬다.
-    controller.signal.addEventListener('abort', () => {
-      clearTimeout(timer);
-      resolve();
-    }, { once: true });
+    controller.signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
   });
 
 async function main(): Promise<void> {
@@ -68,7 +72,9 @@ async function main(): Promise<void> {
       if (outcome === 'idle') await sleep(IDLE_INTERVAL_MS);
     } catch (error) {
       // 틱 하나가 실패해도 루프는 살아 있어야 한다(다음 틱이 다시 본다).
-      deps.logger.error('틱 실패', { detail: error instanceof Error ? error.stack : String(error) });
+      deps.logger.error('틱 실패', {
+        detail: error instanceof Error ? error.stack : String(error),
+      });
       await sleep(IDLE_INTERVAL_MS);
     }
   }
