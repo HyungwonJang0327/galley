@@ -117,6 +117,17 @@ model RunStep {
   // **참조**한다(시각을 복사해 두지 않는다 — 원본이 바뀌면 같이 바뀌어야 한다).
   sourceRunId String?
 
+  // 실패 기록 — 셋만 둔다(decisions/error-handling.md "단계 실패 기록").
+  // 스택·원본 응답은 여기 넣지 않는다. 그 Run의 로그(posts/<슬러그>/runs/<runId>/)에 남기고
+  // 타임라인 실패 줄을 펼치면 그 로그를 보여준다. 행은 가볍게 유지한다.
+  // retryable은 별도 컬럼으로 두지 않는다 — errorCode에서 유도한다.
+  errorCode    String?
+  errorMessage String?
+
+  // 이 단계를 몇 번 시도했는지. 재시도했다면 **마지막 실패만** 위에 남기고 횟수는 여기.
+  // "3번 시도 후 실패"를 타임라인에 보여준다. 성공하면 위 둘은 비우고 이 값은 남긴다.
+  attemptCount Int @default(0)
+
   // 이 단계를 실행한 모델과 사용량·비용(재실행 시 단계마다 다를 수 있다).
   modelId      String?
   inputTokens  Int?
