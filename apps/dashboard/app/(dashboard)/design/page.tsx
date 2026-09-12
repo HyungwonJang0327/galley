@@ -60,6 +60,17 @@ export default function DesignPage() {
               </Button>
             </div>
           </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              render(버튼 모양 링크 — 앱은 Next Link를 넘긴다)
+            </span>
+            <div className={styles.row}>
+              <Button render={<a href="/queue" />}>링크 버튼</Button>
+              <Button variant="secondary" render={<a href="/queue?tab=candidates" />}>
+                보조 링크 버튼
+              </Button>
+            </div>
+          </div>
         </Card>
 
         <Card>
