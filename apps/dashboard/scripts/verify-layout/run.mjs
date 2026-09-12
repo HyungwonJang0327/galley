@@ -13,6 +13,7 @@ import { verifyMenu } from './menu.mjs';
 import { verifySelect } from './select.mjs';
 import { verifyShellScroll } from './shell-scroll.mjs';
 import { verifySplitPane } from './split-pane.mjs';
+import { verifyNotFound } from './not-found.mjs';
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const nextBin = createRequire(import.meta.url).resolve('next/dist/bin/next');
@@ -100,8 +101,15 @@ async function main() {
     });
     const browser = await launchChrome();
     try {
-      for (const verify of [verifyShellScroll, verifySelect, verifyMenu, verifySplitPane]) {
-        const page = await browser.openPage(`${base}/design`);
+      for (const verify of [
+        verifyShellScroll,
+        verifySelect,
+        verifyMenu,
+        verifySplitPane,
+        verifyNotFound,
+      ]) {
+        // 대부분 /design 갤러리를 보지만, 404는 없는 경로여야 재현된다.
+        const page = await browser.openPage(`${base}${verify.path ?? '/design'}`);
         try {
           await page.waitForReady();
           results.push(await verify(page, { outDir }));
