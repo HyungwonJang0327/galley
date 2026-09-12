@@ -25,8 +25,13 @@ beforeAll(async () => {
   prisma = new PrismaClient({ datasources: { db: { url } } });
 });
 
+let topicId: string;
+
 beforeEach(async () => {
   await prisma.run.deleteMany();
+  await prisma.queueItem.deleteMany();
+  const topic = await prisma.queueItem.create({ data: { title: '무한 스크롤', order: 0 } });
+  topicId = topic.id;
 });
 
 afterAll(async () => {
@@ -48,6 +53,7 @@ async function createRun(options: {
 
   const run = await prisma.run.create({
     data: {
+      topicId,
       topicSlug: '무한-스크롤',
       topicTitle: '무한 스크롤',
       modelId: 'mock',
