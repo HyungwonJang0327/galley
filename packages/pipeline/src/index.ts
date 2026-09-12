@@ -6,6 +6,12 @@ export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile';
 export { parsedQueueToRows, importQueueFromFile } from './queue/importQueue';
 export type { QueueItemRow } from './queue/importQueue';
 export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue';
+export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue';
+export type {
+  ReorderQueueTopicInput,
+  ReorderQueueFailure,
+  ReorderQueueResult,
+} from './queue/reorderQueue';
 export type {
   MovableStatus,
   MoveQueueTopicInput,
