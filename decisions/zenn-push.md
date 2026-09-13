@@ -24,3 +24,4 @@ Zenn 발행은 GitHub 연동 방식. 승인된 글을 `zenn-content` 리포의 `
 ## 갱신 이력
 
 - 2026-09-08 최초 결정. zenn-content 리포 생성·스캐폴드(articles/, README) push 완료.
+- 2026-09-13 **범위 확정: push 실연동은 Phase 2 유지**(사용자 결정). INTENT 완료 기준이 "승인 후 下書き push"를 Phase 1처럼 읽히게 적혀 있어 planning(Phase 2)과 어긋났다 → INTENT 문구를 정정했다. Phase 1은 `posts/<슬러그>/`의 Zenn 원고(`published: false`, BS4)까지. 기각: MVP 포함(승인 전이에 push 배선) · MVP에 로컬 커밋까지(ZENN_CONTENT_DIR에 쓰고 commit, push만 미룸) — 남은 항목이 많아 범위를 늘리지 않는다.
