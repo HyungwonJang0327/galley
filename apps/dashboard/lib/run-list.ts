@@ -1,5 +1,6 @@
 // 실행 목록(2분할 화면 좌측) 데이터(서버 전용). 필터 해석(URL → RunListFilter)은 화면이 하고,
 // 여기서는 조회·직렬화·실패 봉투만 — decisions/error-handling.md ②.
+import 'server-only';
 import { listRuns, prisma, type RunListFilter, type RunListItem } from '@galley/pipeline';
 import type { RunRecord } from './run-commands';
 

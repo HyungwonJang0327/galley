@@ -1,6 +1,7 @@
 // 실행·단계 상태(DB 영어 값) → 화면 한국어 라벨·Badge variant·TimelineStatus.
 // 어휘는 pipeline 상태 머신이 소유하고, 여기서는 표시만 붙인다(decisions/db-value-language.md).
 // ui는 variant·status 이름만 알고 "승인 대기"를 모른다(decisions/ui-package-boundary.md).
+import 'server-only';
 import type { BadgeProps, TimelineStatus } from '@galley/ui';
 import {
   isRunStatus,

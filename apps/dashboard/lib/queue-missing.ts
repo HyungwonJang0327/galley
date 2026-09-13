@@ -1,5 +1,6 @@
 // 파일에서 사라진 항목 확인(서버 전용). 목록 조회와 두 가지 답(보류로 옮기기 / 그대로 두기).
 // 실패는 던지지 않고 { ok: false, error } 형태로 — decisions/error-handling.md.
+import 'server-only';
 import {
   LocalFsStorage,
   acknowledgeMissingTopic,

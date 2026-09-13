@@ -1,5 +1,6 @@
 // /api/runs/[id]/* 세 핸들러가 같이 쓰는 것 — 응답 봉투, 본문 파싱, 코드→HTTP 상태.
 // 상태 표는 decisions/error-handling.md "HTTP 상태 매핑": 형식 400 · 없음 404 · 상태 충돌 409 · 그 밖 500.
+import 'server-only';
 import { INSTRUCTION_MAX_LENGTH, isStepName, type StepName } from '@galley/pipeline';
 import type {
   RunApproveErrorCode,

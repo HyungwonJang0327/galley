@@ -1,6 +1,7 @@
 // 승인·수정 지시·재실행 미리보기(서버 전용): pipeline이 Run 상태를 바꾸고, 실제 재실행은 워커가
 // 집어간다 — decisions/run-location.md. 실패는 던지지 않고 { ok: false, error } 형태로 돌려주며,
 // 코드 → 한국어 문구는 여기(앱 어댑터)에서 붙인다(decisions/error-handling.md ②).
+import 'server-only';
 import {
   approveRun,
   createModelRegistryFromEnv,

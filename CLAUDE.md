@@ -101,6 +101,7 @@ Galley/
 | 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | @base-ui/react 1.8.0 · lucide-react 1.43.0            |
 | DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | prisma 6.19.3 (7↑ 보류 — decisions/toolchain-pins.md) |
 | 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                     |
+| 서버 경계     | server-only (pipeline 값을 쓰는 대시보드 파일 마커)          | 0.0.1                                                 |
 | 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                      |
 | DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
 | 테스트        | Vitest + happy-dom + testing-library (ui·dashboard 공통)     | 5.0.0 · happy-dom 20.14.0 · testing-library 16.3.3    |
@@ -130,6 +131,7 @@ Galley/
 - **루트 `/`는 홈(요약 대시보드).** `app/(dashboard)/page.tsx`가 셸 안에서 그린다. redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md). 목록형(A)의 변형 "요약형"이며 새 패턴이 아니다.
 - **`packages/ui`에 도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다.
 - **`@galley/ui` 딥 임포트 금지**(`@galley/ui/src/...` ✗). 공개 배럴만.
+- **`@galley/pipeline`의 런타임 값을 import하는 대시보드 파일은 첫 줄에 `import 'server-only'`.** `'use client'` 컴포넌트는 pipeline 값도, 그걸 쓰는 표시 매핑 파일(`run-labels` 등)도 import하지 않는다 — 판정은 서버 컴포넌트가 하고 결과만 props로. 어기면 Prisma·fs가 브라우저 청크에 딸려가 그 페이지가 500이 나는데 테스트·typecheck는 통과한다. decisions/server-only-boundary.md
 - **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·`DATA_DIR`·SQLite 경로는 `.env`.
 - **회사 코드 조각(EvidenceBundle snippet)은 `DATA_DIR`에만 쓴다.** `~/Desktop/blog` 아래에는 포인터(커밋·경로·라인)만. blog 폴더 밖으로 나갈 경로를 만들지 않는다 — decisions/evidence-collection.md.
 - **비밀값(API 키·Zenn 토큰)은 `.env`에만.** 코드·SQLite·산출물 파일에 절대 쓰지 않는다.
