@@ -40,8 +40,17 @@ export {
   countPendingApproval,
   listRecentRuns,
   findLatestRunForTopic,
+  listRuns,
+  getRunWithSteps,
 } from './run/runQueries.ts';
-export type { RunSummary } from './run/runQueries.ts';
+export type {
+  RunSummary,
+  RunListFilter,
+  RunListItem,
+  RunListStep,
+  RunDetail,
+  RunStepDetail,
+} from './run/runQueries.ts';
 export {
   STEP_ORDER,
   RUN_STATUS,
