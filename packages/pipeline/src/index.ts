@@ -58,6 +58,7 @@ export {
   STEP_ORIGIN,
   isStepName,
   isRunStatus,
+  isStepStatus,
   nextAction,
   planRerun,
   applyCommand,
