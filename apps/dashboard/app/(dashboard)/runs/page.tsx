@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
+import { RunPoller } from './RunPoller';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -100,7 +101,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           }
         >
           {selected ? (
-            <RunTimeline steps={selected.steps} />
+            <>
+              <RunPoller status={selected.status} />
+              <RunTimeline steps={selected.steps} />
+            </>
           ) : detail && !detail.ok && detail.error.code === 'RUN_DETAIL_FAILED' ? (
             <p className={styles.note} role="alert">
               {detail.error.message}
