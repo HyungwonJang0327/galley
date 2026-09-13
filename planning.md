@@ -52,7 +52,7 @@
 ### Phase 2 (예정, 지금 구현 안 함)
 
 - AI 주제 후보 생성 (모델 어댑터 활용)
-- Zenn push 실 연동 + 원격 배포 판단
+- Zenn push 실 연동 + 원격 배포 판단 (2026-09-13 범위 재확인 — INTENT 문구 정정, decisions/zenn-push.md 갱신 이력)
 - 설정 화면(리포 연결 `/settings/repos` — 인덱싱 상태·재인덱싱·모델·비용, `/settings/prompts`는 `.galley/prompts/*.md` 파일 편집 UI — 저장소를 DB로 바꾸지 않는다), 비용 칩(인덱싱 비용 포함)
 - 근거 검증 unsupported 본문 밑줄, discovered 후보 모델 재순위 (evidence-collection)
 - **단계별 모델 오버라이드**(스키마는 Phase 1부터 `RunStep.modelId`로 대비 — decisions/model-selection.md)
