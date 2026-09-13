@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe('RunPoller', () => {
   it('running이면 2초마다 refresh', () => {
-    render(<RunPoller status="running" />);
+    render(<RunPoller active />);
 
     expect(refresh).not.toHaveBeenCalled();
     tick(POLL_MS * 2);
@@ -42,18 +42,18 @@ describe('RunPoller', () => {
   });
 
   it('running이 아니면 부르지 않는다', () => {
-    render(<RunPoller status="pendingApproval" />);
+    render(<RunPoller active={false} />);
 
     tick(POLL_MS * 3);
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it('running → 아님으로 바뀌면 한 번 더 부르고 멈춘다', () => {
-    const { rerender } = render(<RunPoller status="running" />);
+    const { rerender } = render(<RunPoller active />);
     tick(POLL_MS);
     expect(refresh).toHaveBeenCalledTimes(1);
 
-    rerender(<RunPoller status="pendingApproval" />);
+    rerender(<RunPoller active={false} />);
     expect(refresh).toHaveBeenCalledTimes(2);
 
     tick(POLL_MS * 3);
@@ -61,14 +61,14 @@ describe('RunPoller', () => {
   });
 
   it('처음부터 running이 아니면 마운트 시 부르지 않는다', () => {
-    const { rerender } = render(<RunPoller status="done" />);
-    rerender(<RunPoller status="failed" />);
+    const { rerender } = render(<RunPoller active={false} />);
+    rerender(<RunPoller active={false} />);
 
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it('hidden이면 멈춘다', () => {
-    render(<RunPoller status="running" />);
+    render(<RunPoller active />);
     tick(POLL_MS);
     expect(refresh).toHaveBeenCalledTimes(1);
 
@@ -78,7 +78,7 @@ describe('RunPoller', () => {
   });
 
   it('visible로 돌아오면 즉시 한 번 부르고 재개', () => {
-    render(<RunPoller status="running" />);
+    render(<RunPoller active />);
     setVisibility('hidden');
     expect(refresh).not.toHaveBeenCalled();
 
@@ -91,14 +91,14 @@ describe('RunPoller', () => {
 
   it('hidden 상태로 마운트되면 타이머를 걸지 않는다', () => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
-    render(<RunPoller status="running" />);
+    render(<RunPoller active />);
 
     tick(POLL_MS * 2);
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it('언마운트하면 타이머와 리스너를 정리한다', () => {
-    const { unmount } = render(<RunPoller status="running" />);
+    const { unmount } = render(<RunPoller active />);
     unmount();
 
     tick(POLL_MS * 2);

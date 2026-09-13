@@ -1,22 +1,22 @@
 'use client';
+// 클라이언트 컴포넌트라 pipeline·run-labels를 import하지 않는다(서버 전용 번들이 딸려온다 —
+// decisions/server-only-boundary.md). "진행 중인가"는 서버가 판정해 active로 넘긴다.
 import { useRouter } from 'next/navigation';
-import { isRunInProgress } from '../../../lib/run-labels';
 import { useEffect, useRef } from 'react';
 const POLL_MS = 2000;
 
-export function RunPoller({ status }: { status: string }) {
+export function RunPoller({ active }: { active: boolean }) {
   const router = useRouter();
-  const inProgress = isRunInProgress(status);
   const wasInProgress = useRef(false);
   useEffect(() => {
-    if (wasInProgress.current && !inProgress) {
+    if (wasInProgress.current && !active) {
       router.refresh();
     }
-    wasInProgress.current = inProgress;
-  }, [inProgress, router]);
+    wasInProgress.current = active;
+  }, [active, router]);
 
   useEffect(() => {
-    if (!inProgress) return;
+    if (!active) return;
     let timer: ReturnType<typeof setInterval> | undefined;
     const start = () => {
       timer = setInterval(() => router.refresh(), POLL_MS);
@@ -38,6 +38,6 @@ export function RunPoller({ status }: { status: string }) {
       stop();
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [inProgress, router]);
+  }, [active, router]);
   return null;
 }
