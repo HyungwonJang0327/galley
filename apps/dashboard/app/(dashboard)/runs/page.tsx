@@ -11,7 +11,7 @@ import {
   PageHeader,
   SplitPane,
 } from '@galley/ui';
-import { runStatusBadge } from '../../../lib/run-labels';
+import { isRunInProgress, runStatusBadge } from '../../../lib/run-labels';
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
 import styles from './page.module.css';
@@ -102,7 +102,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         >
           {selected ? (
             <>
-              <RunPoller status={selected.status} />
+              <RunPoller active={isRunInProgress(selected.status)} />
               <RunTimeline steps={selected.steps} />
             </>
           ) : detail && !detail.ok && detail.error.code === 'RUN_DETAIL_FAILED' ? (
