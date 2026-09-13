@@ -23,6 +23,7 @@
 - core-modules — 직접 작성 핵심 모듈 2개
 - model-selection — 모델은 Run 속성(실행별 선택·비용 기록), 어댑터 레지스트리
 - evidence-collection — 리포 인덱스 캐시 + 원본 조각(DATA_DIR) + 근거 검증. 파이프라인 6단계
+- tone-prompts — 어투 프롬프트는 `.galley/prompts/*.md`, 내용 해시를 RunStep.promptHash에 기록
 
 ### 기술 결정 (①~⑨)
 

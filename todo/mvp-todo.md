@@ -196,6 +196,21 @@
 - [x] **BE14c** (2026-09-13 `9a2ba13`·`44498c5`·`58e407e`, feat/rerun-carried, PR #88) pl — 재실행 시 범위 밖 앞 단계를 **새 Run의 행으로 `carried`+`sourceRunId`와 함께 저장**(타임라인 자기 완결). 생성 시점은 **워커가 아니라 `startRerun`**(사용자 결정 — 워커는 재실행 개념을 모르고 pending만 잡는다): `startRerun({ previousRunId, plan, instruction, modelId? })`가 새 Run + 6행을 **한 트랜잭션**에서 만들고 `resolveCarriedSources`도 그 안에서 부른다. `Run.instruction`(원문)·`Run.startStep`(planRerun 최종 결과) 컬럼 + 마이그레이션. 가드: 직전 Run 실행 중 `RUN_IN_PROGRESS` · 같은 주제 실행 중 `RUN_ALREADY_ACTIVE` · 이어받을 단계 미성공 `CARRIED_STEP_NOT_SUCCEEDED` · 계획 불완전 `INVALID_PLAN`. 직전 Run 상태는 건드리지 않는다(종결은 BW4). 워커는 `Run.instruction`을 StepContext로 넘긴다. pipeline 200→214. 커밋: `feat(run): 재실행 시 이전 결과를 carried로 이어받기`
   - 완료조건: 세 경우(기본·키워드 포함·단계 지정) 전이 테스트.
 
+### BS. 단계 구현(모델 호출) — [B] Phase 1-B · BE 뒤 (decisions/tone-prompts.md · 2026-09-13 추가)
+
+BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 실제로 모델에 시켜 쓰는 구현이 없었다(2026-09-13 세션 종료 시 발견). 벨로그 본문·링크드인·Zenn 세 단계는 여기서 채운다. **선행: BE11(본문 입력 타입)·BM3(어댑터).** 모든 테스트는 Mock 어댑터·Mock 프롬프트 파일(tmpdir)로 — 토큰 없이 CI에서 돈다. 발행정보·썸네일은 B3a·B3b. 각 항목 = 커밋 하나.
+
+- [ ] **BS1** pl — 어투 프롬프트 로더: `.galley/prompts/{velog,linkedin,zenn}.md` 읽기(경로는 리포 루트 기준, 테스트는 tmpdir 주입) + 내용 sha256 → `RunStep.promptHash` 컬럼(nullable, 마이그레이션) + `StepResult.promptHash?` → 워커가 토큰·비용처럼 **기록만**. 파일 없음은 `{ ok:false, code:'PROMPT_NOT_FOUND' }`(재시도 불가). 커밋: `feat(pipeline): 어투 프롬프트 로더와 RunStep.promptHash 추가`
+  - 완료조건: 같은 내용 → 같은 해시, 한 글자 바뀌면 다른 해시(테스트). 워커 통합 테스트에서 성공 단계 행에 promptHash가 남는다. 파일 없는 단계는 실패·재시도 없음.
+- [ ] **BS2** pl — 벨로그 본문 단계(`velog`): 입력 = 주제 + EvidenceBundle + 어투 프롬프트 + 수정 지시(재실행 시) → ModelAdapter 호출 → `artifacts.velog`(마크다운) + tokens·costUsd·model·promptHash. 입력 타입은 BE11 그대로(리포 경로·분석 글 원문 자리 없음). 커밋: `feat(run): 벨로그 본문 단계 구현`
+  - 완료조건: Mock 어댑터로 프롬프트에 주제·조각·어투·지시가 전부 들어가고(캡처 테스트) 결과가 StepResult 형태. 지시 없는 첫 실행과 있는 재실행 두 경우.
+- [ ] **BS3** pl — 링크드인 단계(`linkedin`): 입력 = 벨로그 본문(직전 succeeded `velog` 산출물) + 어투 프롬프트 → `artifacts.linkedin`. 본문에서 파생만(EvidenceBundle 재입력 없음). 커밋: `feat(run): 링크드인 요약 단계 구현`
+  - 완료조건: velog 산출물이 없으면 실패(`MISSING_INPUT`, 재시도 불가). Mock으로 tokens·promptHash 기록.
+- [ ] **BS4** pl — Zenn 일본어판 단계(`zenn`): 입력 = 벨로그 본문 + 어투 프롬프트 → `artifacts.zenn`(frontmatter `published: false` 고정, title·emoji·type·topics). 커밋: `feat(run): Zenn 일본어판 단계 구현`
+  - 완료조건: 산출물 frontmatter에 `published: false`가 항상 있다(테스트). 모델 출력이 frontmatter를 만들어도 덮어쓴다.
+- [ ] **BS5** pl — 단계 라우팅: `createStepRunner({ registry, prompts, storage… })`가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · B3a publishInfo)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV=development`·테스트만). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
+  - 완료조건: 6단계 전부 구현으로 이어지고 모르는 단계명은 프로그래머 오류(throw). 워커 스모크(`test:smoke`) 계속 통과.
+
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
 - [x] **B2a** (2026-09-12 `fcd5c5f`·`61d515e`·`29bf5cf`, feat/ui-run-patterns, PR #76) ui — SplitPane(좌 고정폭 토큰 320px / 우 헤더·본문·하단 바, 좌우 독립 스크롤) · TimelineItem+TimelineItems(상태 마커 4종 pending/active/done/failed, 슬롯 중심 — 단계명·토큰 문구는 앱이 조립, 펼침은 비제어 기본 + `open`으로 제어 가능) · ActionBar(SplitPane footer에선 grid 고정, 그냥 넣으면 sticky). 토큰 4개 추가. 갤러리 조합 섹션(데모는 `PrimitiveDemos.tsx` — 서버 컴포넌트에 두면 펼침이 동작하지 않는다) + `verify:layout` 105→**117 전부 통과**(새 검사 12개). ui 79→97. 산출물 마크다운 렌더는 B2e. 커밋: `feat(ui): SplitPane·Timeline·ActionBar 패턴 추가`
