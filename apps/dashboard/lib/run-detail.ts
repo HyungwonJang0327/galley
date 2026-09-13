@@ -1,5 +1,6 @@
 // 실행 상세(2분할 화면 우측) 데이터(서버 전용). 실행 하나 + 단계 6행을 직렬화한다.
 // 없는 id는 RUN_NOT_FOUND(화면이 "선택된 실행 없음" 안내), 그 밖은 RUN_DETAIL_FAILED.
+import 'server-only';
 import { getRunWithSteps, prisma, type RunDetail, type RunStepDetail } from '@galley/pipeline';
 import type { RunRecord } from './run-commands';
 

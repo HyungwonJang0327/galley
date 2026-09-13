@@ -1,5 +1,6 @@
 // 실행 시작(서버 전용): pipeline이 Run을 queued로 만들고, 실제 실행은 워커가 집어간다
 // — decisions/run-location.md. 실패는 던지지 않고 { ok: false, error } 형태로 돌려준다.
+import 'server-only';
 import {
   createModelRegistryFromEnv,
   prisma,

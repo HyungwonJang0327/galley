@@ -1,5 +1,6 @@
 // 홈 타일·사이드바 배지가 함께 쓰는 카운트(서버 전용). 같은 소스여야 둘이 어긋나지 않는다
 // — decisions/navigation.md. Run 스키마(B1e)·발행(Phase 2) 전까지 해당 값은 0.
+import 'server-only';
 import {
   countPendingApproval,
   countTopicsByStatus,

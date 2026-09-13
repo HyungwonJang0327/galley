@@ -1,5 +1,6 @@
 // 큐 섹션 이동(서버 전용): pipeline이 주제_큐.md를 재작성하고 DB를 다시 적재한다.
 // 실패는 던지지 않고 { ok: false, error } 형태로 돌려준다 — 화면이 문구를 그린다.
+import 'server-only';
 import {
   LocalFsStorage,
   moveQueueTopic,

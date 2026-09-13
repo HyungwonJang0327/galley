@@ -1,5 +1,6 @@
 // 큐 화면 데이터(서버 전용). BLOG_DIR의 주제_큐.md를 DB에 재적재한 뒤 섹션별로 읽는다.
 // 실패는 던지지 않고 { ok: false, error } 형태로 돌려준다 — 화면이 안내 문구를 그린다.
+import 'server-only';
 import { LocalFsStorage, loadQueueSections, prisma, type QueueSections } from '@galley/pipeline';
 
 export type QueueLoadResult =
