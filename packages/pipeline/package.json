@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:smoke": "vitest run --config vitest.smoke.config.ts",
-    "worker": "node --env-file=../../.env bin/worker.ts"
+    "worker": "node --env-file=../../.env bin/worker.ts",
+    "seed:dev": "node --env-file=../../.env bin/seed-dev.ts"
   },
   "devDependencies": {
     "prisma": "6.19.3"
