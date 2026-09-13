@@ -46,3 +46,13 @@
 - BE10 — 근거 검증: 주장 추출(숫자·경로·식별자는 정규식, 서술은 모델) → 대조 → VerificationReport (본문 불변, 실패 아님)
 - BE11 — 본문 입력을 EvidenceBundle로 제한(타입 강제) + 발행정보 `## 근거` 생성
 - BE14 — 재실행 규칙(근거 수집 건너뜀·본문 재실행 시 검증 자동)
+
+## Phase 1-B · 단계 구현(모델 호출) — BE 뒤 (decisions/tone-prompts.md)
+
+어투 프롬프트는 `.galley/prompts/{velog,linkedin,zenn}.md`, 읽은 내용 해시를 `RunStep.promptHash`에 기록. 테스트는 Mock 어댑터 + tmpdir 프롬프트.
+
+- BS1 — 어투 프롬프트 로더 + `RunStep.promptHash` + `StepResult.promptHash`(워커는 기록만)
+- BS2 — 벨로그 본문 단계(주제 + EvidenceBundle + 어투 + 지시 → 모델)
+- BS3 — 링크드인 단계(본문 파생 + 어투)
+- BS4 — Zenn 일본어판 단계(본문 파생 + 어투, `published: false` 고정)
+- BS5 — 단계명 → 구현 라우팅 StepRunner, `bin/worker.ts`가 Mock 대신 사용
