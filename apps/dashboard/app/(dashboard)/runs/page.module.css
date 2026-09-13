@@ -1,0 +1,20 @@
+.pane {
+  height: var(--ui-splitpane-min-height);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3) var(--ui-space-4);
+}
+
+.attempt {
+  color: var(--ui-color-text-muted);
+}
+
+.note {
+  margin: 0;
+  padding-block: var(--ui-space-5);
+  color: var(--ui-color-text-muted);
+}
