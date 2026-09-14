@@ -14,7 +14,8 @@
 ## Phase 1-B
 
 - B2a — SplitPane·TimelineItem·ActionBar 패턴
-- UM3 — Input 프리미티브(2026-09-14 완료, B2c 리뷰에서 파생). Textarea는 B2d에서 필요하면.
+- UM3 — Input 프리미티브(2026-09-14 완료, B2c 리뷰에서 파생).
+- UM4 — Textarea·Checkbox·Tooltip·Tabs 프리미티브 + 갤러리 맨 폼 요소 교체(2026-09-14 완료). 스펙 primitives 중 남은 것: Popover.
 - UM1 — Dialog·Select 프리미티브(Base UI 래퍼, 도메인 무지). 실행 시작 Dialog(BM6)·재실행 모델 Select(BM8)·TopBar 기본 모델 Select(BM9)가 소비. (Dialog는 core-modules에서 핵심 모듈 제외 → ui가 구현)
 
 각 작업: index 배럴 export · 토큰만 참조 · `X.test.tsx` · `pnpm --filter @galley/ui build && test` 통과.
