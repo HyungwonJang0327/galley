@@ -32,6 +32,7 @@ import {
   SelectWithDescriptionDemo,
   SelectWithDescriptionMetaDemo,
   SplitPaneDemo,
+  TabsDemo,
   TooltipDemo,
 } from './PrimitiveDemos';
 
@@ -299,6 +300,17 @@ export default function DesignPage() {
               보조·공백 없는 경로
             </span>
             <MenuRowsDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Tabs</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              페이지 안 상태 탭(화살표 키 이동): count 있음·0·disabled. URL 이동 탭은
+              ListToolbarTab.
+            </span>
+            <TabsDemo />
           </div>
         </Card>
 

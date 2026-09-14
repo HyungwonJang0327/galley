@@ -48,6 +48,8 @@ export { Input } from './primitives/Input';
 export type { InputProps } from './primitives/Input';
 export { Textarea } from './primitives/Textarea';
 export type { TextareaProps } from './primitives/Textarea';
+export { Tabs } from './primitives/Tabs';
+export type { TabsProps, TabItem } from './primitives/Tabs';
 export { Tooltip } from './primitives/Tooltip';
 export type { TooltipProps, TooltipSide } from './primitives/Tooltip';
 export { Menu } from './primitives/Menu';
