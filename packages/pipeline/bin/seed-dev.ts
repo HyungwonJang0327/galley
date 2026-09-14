@@ -1,6 +1,7 @@
 // 개발용 실행 목데이터. 화면(B2c)을 만들 때 DB에 실행이 하나도 없어 눈으로 볼 수 없던 것을 채운다.
 // **Run·RunStep을 전부 지우고** 대표 상황 6개를 넣는다 — 개발 DB 전용(production 거부).
-// 주제는 이미 적재된 QueueItem(주제_큐.md에서 온 것)에 붙인다. 없으면 주제도 만든다.
+// 주제는 이미 적재된 QueueItem(주제_큐.md에서 온 것)에만 붙인다 — 주제를 새로 만들면 파일에 없는
+// 행이 큐·홈으로 새어 나간다. 주제가 모자라면 그만큼 시나리오를 건너뛴다.
 //   pnpm --filter @galley/pipeline seed:dev          # 지울 건수만 보여주고 끝난다
 //   pnpm --filter @galley/pipeline seed:dev -- --yes # 실제로 지우고 시드한다
 // 주의: 워커가 돌고 있으면 "실행 중" 시드를 Mock으로 집어가 끝내 버린다 — 화면 작업 중엔 워커를 끈다.
@@ -72,25 +73,192 @@ const ALL_OK: Partial<Record<StepName, StepSeed>> = Object.fromEntries(
   STEP_ORDER.map((n) => [n, { status: STEP_STATUS.succeeded }]),
 );
 
-async function pickTopics(count: number) {
-  const existing = await prisma.queueItem.findMany({
+type Topic = { id: string; title: string };
+
+function pickTopics(count: number): Promise<Topic[]> {
+  return prisma.queueItem.findMany({
     where: { status: { in: ['대기', '후보'] } },
     orderBy: [{ status: 'desc' }, { order: 'asc' }],
     take: count,
     select: { id: true, title: true },
   });
-  if (existing.length >= count) return existing;
-  const made = [];
-  for (let i = existing.length; i < count; i += 1) {
-    made.push(
-      await prisma.queueItem.create({
-        data: { title: `시드 주제 ${i + 1}`, order: 100 + i },
-        select: { id: true, title: true },
-      }),
-    );
-  }
-  return [...existing, ...made];
 }
+
+const runOf = (t: Topic) => ({
+  topicId: t.id,
+  topicSlug: topicSlug(t.title),
+  topicTitle: t.title,
+  modelId: MODEL,
+});
+
+type Scenario = (topic: Topic) => Promise<[label: string, runId: string][]>;
+
+/** 대표 상황. 주제 하나에 시나리오 하나(4번만 시도 둘). 순서대로 주제를 배정한다. */
+const SCENARIOS: Scenario[] = [
+  // 1. 실행 중 — 근거 수집 끝, 본문 진행 중. 워커가 살아 있는 것처럼 heartbeat 최근.
+  async (t) => {
+    const running = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        status: RUN_STATUS.running,
+        workerState: 'running',
+        workerId: 'seed-worker',
+        heartbeat: at(0),
+        startedAt: at(6),
+      },
+    });
+    await prisma.runStep.createMany({
+      data: steps(
+        running.id,
+        { evidence: { status: STEP_STATUS.succeeded }, velog: { status: STEP_STATUS.running } },
+        at(6),
+      ),
+    });
+    return [['실행 중', running.id]];
+  },
+
+  // 2. 승인 대기 — 6단계 전부 성공. 첫 시도.
+  async (t) => {
+    const pending = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        status: RUN_STATUS.pendingApproval,
+        workerState: 'queued',
+        startedAt: at(90),
+      },
+    });
+    await prisma.runStep.createMany({ data: steps(pending.id, ALL_OK, at(90)) });
+    return [['승인 대기', pending.id]];
+  },
+
+  // 3. 실패 — 본문 단계가 3번 시도 뒤 타임아웃. 뒤 단계는 pending 그대로.
+  async (t) => {
+    const failed = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        status: RUN_STATUS.failed,
+        workerState: 'queued',
+        startedAt: at(60 * 26),
+        finishedAt: at(60 * 25),
+      },
+    });
+    await prisma.runStep.createMany({
+      data: steps(
+        failed.id,
+        {
+          evidence: { status: STEP_STATUS.succeeded },
+          velog: {
+            status: STEP_STATUS.failed,
+            errorCode: 'STEP_TIMEOUT',
+            errorMessage: '단계 제한 시간 10분을 넘겼습니다.',
+            attemptCount: 3,
+          },
+        },
+        at(60 * 26),
+      ),
+    });
+    return [['실패', failed.id]];
+  },
+
+  // 4. 수정 지시 → 재실행: 1차는 revised(종결), 2차는 근거 수집을 carried로 잇고 승인 대기.
+  async (t) => {
+    const firstAttempt = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        attempt: 1,
+        status: RUN_STATUS.revised,
+        workerState: 'queued',
+        startedAt: at(60 * 50),
+        finishedAt: at(60 * 47), // 수정 지시 시각 — 단계 생산 시각(아래)과 다르다
+      },
+    });
+    await prisma.runStep.createMany({ data: steps(firstAttempt.id, ALL_OK, at(60 * 50)) });
+    const secondAttempt = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        attempt: 2,
+        status: RUN_STATUS.pendingApproval,
+        workerState: 'queued',
+        instruction: '어투가 딱딱하다. 독자에게 말하듯 부드럽게, 문단 첫 문장은 결론부터.',
+        startStep: 'velog',
+        startedAt: at(60 * 47),
+      },
+    });
+    await prisma.runStep.createMany({
+      data: steps(
+        secondAttempt.id,
+        {
+          ...ALL_OK,
+          evidence: {
+            status: STEP_STATUS.succeeded,
+            origin: STEP_ORIGIN.carried,
+            sourceRunId: firstAttempt.id,
+            startedAt: undefined,
+            finishedAt: undefined,
+          },
+        },
+        at(60 * 47),
+      ).map((s) =>
+        s.origin === STEP_ORIGIN.carried
+          ? {
+              ...s,
+              startedAt: null,
+              finishedAt: null,
+              modelId: null,
+              inputTokens: null,
+              outputTokens: null,
+              costUsd: null,
+              durationMs: null,
+            }
+          : s,
+      ),
+    });
+    return [
+      ['수정 지시(1차)', firstAttempt.id],
+      ['재실행 승인 대기(2차, carried)', secondAttempt.id],
+    ];
+  },
+
+  // 5. 완료(승인됨) — 이틀 전.
+  async (t) => {
+    const done = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        status: RUN_STATUS.done,
+        workerState: 'queued',
+        startedAt: at(60 * 49),
+        finishedAt: at(60 * 48),
+      },
+    });
+    await prisma.runStep.createMany({ data: steps(done.id, ALL_OK, at(60 * 49)) });
+    return [['완료', done.id]];
+  },
+
+  // 6. 중단 — 워커가 죽어 heartbeat가 오래됨(interrupted). 화면상 "실행 중" 탭에 남는다.
+  async (t) => {
+    const interrupted = await prisma.run.create({
+      data: {
+        ...runOf(t),
+        status: RUN_STATUS.running,
+        workerState: 'interrupted',
+        heartbeat: at(45),
+        startedAt: at(70),
+      },
+    });
+    await prisma.runStep.createMany({
+      data: steps(
+        interrupted.id,
+        {
+          evidence: { status: STEP_STATUS.succeeded },
+          velog: { status: STEP_STATUS.succeeded },
+          verify: { status: STEP_STATUS.succeeded },
+        },
+        at(70),
+      ),
+    });
+    return [['중단(interrupted)', interrupted.id]];
+  },
+];
 
 const CONFIRM_FLAG = '--yes';
 
@@ -104,171 +272,22 @@ async function main() {
     return;
   }
   const deleted = await prisma.run.deleteMany();
-  const [t1, t2, t3, t4, t5, t6] = await pickTopics(6);
-  const runOf = (t: { id: string; title: string }) => ({
-    topicId: t.id,
-    topicSlug: topicSlug(t.title),
-    topicTitle: t.title,
-    modelId: MODEL,
-  });
+  const topics = await pickTopics(SCENARIOS.length);
+  const seeded: [string, string][] = [];
+  for (const [i, scenario] of SCENARIOS.entries()) {
+    const topic = topics[i];
+    if (!topic) break;
+    seeded.push(...(await scenario(topic)));
+  }
+  const skipped = SCENARIOS.length - Math.min(SCENARIOS.length, topics.length);
 
-  // 1. 실행 중 — 근거 수집 끝, 본문 진행 중. 워커가 살아 있는 것처럼 heartbeat 최근.
-  const running = await prisma.run.create({
-    data: {
-      ...runOf(t1!),
-      status: RUN_STATUS.running,
-      workerState: 'running',
-      workerId: 'seed-worker',
-      heartbeat: at(0),
-      startedAt: at(6),
-    },
-  });
-  await prisma.runStep.createMany({
-    data: steps(
-      running.id,
-      { evidence: { status: STEP_STATUS.succeeded }, velog: { status: STEP_STATUS.running } },
-      at(6),
-    ),
-  });
-
-  // 2. 승인 대기 — 6단계 전부 성공. 첫 시도.
-  const pending = await prisma.run.create({
-    data: {
-      ...runOf(t2!),
-      status: RUN_STATUS.pendingApproval,
-      workerState: 'queued',
-      startedAt: at(90),
-    },
-  });
-  await prisma.runStep.createMany({ data: steps(pending.id, ALL_OK, at(90)) });
-
-  // 3. 실패 — 본문 단계가 3번 시도 뒤 타임아웃. 뒤 단계는 pending 그대로.
-  const failed = await prisma.run.create({
-    data: {
-      ...runOf(t3!),
-      status: RUN_STATUS.failed,
-      workerState: 'queued',
-      startedAt: at(60 * 26),
-      finishedAt: at(60 * 25),
-    },
-  });
-  await prisma.runStep.createMany({
-    data: steps(
-      failed.id,
-      {
-        evidence: { status: STEP_STATUS.succeeded },
-        velog: {
-          status: STEP_STATUS.failed,
-          errorCode: 'STEP_TIMEOUT',
-          errorMessage: '단계 제한 시간 10분을 넘겼습니다.',
-          attemptCount: 3,
-        },
-      },
-      at(60 * 26),
-    ),
-  });
-
-  // 4. 수정 지시 → 재실행: 1차는 revised(종결), 2차는 근거 수집을 carried로 잇고 승인 대기.
-  const firstAttempt = await prisma.run.create({
-    data: {
-      ...runOf(t4!),
-      attempt: 1,
-      status: RUN_STATUS.revised,
-      workerState: 'queued',
-      startedAt: at(60 * 50),
-      finishedAt: at(60 * 47), // 수정 지시 시각 — 단계 생산 시각(아래)과 다르다
-    },
-  });
-  await prisma.runStep.createMany({ data: steps(firstAttempt.id, ALL_OK, at(60 * 50)) });
-  const secondAttempt = await prisma.run.create({
-    data: {
-      ...runOf(t4!),
-      attempt: 2,
-      status: RUN_STATUS.pendingApproval,
-      workerState: 'queued',
-      instruction: '어투가 딱딱하다. 독자에게 말하듯 부드럽게, 문단 첫 문장은 결론부터.',
-      startStep: 'velog',
-      startedAt: at(60 * 47),
-    },
-  });
-  await prisma.runStep.createMany({
-    data: steps(
-      secondAttempt.id,
-      {
-        ...ALL_OK,
-        evidence: {
-          status: STEP_STATUS.succeeded,
-          origin: STEP_ORIGIN.carried,
-          sourceRunId: firstAttempt.id,
-          startedAt: undefined,
-          finishedAt: undefined,
-        },
-      },
-      at(60 * 47),
-    ).map((s) =>
-      s.origin === STEP_ORIGIN.carried
-        ? {
-            ...s,
-            startedAt: null,
-            finishedAt: null,
-            modelId: null,
-            inputTokens: null,
-            outputTokens: null,
-            costUsd: null,
-            durationMs: null,
-          }
-        : s,
-    ),
-  });
-
-  // 5. 완료(승인됨) — 이틀 전.
-  const done = await prisma.run.create({
-    data: {
-      ...runOf(t5!),
-      status: RUN_STATUS.done,
-      workerState: 'queued',
-      startedAt: at(60 * 49),
-      finishedAt: at(60 * 48),
-    },
-  });
-  await prisma.runStep.createMany({ data: steps(done.id, ALL_OK, at(60 * 49)) });
-
-  // 6. 중단 — 워커가 죽어 heartbeat가 오래됨(interrupted). 화면상 "실행 중" 탭에 남는다.
-  const interrupted = await prisma.run.create({
-    data: {
-      ...runOf(t6!),
-      status: RUN_STATUS.running,
-      workerState: 'interrupted',
-      heartbeat: at(45),
-      startedAt: at(70),
-    },
-  });
-  await prisma.runStep.createMany({
-    data: steps(
-      interrupted.id,
-      {
-        evidence: { status: STEP_STATUS.succeeded },
-        velog: { status: STEP_STATUS.succeeded },
-        verify: { status: STEP_STATUS.succeeded },
-      },
-      at(70),
-    ),
-  });
-
-  console.log(`seed-dev: 기존 실행 ${deleted.count}건 삭제 → 실행 7건·단계 42행 추가`);
-  console.log(
-    [
-      ['실행 중', running.id],
-      ['승인 대기', pending.id],
-      ['실패', failed.id],
-      ['수정 지시(1차)', firstAttempt.id],
-      ['재실행 승인 대기(2차, carried)', secondAttempt.id],
-      ['완료', done.id],
-      ['중단(interrupted)', interrupted.id],
-    ]
-      .map(([label, id]) => `  ${label}: ?id=${id}`)
-      .join('\n'),
-  );
+  console.log(`seed-dev: 기존 실행 ${deleted.count}건 삭제 → 실행 ${seeded.length}건 추가`);
+  console.log(seeded.map(([label, id]) => `  ${label}: ?id=${id}`).join('\n'));
+  if (skipped > 0) {
+    console.log(
+      `  주제(대기·후보)가 ${topics.length}개뿐이라 시나리오 ${skipped}개를 건너뛰었다 — 주제_큐.md를 먼저 불러온다.`,
+    );
+  }
 }
 
 main()
