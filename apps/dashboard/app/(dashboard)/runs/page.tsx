@@ -28,7 +28,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const params = await searchParams;
   const { filter, selectedId } = parseRunView(params);
 
-  const result = await getRunList(filter);
+  // ?id=가 있으면 상세는 목록과 무관하다 — 둘을 같이 띄운다. 없을 때만 목록 첫 행을 기다려 하나 더.
+  const [result, preselected] = await Promise.all([
+    getRunList(filter),
+    selectedId ? getRunDetail(selectedId) : undefined,
+  ]);
   if (!result.ok) {
     return (
       <>
@@ -41,7 +45,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
   const { data: lists } = result;
   const activeId = pickActiveId(lists, selectedId);
-  const pane = resolveRunPane(activeId ? await getRunDetail(activeId) : undefined);
+  const pane = resolveRunPane(preselected ?? (activeId ? await getRunDetail(activeId) : undefined));
   const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   return (
