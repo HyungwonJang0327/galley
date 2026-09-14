@@ -18,11 +18,15 @@ export function RunPoller({ active }: { active: boolean }) {
   useEffect(() => {
     if (!active) return;
     let timer: ReturnType<typeof setInterval> | undefined;
+    // visibilitychange는 visible 상태에서도 연달아 올 수 있다(탭 전환·창 포커스). 이미 돌고 있으면
+    // 새 interval을 겹치지 않는다 — 겹치면 stop()이 마지막 것만 지워 나머지가 샌다.
     const start = () => {
+      if (timer !== undefined) return;
       timer = setInterval(() => router.refresh(), POLL_MS);
     };
     const stop = () => {
       clearInterval(timer);
+      timer = undefined;
     };
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
