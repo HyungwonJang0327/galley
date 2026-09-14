@@ -89,6 +89,16 @@ describe('RunPoller', () => {
     expect(refresh).toHaveBeenCalledTimes(2);
   });
 
+  it('visible 상태에서 visibilitychange가 거듭 와도 interval을 겹치지 않는다', () => {
+    render(<RunPoller active />);
+    setVisibility('visible');
+    setVisibility('visible');
+    expect(refresh).toHaveBeenCalledTimes(2); // 복귀 즉시 refresh 2번
+
+    tick(POLL_MS);
+    expect(refresh).toHaveBeenCalledTimes(3); // interval은 하나뿐
+  });
+
   it('hidden 상태로 마운트되면 타이머를 걸지 않는다', () => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
     render(<RunPoller active />);
