@@ -9,6 +9,7 @@ import { prisma } from '../src/db.ts';
 import { calculateCostUsd } from '../src/model/cost.ts';
 import { createModelRegistryFromEnv, DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
 import { RUN_STATUS, STEP_ORDER, STEP_ORIGIN, STEP_STATUS } from '../src/run/stateMachine.ts';
+import type { QueueStatus } from '../src/queue/queueFile.ts';
 import { topicSlug } from '../src/queue/topicSlug.ts';
 
 if (process.env.NODE_ENV === 'production') {
@@ -82,9 +83,13 @@ const ALL_OK: Partial<Record<StepName, StepSeed>> = Object.fromEntries(
 
 type Topic = { id: string; title: string };
 
+// 큐 상태값은 주제_큐.md 섹션 머리글 그대로(decisions/db-value-language.md 예외). 파서 타입에
+// 묶어 두어 섹션 이름이 바뀌면 여기서 컴파일이 깨진다.
+const SEED_TOPIC_STATUSES: readonly QueueStatus[] = ['대기', '후보'];
+
 function pickTopics(count: number): Promise<Topic[]> {
   return prisma.queueItem.findMany({
-    where: { status: { in: ['대기', '후보'] } },
+    where: { status: { in: [...SEED_TOPIC_STATUSES] } },
     orderBy: [{ status: 'desc' }, { order: 'asc' }],
     take: count,
     select: { id: true, title: true },
