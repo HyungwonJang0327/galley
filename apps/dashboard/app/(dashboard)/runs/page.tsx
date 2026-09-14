@@ -1,6 +1,7 @@
 import { parseRunView, runsHref } from '../../../lib/run-view';
 import { getRunList } from '../../../lib/run-list';
 import { runListRowView } from '../../../lib/run-list-row';
+import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
 import {
   ActionBar,
   Badge,
@@ -38,9 +39,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     );
   }
   const { data: lists } = result;
-  const activeId = selectedId ?? lists[0]?.id;
-  const detail = activeId ? await getRunDetail(activeId) : undefined;
-  const selected = detail?.ok ? detail.data : undefined;
+  const activeId = pickActiveId(lists, selectedId);
+  const pane = resolveRunPane(activeId ? await getRunDetail(activeId) : undefined);
+  const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   return (
     <>
@@ -118,9 +119,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
               <RunTimeline steps={selected.steps} />
             </>
-          ) : detail && !detail.ok && detail.error.code === 'RUN_DETAIL_FAILED' ? (
+          ) : pane.kind === 'failed' ? (
             <p className={styles.note} role="alert">
-              {detail.error.message}
+              {pane.message}
             </p>
           ) : (
             <EmptyState message="선택된 실행이 없습니다." />
