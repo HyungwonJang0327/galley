@@ -140,7 +140,7 @@ describe('RunTimeline', () => {
     expect(row.textContent).toContain('진행 중');
   });
 
-  it('실패한 단계는 failed 마커와 에러 코드·시도 횟수', () => {
+  it('실패한 단계는 failed 마커와 사람이 읽는 메시지·시도 횟수(코드는 숨긴다)', () => {
     render(
       <RunTimeline
         steps={[
@@ -149,6 +149,7 @@ describe('RunTimeline', () => {
             order: 4,
             status: 'failed',
             errorCode: 'STEP_TIMEOUT',
+            errorMessage: '단계 제한 시간 10분을 넘겼습니다.',
             attemptCount: 3,
           }),
         ]}
@@ -158,8 +159,26 @@ describe('RunTimeline', () => {
     const row = rows()[3]!;
     expect(row.dataset.status).toBe('failed');
     expect(markerLabel(row)).toBe('실패');
-    expect(row.textContent).toContain('STEP_TIMEOUT');
-    expect(row.textContent).toContain('3');
+    expect(row.textContent).toContain('단계 제한 시간 10분을 넘겼습니다. · 3회 시도');
+    expect(row.textContent).not.toContain('STEP_TIMEOUT');
+  });
+
+  it('실패 메시지가 없으면 에러 코드로 폴백한다', () => {
+    render(
+      <RunTimeline
+        steps={[
+          step({
+            name: 'linkedin',
+            order: 4,
+            status: 'failed',
+            errorCode: 'STEP_TIMEOUT',
+            attemptCount: 1,
+          }),
+        ]}
+      />,
+    );
+
+    expect(rows()[3]!.textContent).toContain('STEP_TIMEOUT · 1회 시도');
   });
 
   it('모르는 상태 값은 pending으로 그리고 값을 그대로 읽어준다', () => {
