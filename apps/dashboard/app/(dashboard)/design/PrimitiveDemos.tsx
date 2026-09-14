@@ -15,6 +15,7 @@ import {
   SplitPane,
   TimelineItem,
   TimelineItems,
+  Tooltip,
 } from '@galley/ui';
 import type { MenuEntry, SelectItem } from '@galley/ui';
 import styles from './page.module.css';
@@ -349,4 +350,37 @@ export function CheckboxDisabledDemo() {
 export function CheckboxUnlabeledDemo() {
   const [checked, setChecked] = useState(false);
   return <Checkbox checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 체크" />;
+}
+
+// Tooltip 트리거는 props·ref를 DOM까지 넘기는 요소여야 한다 — 클라이언트 파일에서 만든다.
+export function TooltipDemo() {
+  return (
+    <>
+      <Tooltip
+        content="위에 뜨는 설명"
+        trigger={
+          <Button variant="secondary" size="sm">
+            위
+          </Button>
+        }
+      />
+      <Tooltip
+        content="오른쪽에 뜨는 설명"
+        side="right"
+        trigger={
+          <Button variant="secondary" size="sm">
+            오른쪽
+          </Button>
+        }
+      />
+      <Tooltip
+        content="아이콘 버튼의 접근성 이름은 aria-label이 갖고, 툴팁은 보조 설명만 한다"
+        trigger={
+          <Button variant="ghost" size="sm" aria-label="설정">
+            ⚙
+          </Button>
+        }
+      />
+    </>
+  );
 }

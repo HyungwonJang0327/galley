@@ -32,6 +32,7 @@ import {
   SelectWithDescriptionDemo,
   SelectWithDescriptionMetaDemo,
   SplitPaneDemo,
+  TooltipDemo,
 } from './PrimitiveDemos';
 
 // 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 @galley/ui 공개 배럴만
@@ -298,6 +299,18 @@ export default function DesignPage() {
               보조·공백 없는 경로
             </span>
             <MenuRowsDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Tooltip</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              hover·focus로 열림: 위 / 오른쪽 / 아이콘 버튼(이름은 aria-label, 툴팁은 보조 설명)
+            </span>
+            <div className={styles.row}>
+              <TooltipDemo />
+            </div>
           </div>
         </Card>
 

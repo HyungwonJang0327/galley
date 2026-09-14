@@ -89,6 +89,7 @@
   --ui-timeline-marker: 10px; /* 타임라인 상태 마커 지름 */
   --ui-timeline-gutter: 24px; /* 마커·세로선이 차지하는 좌측 폭 */
   --ui-checkbox-size: 16px; /* 체크박스 상자 한 변 */
+  --ui-tooltip-max-width: 240px; /* 툴팁은 짧은 보조 문구 — 이 폭에서 줄바꿈 */
 
   --ui-menu-popup-min-width: 160px; /* 작은 트리거(⋮)에서도 이 폭 이상 */
   --ui-menu-popup-max-width: min(
