@@ -5,6 +5,7 @@ import {
   ActionBar,
   Badge,
   Button,
+  Checkbox,
   Dialog,
   Input,
   ListRow,
@@ -316,4 +317,36 @@ export function SplitPaneDemo() {
       </SplitPane>
     </div>
   );
+}
+
+export function CheckboxDemo() {
+  const [checked, setChecked] = useState(false);
+  return (
+    <Checkbox checked={checked} onCheckedChange={setChecked}>
+      체크 항목
+    </Checkbox>
+  );
+}
+
+export function CheckboxIndeterminateDemo() {
+  const [checked, setChecked] = useState(false);
+  return (
+    <Checkbox checked={checked} onCheckedChange={setChecked} indeterminate={!checked}>
+      일부 선택
+    </Checkbox>
+  );
+}
+
+// 서버 컴포넌트(page.tsx)는 onCheckedChange 같은 함수 prop을 넘길 수 없어 정적 데모도 여기.
+export function CheckboxDisabledDemo() {
+  return (
+    <Checkbox checked onCheckedChange={() => {}} disabled>
+      비활성
+    </Checkbox>
+  );
+}
+
+export function CheckboxUnlabeledDemo() {
+  const [checked, setChecked] = useState(false);
+  return <Checkbox checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 체크" />;
 }

@@ -14,6 +14,10 @@ import {
 } from '@galley/ui';
 import styles from './page.module.css';
 import {
+  CheckboxDemo,
+  CheckboxDisabledDemo,
+  CheckboxIndeterminateDemo,
+  CheckboxUnlabeledDemo,
   DialogDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
@@ -161,6 +165,21 @@ export default function DesignPage() {
             />
             <ListRow title="선택된 행(isActive)" meta="보조 텍스트" isActive />
           </ListRows>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Checkbox</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              토글 / indeterminate / checked disabled / 라벨 없음
+            </span>
+            <div className={styles.row}>
+              <CheckboxDemo />
+              <CheckboxIndeterminateDemo />
+              <CheckboxDisabledDemo />
+              <CheckboxUnlabeledDemo />
+            </div>
+          </div>
         </Card>
 
         <Card>

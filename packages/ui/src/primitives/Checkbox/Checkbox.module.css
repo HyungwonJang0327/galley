@@ -1,0 +1,65 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+  cursor: pointer;
+  user-select: none;
+}
+
+.label[data-disabled] {
+  color: var(--ui-color-text-muted);
+  cursor: not-allowed;
+}
+
+/* 상자: 텍스트 xs 크기 정사각형. Input과 같은 테두리·포커스 링. */
+.box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: var(--ui-checkbox-size);
+  height: var(--ui-checkbox-size);
+  padding: 0;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-surface);
+  color: var(--ui-color-accent-fg);
+  cursor: inherit;
+}
+
+.box:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: 1px;
+}
+
+.box[data-checked],
+.box[data-indeterminate] {
+  border-color: var(--ui-color-accent);
+  background-color: var(--ui-color-accent);
+}
+
+.box[data-disabled] {
+  background-color: var(--ui-color-bg);
+  border-color: var(--ui-color-border);
+  color: var(--ui-color-text-muted);
+}
+
+.box[data-disabled][data-checked],
+.box[data-disabled][data-indeterminate] {
+  background-color: var(--ui-color-border);
+  color: var(--ui-color-surface);
+}
+
+.indicator {
+  display: inline-flex;
+  line-height: 0;
+}
+
+.text {
+  min-width: 0;
+}

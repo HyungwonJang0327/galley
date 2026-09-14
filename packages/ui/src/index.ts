@@ -38,6 +38,8 @@ export type {
 export { ActionBar } from './patterns/ActionBar';
 export type { ActionBarProps } from './patterns/ActionBar';
 
+export { Checkbox } from './primitives/Checkbox';
+export type { CheckboxProps } from './primitives/Checkbox';
 export { Dialog } from './primitives/Dialog';
 export type { DialogProps } from './primitives/Dialog';
 export { Select } from './primitives/Select';
