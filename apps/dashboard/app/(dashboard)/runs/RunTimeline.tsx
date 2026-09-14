@@ -14,7 +14,9 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
   if (carried) return `이전 결과 · ${time(step.sourceFinishedAt)}`;
   if (step.status === 'running') return '진행 중';
   if (step.status === 'failed') {
-    return [step.errorCode, `${step.attemptCount}`].filter(Boolean).join(' · ');
+    // 사람이 읽는 건 errorMessage다(decisions/error-handling.md 단계 실패 기록). 코드는 없을 때 폴백.
+    const reason = step.errorMessage ?? step.errorCode;
+    return [reason, `${step.attemptCount}회 시도`].filter(Boolean).join(' · ');
   }
   return [seconds(step.durationMs), tokens(step)].filter(Boolean).join(' · ');
 }
