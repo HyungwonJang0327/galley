@@ -396,3 +396,25 @@ export function TabsDemo() {
   const [value, setValue] = useState('a');
   return <Tabs value={value} onValueChange={setValue} items={TAB_ITEMS} aria-label="탭 데모" />;
 }
+
+// 툴바 filters 슬롯 데모: Select + Checkbox. 서버 컴포넌트는 onValueChange를 넘길 수 없어 여기.
+const FILTER_ITEMS: SelectItem[] = [
+  { value: 'all', label: '전체' },
+  { value: 'x', label: '첫째 분류' },
+  { value: 'y', label: '둘째 분류' },
+];
+
+export function ToolbarFiltersDemo() {
+  const [value, setValue] = useState<string | null>('all');
+  const [only, setOnly] = useState(false);
+  return (
+    <>
+      <div className={styles.filterBox}>
+        <Select value={value} onValueChange={setValue} items={FILTER_ITEMS} aria-label="필터" />
+      </div>
+      <Checkbox checked={only} onCheckedChange={setOnly}>
+        표시된 것만
+      </Checkbox>
+    </>
+  );
+}

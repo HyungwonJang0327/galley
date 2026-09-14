@@ -33,6 +33,7 @@ import {
   SelectWithDescriptionMetaDemo,
   SplitPaneDemo,
   TabsDemo,
+  ToolbarFiltersDemo,
   TooltipDemo,
 } from './PrimitiveDemos';
 
@@ -136,12 +137,12 @@ export default function DesignPage() {
                 <ListToolbarTab label="셋째" />
               </>
             }
-            search={<input type="search" placeholder="검색" aria-label="검색" />}
-            filters={
-              <select aria-label="필터">
-                <option>전체</option>
-              </select>
+            search={
+              <div className={styles.filterBox}>
+                <Input type="search" placeholder="검색" aria-label="검색" />
+              </div>
             }
+            filters={<ToolbarFiltersDemo />}
           />
           <ListRows>
             <ListRow
