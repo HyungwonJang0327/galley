@@ -8,6 +8,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Input,
   ListRow,
   ListRows,
   PageHeader,
@@ -108,7 +109,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 </>
               }
             >
-              <input aria-label="수정 지시 입력" placeholder="수정 지시를 입력하세요." disabled />
+              <Input aria-label="수정 지시 입력" placeholder="수정 지시를 입력하세요." disabled />
             </ActionBar>
           }
         >
