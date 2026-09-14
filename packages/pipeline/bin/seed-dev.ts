@@ -1,7 +1,8 @@
 // 개발용 실행 목데이터. 화면(B2c)을 만들 때 DB에 실행이 하나도 없어 눈으로 볼 수 없던 것을 채운다.
 // **Run·RunStep을 전부 지우고** 대표 상황 6개를 넣는다 — 개발 DB 전용(production 거부).
 // 주제는 이미 적재된 QueueItem(주제_큐.md에서 온 것)에 붙인다. 없으면 주제도 만든다.
-//   pnpm --filter @galley/pipeline seed:dev
+//   pnpm --filter @galley/pipeline seed:dev          # 지울 건수만 보여주고 끝난다
+//   pnpm --filter @galley/pipeline seed:dev -- --yes # 실제로 지우고 시드한다
 // 주의: 워커가 돌고 있으면 "실행 중" 시드를 Mock으로 집어가 끝내 버린다 — 화면 작업 중엔 워커를 끈다.
 import { prisma } from '../src/db.ts';
 import { DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
@@ -91,7 +92,17 @@ async function pickTopics(count: number) {
   return [...existing, ...made];
 }
 
+const CONFIRM_FLAG = '--yes';
+
 async function main() {
+  // 로컬에서는 NODE_ENV 가드가 항상 통과하므로, 실제 삭제는 --yes를 붙였을 때만 한다.
+  if (!process.argv.includes(CONFIRM_FLAG)) {
+    const [runs, steps] = await Promise.all([prisma.run.count(), prisma.runStep.count()]);
+    console.log(
+      `seed-dev: 실행 ${runs}건·단계 ${steps}행을 지우고 다시 채운다. 진행하려면 ${CONFIRM_FLAG}를 붙인다.`,
+    );
+    return;
+  }
   const deleted = await prisma.run.deleteMany();
   const [t1, t2, t3, t4, t5, t6] = await pickTopics(6);
   const runOf = (t: { id: string; title: string }) => ({
