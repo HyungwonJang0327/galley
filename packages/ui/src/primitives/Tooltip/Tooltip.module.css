@@ -1,0 +1,20 @@
+/* Positioner는 위치만. */
+.positioner {
+  z-index: 1;
+  outline: 0;
+}
+
+/* 다크 pill. TopBar와 같은 토큰 — 라이트 화면 위에서 눈에 띄되 그림자는 약하게. */
+.popup {
+  box-sizing: border-box;
+  max-width: var(--ui-tooltip-max-width);
+  padding: var(--ui-space-1) var(--ui-space-2);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-topbar-bg);
+  color: var(--ui-color-topbar-fg);
+  box-shadow: var(--ui-shadow-popover);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-xs);
+  line-height: var(--ui-leading-normal);
+  outline: 0;
+}
