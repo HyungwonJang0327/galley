@@ -1,5 +1,5 @@
 'use client';
-// 실행 상세 하단 바: 단계 Select + 수정 지시 Textarea + 재실행(확인 Dialog) / 승인.
+// 실행 상세 하단 바: 단계 Select + 수정 지시 Textarea + 재실행(확인 Dialog) / 승인(확인 Dialog).
 // 판정("승인 대기인가")·단계 라벨은 서버가 props로 넘긴다 — 클라이언트는 pipeline·run-labels를
 // import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler(B2b)로 보낸다.
 import { useRouter } from 'next/navigation';
@@ -33,6 +33,7 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
   const [startStep, setStartStep] = useState<string>(AUTO_STEP);
   const [message, setMessage] = useState<string | null>(null);
   const [plan, setPlan] = useState<RerunPlanView | null>(null);
+  const [approveOpen, setApproveOpen] = useState(false);
 
   const disabled = !enabled || pending;
   const request = () => ({
@@ -81,10 +82,17 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
     });
   };
 
-  const onApprove = () => {
+  // 승인: 되돌릴 수 없는 종결이라 확인 Dialog를 거친다(decisions/layout.md "승인(주요, Dialog 확인)").
+  // 승인은 Run 상태 변경일 뿐 공개 발행이 아니다(decisions/publish-gate.md) — 문구도 그렇게.
+  const onApproveClick = () => {
     setMessage(null);
+    setApproveOpen(true);
+  };
+
+  const onApproveConfirm = () => {
     startTransition(async () => {
       const result = await approveRun(runId);
+      setApproveOpen(false);
       if (!result.ok) {
         setMessage(result.error.message);
         return;
@@ -104,7 +112,7 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
             <Button variant="secondary" size="sm" disabled={disabled} onClick={onRerunClick}>
               재실행
             </Button>
-            <Button size="sm" disabled={disabled} onClick={onApprove}>
+            <Button size="sm" disabled={disabled} onClick={onApproveClick}>
               승인
             </Button>
           </>
@@ -173,6 +181,28 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
           </dl>
         ) : null}
       </Dialog>
+
+      <Dialog
+        open={approveOpen}
+        onOpenChange={setApproveOpen}
+        title="승인할까요?"
+        description="이 초안을 검수 완료로 종결합니다. 공개 발행은 일어나지 않고, 발행 준비 화면에서 채널별로 이어집니다."
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={pending}
+              onClick={() => setApproveOpen(false)}
+            >
+              취소
+            </Button>
+            <Button size="sm" disabled={pending} onClick={onApproveConfirm}>
+              승인
+            </Button>
+          </>
+        }
+      />
     </>
   );
 }

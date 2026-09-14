@@ -162,17 +162,35 @@ describe('RunActionBar', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('승인: API 성공이면 화면을 다시 그린다', async () => {
+  it('승인: 확인 Dialog를 거쳐야 API를 부르고, 성공이면 화면을 다시 그린다', async () => {
     approveRun.mockResolvedValue({ ok: true, data: { id: 'r1' } });
     renderBar();
 
     fireEvent.click(screen.getByRole('button', { name: '승인' }));
 
+    const dialog = await screen.findByRole('dialog', { name: '승인할까요?' });
+    expect(dialog.textContent).toContain('공개 발행은 일어나지 않고');
+    expect(approveRun).not.toHaveBeenCalled();
+
+    await clickDialogButton('승인');
+
     await waitFor(() => expect(approveRun).toHaveBeenCalledWith('r1'));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('승인 실패는 메시지만', async () => {
+  it('승인 Dialog에서 취소하면 API를 부르지 않는다', async () => {
+    renderBar();
+
+    fireEvent.click(screen.getByRole('button', { name: '승인' }));
+    await screen.findByRole('dialog', { name: '승인할까요?' });
+    await clickDialogButton('취소');
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(approveRun).not.toHaveBeenCalled();
+  });
+
+  it('승인 실패는 Dialog를 닫고 메시지만', async () => {
     approveRun.mockResolvedValue({
       ok: false,
       error: { code: 'NOT_PENDING_APPROVAL', message: '승인 대기만' },
@@ -180,8 +198,11 @@ describe('RunActionBar', () => {
     renderBar();
 
     fireEvent.click(screen.getByRole('button', { name: '승인' }));
+    await screen.findByRole('dialog', { name: '승인할까요?' });
+    await clickDialogButton('승인');
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('승인 대기만'));
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
   });
 });
