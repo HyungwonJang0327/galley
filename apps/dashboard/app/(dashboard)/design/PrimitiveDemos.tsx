@@ -13,11 +13,12 @@ import {
   Menu,
   Select,
   SplitPane,
+  Tabs,
   TimelineItem,
   TimelineItems,
   Tooltip,
 } from '@galley/ui';
-import type { MenuEntry, SelectItem } from '@galley/ui';
+import type { MenuEntry, SelectItem, TabItem } from '@galley/ui';
 import styles from './page.module.css';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.
@@ -383,4 +384,15 @@ export function TooltipDemo() {
       />
     </>
   );
+}
+
+const TAB_ITEMS: TabItem[] = [
+  { value: 'a', label: '첫째', count: 3, content: '첫째 탭 내용' },
+  { value: 'b', label: '둘째', count: 0, content: '둘째 탭 내용' },
+  { value: 'c', label: '셋째', disabled: true },
+];
+
+export function TabsDemo() {
+  const [value, setValue] = useState('a');
+  return <Tabs value={value} onValueChange={setValue} items={TAB_ITEMS} aria-label="탭 데모" />;
 }

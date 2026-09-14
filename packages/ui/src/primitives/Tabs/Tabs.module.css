@@ -1,0 +1,69 @@
+.root {
+  font-family: var(--ui-font-sans);
+}
+
+/* 탭 줄: 아래 1px 경계선, 활성 탭 밑줄이 그 위에 겹친다(ListToolbar 탭과 같은 시각 언어). */
+.list {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ui-space-2);
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3) var(--ui-space-2);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--ui-color-text-muted);
+  font-family: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-leading-tight);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ui-color-text);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: -2px;
+  border-radius: var(--ui-radius-sm);
+}
+
+.tab[data-active],
+.tab[data-active]:hover {
+  color: var(--ui-color-accent);
+  border-bottom-color: var(--ui-color-accent);
+}
+
+.tab[data-disabled] {
+  color: var(--ui-color-text-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.count {
+  font-size: var(--ui-text-xs);
+  font-weight: var(--ui-weight-regular);
+  color: var(--ui-color-text-muted);
+}
+
+.tab[data-active] .count {
+  color: var(--ui-color-accent);
+}
+
+.panel {
+  padding-top: var(--ui-space-4);
+  outline: 0;
+}
