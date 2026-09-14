@@ -1,25 +1,23 @@
+// pipeline 런타임 값(INSTRUCTION_MAX_LENGTH)을 쓰므로 서버 전용 마커(decisions/server-only-boundary.md).
+import 'server-only';
 import { parseRunView, runsHref } from '../../../lib/run-view';
 import { getRunList } from '../../../lib/run-list';
 import { runListRowView } from '../../../lib/run-list-row';
 import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
+import { INSTRUCTION_MAX_LENGTH } from '@galley/pipeline';
+import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from '@galley/ui';
 import {
-  ActionBar,
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Input,
-  ListRow,
-  ListRows,
-  PageHeader,
-  SplitPane,
-} from '@galley/ui';
-import { isRunInProgress, runStatusBadge } from '../../../lib/run-labels';
+  isPendingApproval,
+  isRunInProgress,
+  runStatusBadge,
+  STEP_OPTIONS,
+} from '../../../lib/run-labels';
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
 import { RunPoller } from './RunPoller';
+import { RunActionBar } from './RunActionBar';
 import { RunStepDots } from './RunStepDots';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -100,21 +98,14 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             )
           }
           footer={
-            <ActionBar
-              label="수정 지시"
-              actions={
-                <>
-                  <Button variant="secondary" size="sm" disabled>
-                    재실행
-                  </Button>
-                  <Button size="sm" disabled>
-                    승인
-                  </Button>
-                </>
-              }
-            >
-              <Input aria-label="수정 지시 입력" placeholder="수정 지시를 입력하세요." disabled />
-            </ActionBar>
+            // 실행이 바뀌면 입력·Dialog 상태를 버린다. 판정(승인 대기인가)은 서버가 한다.
+            <RunActionBar
+              key={selected?.id ?? 'none'}
+              runId={selected?.id ?? ''}
+              enabled={selected !== undefined && isPendingApproval(selected.status)}
+              steps={STEP_OPTIONS}
+              maxLength={INSTRUCTION_MAX_LENGTH}
+            />
           }
         >
           {selected ? (

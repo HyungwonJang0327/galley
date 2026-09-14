@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { STEP_ORDER } from '@galley/pipeline';
 import {
+  isPendingApproval,
   isRunInProgress,
   runStatusBadge,
   STEP_OPTIONS,
@@ -21,6 +22,16 @@ describe('runStatusBadge', () => {
 
   it('모르는 값은 그대로 회색으로(화면이 죽지 않는다)', () => {
     expect(runStatusBadge('weird')).toEqual({ label: 'weird', variant: 'neutral', pulse: false });
+  });
+});
+
+describe('isPendingApproval', () => {
+  it('승인 대기만 true — 실패·완료·실행 중은 손댈 수 없다', () => {
+    expect(isPendingApproval('pendingApproval')).toBe(true);
+    expect(isPendingApproval('running')).toBe(false);
+    expect(isPendingApproval('failed')).toBe(false);
+    expect(isPendingApproval('done')).toBe(false);
+    expect(isPendingApproval('weird')).toBe(false);
   });
 });
 

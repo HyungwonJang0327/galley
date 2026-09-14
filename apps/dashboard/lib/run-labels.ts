@@ -60,6 +60,11 @@ export function isRunInProgress(status: string): boolean {
   return status === RUN_STATUS.running;
 }
 
+/** 사람이 손댈 차례인가 — ActionBar(수정 지시·승인)는 이 값이 true일 때만 산다. 실패 실행의 재실행 진입은 별도 항목. */
+export function isPendingApproval(status: string): boolean {
+  return status === RUN_STATUS.pendingApproval;
+}
+
 // ── 단계 ─────────────────────────────────────────────────────────────────────
 
 const STEP_LABEL: Record<StepName, string> = {
