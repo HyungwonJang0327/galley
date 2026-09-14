@@ -6,7 +6,8 @@
 //   pnpm --filter @galley/pipeline seed:dev -- --yes # 실제로 지우고 시드한다
 // 주의: 워커가 돌고 있으면 "실행 중" 시드를 Mock으로 집어가 끝내 버린다 — 화면 작업 중엔 워커를 끈다.
 import { prisma } from '../src/db.ts';
-import { DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
+import { calculateCostUsd } from '../src/model/cost.ts';
+import { createModelRegistryFromEnv, DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
 import { RUN_STATUS, STEP_ORDER, STEP_ORIGIN, STEP_STATUS } from '../src/run/stateMachine.ts';
 import { topicSlug } from '../src/queue/topicSlug.ts';
 
@@ -29,6 +30,8 @@ type StepSeed = {
 };
 
 const MODEL = DEFAULT_MODEL_ID;
+// 단가는 레지스트리만 안다(decisions/model-selection.md). API 키 없이도 pricing은 읽힌다.
+const PRICING = createModelRegistryFromEnv(process.env).default().pricing;
 const minutes = (n: number) => n * 60_000;
 const now = Date.now();
 const at = (minutesAgo: number) => new Date(now - minutes(minutesAgo));
@@ -61,7 +64,11 @@ function steps(runId: string, seed: Partial<Record<StepName, StepSeed>>, base: D
       inputTokens: succeeded && usesModel ? input : null,
       outputTokens: succeeded && usesModel ? output : null,
       costUsd:
-        succeeded && usesModel ? Number(((input * 5 + output * 25) / 1_000_000).toFixed(4)) : null,
+        succeeded && usesModel
+          ? Number(
+              calculateCostUsd({ inputTokens: input, outputTokens: output }, PRICING).toFixed(4),
+            )
+          : null,
       durationMs: succeeded ? 90_000 + order * 20_000 : status === 'failed' ? 600_000 : null,
       startedAt,
       finishedAt,
