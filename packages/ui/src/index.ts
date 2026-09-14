@@ -44,5 +44,7 @@ export { Select } from './primitives/Select';
 export type { SelectProps, SelectItem } from './primitives/Select';
 export { Input } from './primitives/Input';
 export type { InputProps } from './primitives/Input';
+export { Textarea } from './primitives/Textarea';
+export type { TextareaProps } from './primitives/Textarea';
 export { Menu } from './primitives/Menu';
 export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
