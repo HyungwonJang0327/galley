@@ -1,0 +1,24 @@
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+}
+
+.dot {
+  width: var(--ui-timeline-marker);
+  height: var(--ui-timeline-marker);
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-border);
+}
+
+.dot[data-status='active'] {
+  background-color: var(--ui-color-accent);
+}
+
+.dot[data-status='done'] {
+  background-color: var(--ui-color-success-fg);
+}
+
+.dot[data-status='failed'] {
+  background-color: var(--ui-color-danger-fg);
+}

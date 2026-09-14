@@ -1,5 +1,6 @@
 import { parseRunView, runsHref } from '../../../lib/run-view';
 import { getRunList } from '../../../lib/run-list';
+import { runListRowView } from '../../../lib/run-list-row';
 import {
   ActionBar,
   Badge,
@@ -17,6 +18,7 @@ import { getRunDetail } from '../../../lib/run-detail';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
 import { RunPoller } from './RunPoller';
+import { RunStepDots } from './RunStepDots';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -51,9 +53,18 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             <ListRows>
               {lists.map((list) => {
                 const badge = runStatusBadge(list.status);
+                const view = runListRowView(list);
+                const doneCount = view.dots.filter((d) => d.status === 'done').length;
                 return (
                   <ListRow
                     key={list.id}
+                    leading={
+                      <RunStepDots
+                        dots={view.dots}
+                        label={`단계 진행 ${doneCount}/${view.dots.length}`}
+                      />
+                    }
+                    meta={`${view.lastStep} · ${view.time}`}
                     title={
                       <Link href={runsHref({ ...filter, selectedId: list.id })}>
                         {list.topicTitle}
