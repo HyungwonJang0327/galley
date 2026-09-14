@@ -9,6 +9,13 @@
   padding: var(--ui-space-3) var(--ui-space-4);
 }
 
+.topicTitle {
+  margin: 0;
+  font-size: var(--ui-text-h2);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+}
+
 .attempt {
   color: var(--ui-color-text-muted);
 }

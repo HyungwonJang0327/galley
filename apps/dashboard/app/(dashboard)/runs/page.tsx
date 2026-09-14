@@ -86,7 +86,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             selected &&
             headerBadge && (
               <div className={styles.detailHeader}>
-                <strong>{selected.topicTitle}</strong>
+                <h2 className={styles.topicTitle}>{selected.topicTitle}</h2>
                 <span className={styles.attempt}>{selected.attempt}차</span>
                 <Badge variant={headerBadge.variant} pulse={headerBadge.pulse}>
                   {headerBadge.label}
