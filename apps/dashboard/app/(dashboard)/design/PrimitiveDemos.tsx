@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Dialog,
+  Input,
   ListRow,
   ListRows,
   Menu,
@@ -245,7 +246,7 @@ export function SplitPaneDemo() {
               </>
             }
           >
-            <input aria-label="지시 입력" placeholder="지시 입력" />
+            <Input aria-label="지시 입력" placeholder="지시 입력" />
           </ActionBar>
         }
         list={

@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   EmptyState,
+  Input,
   ListRow,
   ListRows,
   ListToolbar,
@@ -165,6 +166,27 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Dialog</h2>
           <div className={styles.row}>
             <DialogDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Input</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>placeholder / 값 / disabled / invalid</span>
+            <div className={styles.row}>
+              <div className={styles.selectBox}>
+                <Input aria-label="입력 placeholder" placeholder="입력하세요" />
+              </div>
+              <div className={styles.selectBox}>
+                <Input aria-label="입력 값" defaultValue="입력된 값" />
+              </div>
+              <div className={styles.selectBox}>
+                <Input aria-label="입력 disabled" placeholder="입력하세요" disabled />
+              </div>
+              <div className={styles.selectBox}>
+                <Input aria-label="입력 invalid" defaultValue="잘못된 값" invalid />
+              </div>
+            </div>
           </div>
         </Card>
 
