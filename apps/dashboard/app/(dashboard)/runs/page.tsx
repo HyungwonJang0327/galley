@@ -113,7 +113,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
         >
           {selected ? (
             <>
-              <RunPoller active={isRunInProgress(selected.status)} />
+              {/* 다른 실행을 고르면 폴러를 새로 만든다 — 같은 인스턴스가 "running → 아님" 전환으로
+                  오인해 refresh를 한 번 더 부르지 않도록. */}
+              <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
               <RunTimeline steps={selected.steps} />
             </>
           ) : detail && !detail.ok && detail.error.code === 'RUN_DETAIL_FAILED' ? (
