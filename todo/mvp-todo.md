@@ -220,7 +220,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] 🔒 **B2c** (2026-09-14 feat/dashboard-run-detail, PR #92, 31커밋 rebase merge) fe — **직접 작성 핵심 모듈 (a')**(2026-09-12 교체 — decisions/core-modules.md). AI는 테스트·리뷰만. 2분할 화면: 좌 목록(검색·탭 실행중/완료·"승인 대기만" 체크) / 우 타임라인(**6단계** 순서 고정). 커밋: `feat(dashboard): 실행 상세 2분할 화면 추가` — 2026-09-14 `/runs` 500 수정(`e347eaa` RunPoller가 `active`만 받음) + `server-only` 경계(`4a1bcdf`, decisions/server-only-boundary.md). 2026-09-14 리뷰 14건 반영 — 항목당 커밋(`45d3baa`…`b9e88b4`, worklog/2026-09-14.md 표). 11은 B2e, 5의 "근거 없음 n"은 BE13으로. CI verify 플레이크(DB 테스트 훅 10s 초과)는 `144986a` hookTimeout 30s로.
 - [x] **B2d** (2026-09-14 feat/dashboard-action-bar, PR #94 `b3f47a5`·`a81cb5d`·`ae3ed5d`) fe — 하단 ActionBar 배선: `lib/run-api-client`(fetch 봉투) · `lib/run-action-bar`(입력 검사·계획 문구) · `runs/RunActionBar`(단계 Select + Textarea + 재실행 확인 Dialog + 승인, props는 서버 판정 결과만) · `isPendingApproval`. **승인 대기만 활성**(사용자 결정). 테스트 +20. 커밋: `feat(dashboard): 실행 명령 API 클라이언트와 ActionBar 판단 헬퍼 추가` 외 2.
 - [ ] **B2d-2** fe·pl — 실패 실행의 재실행 진입(상태 머신 `applyCommand`가 승인 대기만 허용 — 실패에서 "처음부터/실패 단계부터"를 열려면 pipeline 결정 선행). B2d에서 쪼갬(2026-09-14).
-- [ ] **B2d-3** fe — 승인 확인 Dialog(layout.md "승인(주요, Dialog 확인)"). 지금은 즉시 승인. B2d에서 쪼갬(2026-09-14).
+- [x] **B2d-3** (2026-09-14 feat/dashboard-approve-dialog `667645f`) fe — 승인 확인 Dialog("승인할까요?" — 검수 완료로 종결, 공개 발행 아님). 확인해야 approve API. 커밋: `feat(dashboard): 승인 전 확인 Dialog 추가`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
 - [ ] **B2e** fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown**(apps/dashboard). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
 
