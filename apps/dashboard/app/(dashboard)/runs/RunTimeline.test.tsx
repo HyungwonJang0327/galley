@@ -181,6 +181,47 @@ describe('RunTimeline', () => {
     expect(rows()[3]!.textContent).toContain('STEP_TIMEOUT · 1회 시도');
   });
 
+  it('carried인데 출처 시각이 없으면 "이전 결과"만(꼬리 " · " 없음)', () => {
+    render(
+      <RunTimeline
+        steps={[
+          step({
+            name: 'evidence',
+            order: 1,
+            status: 'succeeded',
+            origin: 'carried',
+            sourceRunId: 'run-gone',
+            sourceFinishedAt: null,
+          }),
+        ]}
+      />,
+    );
+
+    const row = rows()[0]!;
+    expect(row.textContent).toContain('이전 결과');
+    expect(row.textContent).not.toContain(' · ');
+  });
+
+  it('500ms 미만 소요는 "0초"로 반올림된다', () => {
+    render(
+      <RunTimeline
+        steps={[step({ name: 'velog', order: 2, status: 'succeeded', durationMs: 420 })]}
+      />,
+    );
+
+    expect(rows()[1]!.textContent).toContain('0초');
+  });
+
+  it('실패인데 메시지·코드가 둘 다 없으면 시도 횟수만', () => {
+    render(
+      <RunTimeline steps={[step({ name: 'zenn', order: 5, status: 'failed', attemptCount: 2 })]} />,
+    );
+
+    const row = rows()[4]!;
+    expect(row.textContent).toContain('2회 시도');
+    expect(row.textContent).not.toContain(' · ');
+  });
+
   it('모르는 상태 값은 pending으로 그리고 값을 그대로 읽어준다', () => {
     render(<RunTimeline steps={[step({ name: 'zenn', order: 5, status: 'weird' })]} />);
 
