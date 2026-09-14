@@ -31,7 +31,7 @@
 - [x] A7 — 404·에러·로딩 화면(셸 유지) (2026-09-12, PR #85)
 - [x] A6e — "파일에서 사라짐" 확인 UI (2026-09-13, PR #86). 보류 탭 holdReason 구분 표시는 남음 → TD3
 - 🔒 B2c — 실행 상세 2분할 화면 ← **직접 작성 핵심 모듈, 구현 금지**(사용자 작성, AI는 테스트·리뷰만)
-- B2d — 하단 ActionBar 배선
+- B2d — 하단 ActionBar 배선 (ui `Input` 있음 — UM3)
 - B2e — 타임라인 펼침 산출물 마크다운 미리보기
 - BM5 — Settings.defaultModelId + TopBar 칩 label 표시
 - BM6 — 실행 시작 Dialog(모델 Select) + 진입점 3곳 (선행 UM1)
