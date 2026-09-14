@@ -10,6 +10,7 @@ import {
   ListToolbarTab,
   PageHeader,
   StatTile,
+  Textarea,
 } from '@galley/ui';
 import styles from './page.module.css';
 import {
@@ -185,6 +186,27 @@ export default function DesignPage() {
               </div>
               <div className={styles.selectBox}>
                 <Input aria-label="입력 invalid" defaultValue="잘못된 값" invalid />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Textarea</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>placeholder / 값(rows 4) / disabled / invalid</span>
+            <div className={styles.row}>
+              <div className={styles.selectBox}>
+                <Textarea aria-label="여러 줄 placeholder" placeholder="여러 줄을 입력하세요" />
+              </div>
+              <div className={styles.selectBox}>
+                <Textarea aria-label="여러 줄 값" rows={4} defaultValue={'첫 줄\n둘째 줄'} />
+              </div>
+              <div className={styles.selectBox}>
+                <Textarea aria-label="여러 줄 disabled" placeholder="입력하세요" disabled />
+              </div>
+              <div className={styles.selectBox}>
+                <Textarea aria-label="여러 줄 invalid" defaultValue="잘못된 값" invalid />
               </div>
             </div>
           </div>
