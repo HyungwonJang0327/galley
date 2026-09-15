@@ -232,6 +232,79 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ---
 
+## Phase P · galley-ui 0.1.0 npm 배포 (2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선)
+
+`packages/ui`를 npm `galley-ui` 0.1.0으로 배포한다. 배포 기준: 라이트+다크 토큰 · 폼·피드백 계열 최소 구색 8개 + `useAwaitDialog`/`useConfirm` 훅 · README · 배포 메타데이터. 패키지명 근거는 decisions/package-name.md. **끝날 때까지 대시보드 기능 항목(B·BM·BE·BS)은 시작하지 않는다.** 항목 하나 = 브랜치 하나 = PR 하나(커밋은 독립 revert 가능 단위로 몇 개). 각 컴포넌트 항목 완료 조건 공통: 폴더 5파일(`index.ts, X.tsx, X.module.css, X.test.tsx, X.stories.tsx`) + 배럴 export(타입 포함) + `/design` 갤러리 섹션 + `pnpm --filter galley-ui build && test` + `verify:layout` + reviewer 리뷰 통과(접근성 기준선: 키보드·포커스·대비·라벨). 제어형만(value+onChange), className 병합, 접근성 이름은 prop. Base UI API는 설치본 타입(`node_modules/@base-ui/react`)으로 확인하고 쓴다. `npm publish`·`git push --force`·`rm -rf`는 사용자 확인 후에만.
+
+### P0. 계획 확인 — docs
+
+- [ ] **P0a** doc — 이 섹션 + ui-engineer·doc-writer todo에 담당 ID 추가. 커밋: `docs(docs): Phase P galley-ui 배포 todo 추가`
+- [ ] **P0b** doc — decisions/package-name.md 신설(배포명 `galley-ui` unscoped, `@galley` 스코프 불가 사유, 기각안). decisions/README 목록. 커밋: `docs(docs): 패키지명 galley-ui 결정 기록`
+- [ ] **P0c** — 사용자 승인. 미결 2개: useAwaitDialog를 사용자가 직접 쓸지(에이전트는 테스트·리뷰만) / RunActionBar Dialog 2개 → useConfirm 치환을 P5 앞에 넣을지. 승인 전 코드 변경 금지.
+
+### P1. 패키지명 변경 — 브랜치 `chore/ui-rename`
+
+- [ ] **P1a** ui — `@galley/ui` → `galley-ui`. 시작 전 `grep -rn --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git --exclude-dir=.next -F '@galley/ui' .` 목록 제시. 코드·설정: `packages/ui/package.json` name · `apps/dashboard/package.json` 의존성 · dashboard import 전부(`galley-ui`, `galley-ui/styles.css`) · `eslint.config.js` no-restricted-imports 패턴 · `.github/workflows/ci.yml` `--filter` · `apps/dashboard/next.config.mjs` · `.claude/settings.local.json` · `.changeset/config.json`(ignore 목록 확인) → `pnpm install`로 lock 재생성. 완료 조건: `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter galley-ui build` 통과 + dashboard `next build` 통과. 커밋: `chore(ui): 패키지명 galley-ui로 변경`
+- [ ] **P1b** doc — 문서·에이전트·커맨드 치환: CLAUDE.md · README.md · planning.md · INTENT.md · COMMIT_CONVENTION.md(scope 표) · decisions/_(본문 치환 + 갱신 이력 한 줄) · todo/_ · .claude/agents/* · .claude/commands/* · .changeset/README.md. **worklog/는 날짜별 기록이라 치환하지 않는다.** 완료 조건: `grep -F '@galley/ui'`가 worklog/ 밖에서 0건. 커밋: `docs(docs): 패키지명 변경을 문서·에이전트에 반영`
+
+### P2. 배포 메타데이터 — 브랜치 `chore/ui-publish-meta`
+
+- [ ] **P2a** ui — `packages/ui/package.json`: `private` 제거(version 0.0.0 유지) · `description`(영어 한 줄) · `license: MIT` · `repository{type,url: git+https://github.com/HyungwonJang0327/galley.git, directory: packages/ui}` · `homepage`(리포 packages/ui 경로) · `bugs` · `keywords`(react, design-system, ui-kit, admin, dashboard, base-ui, css-modules) · `author` · `publishConfig{access: public}` · `engines.node >=20`(소비자 기준. 리포 engines >=24와 다름은 README에만). `sideEffects`·`exports`·`files` 그대로. 루트 `LICENSE`(MIT, Hyungwon Jang, 연도는 date). `npm pack --dry-run`으로 LICENSE 포함 확인 — 자동 포함 안 되면 `packages/ui/LICENSE`로 복사. `.npmignore`에서 `tsup.config.ts` 줄 삭제. 완료 조건: pack 결과에 LICENSE·package.json 포함. 커밋: `chore(ui): npm 배포 메타데이터·LICENSE 추가`
+- [ ] **P2b** ui — `vite.config.ts` `dts({ include: ['src'], exclude: ['**/*.stories.tsx', '**/*.test.tsx'], insertTypesEntry: true })`(지금 dist에 `*.stories.d.ts` 24개·`*.test.d.ts` 24개가 섞인다). 완료 조건: `pnpm --filter galley-ui build && npm pack --dry-run`에 stories/test d.ts 0개, 총 파일 60개 미만. 커밋: `chore(ui): d.ts 출력에서 스토리·테스트 제외`
+
+### P3. 다크 토큰 — 브랜치 `design/ui-dark-tokens`
+
+- [ ] **P3a** ui — `src/tokens/tokens.css` `[data-theme='dark']` 빈 블록에 `--ui-color-*` 25개 재정의(space·text·radius는 그대로, shadow는 다크에서 필요하면만). 기준: 본문 텍스트 대비 4.5:1 이상 · accent는 라이트와 같은 계열에서 밝기만 조정 · topbar는 값 유지 또는 한 단계만. 완료 조건: 대비값 계산표를 worklog에 남김 · decisions/ui-style.md 갱신 이력 "다크 값 확정" 한 줄. 커밋: `design(ui): 다크 테마 색 토큰 값 추가`
+- [ ] **P3b** ui — `/design` 갤러리에 개발환경 전용 테마 토글(`document.documentElement.dataset.theme`). 앱 테마 저장 기능은 만들지 않는다(범위 밖). 완료 조건: 갤러리 전 섹션을 다크로 육안 확인 · `verify:layout` 통과. 커밋: `feat(dashboard): 갤러리에 개발용 테마 토글 추가`
+
+### P4. 최소 구색 컴포넌트 8개 + 훅 1개 — 항목 하나 = 브랜치 하나 = PR 하나, 순서대로
+
+각 항목 시작 전 Base UI 1.8.0 프리미티브 존재를 타입으로 확인하고 "래핑/직접 작성" 중 무엇인지 한 줄 보고 후 진행(2026-09-15 확인: switch·radio·radio-group·field·popover·toast·separator 서브패스 전부 존재).
+
+- [ ] **P4-1** ui — **Separator**(components) — `orientation` horizontal|vertical · `decorative`(true면 role none, 아니면 separator) · 토큰 border 색. 브랜치 `feat/ui-separator`. 커밋: `feat(ui): Separator 컴포넌트 추가`
+- [ ] **P4-2** ui — **Switch**(primitives, Base UI Switch) — 제어형 `checked`/`onCheckedChange` · `children` 라벨(없으면 `aria-label` 필수) · `disabled` · `name`. Checkbox와 같은 label 감싸기. 브랜치 `feat/ui-switch`. 커밋: `feat(ui): Switch 프리미티브 추가`
+- [ ] **P4-3** ui — **RadioGroup**(primitives, Base UI Radio/RadioGroup) — 제어형 `value`/`onValueChange` · `items: {value,label,description?,disabled?}[]` · `aria-label` · `orientation`. 아이템 레이아웃은 ItemContent 재사용. 브랜치 `feat/ui-radio-group`. 커밋: `feat(ui): RadioGroup 프리미티브 추가`
+- [ ] **P4-4** ui — **FormField**(primitives, Base UI Field) — `label` · `description?` · `error?`(string, 있으면 aria-invalid·aria-describedby 연결) · `required?` · `children`에 Input/Textarea/Select/Switch. Input·Textarea `invalid`는 FormField error가 있으면 Base UI Field 컨텍스트로 자동(연결 안 되면 소비자가 `invalid`를 직접 넘기는 방식으로 두고 보고). 브랜치 `feat/ui-form-field`. 커밋: `feat(ui): FormField 프리미티브 추가`
+- [ ] **P4-5** ui — **Popover**(primitives, Base UI Popover) — `trigger` · `children` · `title?` · `side` · `align` · `open`/`onOpenChange`(선택 — 없으면 비제어. **제어형 원칙의 유일한 예외**, 이유를 README 설계 원칙에: 단순 정보 팝업은 앱이 상태를 가질 이유가 없음). Tooltip과 같은 trigger 병합. 브랜치 `feat/ui-popover`. 커밋: `feat(ui): Popover 프리미티브 추가`
+- [ ] **P4-6** ui — **InlineAlert**(components) — `tone` info|success|warning|danger · `title?` · `children` · `action?` 슬롯 · `role`은 danger·warning이면 alert, 아니면 status. 아이콘 lucide. **TD2의 ui 부분.** 앱 4곳 치환(fe)은 포함하지 않는다 — 완료 시 TD2에 "ui 완료, 앱 치환 남음" 표시. 브랜치 `feat/ui-inline-alert`. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
+- [ ] **P4-7** ui — **Skeleton**(components) — `width`/`height`(토큰 space 또는 CSS 값) · `radius` sm|md|full · `lines?`(텍스트 여러 줄) · `aria-hidden` 기본 · 부모가 `aria-busy` 다는 규칙을 스토리에 예시. 브랜치 `feat/ui-skeleton`. 커밋: `feat(ui): Skeleton 컴포넌트 추가`
+- [ ] **P4-8** ui — **Toast**(primitives, Base UI Toast) — `ToastProvider`(뷰포트 위치 top-right|bottom-right, 최대 개수) + `useToast()` 훅(`toast({ title, description?, tone?, duration? })`). 훅은 `hooks/`에 두고 배럴 export. 키보드 접근(F6/포커스 이동)·`role=status`·수동 닫기 버튼은 Base UI 기본. Base UI에 Toast가 없으면 멈추고 직접 작성 범위 보고(2026-09-15 확인: 있음). 브랜치 `feat/ui-toast`. 커밋: `feat(ui): Toast 프리미티브와 useToast 훅 추가`
+- [ ] **P4-9** ui(또는 🔒 사용자 — P0c에서 결정) — **useAwaitDialog + useConfirm**(hooks) — Promise로 기다리는 다이얼로그. RunActionBar가 확인 Dialog를 `useState` 두 벌로 드는 패턴을 훅 하나로 대체하는 것이 목적(앱 치환은 후속 P7). 폴더 `hooks/useAwaitDialog/{index.ts, useAwaitDialog.ts, useConfirm.tsx, *.test.tsx, *.stories.tsx}`.
+  - `useAwaitDialog<TResult>()` → `{ open(render: (resolve: (r: TResult) => void) => ReactNode): Promise<TResult>, element: ReactNode }`. 소비자는 `{element}`를 한 번 렌더, 핸들러에서 `const ok = await open(...)`. 렌더 함수는 Dialog 프리미티브를 그대로 쓴다(훅은 열림 상태·Promise만, UI는 소비자).
+  - `useConfirm()` → `confirm({ title, description?, confirmLabel?, cancelLabel?, tone?: 'default'|'danger' }): Promise<boolean>`. useAwaitDialog 위에 Dialog+Button 두 개.
+  - 규칙: Esc·바깥 클릭·닫기 버튼은 `cancel` 값(useConfirm은 false)으로 resolve(reject 금지) · 열린 채 다시 `open`하면 이전 Promise를 cancel로 resolve하고 새 것(중첩 없음) · 언마운트 시 대기 Promise를 cancel로 resolve하고 상태 갱신 없음(경고 없음) · 닫힘 애니메이션 동안 `element` 유지.
+  - 테스트(필수): resolve 값 전달 / Esc→cancel / 재open 시 이전 Promise 정리 / 언마운트 시 resolve·경고 없음 / 열려 있는 동안 포커스 트랩. 스토리: 삭제 확인(danger) · 이름 입력 후 반환(`useAwaitDialog<string|null>`).
+  - 사이드프로젝트의 `react-await-dialog` 단독 패키지는 이 훅으로 대체(별도 패키지 안 만듦) → decisions/ui-package-boundary.md 갱신 이력 한 줄.
+  - 브랜치 `feat/ui-await-dialog`. 커밋: `feat(ui): useAwaitDialog·useConfirm 훅 추가`
+- [ ] **P4-10** ui — 9개 완료 후 todo/ui-engineer-todo.md의 "남은 것: Popover" 줄 정리(P5 PR에 포함).
+
+### P5. README — 브랜치 `docs/ui-readme`
+
+- [ ] **P5a** doc — `packages/ui/README.md` 신규(영어만): 한 줄 소개 → 설치(`pnpm add galley-ui` + peer react/react-dom ^19) → 30초 예제(`import 'galley-ui/styles.css'` + AppShell 안 Button·Badge) → `useConfirm` 예제(await 한 줄, 차별점이라 앞쪽) → 다크 모드(`data-theme="dark"`) → 컴포넌트 표(components/primitives/patterns/hooks 각 한 줄) → 설계 원칙(제어형만(Popover 예외)·Base UI 얇은 래퍼·CSS Modules+토큰·도메인 무지·번들 전체 "use client"·Node ≥20) → Storybook 예정(Phase 2) → 라이선스. 커밋: `docs(ui): galley-ui README 작성`
+- [ ] **P5b** doc — 루트 README.md에 "packages/ui는 npm `galley-ui`로 배포" 한 줄 + 링크. 커밋: `docs(docs): 루트 README에 galley-ui 배포 안내`
+
+### P6. 배포 — 브랜치 `chore/ui-release-0-1-0`
+
+- [ ] **P6a** — `/ship` 실행. 실패하면 멈춘다.
+- [ ] **P6b** ui — `pnpm changeset`: galley-ui minor(0.0.0 → 0.1.0), 요약 영어 한 줄("Initial public release: tokens (light/dark), N components" — N은 배럴 export를 세어 넣는다). 커밋: `chore(ui): 0.1.0 changeset 추가`
+- [ ] **P6c** ui — `pnpm changeset version` → CHANGELOG.md·package.json 확인. 커밋: `chore(ui): galley-ui 0.1.0 버전 반영`
+- [ ] **P6d** — `pnpm --filter galley-ui build && npm pack --dry-run` 결과(파일 목록·크기) 제시 후 **멈춤. 사용자 확인 후에만** `pnpm changeset publish`(npm 로그인은 사용자. 2FA 프롬프트가 뜨면 알린다).
+- [ ] **P6e** — 배포 확인: `npm view galley-ui version` · https://www.npmjs.com/package/galley-ui · 태그 `galley-ui@0.1.0` push(force 없음).
+- [ ] **P6f** doc — PR 머지 후 /log. worklog에 배포 시각·버전·tarball 크기·파일 수. planning.md에 "galley-ui 0.1.0 배포됨" 체크.
+
+### P7. 후속 (이번 작업 아님 — todo에만)
+
+- [ ] **P7a** fe — RunActionBar의 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환. 배포 전에 하면 훅 API가 실제 소비자에서 검증된다 — P0c에서 P5 앞에 넣을지 결정. 커밋: `refactor(dashboard): RunActionBar 확인 Dialog를 useConfirm으로`
+- [ ] **P7b** — CI publish 워크플로(changesets/action). 결정 필요.
+- [ ] **P7c** — Storybook 정적 빌드 → GitHub Pages.
+- [ ] **P7d** ui — Table · Avatar · Breadcrumb · Pagination.
+- [ ] **P7e** fe — TD2 앱 4곳 InlineAlert 치환.
+- [ ] **P7f** — 포트폴리오·이력서에 npm 링크 반영.
+
+범위 밖(하지 않는다): 대시보드 기능 진행 · 리팩토링 · preserveModules 재검토 · Storybook 실행 환경 · CI publish 자동화 · Combobox·DatePicker·Table · 기존 컴포넌트 API 변경(호환 깨는 수정 — 리뷰에서 발견되면 todo에 적고 넘어간다).
+
+---
+
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
 Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).

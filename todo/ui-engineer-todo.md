@@ -19,3 +19,15 @@
 - UM1 — Dialog·Select 프리미티브(Base UI 래퍼, 도메인 무지). 실행 시작 Dialog(BM6)·재실행 모델 Select(BM8)·TopBar 기본 모델 Select(BM9)가 소비. (Dialog는 core-modules에서 핵심 모듈 제외 → ui가 구현)
 
 각 작업: index 배럴 export · 토큰만 참조 · `X.test.tsx` · `pnpm --filter @galley/ui build && test` 통과.
+
+## Phase P — galley-ui 0.1.0 npm 배포 (2026-09-15 추가, B·BM·BE·BS보다 우선 — decisions/package-name.md)
+
+항목 하나 = 브랜치 하나 = PR 하나. 각 컴포넌트: 폴더 5파일 + 배럴 export(타입 포함) + `/design` 갤러리 섹션 + `pnpm --filter galley-ui build && test` + `verify:layout` + reviewer 리뷰 통과. Base UI API는 설치본 타입으로 확인.
+
+- P1a — 패키지명 `@galley/ui` → `galley-ui` 코드·설정 치환 + lock 재생성 (`chore/ui-rename`)
+- P2a · P2b — 배포 메타데이터·LICENSE · d.ts에서 스토리·테스트 제외 (`chore/ui-publish-meta`)
+- P3a · P3b — 다크 색 토큰 25개(대비표) · 갤러리 개발용 테마 토글 (`design/ui-dark-tokens`)
+- P4-1 Separator · P4-2 Switch · P4-3 RadioGroup · P4-4 FormField · P4-5 Popover(비제어 허용 유일 예외) · P4-6 InlineAlert(TD2 ui 부분) · P4-7 Skeleton · P4-8 Toast+useToast — 순서대로
+- P4-9 useAwaitDialog·useConfirm — 사용자가 직접 쓸지 P0c에서 결정(직접이면 테스트·리뷰만)
+- P4-10 — 9개 끝나면 아래 UM4 줄의 "남은 것: Popover" 정리
+- P6b · P6c — changeset 추가 · version 반영. publish는 사용자 확인 후에만
