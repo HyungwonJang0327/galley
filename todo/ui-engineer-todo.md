@@ -28,6 +28,6 @@
 - P2a · P2b — 배포 메타데이터·LICENSE · d.ts에서 스토리·테스트 제외 (`chore/ui-publish-meta`)
 - P3a · P3b — 다크 색 토큰 25개(대비표) · 갤러리 개발용 테마 토글 (`design/ui-dark-tokens`)
 - P4-1 Separator · P4-2 Switch · P4-3 RadioGroup · P4-4 FormField · P4-5 Popover(비제어 허용 유일 예외) · P4-6 InlineAlert(TD2 ui 부분) · P4-7 Skeleton · P4-8 Toast+useToast — 순서대로
-- P4-9 useAwaitDialog·useConfirm — 사용자가 직접 쓸지 P0c에서 결정(직접이면 테스트·리뷰만)
+- P4-9 useAwaitDialog·useConfirm — ui-engineer 작성(2026-09-15 확정). 테스트 5종 필수(resolve 값·Esc→cancel·재open 정리·언마운트 resolve·포커스 트랩)
 - P4-10 — 9개 끝나면 아래 UM4 줄의 "남은 것: Popover" 정리
 - P6b · P6c — changeset 추가 · version 반영. publish는 사용자 확인 후에만

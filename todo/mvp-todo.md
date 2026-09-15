@@ -238,9 +238,9 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P0. 계획 확인 — docs
 
-- [ ] **P0a** doc — 이 섹션 + ui-engineer·doc-writer todo에 담당 ID 추가. 커밋: `docs(docs): Phase P galley-ui 배포 todo 추가`
-- [ ] **P0b** doc — decisions/package-name.md 신설(배포명 `galley-ui` unscoped, `@galley` 스코프 불가 사유, 기각안). decisions/README 목록. 커밋: `docs(docs): 패키지명 galley-ui 결정 기록`
-- [ ] **P0c** — 사용자 승인. 미결 2개: useAwaitDialog를 사용자가 직접 쓸지(에이전트는 테스트·리뷰만) / RunActionBar Dialog 2개 → useConfirm 치환을 P5 앞에 넣을지. 승인 전 코드 변경 금지.
+- [x] **P0a** (2026-09-15 `cabc960`, docs/ui-publish-plan) doc — 이 섹션 + ui-engineer·doc-writer todo에 담당 ID 추가. 커밋: `docs(docs): Phase P galley-ui 배포 todo 추가`
+- [x] **P0b** (2026-09-15 `436d18b`, docs/ui-publish-plan) doc — decisions/package-name.md 신설(배포명 `galley-ui` unscoped, `@galley` 스코프 불가 사유, 기각안). decisions/README 목록. 커밋: `docs(docs): 패키지명 galley-ui 결정 기록`
+- [x] **P0c** (2026-09-15) — 사용자 승인. 미결 2개 확정: useAwaitDialog는 **ui-engineer가 작성**(🔒 아님) / RunActionBar Dialog 2개 → useConfirm 치환은 **배포 전 P4-11로 P5 앞에** 넣는다.
 
 ### P1. 패키지명 변경 — 브랜치 `chore/ui-rename`
 
@@ -269,7 +269,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **P4-6** ui — **InlineAlert**(components) — `tone` info|success|warning|danger · `title?` · `children` · `action?` 슬롯 · `role`은 danger·warning이면 alert, 아니면 status. 아이콘 lucide. **TD2의 ui 부분.** 앱 4곳 치환(fe)은 포함하지 않는다 — 완료 시 TD2에 "ui 완료, 앱 치환 남음" 표시. 브랜치 `feat/ui-inline-alert`. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
 - [ ] **P4-7** ui — **Skeleton**(components) — `width`/`height`(토큰 space 또는 CSS 값) · `radius` sm|md|full · `lines?`(텍스트 여러 줄) · `aria-hidden` 기본 · 부모가 `aria-busy` 다는 규칙을 스토리에 예시. 브랜치 `feat/ui-skeleton`. 커밋: `feat(ui): Skeleton 컴포넌트 추가`
 - [ ] **P4-8** ui — **Toast**(primitives, Base UI Toast) — `ToastProvider`(뷰포트 위치 top-right|bottom-right, 최대 개수) + `useToast()` 훅(`toast({ title, description?, tone?, duration? })`). 훅은 `hooks/`에 두고 배럴 export. 키보드 접근(F6/포커스 이동)·`role=status`·수동 닫기 버튼은 Base UI 기본. Base UI에 Toast가 없으면 멈추고 직접 작성 범위 보고(2026-09-15 확인: 있음). 브랜치 `feat/ui-toast`. 커밋: `feat(ui): Toast 프리미티브와 useToast 훅 추가`
-- [ ] **P4-9** ui(또는 🔒 사용자 — P0c에서 결정) — **useAwaitDialog + useConfirm**(hooks) — Promise로 기다리는 다이얼로그. RunActionBar가 확인 Dialog를 `useState` 두 벌로 드는 패턴을 훅 하나로 대체하는 것이 목적(앱 치환은 후속 P7). 폴더 `hooks/useAwaitDialog/{index.ts, useAwaitDialog.ts, useConfirm.tsx, *.test.tsx, *.stories.tsx}`.
+- [ ] **P4-9** ui — **useAwaitDialog + useConfirm**(hooks) — Promise로 기다리는 다이얼로그. RunActionBar가 확인 Dialog를 `useState` 두 벌로 드는 패턴을 훅 하나로 대체하는 것이 목적(앱 치환은 후속 P7). 폴더 `hooks/useAwaitDialog/{index.ts, useAwaitDialog.ts, useConfirm.tsx, *.test.tsx, *.stories.tsx}`.
   - `useAwaitDialog<TResult>()` → `{ open(render: (resolve: (r: TResult) => void) => ReactNode): Promise<TResult>, element: ReactNode }`. 소비자는 `{element}`를 한 번 렌더, 핸들러에서 `const ok = await open(...)`. 렌더 함수는 Dialog 프리미티브를 그대로 쓴다(훅은 열림 상태·Promise만, UI는 소비자).
   - `useConfirm()` → `confirm({ title, description?, confirmLabel?, cancelLabel?, tone?: 'default'|'danger' }): Promise<boolean>`. useAwaitDialog 위에 Dialog+Button 두 개.
   - 규칙: Esc·바깥 클릭·닫기 버튼은 `cancel` 값(useConfirm은 false)으로 resolve(reject 금지) · 열린 채 다시 `open`하면 이전 Promise를 cancel로 resolve하고 새 것(중첩 없음) · 언마운트 시 대기 Promise를 cancel로 resolve하고 상태 갱신 없음(경고 없음) · 닫힘 애니메이션 동안 `element` 유지.
@@ -277,6 +277,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
   - 사이드프로젝트의 `react-await-dialog` 단독 패키지는 이 훅으로 대체(별도 패키지 안 만듦) → decisions/ui-package-boundary.md 갱신 이력 한 줄.
   - 브랜치 `feat/ui-await-dialog`. 커밋: `feat(ui): useAwaitDialog·useConfirm 훅 추가`
 - [ ] **P4-10** ui — 9개 완료 후 todo/ui-engineer-todo.md의 "남은 것: Popover" 줄 정리(P5 PR에 포함).
+- [ ] **P4-11** fe — RunActionBar의 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환(P7a에서 앞당김, 2026-09-15 사용자 결정 — 훅 API를 실제 소비자에서 검증한 뒤 배포). `useState` 두 벌·Dialog JSX 제거, 테스트 9건은 동작 유지 확인. 브랜치 `refactor/dashboard-use-confirm`. 커밋: `refactor(dashboard): RunActionBar 확인 Dialog를 useConfirm으로`
 
 ### P5. README — 브랜치 `docs/ui-readme`
 
@@ -294,7 +295,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P7. 후속 (이번 작업 아님 — todo에만)
 
-- [ ] **P7a** fe — RunActionBar의 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환. 배포 전에 하면 훅 API가 실제 소비자에서 검증된다 — P0c에서 P5 앞에 넣을지 결정. 커밋: `refactor(dashboard): RunActionBar 확인 Dialog를 useConfirm으로`
+- ~~P7a~~ → **P4-11**로 앞당김(2026-09-15).
 - [ ] **P7b** — CI publish 워크플로(changesets/action). 결정 필요.
 - [ ] **P7c** — Storybook 정적 빌드 → GitHub Pages.
 - [ ] **P7d** ui — Table · Avatar · Breadcrumb · Pagination.
