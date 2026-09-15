@@ -69,6 +69,11 @@ jobs:
 
   gitleaks:
     runs-on: ubuntu-latest
+    # 리포 기본 워크플로 권한이 read(contents·metadata만)면 PR 커밋 목록(pull_requests=read)을
+    # 못 읽어 gitleaks-action이 403으로 죽는다. 잡에 필요한 권한만 명시(2026-09-15 PR #96).
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
