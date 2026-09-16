@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button, Card, EmptyState, PageHeader } from '@galley/ui';
+import { Button, Card, EmptyState, PageHeader } from 'galley-ui';
 import { AppFrame } from './(dashboard)/_components/AppFrame';
 
 // 매칭되지 않은 경로와 `notFound()` 호출이 모두 여기로 온다. 라우트 그룹 밖이라 그룹 레이아웃을

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronDown, Menu } from 'lucide-react';
-import { TopBarChip } from '@galley/ui';
+import { TopBarChip } from 'galley-ui';
 import { useSidebarCollapse } from './SidebarProvider';
 import styles from './TopBar.module.css';
 

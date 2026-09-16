@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SidebarGroup, SidebarItem } from '@galley/ui';
+import { SidebarGroup, SidebarItem } from 'galley-ui';
 import { HOME_ITEM, NAV_GROUPS, isNavItemActive } from '../../../lib/navigation';
 import { useSidebarCollapse } from './SidebarProvider';
 import styles from './Sidebar.module.css';

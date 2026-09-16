@@ -1,7 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { Button } from '@galley/ui';
+import { Button } from 'galley-ui';
 import type { QueueReloadResult } from '../../../lib/queue-reload';
 import styles from './ReloadQueueButton.module.css';
 

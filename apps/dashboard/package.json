@@ -13,7 +13,7 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^3.1.0",
     "@galley/pipeline": "workspace:*",
-    "@galley/ui": "workspace:*",
+    "galley-ui": "workspace:*",
     "lucide-react": "^1.42.0",
     "next": "^16.3.4",
     "react": "^19.2.8",

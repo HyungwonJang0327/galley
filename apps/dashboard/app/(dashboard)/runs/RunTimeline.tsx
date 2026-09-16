@@ -1,4 +1,4 @@
-import { TimelineItem, TimelineItems } from '@galley/ui';
+import { TimelineItem, TimelineItems } from 'galley-ui';
 import { STEP_OPTIONS, stepTimeline } from '../../../lib/run-labels';
 import type { RunStepView } from '../../../lib/run-detail';
 

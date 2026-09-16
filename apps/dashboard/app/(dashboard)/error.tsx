@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button, Card, EmptyState, PageHeader } from '@galley/ui';
+import { Button, Card, EmptyState, PageHeader } from 'galley-ui';
 
 // 렌더 중 예외를 받는 경계. 라우트 그룹 안에 있어 **셸(TopBar·Sidebar)은 위에 그대로 남는다**
 // — 클라이언트 컴포넌트라 서버 컴포넌트인 AppFrame을 부를 수 없어, 이것이 셸을 지키는 방법이다.

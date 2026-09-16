@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import '@galley/ui/styles.css';
+import 'galley-ui/styles.css';
 import './globals.css';
 import { SIDEBAR_COLLAPSED_ATTR, SIDEBAR_COLLAPSED_STORAGE_KEY } from '../lib/sidebar-collapse';
 

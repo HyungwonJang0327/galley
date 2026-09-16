@@ -2,7 +2,7 @@
 // 6단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 시간. "근거 없음 n"은 근거 검증
 // 결과(BE10)가 생긴 뒤 BE13에서 붙인다.
 import 'server-only';
-import type { TimelineStatus } from '@galley/ui';
+import type { TimelineStatus } from 'galley-ui';
 import type { RunListRow } from './run-list';
 import { STEP_OPTIONS, stepTimeline } from './run-labels';
 

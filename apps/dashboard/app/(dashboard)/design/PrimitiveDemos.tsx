@@ -17,8 +17,8 @@ import {
   TimelineItem,
   TimelineItems,
   Tooltip,
-} from '@galley/ui';
-import type { MenuEntry, SelectItem, TabItem } from '@galley/ui';
+} from 'galley-ui';
+import type { MenuEntry, SelectItem, TabItem } from 'galley-ui';
 import styles from './page.module.css';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.

@@ -1,13 +1,5 @@
 import Link from 'next/link';
-import {
-  Badge,
-  Card,
-  ListRow,
-  ListRows,
-  ListToolbar,
-  ListToolbarTab,
-  PageHeader,
-} from '@galley/ui';
+import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
 import { getQueueSections } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
 import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
