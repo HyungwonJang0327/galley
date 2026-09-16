@@ -3,5 +3,4 @@ src
 *.test.tsx
 *.stories.tsx
 tsconfig.json
-tsup.config.ts
 vitest.config.ts
