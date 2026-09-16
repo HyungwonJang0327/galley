@@ -35,3 +35,4 @@
 - 2026-09-08 최초 결정.
 - 2026-09-10 필수 상태 체크에 `layout`(레이아웃 실측 잡, decisions/layout-measurement.md 2-B) 추가. PR #45에서 초록 3회 확인 뒤 사용자가 GitHub 설정에서 등록. API로 확인한 값: contexts `verify`·`gitleaks`·`layout`, strict.
 - 2026-09-13 필수 상태 체크에 `smoke`(워커 프로세스 스모크 잡, BW3) 추가. 사용자가 GitHub 설정에서 등록. API로 확인한 값: contexts `verify`·`gitleaks`·`layout`·`smoke`, strict. **운영 규칙: 한 번이라도 흔들리면 즉시 informational로 내린다**(흔들리면 테스트가 아니라 워커 종료 경로의 버그 — worklog 2026-09-13).
+- 2026-09-15 리포를 잠시 프라이빗으로 바꾼 사이 **보호 규칙이 삭제됨**(개인 Free 플랜은 프라이빗에서 브랜치 보호 미지원, 공개로 되돌려도 복구 안 됨). 같은 값을 API(`PUT /branches/main/protection`)로 재적용·확인. gitleaks 잡은 같은 원인으로 403 → `permissions: pull-requests: read` 명시(PR #97). 교훈: 가시성을 바꾸면 보호·CI 권한을 다시 확인한다.

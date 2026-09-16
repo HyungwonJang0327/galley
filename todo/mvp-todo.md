@@ -238,8 +238,8 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P0. 계획 확인 — docs
 
-- [x] **P0a** (2026-09-15 `cabc960`, docs/ui-publish-plan) doc — 이 섹션 + ui-engineer·doc-writer todo에 담당 ID 추가. 커밋: `docs(docs): Phase P galley-ui 배포 todo 추가`
-- [x] **P0b** (2026-09-15 `436d18b`, docs/ui-publish-plan) doc — decisions/package-name.md 신설(배포명 `galley-ui` unscoped, `@galley` 스코프 불가 사유, 기각안). decisions/README 목록. 커밋: `docs(docs): 패키지명 galley-ui 결정 기록`
+- [x] **P0a** (2026-09-15 `330d449`, docs/ui-publish-plan) doc — 이 섹션 + ui-engineer·doc-writer todo에 담당 ID 추가. 커밋: `docs(docs): Phase P galley-ui 배포 todo 추가`
+- [x] **P0b** (2026-09-15 `c89952c`, docs/ui-publish-plan) doc — decisions/package-name.md 신설(배포명 `galley-ui` unscoped, `@galley` 스코프 불가 사유, 기각안). decisions/README 목록. 커밋: `docs(docs): 패키지명 galley-ui 결정 기록`
 - [x] **P0c** (2026-09-15) — 사용자 승인. 미결 2개 확정: useAwaitDialog는 **ui-engineer가 작성**(🔒 아님) / RunActionBar Dialog 2개 → useConfirm 치환은 **배포 전 P4-11로 P5 앞에** 넣는다.
 
 ### P1. 패키지명 변경 — 브랜치 `chore/ui-rename`
