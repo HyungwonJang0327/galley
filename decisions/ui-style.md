@@ -2,7 +2,7 @@
 
 ## 결정
 
-`galley-ui`는 CSS Modules로 스타일링하고, 색·간격·타이포·라운드·그림자는 `tokens/`의 CSS 변수(`--ui-*`)만 참조한다. 다크는 `[data-theme]` + 변수로 자리만 둔다.
+`galley-ui`는 CSS Modules로 스타일링하고, 색·간격·타이포·라운드·그림자는 `tokens/`의 CSS 변수(`--ui-*`)만 참조한다. 다크는 `[data-theme='dark']` 블록에서 색 토큰만 재정의한다(값은 2026-09-17 확정, 갱신 이력).
 
 ## 이유
 
@@ -28,3 +28,4 @@
 - 2026-09-08 최초 결정.
 - 2026-09-08 (A1) 토큰은 `src/tokens/tokens.css`의 `--ui-*` 변수로. `index.ts`가 로드 → 빌드 산출물 `dist/index.css`, 소비자는 `galley-ui/styles.css`로 import. 정적 토큰이라 단위 테스트 없이 빌드로 검증.
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+- 2026-09-17 **다크 값 확정**(P3a, `f00d714`): `[data-theme='dark']`에 색 토큰 24개 재정의. 본문 대비 4.5:1 이상, accent 같은 계열 밝기 조정, TopBar 라이트 값 유지. 대비표는 worklog 2026-09-17. "자리만"에서 값 있음으로 — 테마 저장·전환 UI는 여전히 앱 범위 밖.

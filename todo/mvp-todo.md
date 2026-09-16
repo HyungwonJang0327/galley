@@ -254,7 +254,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P3. 다크 토큰 — 브랜치 `design/ui-dark-tokens`
 
-- [ ] **P3a** ui — `src/tokens/tokens.css` `[data-theme='dark']` 빈 블록에 `--ui-color-*` 25개 재정의(space·text·radius는 그대로, shadow는 다크에서 필요하면만). 기준: 본문 텍스트 대비 4.5:1 이상 · accent는 라이트와 같은 계열에서 밝기만 조정 · topbar는 값 유지 또는 한 단계만. 완료 조건: 대비값 계산표를 worklog에 남김 · decisions/ui-style.md 갱신 이력 "다크 값 확정" 한 줄. 커밋: `design(ui): 다크 테마 색 토큰 값 추가`
+- [x] **P3a** (2026-09-17 `f00d714`, design/ui-dark-tokens) ui — `src/tokens/tokens.css` `[data-theme='dark']` 빈 블록에 `--ui-color-*` 25개 재정의(space·text·radius는 그대로, shadow는 다크에서 필요하면만). 기준: 본문 텍스트 대비 4.5:1 이상 · accent는 라이트와 같은 계열에서 밝기만 조정 · topbar는 값 유지 또는 한 단계만. 완료 조건: 대비값 계산표를 worklog에 남김 · decisions/ui-style.md 갱신 이력 "다크 값 확정" 한 줄. 커밋: `design(ui): 다크 테마 색 토큰 값 추가`
 - [ ] **P3b** ui — `/design` 갤러리에 개발환경 전용 테마 토글(`document.documentElement.dataset.theme`). 앱 테마 저장 기능은 만들지 않는다(범위 밖). 완료 조건: 갤러리 전 섹션을 다크로 육안 확인 · `verify:layout` 통과. 커밋: `feat(dashboard): 갤러리에 개발용 테마 토글 추가`
 
 ### P4. 최소 구색 컴포넌트 8개 + 훅 1개 — 항목 하나 = 브랜치 하나 = PR 하나, 순서대로
