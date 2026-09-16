@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 // 라이브러리 모드: JS(ESM+CJS) + 스코프 CSS Modules 단일 CSS 추출 + d.ts.
 // tsup은 CSS Modules 로컬 스코프를 지원하지 않아 Vite로 교체(decisions/toolchain-pins.md).
 export default defineConfig({
-  plugins: [dts({ include: ['src'], insertTypesEntry: true })],
+  plugins: [
+    dts({
+      include: ['src'],
+      // 스토리·테스트 d.ts는 소비자에게 필요 없다(npm pack 결과에서 제외).
+      exclude: ['**/*.stories.tsx', '**/*.test.tsx'],
+      insertTypesEntry: true,
+    }),
+  ],
   build: {
     lib: {
       entry: fileURLToPath(new URL('src/index.ts', import.meta.url)),
