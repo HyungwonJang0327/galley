@@ -1,7 +1,33 @@
 {
   "name": "galley-ui",
   "version": "0.0.0",
-  "private": true,
+  "description": "Small React design system on Base UI: tokens, primitives, patterns, CSS Modules.",
+  "license": "MIT",
+  "author": "Hyungwon Jang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HyungwonJang0327/galley.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/HyungwonJang0327/galley/tree/main/packages/ui",
+  "bugs": {
+    "url": "https://github.com/HyungwonJang0327/galley/issues"
+  },
+  "keywords": [
+    "react",
+    "design-system",
+    "ui-kit",
+    "admin",
+    "dashboard",
+    "base-ui",
+    "css-modules"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"
