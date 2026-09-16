@@ -5,7 +5,7 @@ import {
   dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { GripVertical } from 'lucide-react';
-import { Badge, ListRow, ListRows } from '@galley/ui';
+import { Badge, ListRow, ListRows } from 'galley-ui';
 import type { MoveQueueTopicInput, QueueStatus, ReorderQueueTopicInput } from '@galley/pipeline';
 import { buildReorderInput, type DropEdge } from '../../../lib/queue-drag';
 import type { QueueMoveResult } from '../../../lib/queue-move';

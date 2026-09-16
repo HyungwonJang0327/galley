@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { PageHeader, Card } from '@galley/ui';
+import { PageHeader, Card } from 'galley-ui';
 import styles from './Placeholder.module.css';
 
 // 자리 페이지(패턴 A 골격: 제목 → 흰 카드). 내용은 이후 단계에서 채운다.

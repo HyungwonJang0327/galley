@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { Button, Menu } from '@galley/ui';
+import { Button, Menu } from 'galley-ui';
 import type { MoveQueueTopicInput, QueueStatus } from '@galley/pipeline';
 import type { QueueMoveResult } from '../../../lib/queue-move';
 import { parseMoveTarget, queueRowMenuEntries } from '../../../lib/queue-row-menu';

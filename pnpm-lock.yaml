@@ -41,7 +41,7 @@ importers:
       '@galley/pipeline':
         specifier: workspace:*
         version: link:../../packages/pipeline
-      '@galley/ui':
+      galley-ui:
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:

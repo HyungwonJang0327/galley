@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PageHeader, StatTile } from '@galley/ui';
+import { PageHeader, StatTile } from 'galley-ui';
 import { getNavCounts } from '../../lib/nav-counts';
 import { buildNextRunView } from '../../lib/next-run';
 import { getQueueSections } from '../../lib/queue-data';

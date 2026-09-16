@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { Button, Card } from '@galley/ui';
+import { Button, Card } from 'galley-ui';
 import type { MissingResolveResult, MissingTopicView } from '../../../lib/queue-missing';
 import styles from './MissingTopicsNotice.module.css';
 

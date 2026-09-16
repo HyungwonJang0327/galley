@@ -1,4 +1,4 @@
-import type { TimelineStatus } from '@galley/ui';
+import type { TimelineStatus } from 'galley-ui';
 import styles from './RunStepDots.module.css';
 
 export interface RunStepDotsProps {

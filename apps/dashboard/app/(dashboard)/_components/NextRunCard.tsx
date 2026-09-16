@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button, Card, EmptyState, ListRow, ListRows } from '@galley/ui';
+import { Button, Card, EmptyState, ListRow, ListRows } from 'galley-ui';
 import type { NextRunView } from '../../../lib/next-run';
 import styles from './NextRunCard.module.css';
 

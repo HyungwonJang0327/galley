@@ -5,7 +5,7 @@ import { getRunList } from '../../../lib/run-list';
 import { runListRowView } from '../../../lib/run-list-row';
 import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
 import { INSTRUCTION_MAX_LENGTH } from '@galley/pipeline';
-import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from '@galley/ui';
+import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from 'galley-ui';
 import {
   isPendingApproval,
   isRunInProgress,

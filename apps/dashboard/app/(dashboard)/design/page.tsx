@@ -11,7 +11,7 @@ import {
   PageHeader,
   StatTile,
   Textarea,
-} from '@galley/ui';
+} from 'galley-ui';
 import styles from './page.module.css';
 import {
   CheckboxDemo,
@@ -37,7 +37,7 @@ import {
   TooltipDemo,
 } from './PrimitiveDemos';
 
-// 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 @galley/ui 공개 배럴만
+// 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 galley-ui 공개 배럴만
 // 소비해 컴포넌트를 상태별로 렌더한다. 도메인 무지 — 컴포넌트 추가 시 여기에 얹는다.
 export default function DesignPage() {
   return (

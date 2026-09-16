@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { Select } from '@galley/ui';
+import { Select } from 'galley-ui';
 import { queueHref } from '../../../lib/queue-tabs';
 
 // 후보 탭 카테고리 필터. 선택은 URL(?category=)로만 — 로컬 상태를 두지 않는다.

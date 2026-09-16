@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { AppShell } from '@galley/ui';
+import { AppShell } from 'galley-ui';
 import { useSidebarCollapse } from './SidebarProvider';
 
 interface DashboardShellProps {

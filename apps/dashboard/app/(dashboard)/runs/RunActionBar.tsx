@@ -4,7 +4,7 @@
 // import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler(B2b)로 보낸다.
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { ActionBar, Button, Dialog, Select, Textarea } from '@galley/ui';
+import { ActionBar, Button, Dialog, Select, Textarea } from 'galley-ui';
 import { approveRun, planRerun, reviseRun } from '../../../lib/run-api-client';
 import {
   describeRerunPlan,
