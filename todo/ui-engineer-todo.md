@@ -30,4 +30,5 @@
 - P4-1 Separator · P4-2 Switch · P4-3 RadioGroup · P4-4 FormField · P4-5 Popover(비제어 허용 유일 예외) · P4-6 InlineAlert(TD2 ui 부분) · P4-7 Skeleton · P4-8 Toast+useToast — 순서대로
 - P4-9 useAwaitDialog·useConfirm — ui-engineer 작성(2026-09-15 확정). 테스트 5종 필수(resolve 값·Esc→cancel·재open 정리·언마운트 resolve·포커스 트랩)
 - P4-10 — 9개 끝나면 아래 UM4 줄의 "남은 것: Popover" 정리
+- RF3 — 배포 전 리팩토링(사용자 승인 항목만, 항목당 커밋, 동작·시각 변화 없음). P4-11 뒤·P5 앞
 - P6b · P6c — changeset 추가 · version 반영. publish는 사용자 확인 후에만
