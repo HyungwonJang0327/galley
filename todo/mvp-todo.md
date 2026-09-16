@@ -279,7 +279,15 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **P4-10** ui — 9개 완료 후 todo/ui-engineer-todo.md의 "남은 것: Popover" 줄 정리(P5 PR에 포함).
 - [ ] **P4-11** fe — RunActionBar의 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환(P7a에서 앞당김, 2026-09-15 사용자 결정 — 훅 API를 실제 소비자에서 검증한 뒤 배포). `useState` 두 벌·Dialog JSX 제거, 테스트 9건은 동작 유지 확인. 브랜치 `refactor/dashboard-use-confirm`. 커밋: `refactor(dashboard): RunActionBar 확인 Dialog를 useConfirm으로`
 
-### P5. README — 브랜치 `docs/ui-readme`
+### RF. 배포 전 리팩토링 — P4-11 뒤, P5 앞 (2026-09-16 사용자 추가) — 브랜치 `refactor/ui-pre-release`
+
+**한 번만, 한 PR로.** 동작·시각 변화 없음(테스트 수 동일 이상 · `verify:layout` · 갤러리 스크린샷 전후 비교가 증거). README(P5)가 최종 API를 적어야 하므로 P5 앞. 대상은 `packages/ui`만(대시보드는 바뀐 import·props를 따라가는 만큼만). 새 컴포넌트·기능 추가 금지.
+
+- [ ] **RF1** reviewer — `packages/ui` 전체 감사 목록(코드 수정 없음). 관점 고정: (1) **API 일관성** — 제어형(value+onChange) · className 병합 · 접근성 이름 prop · 이벤트 이름 `onXxxChange` · size/tone/variant 어휘 통일 · props 타입 전부 배럴 export (2) **스타일** — 토큰 위반(하드코딩 색·px) · Input/Select/Textarea 공통 필드 스타일 중복 · 폴더 5파일 규칙 · 스토리 누락 (3) **경계** — 배럴 누락·불필요 export · `'use client'` 표시 일관성 · 죽은 코드·주석 · 도메인 단어 (4) **테스트** — 중복·누락(키보드·포커스) (5) **산출물** — `dist` 크기·external·sideEffects·d.ts 내용. 결과는 worklog 표(항목·심각도·호환 영향·추천)로. 커밋 없음.
+- [ ] **RF2** 사용자 — RF1 항목 승인/기각. **미결: 0.1.0 전이라 호환 깨는 API 정리를 허용할지**(추천: 허용 — 소비자가 dashboard뿐이고 배포 뒤에는 major가 든다. "범위 밖: 기존 API 변경" 규칙의 유일한 예외). 기각·보류 항목은 P7에 적는다.
+- [ ] **RF3** ui(+fe: dashboard 따라가기) — 승인 항목당 커밋 하나(`refactor(ui): …`, dashboard 수정은 `refactor(dashboard): …`). 완료: `pnpm lint && pnpm typecheck && pnpm test` · `pnpm --filter galley-ui build` · `verify:layout` · dashboard `next build` · 갤러리 스크린샷 전후 동일. worklog에 승인/기각 판단 기록(/review 규칙).
+
+### P5. README — 브랜치 `docs/ui-readme` (RF 뒤)
 
 - [ ] **P5a** doc — `packages/ui/README.md` 신규(영어만): 한 줄 소개 → 설치(`pnpm add galley-ui` + peer react/react-dom ^19) → 30초 예제(`import 'galley-ui/styles.css'` + AppShell 안 Button·Badge) → `useConfirm` 예제(await 한 줄, 차별점이라 앞쪽) → 다크 모드(`data-theme="dark"`) → 컴포넌트 표(components/primitives/patterns/hooks 각 한 줄) → 설계 원칙(제어형만(Popover 예외)·Base UI 얇은 래퍼·CSS Modules+토큰·도메인 무지·번들 전체 "use client"·Node ≥20) → Storybook 예정(Phase 2) → 라이선스. 커밋: `docs(ui): galley-ui README 작성`
 - [ ] **P5b** doc — 루트 README.md에 "packages/ui는 npm `galley-ui`로 배포" 한 줄 + 링크. 커밋: `docs(docs): 루트 README에 galley-ui 배포 안내`
