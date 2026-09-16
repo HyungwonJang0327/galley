@@ -42,7 +42,7 @@
 
 - layout — 대시보드 레이아웃 스펙
 - navigation — 사이드바·TopBar IA(사용 흐름 순), 워크스페이스 제거
-- ui-package-boundary — @galley/ui 경계 규칙
+- ui-package-boundary — galley-ui 경계 규칙
 - package-name — npm 배포명 `galley-ui`(unscoped, `@galley` 스코프는 선점됨), 워크스페이스명도 통일
 - server-only-boundary — pipeline 값을 쓰는 대시보드 파일은 `import 'server-only'`(클라 번들 유입을 빌드 실패로)
 - deploy-readiness — 배포 가능성 유지 규칙

@@ -2,7 +2,7 @@
 
 ## 결정
 
-`@galley/ui`는 Base UI(헤드리스) 위에 자체 토큰·스타일·컴포넌트 API로 구축한다. shadcn/ui는 쓰지 않는다.
+`galley-ui`는 Base UI(헤드리스) 위에 자체 토큰·스타일·컴포넌트 API로 구축한다. shadcn/ui는 쓰지 않는다.
 
 - Base UI 사용: Tabs, Dialog/Sheet, Menu, Select, Checkbox, Tooltip, Popover.
 - 직접 작성: Button, Badge, Card, Sidebar 그룹/항목, TopBar 칩, 타임라인 항목.
@@ -24,4 +24,5 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
-- 2026-09-09 **패키지명 변경 반영**: 설치는 `@base-ui/react` 1.8.0(정확 핀, `@galley/ui` dependencies + Vite external). 구 `@base-ui-components/react`는 1.0.0-rc.0에서 정지. 서브패스 import(`@base-ui/react/dialog`·`/select`). 첫 프리미티브 Dialog·Select(UM1). lucide-react 1.43.0 같이 설치.
+- 2026-09-09 **패키지명 변경 반영**: 설치는 `@base-ui/react` 1.8.0(정확 핀, `galley-ui` dependencies + Vite external). 구 `@base-ui-components/react`는 1.0.0-rc.0에서 정지. 서브패스 import(`@base-ui/react/dialog`·`/select`). 첫 프리미티브 Dialog·Select(UM1). lucide-react 1.43.0 같이 설치.
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.

@@ -9,23 +9,23 @@
 
 ## 확정된 기술 스택
 
-| #    | 영역                 | 확정                                                  | 근거                                      |
-| ---- | -------------------- | ----------------------------------------------------- | ----------------------------------------- |
-| ①    | DB 접근 계층         | SQLite + Prisma                                       | decisions/db-access-layer.md              |
-| ②    | 파이프라인 실행 위치 | 별도 워커 프로세스(SQLite 폴링·heartbeat)             | decisions/run-location.md (② 변경)        |
-| ③    | 큐 동기화 방향       | 파일(주제_큐.md)이 진실, DB 파생 캐시                 | decisions/queue-sync-direction.md         |
-| ④    | Zenn push            | GitHub 연동 리포 커밋(published:false)                | decisions/zenn-push.md                    |
-| ⑤    | ui 스타일            | CSS Modules + 토큰 CSS 변수                           | decisions/ui-style.md                     |
-| ⑥    | DnD                  | pragmatic-drag-and-drop (apps/dashboard)              | decisions/dnd-library.md                  |
-| ⑦    | 사이드바 접힘 저장   | localStorage                                          | decisions/sidebar-collapse-persistence.md |
-| ⑧    | turborepo            | 미도입(pnpm --filter)                                 | decisions/turborepo.md                    |
-| ⑨    | 시크릿 스캔          | gitleaks (CI + pre-commit)                            | decisions/secret-scanning.md              |
-| ⑩    | dashboard 테스트     | vitest + happy-dom + testing-library (ui와 동일)      | decisions/dashboard-testing.md            |
-| ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트 + CI `layout` 잡(병렬)   | decisions/layout-measurement.md           |
-| ⑫    | 환경 변수 파일       | 루트 `.env` 하나 (Node 내장 로더)                     | decisions/env-location.md                 |
-| ⑬    | 서버 전용 경계       | `server-only` 마커(pipeline 값을 쓰는 대시보드 파일)  | decisions/server-only-boundary.md         |
-| 공통 | 모노레포             | pnpm (apps/dashboard + @galley/ui + @galley/pipeline) | decisions/monorepo.md                     |
-| 공통 | UI 기반              | Base UI(헤드리스), shadcn/ui 기각                     | decisions/base-ui-over-shadcn.md          |
+| #    | 영역                 | 확정                                                 | 근거                                      |
+| ---- | -------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| ①    | DB 접근 계층         | SQLite + Prisma                                      | decisions/db-access-layer.md              |
+| ②    | 파이프라인 실행 위치 | 별도 워커 프로세스(SQLite 폴링·heartbeat)            | decisions/run-location.md (② 변경)        |
+| ③    | 큐 동기화 방향       | 파일(주제_큐.md)이 진실, DB 파생 캐시                | decisions/queue-sync-direction.md         |
+| ④    | Zenn push            | GitHub 연동 리포 커밋(published:false)               | decisions/zenn-push.md                    |
+| ⑤    | ui 스타일            | CSS Modules + 토큰 CSS 변수                          | decisions/ui-style.md                     |
+| ⑥    | DnD                  | pragmatic-drag-and-drop (apps/dashboard)             | decisions/dnd-library.md                  |
+| ⑦    | 사이드바 접힘 저장   | localStorage                                         | decisions/sidebar-collapse-persistence.md |
+| ⑧    | turborepo            | 미도입(pnpm --filter)                                | decisions/turborepo.md                    |
+| ⑨    | 시크릿 스캔          | gitleaks (CI + pre-commit)                           | decisions/secret-scanning.md              |
+| ⑩    | dashboard 테스트     | vitest + happy-dom + testing-library (ui와 동일)     | decisions/dashboard-testing.md            |
+| ⑪    | 레이아웃 실측        | headless Chrome CDP 스크립트 + CI `layout` 잡(병렬)  | decisions/layout-measurement.md           |
+| ⑫    | 환경 변수 파일       | 루트 `.env` 하나 (Node 내장 로더)                    | decisions/env-location.md                 |
+| ⑬    | 서버 전용 경계       | `server-only` 마커(pipeline 값을 쓰는 대시보드 파일) | decisions/server-only-boundary.md         |
+| 공통 | 모노레포             | pnpm (apps/dashboard + galley-ui + @galley/pipeline) | decisions/monorepo.md                     |
+| 공통 | UI 기반              | Base UI(헤드리스), shadcn/ui 기각                    | decisions/base-ui-over-shadcn.md          |
 
 ## 확정 기능 범위
 
@@ -86,7 +86,7 @@
 | 승인 게이트         | 사람 승인 전 공개 발행 코드 없음. Zenn 下書き까지만                                                                 |
 | 클린룸              | 회사 리포 미열람·미복사                                                                                             |
 | 팀 네이밍           | 역할명 그대로(사람 이름 금지)                                                                                       |
-| ui 경계             | @galley/ui는 도메인 단어·next·앱 의존 금지, 공개 배럴만                                                             |
+| ui 경계             | galley-ui는 도메인 단어·next·앱 의존 금지, 공개 배럴만                                                              |
 | 패키지명            | npm 배포명 `galley-ui`(unscoped — `@galley` 스코프 선점됨), 워크스페이스명도 통일. `@galley/pipeline`은 비공개 유지 |
 | 핵심 모듈 직접 작성 | (a') 실행 상세 2분할 화면(B2c), (b) 모델 어댑터(BM1 완료) — AI는 테스트·리뷰만. (a) 상태 머신에서 2026-09-12 교체   |
 

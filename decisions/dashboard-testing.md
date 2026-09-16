@@ -5,7 +5,7 @@
 `apps/dashboard`에 **vitest + happy-dom + @testing-library/react**를 도입한다. `packages/ui`와 같은 스택·같은 버전이다.
 
 - `apps/dashboard/vitest.config.mts`(dashboard는 `"type": "module"`이 아니라 `.ts`면 CJS로 로드되어 vitest ESM 의존과 충돌 → `.mts`): `environment: 'happy-dom'`, `globals: true`(testing-library 자동 cleanup), `oxc.jsx.runtime = 'automatic'`(Next의 tsconfig는 `jsx: preserve`라 테스트에선 Vite 8의 변환기 oxc가 직접 변환해야 한다. `esbuild` 옵션은 Vite 8에서 무시됨). `.next/` 제외. tsconfig `include`에 `**/*.mts` 추가.
-- `package.json` `test: vitest run --passWithNoTests` → 루트 `pnpm test`(`-r --if-present`)와 CI에 자동 포함. CI는 이미 `@galley/ui` build를 먼저 돌리므로 dist 소비도 문제없다.
+- `package.json` `test: vitest run --passWithNoTests` → 루트 `pnpm test`(`-r --if-present`)와 CI에 자동 포함. CI는 이미 `galley-ui` build를 먼저 돌리므로 dist 소비도 문제없다.
 - **테스트 범위**
   - `lib/` 순수 로직(상태→Badge 매핑, `?tab=` 파싱, 네비 활성 판정, 시각 계산 등) — 항상.
   - 클라이언트 컴포넌트(`'use client'`) — 동작이 있을 때. Next 훅(`usePathname` 등)은 `vi.mock('next/navigation', …)`로 대체.
@@ -34,3 +34,4 @@
 ## 갱신 이력
 
 - 2026-09-10 최초 결정(planning 미결 "dashboard 단위 테스트 인프라" 해소).
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
