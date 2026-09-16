@@ -17,7 +17,7 @@ Galley는 기술 블로그 초안 파이프라인을 큐로 관리하고, 실행
 브라우저 ──HTTP──┐
                 ▼
 ┌───────── apps/dashboard (Next.js App Router, 서버+클라 한 프로세스) ─────────┐
-│ [프론트] Server/Client Components (@galley/ui 화면)                           │
+│ [프론트] Server/Client Components (galley-ui 화면)                           │
 │      ↕ HTTP                                                                   │
 │ [백엔드] Route Handlers / Server Actions  ── Run을 queued로 생성 ──┐          │
 └───────────────────────────────────────────────────────────────────┼──────────┘
@@ -65,7 +65,7 @@ running일 때만 폴링한다. 실행은 워커가 한다. (decisions/run-locat
 ```
 Galley/
 ├─ apps/
-│  └─ dashboard/               # Next.js App Router 앱 (@galley/ui 첫 소비자)
+│  └─ dashboard/               # Next.js App Router 앱 (galley-ui 첫 소비자)
 │     ├─ app/
 │     │  ├─ (dashboard)/       # 라우트 그룹: TopBar+Sidebar 공유, userId="local" 컨텍스트 자리
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
@@ -76,7 +76,7 @@ Galley/
 │     │  └─ api/               # Route Handlers → @galley/pipeline 호출만
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
 ├─ packages/
-│  ├─ ui/                      # @galley/ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)
+│  ├─ ui/                      # galley-ui — 자체 디자인 시스템 (독립 배포 예정, 도메인 단어 금지)
 │  │  └─ src/{tokens,primitives,components,patterns,hooks,index.ts}
 │  └─ pipeline/                # @galley/pipeline — 단계 실행·상태머신·모델 어댑터(ModelRegistry)·Storage·Zenn push (서버 전용)
 │     ├─ src/index/            # RepoIndex — 리포 인덱서(분석 글 RepoAnalysis·IndexJob·증분 재인덱싱) (decisions/evidence-collection.md)
@@ -130,7 +130,7 @@ Galley/
 - **공개 발행 API(velog 공개, Zenn 公開)를 호출하는 코드를 만들지 않는다.** Zenn은 `published:false`(下書き)까지만.
 - **루트 `/`는 홈(요약 대시보드).** `app/(dashboard)/page.tsx`가 셸 안에서 그린다. redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md). 목록형(A)의 변형 "요약형"이며 새 패턴이 아니다.
 - **`packages/ui`에 도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다.
-- **`@galley/ui` 딥 임포트 금지**(`@galley/ui/src/...` ✗). 공개 배럴만.
+- **`galley-ui` 딥 임포트 금지**(`galley-ui/src/...` ✗). 공개 배럴만.
 - **`@galley/pipeline`의 런타임 값을 import하는 대시보드 파일은 첫 줄에 `import 'server-only'`.** `'use client'` 컴포넌트는 pipeline 값도, 그걸 쓰는 표시 매핑 파일(`run-labels` 등)도 import하지 않는다 — 판정은 서버 컴포넌트가 하고 결과만 props로. 어기면 Prisma·fs가 브라우저 청크에 딸려가 그 페이지가 500이 나는데 테스트·typecheck는 통과한다. decisions/server-only-boundary.md
 - **로컬 절대경로 하드코딩 금지.** `BLOG_DIR`·`REPO_DIRS`·`ZENN_CONTENT_DIR`·`DATA_DIR`·SQLite 경로는 `.env`.
 - **회사 코드 조각(EvidenceBundle snippet)은 `DATA_DIR`에만 쓴다.** `~/Desktop/blog` 아래에는 포인터(커밋·경로·라인)만. blog 폴더 밖으로 나갈 경로를 만들지 않는다 — decisions/evidence-collection.md.
@@ -179,8 +179,8 @@ Galley/
 
 ```bash
 pnpm install
-pnpm --filter @galley/ui build          # 디자인 시스템 단독 빌드(독립 배포 검증)
-pnpm --filter @galley/ui test
+pnpm --filter galley-ui build           # 디자인 시스템 단독 빌드(독립 배포 검증)
+pnpm --filter galley-ui test
 pnpm --filter dashboard dev              # 대시보드 로컬 실행
 pnpm lint && pnpm typecheck && pnpm test # 전체 검증
 pnpm --filter dashboard verify:layout    # 레이아웃 실측(headless Chrome, /design). --no-build·--url·--out. Chrome 경로는 GALLEY_CHROME

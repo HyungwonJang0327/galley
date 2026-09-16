@@ -2,7 +2,7 @@
 
 ## 결정
 
-- `packages/ui`의 npm 배포명은 **`galley-ui`**(unscoped). 워크스페이스 패키지명도 `@galley/ui` → `galley-ui`로 통일한다(코드·설정·문서 전부, worklog/는 날짜별 기록이라 제외).
+- `packages/ui`의 npm 배포명은 **`galley-ui`**(unscoped). 워크스페이스 패키지명도 옛 `@galley` 스코프명에서 `galley-ui`로 통일한다(코드·설정·문서 전부, worklog/는 날짜별 기록이라 제외).
 - `@galley/pipeline`은 비공개(`private`)라 이름을 유지한다.
 - 첫 공개 버전은 0.1.0(changesets minor). 배포 절차·완료 조건은 todo/mvp-todo.md Phase P.
 
@@ -24,4 +24,5 @@
 ## 갱신 이력
 
 - 2026-09-15 최초 결정.
-- 2026-09-16 P1a 코드·설정 치환 완료(`85efced`, chore/ui-rename). 문서·에이전트 치환은 P1b.
+- 2026-09-16 P1a 코드·설정 치환 완료(`4a18aff`, chore/ui-rename). 문서·에이전트 치환은 P1b.
+- 2026-09-16 P1b 문서·에이전트·커맨드 치환 완료(worklog/ 제외).

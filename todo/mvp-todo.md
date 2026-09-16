@@ -10,7 +10,7 @@
 
 ## 완료 (7-2 기반)
 
-- [x] 모노레포 뼈대 + `@galley/ui` 폴더 구조·tsup·exports·no-restricted-imports (2026-09-08 `bf79030`)
+- [x] 모노레포 뼈대 + `galley-ui` 폴더 구조·tsup·exports·no-restricted-imports (2026-09-08 `bf79030`)
 - [x] `@galley/pipeline`·`apps/dashboard` 스캐폴드 (2026-09-08 `2dc3c2a`·`efe8223`)
 - [x] CI·gitleaks·main 보호 (2026-09-08 `2f638db`·`151ce31`)
 - [x] **셸·Select 유지보수 fix**(사용자 스펙, PR #41): AppShell Content만 스크롤 (2026-09-10 `f6d3ef6`) · Select 팝업 폭/높이·트리거 폭·공통 ItemContent (2026-09-10 `97fe37a`). 규칙은 decisions/layout.md 갱신 이력.
@@ -43,12 +43,12 @@
 - [x] **A3a** (2026-09-08 `f56db05`) ui — AppShell(TopBar+Sidebar 슬롯)·SidebarGroup·SidebarItem·TopBarChip 패턴(표현 전용, `isActive` prop). 커밋: `feat(ui): AppShell·Sidebar·TopBar 패턴 추가`
 - [x] **A3b** (2026-09-08 `7f8adc0`) fe — 사이드바 메뉴 정의(라벨·경로·아이콘 배열 1개) + `app/(dashboard)/layout.tsx`에 셸 배선, 활성 판정 URL(pathname). 커밋: `feat(dashboard): 대시보드 레이아웃 셸과 사이드바 메뉴 배선` (+ CI 소비 전 ui 빌드 `80255c3`)
 - [x] **A3c** (2026-09-08 `279ac01`) fe — 루트 `page.tsx`→`/queue` redirect + Phase 2 자리 라우트(발행·설정) 스텁. 커밋: `feat(dashboard): 루트 redirect와 Phase 2 자리 라우트 추가`
-- [x] **A3d** (2026-09-08 `421ca5f`) fe — 사이드바 접힘 localStorage + 하이드레이션 플래시 방지 인라인 스크립트. TopBar ☰ 토글, `SidebarProvider` 컨텍스트, `<body>` 인라인 스크립트+`globals.css`로 폭 플래시 방지. `@galley/ui` 미변경. 커밋: `feat(dashboard): 사이드바 접힘 localStorage 저장`
+- [x] **A3d** (2026-09-08 `421ca5f`) fe — 사이드바 접힘 localStorage + 하이드레이션 플래시 방지 인라인 스크립트. TopBar ☰ 토글, `SidebarProvider` 컨텍스트, `<body>` 인라인 스크립트+`globals.css`로 폭 플래시 방지. `galley-ui` 미변경. 커밋: `feat(dashboard): 사이드바 접힘 localStorage 저장`
   - 완료조건(A3 전체, [B]§7): 스펙 §3 메뉴 전부 렌더, URL 이동 시 활성 바뀜, 접힘 토글 동작. 데이터 없음.
 
 ### AG. 컴포넌트 갤러리 (/design) — fe · A3 이후 (decisions/component-gallery.md)
 
-- [x] **AG** (2026-09-08 `30ad8b5`) fe — `app/(dashboard)/design/page.tsx` 갤러리: 셸 안에서 `@galley/ui` 공개 배럴로 Button·Badge·Card·PageHeader를 variant/size/상태별 렌더. 서버 컴포넌트, 도메인 무지. nav 링크는 개발 서버 전용으로 노출(`181fdaf`, 프로덕션 빌드 제외). 커밋: `feat(dashboard): 컴포넌트 갤러리 /design 라우트 추가`
+- [x] **AG** (2026-09-08 `30ad8b5`) fe — `app/(dashboard)/design/page.tsx` 갤러리: 셸 안에서 `galley-ui` 공개 배럴로 Button·Badge·Card·PageHeader를 variant/size/상태별 렌더. 서버 컴포넌트, 도메인 무지. nav 링크는 개발 서버 전용으로 노출(`181fdaf`, 프로덕션 빌드 제외). 커밋: `feat(dashboard): 컴포넌트 갤러리 /design 라우트 추가`
   - 완료조건: `/design`이 셸 안에서 렌더, 기존 컴포넌트(Button·Badge·Card·PageHeader 등)가 상태별로 보임.
 
 ### A4. DB 접근 계층 + 큐 적재
@@ -244,8 +244,8 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P1. 패키지명 변경 — 브랜치 `chore/ui-rename`
 
-- [x] **P1a** (2026-09-16 `85efced`, chore/ui-rename) ui — `@galley/ui` → `galley-ui`. 시작 전 `grep -rn --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git --exclude-dir=.next -F '@galley/ui' .` 목록 제시. 코드·설정: `packages/ui/package.json` name · `apps/dashboard/package.json` 의존성 · dashboard import 전부(`galley-ui`, `galley-ui/styles.css`) · `eslint.config.js` no-restricted-imports 패턴 · `.github/workflows/ci.yml` `--filter` · `apps/dashboard/next.config.mjs` · `.claude/settings.local.json` · `.changeset/config.json`(ignore 목록 확인) → `pnpm install`로 lock 재생성. 완료 조건: `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter galley-ui build` 통과 + dashboard `next build` 통과. 커밋: `chore(ui): 패키지명 galley-ui로 변경`
-- [ ] **P1b** doc — 문서·에이전트·커맨드 치환: CLAUDE.md · README.md · planning.md · INTENT.md · COMMIT_CONVENTION.md(scope 표) · decisions/_(본문 치환 + 갱신 이력 한 줄) · todo/_ · .claude/agents/* · .claude/commands/* · .changeset/README.md. **worklog/는 날짜별 기록이라 치환하지 않는다.** 완료 조건: `grep -F '@galley/ui'`가 worklog/ 밖에서 0건. 커밋: `docs(docs): 패키지명 변경을 문서·에이전트에 반영`
+- [x] **P1a** (2026-09-16 `4a18aff`, chore/ui-rename) ui — 옛 `@galley` 스코프명 → `galley-ui`. 시작 전 `grep -rn --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git --exclude-dir=.next -F 'galley-ui' .` 목록 제시. 코드·설정: `packages/ui/package.json` name · `apps/dashboard/package.json` 의존성 · dashboard import 전부(`galley-ui`, `galley-ui/styles.css`) · `eslint.config.js` no-restricted-imports 패턴 · `.github/workflows/ci.yml` `--filter` · `apps/dashboard/next.config.mjs` · `.claude/settings.local.json` · `.changeset/config.json`(ignore 목록 확인) → `pnpm install`로 lock 재생성. 완료 조건: `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter galley-ui build` 통과 + dashboard `next build` 통과. 커밋: `chore(ui): 패키지명 galley-ui로 변경`
+- [ ] **P1b** doc — 문서·에이전트·커맨드 치환: CLAUDE.md · README.md · planning.md · INTENT.md · COMMIT_CONVENTION.md(scope 표) · decisions/_(본문 치환 + 갱신 이력 한 줄) · todo/_ · .claude/agents/* · .claude/commands/* · .changeset/README.md. **worklog/는 날짜별 기록이라 치환하지 않는다.** 완료 조건: `grep -F 'galley-ui'`가 worklog/ 밖에서 0건. 커밋: `docs(docs): 패키지명 변경을 문서·에이전트에 반영`
 
 ### P2. 배포 메타데이터 — 브랜치 `chore/ui-publish-meta`
 
@@ -329,7 +329,7 @@ Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·
 
 - [ ] **TD6** pl — `@galley/pipeline`을 **Node에서 패키지 이름으로** import하게 되면(별도 CLI 등) `exports`가 빌드 산출물을 가리켜야 한다 — `node_modules` 안의 TS는 Node가 거부한다. 지금은 워커가 같은 패키지를 상대 경로로 읽어 문제가 없다. decisions/node-runtime.md 제약 3. 커밋: `build(pipeline): 배포용 빌드 산출물 추가`
 - [ ] **TD5** fe — **배포 전** `lib/` 어댑터의 `*_FAILED` 문구에서 예외 문구를 뗀다(`실행을 시작하지 못했습니다: SQLITE_BUSY` → 뒷부분 제거, 원인은 서버 로그로). 로컬 디버깅에는 좋지만 배포하면 내부 사정이 새어 나간다. 지금은 로컬 전용이라 **배포를 실제로 할 때** 한다. decisions/error-handling.md "배포 때 다시 볼 것". 커밋: `refactor(dashboard): 실패 문구에서 내부 사정 제거`
-- [ ] **TD2** ui+fe — 실패 표시가 앱에 흩어져 있다: `role="alert"` + 각 파일의 `.error` CSS가 4곳(큐 화면·행 ⋮ 메뉴·드래그 목록·다시 불러오기 버튼)에 복제. `@galley/ui`에 표현 전용 컴포넌트(예: `InlineAlert` — 도메인 단어 없이 tone·children만)로 모으고 앱은 문구만 넘긴다. **ui 추가이므로 갤러리 섹션 + `verify:layout`까지가 완료 조건.** decisions/error-handling.md 미결. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
+- [ ] **TD2** ui+fe — 실패 표시가 앱에 흩어져 있다: `role="alert"` + 각 파일의 `.error` CSS가 4곳(큐 화면·행 ⋮ 메뉴·드래그 목록·다시 불러오기 버튼)에 복제. `galley-ui`에 표현 전용 컴포넌트(예: `InlineAlert` — 도메인 단어 없이 tone·children만)로 모으고 앱은 문구만 넘긴다. **ui 추가이므로 갤러리 섹션 + `verify:layout`까지가 완료 조건.** decisions/error-handling.md 미결. 커밋: `feat(ui): InlineAlert 컴포넌트 추가`
 
 ## 상시 역할
 

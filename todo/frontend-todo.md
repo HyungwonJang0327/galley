@@ -1,6 +1,6 @@
 # frontend todo
 
-상세·상태는 [mvp-todo.md](./mvp-todo.md). `apps/dashboard`만. `@galley/ui` 공개 배럴로만 소비, 파이프라인 실행은 `@galley/pipeline` 함수 호출.
+상세·상태는 [mvp-todo.md](./mvp-todo.md). `apps/dashboard`만. `galley-ui` 공개 배럴로만 소비, 파이프라인 실행은 `@galley/pipeline` 함수 호출.
 
 ## Phase 1-A
 

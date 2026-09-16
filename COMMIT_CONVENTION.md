@@ -24,7 +24,7 @@
 | scope     | 영역                                  |
 | --------- | ------------------------------------- |
 | dashboard | apps/dashboard 화면·라우트            |
-| ui        | @galley/ui 토큰·컴포넌트              |
+| ui        | galley-ui 토큰·컴포넌트               |
 | pipeline  | @galley/pipeline 실행·상태머신·어댑터 |
 | queue     | 큐·주제_큐.md 동기화                  |
 | run       | 실행 이력·상태·타임라인               |

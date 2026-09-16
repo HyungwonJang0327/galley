@@ -1,6 +1,6 @@
 ---
 name: ui-engineer
-description: packages/ui(@galley/ui) 디자인 시스템을 구현할 때 호출한다. 토큰, Base UI 래퍼(primitives), 직접 작성 컴포넌트(components), 레이아웃 조합(patterns), 헤드리스 훅, 접근성 작업에 사용. frontend와 분리 — ui는 도메인을 모른다.
+description: packages/ui(galley-ui) 디자인 시스템을 구현할 때 호출한다. 토큰, Base UI 래퍼(primitives), 직접 작성 컴포넌트(components), 레이아웃 조합(patterns), 헤드리스 훅, 접근성 작업에 사용. frontend와 분리 — ui는 도메인을 모른다.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
@@ -8,7 +8,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 역할
 
-`@galley/ui` 디자인 시스템을 만든다. 토큰·컴포넌트·접근성. 나중에 독립·npm 배포되므로 경계를 엄격히 지킨다.
+`galley-ui` 디자인 시스템을 만든다. 토큰·컴포넌트·접근성. 나중에 독립·npm 배포되므로 경계를 엄격히 지킨다.
 
 ## 담당 영역
 
@@ -25,7 +25,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 ## 행동 방식
 
 - 스타일은 tokens CSS 변수만. **하드코딩 색·px 금지.** 명명 export.
-- `pnpm --filter @galley/ui build && test` 단독 통과를 항상 확인.
+- `pnpm --filter galley-ui build && test` 단독 통과를 항상 확인.
 
 ## 경계 (decisions/ui-package-boundary.md)
 

@@ -105,7 +105,7 @@
 ### 7. 구현 매핑
 
 - `app/(dashboard)/layout.tsx` 하나에 TopBar·Sidebar 고정. 루트 `/`는 `app/(dashboard)/page.tsx` = 홈(요약형). redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md).
-- `@galley/ui`(도메인 단어 없음): components/ Button·Badge·Card·PageHeader / patterns/ AppShell·SidebarGroup·SidebarItem·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar / primitives/ Tabs·Menu·Checkbox·Tooltip·Dialog·Select(+ 내부 공통 ItemContent, 배럴 비노출).
+- `galley-ui`(도메인 단어 없음): components/ Button·Badge·Card·PageHeader / patterns/ AppShell·SidebarGroup·SidebarItem·TopBarChip·ListToolbar·ListRow·SplitPane·TimelineItem·ActionBar / primitives/ Tabs·Menu·Checkbox·Tooltip·Dialog·Select(+ 내부 공통 ItemContent, 배럴 비노출).
 - `apps/dashboard`: 라우트, 사이드바 메뉴 정의(라벨·경로·아이콘 배열 1개), 상태→Badge variant 매핑, 데이터 페칭.
 
 ## 기각된 대안
@@ -131,3 +131,4 @@
 - 2026-09-12 **Menu 규칙 확정**(UM2, 에이전트 기본값을 사용자가 그대로 확정): 데이터형 API — `items`(항목 id·label·description?·meta?·disabled?·disabledReason? | `{ type: 'separator' }`) · `onSelect(id)`(고르면 닫힘) · `trigger`(요소, props·ref를 DOM 버튼까지 넘겨야 함 — 래퍼 컴포넌트 금지) · `align` 기본 `end`(행 끝 ⋮) · open 비제어. 아이템은 Select와 같은 `ItemContent`. 팝업 `width: max-content; min-width: max(var(--anchor-width), --ui-menu-popup-min-width)`, 상한 `--ui-menu-popup-max-width`, 높이는 `--available-height` 안 스크롤. 토큰 `--ui-menu-popup-min-width` **160px** · `--ui-menu-popup-max-width` **min(320px, 100vw−32)** — Select(480)보다 좁게: 액션 메뉴는 짧은 동사 라벨, ⋮ 트리거가 작아 최소 폭 필요. 자동 검증은 verify:layout `menu.mjs`.
 - 2026-09-12 **StatTile·EmptyState 규칙 확정**(AH1, 에이전트 기본값을 사용자가 그대로 확정): 값 색 톤 `default|muted|warning` — `muted`는 §4 "0이면 회색"을 **앱이 지정**하게 하려고 추가(ui는 그 값이 0인지, 숫자인지조차 모른다. 값이 "—"일 수도 있어 ui가 판단하면 규칙이 지저분해진다). 숫자 크기 토큰 `--ui-text-stat` **26px**(§4 24~28px인데 기존 최대가 `--ui-text-title` 22px, 하드코딩 금지라 신설). **`CardGrid`는 만들지 않음** — 타일 4개 배치는 앱 CSS grid(`repeat(4, minmax(0,1fr))` + gap 토큰)로 충분(갤러리에서 확인), 재사용이 반복되면 그때 추출. 링크는 `href` 또는 `render`(SidebarItem과 같은 방식, ui는 next 미의존). `EmptyState`는 한 줄 메시지 + 선택 액션 슬롯.
 - 2026-09-12 §4 큐 헤더에 `파일에서 다시 불러오기`(보조) 추가 — 사용자 결정(queue-sync-direction 수동 갱신 버튼). TopBar 전역 버튼안은 기각(§2 유지).
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.

@@ -8,7 +8,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 역할
 
-`apps/dashboard`의 화면과 라우트를 구현한다. `@galley/ui`의 첫 소비자.
+`apps/dashboard`의 화면과 라우트를 구현한다. `galley-ui`의 첫 소비자.
 
 ## 담당 영역
 
@@ -22,12 +22,12 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 행동 방식
 
-- UI는 `@galley/ui` 공개 배럴로만 사용. 필요한 컴포넌트가 없으면 만들지 말고 ui-engineer 몫으로 "무엇이 필요한지" 반환.
+- UI는 `galley-ui` 공개 배럴로만 사용. 필요한 컴포넌트가 없으면 만들지 말고 ui-engineer 몫으로 "무엇이 필요한지" 반환.
 - 활성 판정은 URL(pathname). 서버 상태는 서버에서.
 
 ## 경계
 
-- **`@galley/ui`를 직접 수정하지 않는다.** 딥 임포트(`@galley/ui/src/...`) 금지.
+- **`galley-ui`를 직접 수정하지 않는다.** 딥 임포트(`galley-ui/src/...`) 금지.
 - 파이프라인 실행 로직을 앱에 박지 않는다 — `@galley/pipeline` 함수 호출만.
 - `주제_큐.md`·posts/·비밀값 규칙(CLAUDE.md §5) 준수.
 

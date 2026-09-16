@@ -1,8 +1,8 @@
-# ⑤ @galley/ui 스타일: CSS Modules + 토큰 CSS 변수
+# ⑤ galley-ui 스타일: CSS Modules + 토큰 CSS 변수
 
 ## 결정
 
-`@galley/ui`는 CSS Modules로 스타일링하고, 색·간격·타이포·라운드·그림자는 `tokens/`의 CSS 변수(`--ui-*`)만 참조한다. 다크는 `[data-theme]` + 변수로 자리만 둔다.
+`galley-ui`는 CSS Modules로 스타일링하고, 색·간격·타이포·라운드·그림자는 `tokens/`의 CSS 변수(`--ui-*`)만 참조한다. 다크는 `[data-theme]` + 변수로 자리만 둔다.
 
 ## 이유
 
@@ -26,4 +26,5 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
-- 2026-09-08 (A1) 토큰은 `src/tokens/tokens.css`의 `--ui-*` 변수로. `index.ts`가 로드 → 빌드 산출물 `dist/index.css`, 소비자는 `@galley/ui/styles.css`로 import. 정적 토큰이라 단위 테스트 없이 빌드로 검증.
+- 2026-09-08 (A1) 토큰은 `src/tokens/tokens.css`의 `--ui-*` 변수로. `index.ts`가 로드 → 빌드 산출물 `dist/index.css`, 소비자는 `galley-ui/styles.css`로 import. 정적 토큰이라 단위 테스트 없이 빌드로 검증.
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.

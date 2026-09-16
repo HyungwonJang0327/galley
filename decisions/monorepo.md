@@ -2,7 +2,7 @@
 
 ## 결정
 
-pnpm workspace 모노레포: `apps/dashboard`(Next.js) + `packages/ui`(@galley/ui) + `packages/pipeline`(@galley/pipeline).
+pnpm workspace 모노레포: `apps/dashboard`(Next.js) + `packages/ui`(galley-ui) + `packages/pipeline`(@galley/pipeline).
 
 ## 이유
 
@@ -22,3 +22,4 @@ pnpm workspace 모노레포: `apps/dashboard`(Next.js) + `packages/ui`(@galley/u
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.

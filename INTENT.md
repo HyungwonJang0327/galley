@@ -42,7 +42,7 @@
 ## 제약
 
 - **기간**: Phase 1 = 2주(1-A 1주차 / 1-B 2주차), 디자인 시스템 병행.
-- **스택**: pnpm 모노레포(apps/dashboard + @galley/ui + @galley/pipeline), Next.js App Router, Base UI 헤드리스, SQLite, TypeScript strict, Vitest, lucide. (SQLite 드라이버·DnD·실행 위치 등 갈리는 지점은 decisions/에서 확정.)
+- **스택**: pnpm 모노레포(apps/dashboard + galley-ui + @galley/pipeline), Next.js App Router, Base UI 헤드리스, SQLite, TypeScript strict, Vitest, lucide. (SQLite 드라이버·DnD·실행 위치 등 갈리는 지점은 decisions/에서 확정.)
 - **실행**: 로컬 우선. 배포는 보류하되 가능성은 유지("막지 않기").
 - **예산**: 개인 프로젝트. 비용은 모델 호출 API 사용료뿐이며 실행마다 기록해 통제한다.
 

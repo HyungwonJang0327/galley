@@ -46,7 +46,7 @@
 - runs/active → /runs
 - publish/zenn · publish/velog → /publish
 
-> redirect 구현 방식 = **next.config redirects**(선언적, 서버단 308). 배지 카운트 데이터 소스 = **사이드바 서버 컴포넌트에서 pipeline 함수 직접 조회**(별도 엔드포인트 없음, 갱신은 네비게이션 시점). 마크다운 렌더러(실행 상세 산출물 미리보기) = **react-markdown**, 위치 **apps/dashboard**(@galley/ui 도메인 무지·독립 배포 유지). — 2026-09-08 확정.
+> redirect 구현 방식 = **next.config redirects**(선언적, 서버단 308). 배지 카운트 데이터 소스 = **사이드바 서버 컴포넌트에서 pipeline 함수 직접 조회**(별도 엔드포인트 없음, 갱신은 네비게이션 시점). 마크다운 렌더러(실행 상세 산출물 미리보기) = **react-markdown**, 위치 **apps/dashboard**(galley-ui 도메인 무지·독립 배포 유지). — 2026-09-08 확정.
 
 ### 루트 진입
 
@@ -81,3 +81,4 @@
 - 2026-09-08 최초 결정. layout.md §2~§4·planning.md 라우트 표·CLAUDE.md 아키텍처·todo AN1~6 반영. 사용자 프롬프트가 layout.md §3 고정 결정 변경 승인.
 - 2026-09-12 **셸·홈은 요청마다 렌더**(AH4 중 발견, 결정 변경 아님 — "갱신 = 서버 렌더 + 네비게이션"을 실제로 성립시키는 구현 조건): `app/(dashboard)/layout.tsx`에 `export const dynamic = 'force-dynamic'`. 없으면 Next가 이 레이아웃을 쓰는 라우트(홈·/runs·/publish·/settings/\*)를 빌드 시점 값으로 정적 프리렌더해, 주제_큐.md를 고쳐도 홈 타일·사이드바 배지가 굳는다(`prerender-manifest.json`으로 확인). 단위 테스트로는 드러나지 않고 픽스처 실측(큐 순서 변경 → 홈 반영)이 잡았다.
 - 2026-09-09 **⚠️ 결정 변경 (루트 진입)**: 루트 `/`를 redirect(승인 대기≥1→/runs, else /queue, 홈 없음)에서 **홈(요약 대시보드)**로 변경. 사이드바 맨 위 단독 "홈" 항목 추가, TopBar Galley→/. 이유: 앱 진입 시 "할 일 몇 개·다음 실행 뭔지"를 한 화면에서 보고 바로 이동(승인 대기·발행 대기·다음 실행이 세 화면에 흩어지면 매번 사이드바를 훑어야 함). 기각: redirect 유지(할 일 두 종류 이상이면 하나만 보임) / 홈을 실행 화면에 합치기(2분할 상세가 무거워짐). **구현 분할**: 뼈대+타일+다음 실행(A4d 큐)은 지금, 승인 대기·최근 실행 카드는 B1e(Run), 발행 대기는 Phase 2 뒤. layout.md §4 "요약형"·planning.md 라우트 표·CLAUDE.md·todo AH1~6 반영.
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.

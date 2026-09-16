@@ -37,7 +37,7 @@
 
 ## 화면 (decisions/layout·navigation과 연동)
 
-- **실행 시작 Dialog**(@galley/ui Dialog): "지금 실행"이 눌리는 모든 진입점 — 큐 행 ⋮ · 큐 상단 `맨 위 실행` · 홈 "다음 실행" 카드 — 에서 **같은 Dialog**를 연다. 제목=주제명. 모델 Select(label + provider 보조 텍스트 + 우측 입력/출력 단가 회색 텍스트, `available:false`는 비활성 + 툴팁). 초기값 = `Settings.defaultModelId`. **예상 비용 미표시**(실행 전 토큰 불명 → 추정치는 오해를 낳음). 버튼 `취소` / `실행`(주요).
+- **실행 시작 Dialog**(galley-ui Dialog): "지금 실행"이 눌리는 모든 진입점 — 큐 행 ⋮ · 큐 상단 `맨 위 실행` · 홈 "다음 실행" 카드 — 에서 **같은 Dialog**를 연다. 제목=주제명. 모델 Select(label + provider 보조 텍스트 + 우측 입력/출력 단가 회색 텍스트, `available:false`는 비활성 + 툴팁). 초기값 = `Settings.defaultModelId`. **예상 비용 미표시**(실행 전 토큰 불명 → 추정치는 오해를 낳음). 버튼 `취소` / `실행`(주요).
 - **실행 상세**(/runs) 헤더: 상태 배지 옆 모델 label(작은 회색). 타임라인 한 줄: 기존 "단계명·상태·소요·토큰"에 **비용(USD, 소수 4자리)** 추가. 단계 모델이 Run 모델과 다르면 그 줄에만 모델 label.
 - **재실행 ActionBar**: 단계 Select + 수정 지시 input 옆 모델 Select(초기값 = 원래 모델). 좁으면 ⋮ 안으로.
 - **TopBar 칩**: `Settings.defaultModelId`의 label(+ 이번 달 비용 합계는 Phase 2). 클릭 → Select로 기본 모델 변경 = Settings 갱신. **실행 중인 Run에는 영향 없음**(툴팁 명시).
@@ -67,3 +67,4 @@
 
 - 2026-09-09 최초 결정.
 - 2026-09-09 **멀티 provider 확정**: 픽커에 Claude 4개(Fable 5.1·Opus 5·Sonnet 5·Haiku 4.5) + GPT 3개(gpt-5.5·gpt-5.1·gpt-5-mini) + Mock. provider 타입에 `openai` 추가, SDK 2개(`@anthropic-ai/sdk`·`openai`) 도입(라이브러리 추가 결정 = 이 문서). id·단가는 각 provider 라이브 문서에서 확인해 표로 고정. 기본 모델 = Opus 5.
+- 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
