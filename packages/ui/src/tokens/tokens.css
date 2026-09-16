@@ -1,7 +1,7 @@
 /*
  * galley-ui 디자인 토큰 — 모든 값의 단일 출처.
  * 컴포넌트는 raw 값을 쓰지 않고 반드시 이 변수(--ui-*)만 참조한다.
- * 레이아웃 스펙 §1(색·타이포·여백)·§5(배지 색) 기준. 라이트만 구현, 다크는 자리만.
+ * 레이아웃 스펙 §1(색·타이포·여백)·§5(배지 색) 기준. 라이트 + 다크([data-theme='dark']) 색 값.
  */
 
 :root {
@@ -98,7 +98,42 @@
   ); /* 팝업은 내용 폭, 이 값까지 */
 }
 
-/* 다크 테마 — 자리만. 값은 이후 채운다(decisions/layout.md: 라이트만 구현). */
+/*
+ * 다크 테마 — 색 토큰(--ui-color-*)만 재정의한다. 간격·타이포·라운드·치수는 공유.
+ * 기준: 본문 텍스트 대비 4.5:1 이상, accent는 라이트와 같은 계열에서 밝기만 조정,
+ * TopBar는 라이트 값 유지(앱에서 계속 가장 어두운 띠). 대비 계산표는 worklog 2026-09-17.
+ * 앱은 <html data-theme="dark">로 켠다. 테마 저장·전환 UI는 이 패키지 범위 밖.
+ */
 [data-theme='dark'] {
-  /* --ui-color-bg: ...; */
+  /* 색 — 표면·텍스트 */
+  --ui-color-bg: #16181c;
+  --ui-color-surface: #23262c; /* 카드. TopBar(#1f2126)보다 한 단계 밝게 */
+  --ui-color-border: #31353c;
+  --ui-color-text: #e6e8ec;
+  --ui-color-text-muted: #9aa1ad;
+
+  /* 색 — 포인트 */
+  --ui-color-accent: #6979ff;
+  --ui-color-accent-hover: #7887ff;
+  --ui-color-accent-fg: #ffffff;
+  --ui-color-accent-tint: #262b4d;
+  --ui-color-backdrop: rgba(0, 0, 0, 0.6);
+
+  /* 색 — TopBar (라이트 값 유지) */
+  --ui-color-topbar-bg: #1f2126;
+  --ui-color-topbar-fg: #ffffff;
+  --ui-color-topbar-chip-bg: rgba(255, 255, 255, 0.08);
+  --ui-color-topbar-chip-hover: rgba(255, 255, 255, 0.16);
+
+  /* 색 — 상태 배지: 어두운 배경 + 밝은 텍스트 */
+  --ui-color-neutral-bg: #2a2e35;
+  --ui-color-neutral-fg: #c3c8d1;
+  --ui-color-info-bg: #262b4d;
+  --ui-color-info-fg: #a9b3ff;
+  --ui-color-warning-bg: #3d2a12;
+  --ui-color-warning-fg: #f5b458;
+  --ui-color-success-bg: #12321e;
+  --ui-color-success-fg: #5fd08a;
+  --ui-color-danger-bg: #3d1a1a;
+  --ui-color-danger-fg: #f28b8b;
 }
