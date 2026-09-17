@@ -73,6 +73,44 @@ describe('Switch', () => {
     expect(screen.getByRole('switch').hasAttribute('data-disabled')).toBe(true);
   });
 
+  it.each(['Enter', ' '])('키보드 %j로 토글된다', (key) => {
+    const onChange = vi.fn();
+    render(
+      <Switch checked={false} onCheckedChange={onChange}>
+        항목
+      </Switch>,
+    );
+    const el = screen.getByRole('switch');
+    fireEvent.keyDown(el, { key });
+    fireEvent.keyUp(el, { key });
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('disabled면 aria-disabled이고 키보드로도 안 바뀐다', () => {
+    const onChange = vi.fn();
+    render(
+      <Switch checked={false} onCheckedChange={onChange} disabled>
+        항목
+      </Switch>,
+    );
+    const el = screen.getByRole('switch');
+    expect(el.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.keyDown(el, { key: 'Enter' });
+    fireEvent.keyUp(el, { key: 'Enter' });
+    fireEvent.keyDown(el, { key: ' ' });
+    fireEvent.keyUp(el, { key: ' ' });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('children이 없으면 라벨 텍스트 요소를 그리지 않는다', () => {
+    const { container } = render(
+      <Switch checked={false} onCheckedChange={() => {}} aria-label="이름만" />,
+    );
+    const label = container.querySelector('label');
+    // label의 자식은 트랙(role=switch)과 Base UI hidden input뿐 — 빈 텍스트 span이 gap을 만들지 않는다.
+    expect(label?.querySelectorAll(':scope > span:not([role="switch"])').length).toBe(0);
+  });
+
   it('라벨 없이 aria-label만으로도 이름이 잡힌다', () => {
     render(<Switch checked={false} onCheckedChange={() => {}} aria-label="이름만" />);
     expect(screen.getByRole('switch', { name: '이름만' })).toBeTruthy();
