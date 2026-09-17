@@ -79,7 +79,11 @@ export function RadioGroup({
               <BaseRadio.Indicator className={styles.dot} />
             </BaseRadio.Root>
             <ItemContent
-              label={<span id={labelId}>{item.label}</span>}
+              label={
+                <span id={labelId} className={descriptionId ? undefined : styles.plainLabel}>
+                  {item.label}
+                </span>
+              }
               description={
                 item.description !== undefined ? (
                   <span id={descriptionId}>{item.description}</span>

@@ -55,6 +55,13 @@ describe('RadioGroup', () => {
     );
   });
 
+  it('보조가 없는 항목의 라벨에만 굵기 클래스가 붙는다', () => {
+    setup();
+    // 보조가 있으면 ItemContent 기본 굵기, 없으면 Checkbox·Switch 라벨과 같은 regular.
+    expect(screen.getByText('첫째').className).toBe('');
+    expect(screen.getByText('둘째').className).not.toBe('');
+  });
+
   it('원을 누르면 그 value로 onValueChange', () => {
     const { onValueChange } = setup();
     fireEvent.click(screen.getByRole('radio', { name: '둘째' }));
