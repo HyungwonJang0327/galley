@@ -14,17 +14,35 @@
   line-height: var(--ui-leading-normal);
 }
 
+/* tone은 색 두 개만 정한다. 어디에 칠할지는 variant가 정한다. */
 .info {
-  background-color: var(--ui-color-info-bg);
+  --alert-bg: var(--ui-color-info-bg);
+  --alert-fg: var(--ui-color-info-fg);
 }
 .success {
-  background-color: var(--ui-color-success-bg);
+  --alert-bg: var(--ui-color-success-bg);
+  --alert-fg: var(--ui-color-success-fg);
 }
 .warning {
-  background-color: var(--ui-color-warning-bg);
+  --alert-bg: var(--ui-color-warning-bg);
+  --alert-fg: var(--ui-color-warning-fg);
 }
 .danger {
-  background-color: var(--ui-color-danger-bg);
+  --alert-bg: var(--ui-color-danger-bg);
+  --alert-fg: var(--ui-color-danger-fg);
+}
+
+/* filled: tone 배경 상자. 본문은 기본 글자색, 아이콘·제목만 tone 색. */
+.filled {
+  background-color: var(--alert-bg);
+}
+
+/* plain: 상자 없이 아이콘·글자 전부 tone 색, 작은 글자(FormField 오류 문구와 같은 크기). */
+.plain {
+  padding: 0;
+  border-radius: 0;
+  color: var(--alert-fg);
+  font-size: var(--ui-text-xs);
 }
 
 /* 아이콘은 첫 줄 높이 안에서 세로 가운데 — 본문이 여러 줄이어도 첫 줄에 붙는다. */
@@ -35,28 +53,31 @@
   height: calc(1em * var(--ui-leading-normal));
 }
 
-.info .icon,
-.info .title {
-  color: var(--ui-color-info-fg);
+.icon,
+.title {
+  color: var(--alert-fg);
 }
-.success .icon,
-.success .title {
-  color: var(--ui-color-success-fg);
+
+/*
+ * 아이콘+본문 덩어리. 이 폭 밑으로는 눌리지 않는다 — 자리가 모자라면 action이 아랫줄로 내려간다
+ * (flex-wrap). 아이콘과 본문 사이에서는 줄바꿈이 없다. min-width 0이라 상자 자체가 더 좁으면 상자 폭을 따른다.
+ */
+.main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  flex: 1 1 var(--ui-inline-alert-body-min-width);
+  min-width: 0;
 }
-.warning .icon,
-.warning .title {
-  color: var(--ui-color-warning-fg);
-}
-.danger .icon,
-.danger .title {
-  color: var(--ui-color-danger-fg);
+
+/* plain은 목록 행 같은 좁은 자리에 놓인다 — 기준 폭 없이 내용 폭을 따른다. */
+.plain .main {
+  flex-basis: auto;
 }
 
 /* 줄바꿈 규칙은 제목·본문 공통 — 공백 없는 긴 제목(경로·식별자)이 action 위로 넘치지 않게. */
-/* 본문은 이 폭 밑으로 눌리지 않는다 — 자리가 모자라면 action이 아랫줄로 내려간다(flex-wrap).
-   min-width 0은 그대로라 상자 자체가 더 좁으면 본문이 상자 폭을 따른다. */
 .body {
-  flex: 1 1 var(--ui-inline-alert-body-min-width);
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }

@@ -1,2 +1,2 @@
 export { InlineAlert } from './InlineAlert';
-export type { InlineAlertProps, InlineAlertTone } from './InlineAlert';
+export type { InlineAlertProps, InlineAlertTone, InlineAlertVariant } from './InlineAlert';

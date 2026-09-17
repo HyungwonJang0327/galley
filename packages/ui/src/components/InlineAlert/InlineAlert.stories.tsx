@@ -25,3 +25,6 @@ export const Danger = {
     ),
   },
 };
+export const Plain = {
+  args: { tone: 'danger', variant: 'plain', children: '저장하지 못했습니다.' },
+};

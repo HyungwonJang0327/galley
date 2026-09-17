@@ -28,6 +28,24 @@ describe('InlineAlert', () => {
     expect(new Set(classes).size).toBe(4);
   });
 
+  it('variant에 따라 클래스가 다르다(기본 filled) — role·내용은 같다', () => {
+    const { container, rerender } = render(<InlineAlert tone="danger">문구</InlineAlert>);
+    const filled = (container.firstElementChild as HTMLElement).className;
+    rerender(
+      <InlineAlert tone="danger" variant="filled">
+        문구
+      </InlineAlert>,
+    );
+    expect((container.firstElementChild as HTMLElement).className).toBe(filled);
+    rerender(
+      <InlineAlert tone="danger" variant="plain">
+        문구
+      </InlineAlert>,
+    );
+    expect((container.firstElementChild as HTMLElement).className).not.toBe(filled);
+    expect(screen.getByRole('alert').textContent).toBe('문구');
+  });
+
   it('title이 있으면 본문 앞에 보이고, null·false·빈 문자열이면 그리지 않는다', () => {
     const { rerender } = render(
       <InlineAlert tone="danger" title="제목">
@@ -63,8 +81,8 @@ describe('InlineAlert', () => {
         문구
       </InlineAlert>,
     );
-    // 루트의 자식은 아이콘과 live 영역 둘뿐 — 빈 action 래퍼가 gap을 만들지 않는다.
-    expect(container.firstElementChild?.children).toHaveLength(2);
+    // 루트의 자식은 아이콘+본문 덩어리 하나뿐 — 빈 action 래퍼가 gap을 만들지 않는다.
+    expect(container.firstElementChild?.children).toHaveLength(1);
   });
 
   it('아이콘은 장식이다(aria-hidden)', () => {
