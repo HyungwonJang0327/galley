@@ -13,6 +13,7 @@ import {
   ListRow,
   ListRows,
   Menu,
+  Popover,
   RadioGroup,
   Select,
   SplitPane,
@@ -527,6 +528,52 @@ export function FormFieldDemo() {
         <span data-demo="form-submit-count">제출 {submitted}회</span>
       </div>
     </Form>
+  );
+}
+
+// Popover: 비제어(열림 상태를 앱이 들지 않는다)가 기본. 마지막 것만 제어형 — 본문 버튼이 밖에서 닫는다.
+export function PopoverDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Popover
+        title="팝오버 제목"
+        trigger={
+          <Button variant="secondary" size="sm">
+            팝오버 기본
+          </Button>
+        }
+      >
+        트리거를 누르면 열리고 Esc·바깥 클릭으로 닫힌다. 본문이 길면 상한 폭에서 줄바꿈된다.
+      </Popover>
+      <Popover
+        aria-label="오른쪽 팝오버"
+        side="right"
+        align="start"
+        trigger={
+          <Button variant="secondary" size="sm">
+            팝오버 오른쪽
+          </Button>
+        }
+      >
+        제목 없이 본문만(이름은 aria-label)
+      </Popover>
+      <Popover
+        title="제어형"
+        open={open}
+        onOpenChange={setOpen}
+        trigger={
+          <Button variant="secondary" size="sm">
+            팝오버 제어형
+          </Button>
+        }
+      >
+        <p>본문에 버튼을 넣을 수 있다.</p>
+        <Button size="sm" onClick={() => setOpen(false)}>
+          확인하고 닫기
+        </Button>
+      </Popover>
+    </>
   );
 }
 
