@@ -39,6 +39,17 @@ describe('Popover', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('제목은 heading이 아니다 — 비모달이라 문서 개요에 섞이지 않게, 그래도 팝업 이름은 된다', async () => {
+    render(
+      <Popover trigger={TRIGGER} title="제목">
+        본문
+      </Popover>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    expect(await screen.findByRole('dialog', { name: '제목' })).toBeTruthy();
+    expect(screen.queryByRole('heading')).toBeNull();
+  });
+
   it('Esc로 닫힌다', async () => {
     render(
       <Popover trigger={TRIGGER} title="제목">

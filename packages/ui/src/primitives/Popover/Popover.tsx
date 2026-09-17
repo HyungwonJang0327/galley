@@ -78,7 +78,11 @@ export function Popover({
         >
           <BasePopover.Popup className={popupClass} aria-label={ariaLabel}>
             {title !== undefined ? (
-              <BasePopover.Title className={styles.title}>{title}</BasePopover.Title>
+              // Base UI 기본은 <h2>. 팝오버는 비모달이라 뒤 화면과 같은 문서 개요에 섞인다 — 제목
+              // 요소가 아닌 div로 그린다(aria-labelledby 연결은 그대로라 팝업 이름은 유지된다).
+              <BasePopover.Title className={styles.title} render={<div />}>
+                {title}
+              </BasePopover.Title>
             ) : null}
             <div className={styles.body}>{children}</div>
           </BasePopover.Popup>
