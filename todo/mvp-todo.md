@@ -289,7 +289,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P5. README — 브랜치 `docs/ui-readme` (RF 뒤)
 
-- [ ] **P5a** doc — `packages/ui/README.md` 신규(영어만): 한 줄 소개 → 설치(`pnpm add galley-ui` + peer react/react-dom ^19) → 30초 예제(`import 'galley-ui/styles.css'` + AppShell 안 Button·Badge) → `useConfirm` 예제(await 한 줄, 차별점이라 앞쪽) → 다크 모드(`data-theme="dark"`) → 컴포넌트 표(components/primitives/patterns/hooks 각 한 줄) → 설계 원칙(제어형만(Popover 예외)·Base UI 얇은 래퍼·CSS Modules+토큰·도메인 무지·번들 전체 "use client"·Node ≥20) → Storybook 예정(Phase 2) → 라이선스. 커밋: `docs(ui): galley-ui README 작성`
+- [ ] **P5a** doc — `packages/ui/README.md` 신규(영어만): 한 줄 소개 → 설치(`pnpm add galley-ui` + peer react/react-dom ^19) → 30초 예제(`import 'galley-ui/styles.css'` + AppShell 안 Button·Badge) → `useConfirm` 예제(await 한 줄, 차별점이라 앞쪽) → 다크 모드(`data-theme="dark"`) → 컴포넌트 표(components/primitives/patterns/hooks 각 한 줄) → 설계 원칙(제어형만(Popover 예외)·Base UI 얇은 래퍼·CSS Modules+토큰·도메인 무지·번들 전체 "use client"·Node ≥20) → **접근성 절**(키보드·포커스·라벨·대비 기준 + "forced-colors(Windows 대비 테마)는 미검증 — Separator만 대응" 명시, 2026-09-17 사용자 결정) → Storybook 예정(Phase 2) → 라이선스. 커밋: `docs(ui): galley-ui README 작성`
 - [ ] **P5b** doc — 루트 README.md에 "packages/ui는 npm `galley-ui`로 배포" 한 줄 + 링크. 커밋: `docs(docs): 루트 README에 galley-ui 배포 안내`
 
 ### P6. 배포 — 브랜치 `chore/ui-release-0-1-0`
@@ -309,6 +309,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **P7d** ui — Table · Avatar · Breadcrumb · Pagination.
 - [ ] **P7e** fe — TD2 앱 4곳 InlineAlert 치환.
 - [ ] **P7f** — 포트폴리오·이력서에 npm 링크 반영.
+- [ ] **P7g** ui — forced-colors(Windows 대비 테마) 감사. 0.1.0은 Separator만 대응하고 나머지는 현행 유지(2026-09-17 사용자 결정, 기각: RF1에 포함 · P4 기준선에 정식 포함). Chrome DevTools Rendering의 `forced-colors: active` 에뮬레이션으로 갤러리 확인. 추정 위험 자리(미검증): Checkbox·Switch·RadioGroup 켜짐/꺼짐이 배경색으로만 구분 · Badge variant 배경 · ListRow `isActive`·Tabs 활성 틴트 · box-shadow 포커스 링 · TimelineItem 세로선·마커 · Badge `pulse` 점 · Skeleton · 그림자만 있는 Card 경계. 고칠 땐 `@media (forced-colors: active)`에서 시스템 색(`CanvasText`·`Highlight` 등) 또는 테두리로. 끝나면 README 접근성 절의 "미검증" 문구 갱신.
 
 범위 밖(하지 않는다): 대시보드 기능 진행 · 리팩토링 · preserveModules 재검토 · Storybook 실행 환경 · CI publish 자동화 · Combobox·DatePicker·Table · 기존 컴포넌트 API 변경(호환 깨는 수정 — 리뷰에서 발견되면 todo에 적고 넘어간다).
 
