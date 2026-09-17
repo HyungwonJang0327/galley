@@ -394,6 +394,8 @@ export function SwitchUnlabeledDemo() {
   return <Switch checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 스위치" />;
 }
 
+// verify:layout(radio.mjs)이 그룹 aria-label("세로 라디오"·"가로 라디오")과 아래 구성에 결합한다 —
+// 세로: 처음에 선택된 항목·긴 보조·disabled 항목이 있어야 하고, 가로: 미선택에서 시작해야 한다.
 const RADIO_ITEMS = [
   { value: 'first', label: '첫째 선택지', description: '라벨 아래 한 줄 보조 설명' },
   {
