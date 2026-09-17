@@ -1,0 +1,51 @@
+/* Positioner는 위치만. 폭은 팝업이 정한다. */
+.positioner {
+  z-index: 1;
+  outline: 0;
+}
+
+/* 팝업: Menu·Select 팝업과 같은 표면(테두리·라운드·그림자). 내용 폭으로 넓어지되 상한은 토큰,
+   높이는 뷰포트 여유(--available-height) 안에서 세로 스크롤. */
+.popup {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: var(--ui-popover-max-width);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-color-surface);
+  box-shadow: var(--ui-shadow-popover);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-normal);
+  outline: 0;
+}
+
+/* 열리면 포커스가 팝업으로 온다 — 키보드 사용자에게만 링을 보인다. */
+.popup:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: 1px;
+}
+
+.title {
+  margin: 0 0 var(--ui-space-1);
+  font-size: var(--ui-text-sm);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+}
+
+.body {
+  overflow-wrap: anywhere;
+}
+
+/* 본문에 <p> 같은 블록을 넣어도 팝업 안쪽 여백이 기본 margin만큼 벌어지지 않게. */
+.body > :first-child {
+  margin-top: 0;
+}
+
+.body > :last-child {
+  margin-bottom: 0;
+}
