@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { useState } from 'react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { RadioGroup } from './RadioGroup';
 import type { RadioItem } from './RadioGroup';
 
@@ -117,6 +118,43 @@ describe('RadioGroup', () => {
     );
     expect(screen.getByRole('radiogroup').getAttribute('aria-orientation')).toBe('horizontal');
     expect(screen.getByRole('radiogroup').className).not.toBe(vertical);
+  });
+
+  it('방향키는 이동하면서 선택한다 — disabled 항목은 건너뛰고 끝에서 처음으로 돈다', async () => {
+    const four: RadioItem[] = [
+      { value: 'a', label: '가' },
+      { value: 'b', label: '나' },
+      { value: 'c', label: '다', disabled: true },
+      { value: 'd', label: '라' },
+    ];
+    const seen: string[] = [];
+    function Host() {
+      const [value, setValue] = useState<string | null>('a');
+      return (
+        <RadioGroup
+          value={value}
+          onValueChange={(next) => {
+            seen.push(next);
+            setValue(next);
+          }}
+          items={four}
+          aria-label="방향키"
+        />
+      );
+    }
+    render(<Host />);
+    act(() => screen.getByRole('radio', { name: '가' }).focus());
+    // Base UI는 포커스를 옮긴 뒤 비동기로 선택한다 — 동기 fireEvent만으로는 콜백이 아직 안 불린다.
+    const arrowDown = () =>
+      act(async () => {
+        fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowDown' });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+    await arrowDown();
+    await arrowDown();
+    await arrowDown();
+    expect(seen).toEqual(['b', 'd', 'a']);
+    expect(screen.getByRole('radio', { name: '가' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('roving tabindex — 선택된 항목만 탭 순서에 든다', () => {
