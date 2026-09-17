@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Separator } from './Separator';
@@ -27,6 +28,29 @@ describe('Separator', () => {
     expect(el.getAttribute('role')).toBe('none');
     expect(el.getAttribute('aria-orientation')).toBeNull();
     expect(screen.queryByRole('separator')).toBeNull();
+  });
+
+  it('decorative 수평(기본 방향)도 role="none"이다', () => {
+    render(<Separator decorative data-testid="s" />);
+    expect(screen.getByTestId('s').getAttribute('role')).toBe('none');
+    expect(screen.queryByRole('separator')).toBeNull();
+  });
+
+  it('타입을 우회해 넘어온 role·aria-orientation을 덮어쓴다', () => {
+    const smuggled = { role: 'button', 'aria-orientation': 'vertical' } as object;
+    const { rerender } = render(<Separator data-testid="s" {...smuggled} />);
+    expect(screen.getByTestId('s').getAttribute('role')).toBe('separator');
+    expect(screen.getByTestId('s').getAttribute('aria-orientation')).toBeNull();
+
+    rerender(<Separator decorative data-testid="s" {...smuggled} />);
+    expect(screen.getByTestId('s').getAttribute('role')).toBe('none');
+    expect(screen.getByTestId('s').getAttribute('aria-orientation')).toBeNull();
+  });
+
+  it('ref를 div에 넘긴다', () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<Separator ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole('separator'));
   });
 
   it('className을 병합하고 나머지 props를 div에 넘긴다', () => {
