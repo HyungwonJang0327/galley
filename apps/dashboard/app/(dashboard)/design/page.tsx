@@ -9,6 +9,7 @@ import {
   ListToolbar,
   ListToolbarTab,
   PageHeader,
+  Separator,
   StatTile,
   Textarea,
 } from 'galley-ui';
@@ -121,6 +122,30 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Card</h2>
           <div className={styles.row}>
             <Card className={styles.innerCard}>surface·라운드·그림자로 본문을 감싸는 카드.</Card>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Separator</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>수평(기본) — role=&quot;separator&quot;</span>
+            <Separator />
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>수직 — flex 행 안에서 부모 높이를 채운다</span>
+            <div className={styles.row}>
+              <span>왼쪽</span>
+              <Separator orientation="vertical" />
+              <span>가운데</span>
+              <Separator orientation="vertical" />
+              <span>오른쪽</span>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              decorative — 모양은 같고 role=&quot;none&quot;(보조 기술이 읽지 않음)
+            </span>
+            <Separator decorative />
           </div>
         </Card>
 
