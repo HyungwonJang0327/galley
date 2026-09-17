@@ -22,6 +22,9 @@ import {
   DialogDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
+  RadioGroupDemo,
+  RadioGroupDisabledDemo,
+  RadioGroupHorizontalDemo,
   SelectAtBottomDemo,
   SelectDemo,
   SelectDisabledDemo,
@@ -235,6 +238,22 @@ export default function DesignPage() {
               <SwitchDisabledDemo />
               <SwitchUnlabeledDemo />
             </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>RadioGroup</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>세로(기본) — 라벨 + 보조, 항목 disabled</span>
+            <RadioGroupDemo />
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>가로 — 미선택(value=null)에서 시작</span>
+            <RadioGroupHorizontalDemo />
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>그룹 disabled — 잠긴 채 선택된 항목이 보인다</span>
+            <RadioGroupDisabledDemo />
           </div>
         </Card>
 
