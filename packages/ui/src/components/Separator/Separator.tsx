@@ -24,12 +24,14 @@ export function Separator({
   ...props
 }: SeparatorProps) {
   const classes = [styles.separator, styles[orientation], className].filter(Boolean).join(' ');
+  // role·aria-orientation은 스프레드 뒤에 둔다 — 타입을 우회해 넘어온 값도 덮어쓴다.
   // separator의 aria-orientation 기본값은 horizontal이라 vertical일 때만 적는다.
-  const a11y = decorative
-    ? ({ role: 'none' } as const)
-    : ({
-        role: 'separator',
-        'aria-orientation': orientation === 'vertical' ? 'vertical' : undefined,
-      } as const);
-  return <div className={classes} {...props} {...a11y} />;
+  return (
+    <div
+      className={classes}
+      {...props}
+      role={decorative ? 'none' : 'separator'}
+      aria-orientation={!decorative && orientation === 'vertical' ? 'vertical' : undefined}
+    />
+  );
 }
