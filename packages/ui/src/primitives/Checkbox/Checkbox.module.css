@@ -1,4 +1,7 @@
 .label {
+  /* Base UI는 name이 있으면 hidden input을 position:absolute로 둔다 — 기준점이 없으면 문서에 붙어
+     안쪽 스크롤 영역 속 컨트롤이 문서 높이를 늘린다. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--ui-space-2);

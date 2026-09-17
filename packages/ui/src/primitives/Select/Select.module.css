@@ -1,3 +1,13 @@
+/*
+ * 루트: 트리거와 hidden input의 기준점. Base UI는 hidden input을 position:absolute로 트리거 옆에 둔다 —
+ * 기준점이 없으면 문서에 붙어 안쪽 스크롤 영역 속 Select가 문서 높이를 늘린다. 폭은 트리거와 같이 부모를 따른다.
+ */
+.root {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 /* 트리거 폭은 부모가 정한다(width 100%·min-width 0). 내용이 늘리지 않고 값은 ellipsis. */
 .trigger {
   display: flex;
