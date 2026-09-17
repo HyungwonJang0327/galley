@@ -190,6 +190,24 @@ async function openPage(origin, url) {
       );
       await sleep(500);
     },
+    /**
+     * 실제 마우스 클릭(뷰포트 좌표). 합성 이벤트와 달리 브라우저가 "직전 입력 = 포인터"로 기억한다 —
+     * :focus-visible 판정처럼 입력 종류에 달린 동작을 잴 때 쓴다.
+     */
+    async mouseClick(x, y) {
+      for (const type of ['mousePressed', 'mouseReleased']) {
+        await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+      }
+    },
+    /** 실제 키 입력. key는 KeyboardEvent.key('Enter'·'Escape'·'Tab' 등). */
+    async pressKey(key) {
+      const codes = { Enter: 13, Escape: 27, Tab: 9, ' ': 32 };
+      const base = { key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: codes[key] };
+      // Enter·Space는 text가 있어야 keypress/click 활성화까지 이어진다.
+      const text = key === 'Enter' ? '\r' : key === ' ' ? ' ' : undefined;
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, text });
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+    },
     async screenshot(file) {
       const shot = await send('Page.captureScreenshot', { format: 'png' });
       writeFileSync(file, Buffer.from(shot.result.data, 'base64'));
