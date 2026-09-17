@@ -11,6 +11,7 @@ import {
   ListRow,
   ListRows,
   Menu,
+  RadioGroup,
   Select,
   SplitPane,
   Switch,
@@ -391,6 +392,65 @@ export function SwitchDisabledDemo() {
 export function SwitchUnlabeledDemo() {
   const [checked, setChecked] = useState(true);
   return <Switch checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 스위치" />;
+}
+
+const RADIO_ITEMS = [
+  { value: 'first', label: '첫째 선택지', description: '라벨 아래 한 줄 보조 설명' },
+  {
+    value: 'second',
+    label: '둘째 선택지',
+    description: '보조 설명은 이름이 아니라 설명으로 읽힌다',
+  },
+  {
+    value: 'third',
+    label: '고를 수 없는 선택지',
+    description: '항목 단위 disabled',
+    disabled: true,
+  },
+];
+
+const RADIO_SHORT_ITEMS = [
+  { value: 'a', label: '가' },
+  { value: 'b', label: '나' },
+  { value: 'c', label: '다' },
+];
+
+export function RadioGroupDemo() {
+  const [value, setValue] = useState<string | null>('first');
+  return (
+    <RadioGroup
+      value={value}
+      onValueChange={setValue}
+      items={RADIO_ITEMS}
+      aria-label="세로 라디오"
+    />
+  );
+}
+
+export function RadioGroupHorizontalDemo() {
+  const [value, setValue] = useState<string | null>(null);
+  return (
+    <RadioGroup
+      value={value}
+      onValueChange={setValue}
+      items={RADIO_SHORT_ITEMS}
+      aria-label="가로 라디오"
+      orientation="horizontal"
+    />
+  );
+}
+
+export function RadioGroupDisabledDemo() {
+  return (
+    <RadioGroup
+      value="b"
+      onValueChange={() => {}}
+      items={RADIO_SHORT_ITEMS}
+      aria-label="비활성 라디오"
+      orientation="horizontal"
+      disabled
+    />
+  );
 }
 
 // Tooltip 트리거는 props·ref를 DOM까지 넘기는 요소여야 한다 — 클라이언트 파일에서 만든다.
