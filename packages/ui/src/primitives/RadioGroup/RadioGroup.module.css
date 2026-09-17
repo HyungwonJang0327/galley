@@ -81,3 +81,11 @@
 .dot[data-disabled] {
   background-color: var(--ui-color-text-muted);
 }
+
+/*
+ * 보조가 없는 항목의 라벨은 regular — 폼에서 나란히 놓이는 Checkbox·Switch 라벨과 같은 굵기.
+ * 보조가 있으면 ItemContent 기본(medium)을 그대로 둬 "라벨 / 보조" 위계를 살린다.
+ */
+.plainLabel {
+  font-weight: var(--ui-weight-regular);
+}
