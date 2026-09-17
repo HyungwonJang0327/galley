@@ -57,6 +57,35 @@ describe('FormField', () => {
     expect(container.querySelector('[data-invalid]')).toBeNull();
   });
 
+  it('error가 생겼다 사라지면 invalid와 오류 문구도 따라 사라진다', () => {
+    const field = (error?: string) => (
+      <FormField label="이름" error={error}>
+        <Input />
+      </FormField>
+    );
+    const { rerender } = render(field());
+    rerender(field('이름을 입력하세요'));
+    expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBe('true');
+    expect(descriptionsOf(screen.getByRole('textbox'))).toEqual(['이름을 입력하세요']);
+    rerender(field());
+    expect(screen.getByRole('textbox').hasAttribute('aria-invalid')).toBe(false);
+    expect(screen.queryByText('이름을 입력하세요')).toBeNull();
+    expect(descriptionsOf(screen.getByRole('textbox'))).toEqual([]);
+  });
+
+  // 클릭 → 포커스 자체는 브라우저 동작이라 verify:layout이 본다. 여기선 for 연결만 고정한다.
+  it('라벨이 컨트롤을 for로 가리킨다(라벨 클릭 포커스의 전제)', () => {
+    const { container } = render(
+      <FormField label="이름">
+        <Input />
+      </FormField>,
+    );
+    const label = container.querySelector('label') as HTMLLabelElement;
+    const input = screen.getByRole('textbox');
+    expect(label.getAttribute('for')).toBe(input.id);
+    expect(label.control).toBe(input);
+  });
+
   it('빈 문자열 error는 오류가 아니다', () => {
     const { container } = render(
       <FormField label="이름" error="">
