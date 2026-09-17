@@ -33,6 +33,9 @@ import {
   SelectWithDescriptionDemo,
   SelectWithDescriptionMetaDemo,
   SplitPaneDemo,
+  SwitchDemo,
+  SwitchDisabledDemo,
+  SwitchUnlabeledDemo,
   TabsDemo,
   ToolbarFiltersDemo,
   TooltipDemo,
@@ -217,6 +220,20 @@ export default function DesignPage() {
               <CheckboxIndeterminateDemo />
               <CheckboxDisabledDemo />
               <CheckboxUnlabeledDemo />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Switch</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              토글(클릭 한 번 = 1회) / disabled 꺼짐·켜짐 / 라벨 없음
+            </span>
+            <div className={styles.row}>
+              <SwitchDemo />
+              <SwitchDisabledDemo />
+              <SwitchUnlabeledDemo />
             </div>
           </div>
         </Card>
