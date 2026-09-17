@@ -1,3 +1,4 @@
+import { createRef } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Textarea } from './Textarea';
@@ -39,5 +40,34 @@ describe('Textarea', () => {
   it('className을 병합한다', () => {
     render(<Textarea aria-label="지시" className="extra" />);
     expect(screen.getByRole('textbox').classList.contains('extra')).toBe(true);
+  });
+  it('ref를 textarea에 넘긴다', () => {
+    const ref = createRef<HTMLTextAreaElement>();
+    render(<Textarea aria-label="메모" ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole('textbox'));
+    expect(ref.current?.tagName).toBe('TEXTAREA');
+  });
+
+  it('제어형 value를 바꾸면 DOM 값이 따라온다', () => {
+    const { rerender } = render(<Textarea aria-label="메모" value="처음" onChange={() => {}} />);
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('처음');
+    rerender(<Textarea aria-label="메모" value="" onChange={() => {}} />);
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('defaultValue로 시작하고 입력하면 onChange가 불린다', () => {
+    const onChange = vi.fn();
+    render(<Textarea aria-label="메모" defaultValue="기본" onChange={onChange} />);
+    const el = screen.getByRole('textbox') as HTMLTextAreaElement;
+    expect(el.value).toBe('기본');
+    fireEvent.change(el, { target: { value: '바꿈' } });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('소비자가 준 id·aria-describedby를 지킨다', () => {
+    render(<Textarea aria-label="메모" id="mine" aria-describedby="hint" />);
+    const el = screen.getByRole('textbox');
+    expect(el.id).toBe('mine');
+    expect(el.getAttribute('aria-describedby')).toBe('hint');
   });
 });
