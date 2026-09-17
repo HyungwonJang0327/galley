@@ -4,7 +4,10 @@ import styles from './Separator.module.css';
 type Orientation = 'horizontal' | 'vertical';
 
 export interface SeparatorProps extends Omit<ComponentProps<'div'>, 'children' | 'role'> {
-  /** 선의 방향. vertical은 부모(flex 행)의 높이를 채운다 */
+  /**
+   * 선의 방향. vertical은 flex·grid 행의 직계 자식일 때 부모 높이를 채운다.
+   * 그 밖에서는 글자 높이(1em)만큼만 그려지니 className으로 높이를 준다
+   */
   orientation?: Orientation;
   /** true면 시각 장식(role="none") — 보조 기술이 읽지 않는다. false면 role="separator" */
   decorative?: boolean;
