@@ -1,10 +1,10 @@
-// FormField 컨트롤 폭·오류 테두리·라벨 클릭 포커스·required 제출 차단 실측.
+// Form·FormField 컨트롤 폭·오류 테두리·라벨 클릭 포커스·제출 검증(인라인 오류) 실측.
 // 갤러리(/design)의 form[aria-label="폼 필드 데모"], 컨트롤 name(name·note·choice·enabled), [data-demo="form-submit-count"]에
-// 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다. 전부 happy-dom이 못 보는 것들이다(레이아웃·포커스·네이티브 제출 검증).
+// 결합되어 있다(컨트롤 name에는 email도) — 갤러리를 바꾸면 여기도 맞춘다. 전부 happy-dom이 못 보는 것들이다(레이아웃·포커스·네이티브 제출 검증).
 import { join } from 'node:path';
 
 export async function verifyFormField(page, { outDir }) {
-  const name = 'FormField 폭·오류·required';
+  const name = 'Form·FormField 폭·오류·제출 검증';
   const m = JSON.parse(await page.evaluate(measureExpression()));
   if (m.error) return { name, checks: [{ label: m.error, pass: false }] };
 
@@ -26,11 +26,26 @@ export async function verifyFormField(page, { outDir }) {
     ['라벨을 누르면 Input이 포커스를 받는다', m.labelFocus.input],
     ['라벨을 누르면 Textarea가 포커스를 받는다', m.labelFocus.textarea],
     ['필드의 required를 Input이 물려받는다', m.required],
+    ['Form은 브라우저 말풍선을 끈다(noValidate)', m.noValidate],
     [
-      `빈 채 제출하면 브라우저가 막는다 (${m.submit.blockedCount}) · 빈 칸으로 포커스`,
+      `Form errors가 같은 name의 필드에 뜬다 (${JSON.stringify(m.serverError)})`,
+      m.serverError !== '',
+    ],
+    ['Select에서 옵션을 고르면 앱 오류가 지워진다', m.selectErrorAfterPick === ''],
+    ['Form errors는 그 필드 값을 바꾸면 지워진다', m.serverErrorAfterChange === ''],
+    [
+      `빈 채 제출하면 핸들러가 안 불린다 (${m.submit.blockedCount}) · 빈 칸으로 포커스`,
       m.submit.blockedCount === 0 && m.submit.focusedName === 'name',
     ],
-    [`채우고 제출하면 통과한다 (${m.submit.passedCount})`, m.submit.passedCount === 1],
+    [
+      `오류가 필드 아래에 인라인으로 뜨고 칸이 오류 테두리가 된다 (${JSON.stringify(m.submit.inlineError)})`,
+      m.submit.inlineError !== '' && m.submit.invalidBorder === m.errorBorder,
+    ],
+    [
+      '값을 채우면 오류가 지워지고 테두리가 돌아온다',
+      m.submit.errorAfterFill === '' && m.submit.borderAfterFill === m.normalBorder,
+    ],
+    [`오류를 모두 풀고 제출하면 통과한다 (${m.submit.passedCount})`, m.submit.passedCount === 1],
   ].map(([label, pass]) => ({ label, pass }));
 
   await page.screenshot(join(outDir, 'form-field.png'));
@@ -67,6 +82,14 @@ function measureExpression() {
       fieldWidth: width(fieldOf(el)),
     }));
 
+    const regionOf = (el) => fieldOf(el).querySelector('[aria-live]');
+    // 제출 전에 잰다 — 제출 뒤에는 이름 칸도 오류가 된다.
+    const normalBorder = getComputedStyle(input).borderTopColor;
+    const errorBorder = getComputedStyle(textarea).borderTopColor;
+    const emptyRegionHeight = regionOf(input).getBoundingClientRect().height;
+    const email = form.querySelector('input[name="email"]');
+    const serverError = email ? regionOf(email).textContent : '';
+
     labelOf(input).click();
     const inputFocused = document.activeElement === input;
     labelOf(textarea).click();
@@ -79,24 +102,60 @@ function measureExpression() {
     await settle();
     const blockedCount = count();
     const focusedName = document.activeElement.getAttribute('name');
+    const inlineError = regionOf(input).textContent;
+    const invalidBorder = getComputedStyle(input).borderTopColor;
 
     // React 제어형 입력: native setter로 값을 넣고 input 이벤트를 보낸다.
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '값');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await settle();
+    const errorAfterFill = regionOf(input).textContent;
+    const borderAfterFill = getComputedStyle(input).borderTopColor;
+    // 오류가 남은 필드는 제출을 막는다 — 메모(앱 error)는 값을 넣어 앱이 지우게, 이메일(Form errors)은 값을 바꿔 지운다.
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(textarea, '메모');
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    if (email) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(email, 'free@example.com');
+      email.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    // 선택(앱 error)은 옵션을 하나 골라 지운다. Base UI Select는 pointer 이벤트로 열린다.
+    const fire = (el, type) =>
+      el.dispatchEvent(new (type.startsWith('pointer') ? PointerEvent : MouseEvent)(type, { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0 }));
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) fire(trigger, type);
+    let option = null;
+    for (let i = 0; i < 20 && !option; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      const listbox = document.getElementById(trigger.getAttribute('aria-controls') ?? '');
+      option = listbox?.querySelector('[role="option"]') ?? null;
+    }
+    if (option) for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) fire(option, type);
+    await settle();
+    const serverErrorAfterChange = email ? regionOf(email).textContent : '';
     submit.click();
     await settle();
 
     return JSON.stringify({
+      noValidate: form.noValidate,
+      serverError,
+      serverErrorAfterChange,
+      selectErrorAfterPick: regionOf(trigger).textContent,
       fill,
       switchWidth: width(switchEl.closest('label')),
       switchFieldWidth: width(fieldOf(switchEl)),
-      errorBorder: getComputedStyle(textarea).borderTopColor,
-      normalBorder: getComputedStyle(input).borderTopColor,
-      emptyRegionHeight: fieldOf(input).querySelector('[aria-live]').getBoundingClientRect().height,
+      errorBorder,
+      normalBorder,
+      emptyRegionHeight,
       labelFocus: { input: inputFocused, textarea: textareaFocused },
       required: input.required,
-      submit: { blockedCount, focusedName, passedCount: count() },
+      submit: {
+        blockedCount,
+        focusedName,
+        inlineError,
+        invalidBorder,
+        errorAfterFill,
+        borderAfterFill,
+        passedCount: count(),
+      },
     });
   })()`;
 }
