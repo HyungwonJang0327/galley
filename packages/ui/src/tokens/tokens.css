@@ -100,7 +100,7 @@
 
 /*
  * 다크 테마 — 색 토큰(--ui-color-*)만 재정의한다. 간격·타이포·라운드·치수는 공유.
- * 기준: 본문 텍스트 대비 4.5:1 이상, accent는 라이트와 같은 계열에서 밝기만 조정,
+ * 기준: 본문 텍스트 대비 4.5:1 이상, accent는 라이트와 같은 계열에서 밝기만 조정(글자는 어둡게),
  * TopBar는 라이트 값 유지(앱에서 계속 가장 어두운 띠). 대비 계산표는 worklog 2026-09-17.
  * 앱은 <html data-theme="dark">로 켠다. 테마 저장·전환 UI는 이 패키지 범위 밖.
  */
@@ -112,10 +112,10 @@
   --ui-color-text: #e6e8ec;
   --ui-color-text-muted: #9aa1ad;
 
-  /* 색 — 포인트 */
-  --ui-color-accent: #6979ff;
-  --ui-color-accent-hover: #7887ff;
-  --ui-color-accent-fg: #ffffff;
+  /* 색 — 포인트. 다크에서는 accent 위 글자를 어둡게 둔다(흰 글자는 4.5:1을 못 넘김, 2026-09-17 사용자 결정) */
+  --ui-color-accent: #7b8aff;
+  --ui-color-accent-hover: #8d9aff;
+  --ui-color-accent-fg: #16181c;
   --ui-color-accent-tint: #262b4d;
   --ui-color-backdrop: rgba(0, 0, 0, 0.6);
 
