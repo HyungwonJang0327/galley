@@ -48,6 +48,8 @@ export { Form } from './primitives/Form';
 export type { FormProps, FormErrors, FormValues } from './primitives/Form';
 export { FormField } from './primitives/FormField';
 export type { FormFieldProps } from './primitives/FormField';
+export { Popover } from './primitives/Popover';
+export type { PopoverProps, PopoverSide, PopoverAlign } from './primitives/Popover';
 export { RadioGroup } from './primitives/RadioGroup';
 export type { RadioGroupProps, RadioItem } from './primitives/RadioGroup';
 export { Select } from './primitives/Select';
