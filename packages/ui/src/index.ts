@@ -14,6 +14,8 @@ export { StatTile } from './components/StatTile';
 export type { StatTileProps } from './components/StatTile';
 export { EmptyState } from './components/EmptyState';
 export type { EmptyStateProps } from './components/EmptyState';
+export { Separator } from './components/Separator';
+export type { SeparatorProps } from './components/Separator';
 
 export { AppShell } from './patterns/AppShell';
 export type { AppShellProps } from './patterns/AppShell';
