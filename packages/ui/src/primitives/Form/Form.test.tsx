@@ -162,6 +162,19 @@ describe('Form', () => {
     expect(onFormSubmit).toHaveBeenCalledWith({ memo: '값', email: 'x@y.z' });
   });
 
+  it('값의 모양을 제네릭으로 좁힐 수 있다', async () => {
+    const seen: string[] = [];
+    render(
+      <Form<{ name: string }> aria-label="폼" onFormSubmit={(values) => seen.push(values.name)}>
+        <FormField label="이름">
+          <Input name="name" defaultValue="홍길동" />
+        </FormField>
+      </Form>,
+    );
+    await submit(screen.getByRole('form') as HTMLFormElement);
+    expect(seen).toEqual(['홍길동']);
+  });
+
   it('className을 병합하고 나머지 props를 form에 넘긴다', () => {
     render(<Form aria-label="폼" className="extra" id="f" />);
     const form = screen.getByRole('form');
