@@ -66,6 +66,22 @@ describe('FormField', () => {
     expect(screen.getByRole('textbox').getAttribute('aria-invalid')).toBe('true');
   });
 
+  it('Textarea에 준 id·aria-describedby가 필드 연결을 끊지 않는다(Input과 같게)', () => {
+    const { container } = render(
+      <FormField label="메모" description="필드 설명" error="필드 오류">
+        <Textarea id="mine" aria-describedby="hint" />
+      </FormField>,
+    );
+    const el = screen.getByRole('textbox', { name: '메모' });
+    expect(el.id).toBe('mine');
+    // 라벨의 for가 소비자 id를 가리켜야 라벨 클릭이 포커스를 옮긴다.
+    expect(container.querySelector('label')?.getAttribute('for')).toBe('mine');
+    const ids = (el.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(ids).toContain('hint');
+    expect(descriptionsOf(el).filter(Boolean)).toEqual(['필드 설명', '필드 오류']);
+    expect(el.getAttribute('aria-invalid')).toBe('true');
+  });
+
   it('required는 장식용 * 만 그린다 — 이름에 섞이지 않고 컨트롤 required는 건드리지 않는다', () => {
     render(
       <FormField label="이름" required>
