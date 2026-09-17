@@ -531,6 +531,8 @@ export function FormFieldDemo() {
   );
 }
 
+// verify:layout(popover.mjs)이 트리거 글자("팝오버 기본"·"팝오버 오른쪽"·"팝오버 화면 하단")에 결합한다 —
+// "팝오버 기본"의 본문에는 포커스 가능 요소가 없어야 한다(팝업 자체의 포커스 링을 잰다).
 // Popover: 비제어(열림 상태를 앱이 들지 않는다)가 기본. 마지막 것만 제어형 — 본문 버튼이 밖에서 닫는다.
 export function PopoverDemo() {
   const [open, setOpen] = useState(false);
@@ -574,6 +576,21 @@ export function PopoverDemo() {
         </Button>
       </Popover>
     </>
+  );
+}
+
+export function PopoverAtBottomDemo() {
+  return (
+    <Popover
+      title="화면 하단"
+      trigger={
+        <Button variant="secondary" size="sm">
+          팝오버 화면 하단
+        </Button>
+      }
+    >
+      아래 공간이 없으면 트리거 위로 뒤집힌다.
+    </Popover>
   );
 }
 
