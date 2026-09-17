@@ -354,7 +354,8 @@ export function CheckboxUnlabeledDemo() {
   return <Checkbox checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 체크" />;
 }
 
-// 토글 횟수를 같이 보여준다 — label 감싸기에서 클릭 한 번이 두 번 토글되지 않는지 눈으로 확인.
+// 토글 횟수를 같이 보여준다 — label 감싸기에서 클릭 한 번이 두 번 토글되지 않는지 확인.
+// verify:layout(switch.mjs)이 라벨 문구와 data-demo="switch-count"에 결합한다 — 바꾸면 스크립트도 맞춘다.
 export function SwitchDemo() {
   const [checked, setChecked] = useState(false);
   const [count, setCount] = useState(0);
