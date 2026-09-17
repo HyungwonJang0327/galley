@@ -5,7 +5,10 @@ import styles from './InlineAlert.module.css';
 export type InlineAlertTone = 'info' | 'success' | 'warning' | 'danger';
 
 export interface InlineAlertProps extends Omit<ComponentProps<'div'>, 'title' | 'role'> {
-  /** 색·아이콘·알림 세기를 정한다(의미 매핑은 앱). 기본 info. */
+  /**
+   * 색·아이콘·알림 세기를 정한다(의미 매핑은 앱). 기본 info.
+   * warning·danger는 마운트될 때마다 끼어들어 읽힌다 — 늘 떠 있는 정적 안내에는 info를 쓴다.
+   */
   tone?: InlineAlertTone;
   /** 굵은 한 줄 제목. */
   title?: ReactNode;
