@@ -1,0 +1,10 @@
+/*
+ * 기본은 필드를 세로로 쌓는다. :where로 명시도를 0으로 둬 소비자 className(grid 등)이 CSS 로드 순서와
+ * 무관하게 이긴다.
+ */
+:where(.form) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+  min-width: 0;
+}

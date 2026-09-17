@@ -12,8 +12,10 @@ export interface FormFieldProps {
   description?: ReactNode;
   /**
    * 오류 문구. 비어 있지 않으면 필드가 invalid가 되고 문구가 aria-describedby에 연결된다.
-   * 없으면 네이티브 검증 문구(required 누락 등)가 그 자리에 나온다 — 단 폼이 Base UI Form일 때만.
-   * 일반 `<form>`은 브라우저가 제출 전에 막고 말풍선을 띄워 필드 검증이 돌지 않는다.
+   * 없으면 그 자리에 Form의 `errors`(같은 name)나 네이티브 검증 문구(required 누락 등)가 나온다 —
+   * 단 `Form` 안에서만. 일반 `<form>`은 브라우저가 제출 전에 막고 말풍선을 띄워 필드 검증이 돌지 않는다.
+   * `Form` 안에서 error가 있는 필드는 제출을 막는다 — 값이 바뀌면 앱이 error를 지워야 다시 제출된다
+   * (제출 뒤에 정해지는 오류는 Form의 `errors`로 넘기면 값이 바뀔 때 알아서 지워진다).
    */
   error?: string;
   /** 필수. 라벨 옆에 *를 그리고 안쪽 컨트롤에 native required를 넘긴다(기본 input처럼 제출 검증에 참여). */
@@ -31,7 +33,8 @@ export interface FormFieldProps {
 /**
  * 폼 필드(Base UI Field). 라벨 · 컨트롤 · 설명 · 오류를 세로로 쌓고, 컨트롤에 이름·설명·invalid를
  * 컨텍스트로 연결한다. 자체 검증 규칙은 없다 — 오류 문구는 앱이 `error`로 넘긴다. `required`는 기본
- * input처럼 동작한다: 일반 `<form>`에서는 브라우저가 제출을 막고 말풍선을 띄운다(끄려면 noValidate).
+ * input처럼 동작한다: 일반 `<form>`에서는 브라우저가 제출을 막고 말풍선을 띄우고, `Form` 안에서는
+ * 말풍선 대신 오류가 필드 아래에 뜬다.
  */
 export function FormField({
   label,
@@ -70,7 +73,7 @@ export function FormField({
             {error}
           </BaseField.Error>
         ) : (
-          // children 없는 Field.Error는 Field 검증이 실패했을 때만 브라우저 문구로 나타난다(Base UI Form 아래).
+          // children 없는 Field.Error는 Field 검증이 실패했을 때만 브라우저 문구로 나타난다(Form 아래).
           <BaseField.Error className={styles.error} />
         )}
       </div>

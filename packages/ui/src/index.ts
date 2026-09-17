@@ -44,6 +44,8 @@ export { Checkbox } from './primitives/Checkbox';
 export type { CheckboxProps } from './primitives/Checkbox';
 export { Dialog } from './primitives/Dialog';
 export type { DialogProps } from './primitives/Dialog';
+export { Form } from './primitives/Form';
+export type { FormProps, FormErrors, FormValues } from './primitives/Form';
 export { FormField } from './primitives/FormField';
 export type { FormFieldProps } from './primitives/FormField';
 export { RadioGroup } from './primitives/RadioGroup';
