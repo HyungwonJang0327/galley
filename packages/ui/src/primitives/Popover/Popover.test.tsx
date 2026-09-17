@@ -74,6 +74,17 @@ describe('Popover', () => {
     expect(await screen.findByRole('dialog', { name: '도움말' })).toBeTruthy();
   });
 
+  it('title과 aria-label을 둘 다 주면 title이 이름이다(aria-labelledby가 우선)', async () => {
+    render(
+      <Popover trigger={TRIGGER} title="제목" aria-label="무시되는 이름">
+        본문
+      </Popover>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    expect(await screen.findByRole('dialog', { name: '제목' })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: '무시되는 이름' })).toBeNull();
+  });
+
   it.each([null, false, ''])('title=%j는 제목 없음 — aria-label이 이름이 된다', async (title) => {
     render(
       <Popover trigger={TRIGGER} title={title} aria-label="도움말">
