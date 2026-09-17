@@ -40,6 +40,18 @@
   width: 200px;
 }
 
+/* 세로로 쌓는 데모 묶음 */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+/* InlineAlert 줄바꿈 데모: 좁은 폭에서 본문이 접히는 모습을 본다 */
+.alertBox {
+  width: 420px;
+}
+
 /* 좁은 flex 행 부모 — RadioGroup의 긴 보조 텍스트가 상자를 밀지 않고 말줄임되는지 보는 자리 */
 .radioBox {
   display: flex;

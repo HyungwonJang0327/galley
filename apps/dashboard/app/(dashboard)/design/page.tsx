@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   EmptyState,
+  InlineAlert,
   Input,
   ListRow,
   ListRows,
@@ -131,6 +132,40 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Card</h2>
           <div className={styles.row}>
             <Card className={styles.innerCard}>surface·라운드·그림자로 본문을 감싸는 카드.</Card>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>InlineAlert</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              tone — info·success는 role=&quot;status&quot;, warning·danger는 role=&quot;alert&quot;
+            </span>
+            <div className={styles.stack}>
+              <InlineAlert tone="info">참고할 내용이 있습니다.</InlineAlert>
+              <InlineAlert tone="success">저장했습니다.</InlineAlert>
+              <InlineAlert tone="warning">일부 항목이 비어 있습니다.</InlineAlert>
+              <InlineAlert tone="danger">불러오지 못했습니다.</InlineAlert>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              제목 + 여러 줄 본문 + action 슬롯 — 아이콘은 첫 줄에, 액션은 오른쪽 끝에
+            </span>
+            <div className={styles.alertBox}>
+              <InlineAlert
+                tone="danger"
+                title="불러오지 못했습니다"
+                action={
+                  <Button variant="secondary" size="sm">
+                    다시 시도
+                  </Button>
+                }
+              >
+                좁은 상자 안에서는 본문이 여러 줄로 접힌다. 접혀도 아이콘은 첫 줄 옆에 남고 액션
+                버튼은 줄어들지 않는다.
+              </InlineAlert>
+            </div>
           </div>
         </Card>
 
