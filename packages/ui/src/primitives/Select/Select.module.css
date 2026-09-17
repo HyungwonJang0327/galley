@@ -26,6 +26,11 @@
   outline-offset: 1px;
 }
 
+/* FormField(Base UI Field)가 오류 상태를 컨텍스트로 넘긴다 — Input·Textarea의 invalid 테두리와 같은 색. */
+.trigger[aria-invalid='true'] {
+  border-color: var(--ui-color-danger-fg);
+}
+
 .trigger[data-disabled] {
   color: var(--ui-color-text-muted);
   cursor: not-allowed;
