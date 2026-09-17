@@ -56,3 +56,4 @@ packages/ui/
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
 - 2026-09-17 P4-1 `Separator`는 `primitives/`가 아니라 `components/`(직접 작성). Base UI Separator는 `role="separator"` 고정이라 `decorative`(role none) 분기를 못 하고, div 하나라 래핑 이득이 없다. 결정 변경 없음(분류 기준 적용 사례).
 - 2026-09-17 P4-4: Base UI Field 컨텍스트에 없는 값(`required`)은 **자체 컨텍스트**(`primitives/FormField/FormFieldContext.ts`, 배럴 비공개)로 같은 패키지의 컨트롤에 넘긴다 — `cloneElement`로 children에 주입하지 않는다(컨트롤마다 받는 방식이 다르고 래퍼·Fragment에서 조용히 실패). 컨트롤에 직접 준 값이 우선. `Form` 프리미티브 추가 결정(P4-4b) — FormField의 네이티브 검증 문구가 인라인으로 뜨려면 Base UI Form이 필요하다. 결정 변경 없음(경계 규칙 적용 사례).
+- 2026-09-17 P4-4b `Form` 추가(사용자 결정). Base UI 래퍼의 prop 이름은 **Base UI 것을 그대로** 쓴다(`onFormSubmit`·`errors`) — 새 이름을 붙이지 않는다(얇은 래퍼). Base UI 동작 중 소비자가 밟기 쉬운 것(`errors` 참조 비교)은 래퍼에서 고치지 않고 JSDoc·README·동작 고정 테스트로 알린다 — 래퍼가 의미를 바꾸면 Base UI 문서와 어긋난다. 레이아웃 기본값을 주는 래퍼는 `:where()`로 명시도를 0으로 둔다. 결정 변경 없음.
