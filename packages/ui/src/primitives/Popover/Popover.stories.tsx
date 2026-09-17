@@ -1,4 +1,5 @@
 // Storybook 스토리(CSF3). Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
+import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { Popover } from './Popover';
 
@@ -19,6 +20,15 @@ export const WithoutTitle = {
 export const SideAndAlign = {
   args: { trigger, title: '오른쪽 · 위 맞춤', side: 'right', align: 'start', children: '본문' },
 };
-export const Controlled = {
-  args: { trigger, title: '제어형', open: true, onOpenChange: () => {}, children: '항상 열림' },
-};
+// open을 고정하고 onOpenChange를 no-op으로 두면 영영 안 닫힌다 — 상태를 들고 실제로 닫는다.
+function ControlledExample() {
+  const [open, setOpen] = useState(true);
+  return (
+    <Popover trigger={trigger} title="제어형" open={open} onOpenChange={setOpen}>
+      <Button size="sm" onClick={() => setOpen(false)}>
+        닫기
+      </Button>
+    </Popover>
+  );
+}
+export const Controlled = { render: () => <ControlledExample /> };
