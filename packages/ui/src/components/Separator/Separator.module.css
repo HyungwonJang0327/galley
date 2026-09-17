@@ -1,5 +1,4 @@
 .separator {
-  flex-shrink: 0;
   border: 0;
   background: var(--ui-color-border);
 }
@@ -21,6 +20,7 @@
  * flex·grid 행 밖에서는 stretch가 안 먹어 높이가 0이 된다 — 글자 높이를 안전망으로 둔다.
  */
 .vertical {
+  flex-shrink: 0;
   align-self: stretch;
   width: 1px;
   min-height: 1em;
