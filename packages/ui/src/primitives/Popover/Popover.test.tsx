@@ -50,6 +50,84 @@ describe('Popover', () => {
     expect(screen.queryByRole('heading')).toBeNull();
   });
 
+  it('비제어에서도 onOpenChange를 주면 열림·닫힘을 알려 준다(관찰용)', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Popover trigger={TRIGGER} title="제목" onOpenChange={onOpenChange}>
+        본문
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', { name: '자세히' });
+    await click(trigger);
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    await click(trigger);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('열리면 본문의 첫 포커스 가능 요소로, 없으면 팝업으로 포커스가 간다', async () => {
+    const { unmount } = render(
+      <Popover trigger={TRIGGER} title="제목">
+        <button type="button">첫 버튼</button>
+        <button type="button">둘째 버튼</button>
+      </Popover>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '첫 버튼' })),
+    );
+    unmount();
+
+    render(
+      <Popover trigger={TRIGGER} title="제목">
+        글자만
+      </Popover>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(document.activeElement).toBe(dialog));
+  });
+
+  it('닫히면 포커스가 트리거로 돌아온다', async () => {
+    render(
+      <Popover trigger={TRIGGER} title="제목">
+        <button type="button">첫 버튼</button>
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', { name: '자세히' });
+    await click(trigger);
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    await act(async () => {
+      fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' });
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it('바깥을 누르면 닫힌다', async () => {
+    render(
+      <div>
+        <Popover trigger={TRIGGER} title="제목">
+          본문
+        </Popover>
+        <p>바깥</p>
+      </div>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    const outside = screen.getByText('바깥');
+    await act(async () => {
+      fireEvent.pointerDown(outside, { pointerType: 'mouse', button: 0 });
+      fireEvent.mouseDown(outside, { button: 0 });
+      fireEvent.pointerUp(outside, { pointerType: 'mouse', button: 0 });
+      fireEvent.mouseUp(outside, { button: 0 });
+      fireEvent.click(outside);
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
   it('Esc로 닫힌다', async () => {
     render(
       <Popover trigger={TRIGGER} title="제목">
