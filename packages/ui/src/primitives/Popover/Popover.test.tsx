@@ -74,6 +74,17 @@ describe('Popover', () => {
     expect(await screen.findByRole('dialog', { name: '도움말' })).toBeTruthy();
   });
 
+  it.each([null, false, ''])('title=%j는 제목 없음 — aria-label이 이름이 된다', async (title) => {
+    render(
+      <Popover trigger={TRIGGER} title={title} aria-label="도움말">
+        본문
+      </Popover>,
+    );
+    await click(screen.getByRole('button', { name: '자세히' }));
+    const dialog = await screen.findByRole('dialog', { name: '도움말' });
+    expect(dialog.hasAttribute('aria-labelledby')).toBe(false);
+  });
+
   it('제어형 — open을 따르고, 누르면 onOpenChange만 부른다(부모가 안 바꾸면 그대로)', async () => {
     const onOpenChange = vi.fn();
     render(
