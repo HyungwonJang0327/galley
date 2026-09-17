@@ -1,0 +1,77 @@
+/* [아이콘] [제목 / 본문] [액션]. 폭은 부모를 따른다. 색은 Badge와 같은 tone 토큰(bg·fg). */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-normal);
+}
+
+.info {
+  background-color: var(--ui-color-info-bg);
+}
+.success {
+  background-color: var(--ui-color-success-bg);
+}
+.warning {
+  background-color: var(--ui-color-warning-bg);
+}
+.danger {
+  background-color: var(--ui-color-danger-bg);
+}
+
+/* 아이콘은 첫 줄 높이 안에서 세로 가운데 — 본문이 여러 줄이어도 첫 줄에 붙는다. */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: calc(1em * var(--ui-leading-normal));
+}
+
+.info .icon,
+.info .title {
+  color: var(--ui-color-info-fg);
+}
+.success .icon,
+.success .title {
+  color: var(--ui-color-success-fg);
+}
+.warning .icon,
+.warning .title {
+  color: var(--ui-color-warning-fg);
+}
+.danger .icon,
+.danger .title {
+  color: var(--ui-color-danger-fg);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-weight: var(--ui-weight-semibold);
+}
+
+.message {
+  overflow-wrap: anywhere;
+}
+
+/* 본문에 <p> 같은 블록을 넣어도 상자 안쪽 여백이 기본 margin만큼 벌어지지 않게. */
+.message > :first-child {
+  margin-top: 0;
+}
+.message > :last-child {
+  margin-bottom: 0;
+}
+
+.action {
+  flex-shrink: 0;
+}
