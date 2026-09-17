@@ -39,6 +39,10 @@
   color: var(--ui-color-text-muted);
 }
 
+/*
+ * 오류의 시각 신호: Input·Textarea·Select는 컨트롤 테두리 + 이 문구, Switch·Checkbox·RadioGroup은 문구만
+ * (토글·라디오에 빨간 테두리를 두르지 않는다 — 의도된 차이).
+ */
 .error {
   color: var(--ui-color-danger-fg);
 }
