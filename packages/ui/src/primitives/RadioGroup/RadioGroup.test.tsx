@@ -163,6 +163,19 @@ describe('RadioGroup', () => {
     expect(screen.getByRole('radio', { name: '둘째' }).tabIndex).toBe(0);
   });
 
+  it('roving tabindex — 미선택(value=null)이면 첫 항목이 탭 정지점이다', () => {
+    setup({ value: null });
+    expect(screen.getAllByRole('radio').map((radio) => radio.tabIndex)).toEqual([0, -1, -1]);
+  });
+
+  it('roving tabindex — 선택값이 disabled 항목이면 그 항목이 탭 정지점으로 남는다', () => {
+    // 의도된 동작(Base UI): 비활성이어도 선택된 항목이 그룹의 유일한 탭 정지점이다. 실제 Chrome에서
+    // Tab으로 들어온 뒤 방향키로 활성 항목에 나갈 수 있음을 확인했다(갇히지 않는다). 단, 맨 끝의
+    // disabled 항목에서 ArrowDown은 순환하지 않고 제자리 — ArrowUp으로 나간다.
+    setup({ value: 'c' });
+    expect(screen.getAllByRole('radio').map((radio) => radio.tabIndex)).toEqual([-1, -1, 0]);
+  });
+
   it('name을 주면 폼 제출값이 선택된 value다', () => {
     const { container } = render(
       <form>
