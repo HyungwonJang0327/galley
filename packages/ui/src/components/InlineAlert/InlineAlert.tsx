@@ -23,9 +23,9 @@ const ICONS = {
 } as const;
 
 /**
- * 화면 안에 놓이는 알림 상자. tone이 danger·warning이면 role="alert"(나타나는 즉시 끼어들어 읽힘),
- * info·success면 role="status"(하던 낭독이 끝난 뒤 읽힘). 아이콘은 장식 — 뜻은 문구가 전한다.
- * 조건부로 렌더하면 나타날 때 스크린리더가 읽는다.
+ * 화면 안에 놓이는 알림 상자. 제목+본문이 live 영역이다 — tone이 danger·warning이면 role="alert"
+ * (끼어들어 읽힘), info·success면 role="status"(하던 낭독 뒤에 읽힘). 아이콘은 장식이고 action은
+ * live 영역 밖에 둔다.
  */
 export function InlineAlert({
   tone = 'info',
@@ -39,16 +39,19 @@ export function InlineAlert({
   const Icon = ICONS[tone];
   const hasTitle = title !== undefined && title !== null && title !== false && title !== '';
   return (
-    // role은 스프레드 뒤에 둔다 — 타입을 우회해 넘어온 값도 tone이 정한 role이 덮는다.
-    <div
-      className={classes}
-      {...props}
-      role={tone === 'danger' || tone === 'warning' ? 'alert' : 'status'}
-    >
+    // 루트는 상자일 뿐이다. role은 타입에서 뺐고, 우회해 넘어와도 지운다.
+    <div className={classes} {...props} role={undefined}>
       <span className={styles.icon}>
         <Icon size={16} aria-hidden="true" />
       </span>
-      <div className={styles.body}>
+      {/*
+        live 영역은 제목+본문만 — action은 밖에 둔다. alert·status는 암묵적으로 aria-atomic이라
+        안에 버튼이 있으면 라벨이 본문에 이어 읽히고, 버튼 내용이 바뀔 때 알림 전체가 다시 낭독된다.
+      */}
+      <div
+        className={styles.body}
+        role={tone === 'danger' || tone === 'warning' ? 'alert' : 'status'}
+      >
         {hasTitle ? <div className={styles.title}>{title}</div> : null}
         <div className={styles.message}>{children}</div>
       </div>

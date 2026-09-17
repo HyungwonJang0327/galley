@@ -45,13 +45,16 @@ describe('InlineAlert', () => {
     }
   });
 
-  it('action 슬롯을 렌더한다', () => {
+  it('action은 live 영역 밖에 렌더한다 — 버튼 라벨이 알림 낭독에 섞이지 않게', () => {
     render(
-      <InlineAlert tone="danger" action={<button type="button">다시 시도</button>}>
+      <InlineAlert tone="danger" title="제목" action={<button type="button">다시 시도</button>}>
         실패
       </InlineAlert>,
     );
-    expect(screen.getByRole('button', { name: '다시 시도' })).toBeTruthy();
+    const button = screen.getByRole('button', { name: '다시 시도' });
+    const live = screen.getByRole('alert');
+    expect(live.contains(button)).toBe(false);
+    expect(live.textContent).toBe('제목실패');
   });
 
   it('아이콘은 장식이다(aria-hidden)', () => {
@@ -61,16 +64,19 @@ describe('InlineAlert', () => {
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('className을 병합하고 나머지 props를 넘기되, role은 tone이 정한다', () => {
+  it('className·나머지 props는 상자(루트)에 간다 — 루트에는 role이 없고, 넘어온 role도 지운다', () => {
     const smuggled = { role: 'button' } as object;
-    render(
+    const { container } = render(
       <InlineAlert tone="danger" className="extra" id="a1" {...smuggled}>
         문구
       </InlineAlert>,
     );
-    const el = screen.getByRole('alert');
-    expect(el.className).toContain('extra');
-    expect(el.className).not.toBe('extra');
-    expect(el.id).toBe('a1');
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('extra');
+    expect(root.className).not.toBe('extra');
+    expect(root.id).toBe('a1');
+    expect(root.hasAttribute('role')).toBe(false);
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(root.contains(screen.getByRole('alert'))).toBe(true);
   });
 });
