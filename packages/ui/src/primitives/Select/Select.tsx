@@ -54,53 +54,55 @@ export function Select({
   const lookup = items.map(({ value: v, label }) => ({ value: v, label }));
 
   return (
-    <BaseSelect.Root
-      value={value}
-      onValueChange={(next) => {
-        if (next !== null) onValueChange(next);
-      }}
-      items={lookup}
-      disabled={disabled}
-      name={name}
-      required={isRequired}
-    >
-      <BaseSelect.Trigger className={triggerClass} aria-label={ariaLabel}>
-        <BaseSelect.Value className={styles.value} placeholder={placeholder} />
-        <BaseSelect.Icon className={styles.icon}>
-          <ChevronDown size={16} aria-hidden="true" />
-        </BaseSelect.Icon>
-      </BaseSelect.Trigger>
-      <BaseSelect.Portal>
-        <BaseSelect.Positioner
-          className={styles.positioner}
-          sideOffset={4}
-          alignItemWithTrigger={false}
-        >
-          <BaseSelect.Popup className={styles.popup}>
-            <BaseSelect.List className={styles.list}>
-              {items.map((item) => (
-                <BaseSelect.Item
-                  key={item.value}
-                  value={item.value}
-                  label={item.label}
-                  disabled={item.disabled}
-                  title={item.disabled ? item.disabledReason : undefined}
-                  className={styles.item}
-                >
-                  <BaseSelect.ItemIndicator className={styles.indicator}>
-                    <Check size={14} aria-hidden="true" />
-                  </BaseSelect.ItemIndicator>
-                  <ItemContent
-                    label={<BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>}
-                    description={item.description}
-                    meta={item.meta}
-                  />
-                </BaseSelect.Item>
-              ))}
-            </BaseSelect.List>
-          </BaseSelect.Popup>
-        </BaseSelect.Positioner>
-      </BaseSelect.Portal>
-    </BaseSelect.Root>
+    <div className={styles.root}>
+      <BaseSelect.Root
+        value={value}
+        onValueChange={(next) => {
+          if (next !== null) onValueChange(next);
+        }}
+        items={lookup}
+        disabled={disabled}
+        name={name}
+        required={isRequired}
+      >
+        <BaseSelect.Trigger className={triggerClass} aria-label={ariaLabel}>
+          <BaseSelect.Value className={styles.value} placeholder={placeholder} />
+          <BaseSelect.Icon className={styles.icon}>
+            <ChevronDown size={16} aria-hidden="true" />
+          </BaseSelect.Icon>
+        </BaseSelect.Trigger>
+        <BaseSelect.Portal>
+          <BaseSelect.Positioner
+            className={styles.positioner}
+            sideOffset={4}
+            alignItemWithTrigger={false}
+          >
+            <BaseSelect.Popup className={styles.popup}>
+              <BaseSelect.List className={styles.list}>
+                {items.map((item) => (
+                  <BaseSelect.Item
+                    key={item.value}
+                    value={item.value}
+                    label={item.label}
+                    disabled={item.disabled}
+                    title={item.disabled ? item.disabledReason : undefined}
+                    className={styles.item}
+                  >
+                    <BaseSelect.ItemIndicator className={styles.indicator}>
+                      <Check size={14} aria-hidden="true" />
+                    </BaseSelect.ItemIndicator>
+                    <ItemContent
+                      label={<BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>}
+                      description={item.description}
+                      meta={item.meta}
+                    />
+                  </BaseSelect.Item>
+                ))}
+              </BaseSelect.List>
+            </BaseSelect.Popup>
+          </BaseSelect.Positioner>
+        </BaseSelect.Portal>
+      </BaseSelect.Root>
+    </div>
   );
 }

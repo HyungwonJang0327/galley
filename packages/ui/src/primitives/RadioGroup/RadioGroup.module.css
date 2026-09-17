@@ -23,6 +23,9 @@
 
 /* 항목: 원은 첫 줄(라벨)에 맞춘다 — 보조 텍스트가 있어도 원이 가운데로 내려오지 않게. */
 .item {
+  /* Base UI는 name이 있으면 hidden input을 position:absolute로 둔다 — 기준점이 없으면 문서에 붙어
+     안쪽 스크롤 영역 속 컨트롤이 문서 높이를 늘린다. */
+  position: relative;
   display: inline-flex;
   align-items: flex-start;
   gap: var(--ui-space-2);
