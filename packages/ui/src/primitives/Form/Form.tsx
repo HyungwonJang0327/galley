@@ -17,7 +17,8 @@ export interface FormProps<Values extends FormValues = FormValues> extends Compo
    * FormField에 준 `error` 모두 제출을 막고 그 필드로 포커스를 옮긴다.
    * 값은 컨트롤의 name으로 모은다. 이 prop을 주면 preventDefault를 알아서 하고, 안 주면 하지 않는다 —
    * `action`(서버 액션 포함)이 그대로 제출된다.
-   * native `onSubmit`도 그대로 쓸 수 있지만 검증 실패 때는 둘 다 불리지 않는다.
+   * native `onSubmit`도 그대로 쓸 수 있지만 검증 실패 때는 둘 다 불리지 않는다. 어느 버튼으로 제출했는지
+   * (submitter) 같은 이벤트 정보가 필요하면 `onSubmit`에서 얻는다 — 여기는 값만 넘긴다.
    */
   onFormSubmit?: (values: Values) => void;
   /**
