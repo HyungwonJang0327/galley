@@ -7,6 +7,7 @@ import { ItemContent } from '../ItemContent';
 import styles from './RadioGroup.module.css';
 
 export interface RadioItem {
+  /** 그룹 안에서 유일해야 한다(선택 판정과 key에 쓴다). */
   value: string;
   label: string;
   /** label 아래 한 줄 회색 보조 텍스트. 라디오의 설명(aria-describedby)이 된다. */
