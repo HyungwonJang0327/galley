@@ -15,7 +15,11 @@ export type { StatTileProps } from './components/StatTile';
 export { EmptyState } from './components/EmptyState';
 export type { EmptyStateProps } from './components/EmptyState';
 export { InlineAlert } from './components/InlineAlert';
-export type { InlineAlertProps, InlineAlertTone } from './components/InlineAlert';
+export type {
+  InlineAlertProps,
+  InlineAlertTone,
+  InlineAlertVariant,
+} from './components/InlineAlert';
 export { Separator } from './components/Separator';
 export type { SeparatorProps } from './components/Separator';
 
