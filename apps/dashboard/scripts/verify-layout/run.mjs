@@ -1,6 +1,6 @@
 // 레이아웃 실측 진입점 (decisions/layout-measurement.md).
 //   pnpm --filter dashboard verify:layout [--no-build] [--port 3999] [--url http://localhost:3000] [--out <dir>]
-// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch를 실측.
+// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch·RadioGroup을 실측.
 //   --no-build  기존 .next 재사용   --url  떠 있는 서버 사용(빌드·기동 생략)   --out  스크린샷 폴더
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -15,6 +15,7 @@ import { verifyShellScroll } from './shell-scroll.mjs';
 import { verifySplitPane } from './split-pane.mjs';
 import { verifySwitch } from './switch.mjs';
 import { verifyNotFound } from './not-found.mjs';
+import { verifyRadio } from './radio.mjs';
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const nextBin = createRequire(import.meta.url).resolve('next/dist/bin/next');
@@ -108,6 +109,7 @@ async function main() {
         verifyMenu,
         verifySplitPane,
         verifySwitch,
+        verifyRadio,
         verifyNotFound,
       ]) {
         // 대부분 /design 갤러리를 보지만, 404는 없는 경로여야 재현된다.
