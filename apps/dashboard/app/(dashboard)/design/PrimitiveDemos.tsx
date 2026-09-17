@@ -500,6 +500,7 @@ export function FormFieldDemo() {
           value={mode}
           onValueChange={setMode}
           items={FORM_SELECT_ITEMS}
+          // Field 안에서는 필드 라벨(aria-labelledby)이 그룹 이름으로 우선한다 — 타입이 필수라 같은 문구를 넘긴다.
           aria-label="방식"
           orientation="horizontal"
         />
