@@ -261,7 +261,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 각 항목 시작 전 Base UI 1.8.0 프리미티브 존재를 타입으로 확인하고 "래핑/직접 작성" 중 무엇인지 한 줄 보고 후 진행(2026-09-15 확인: switch·radio·radio-group·field·popover·toast·separator 서브패스 전부 존재).
 
-- [ ] **P4-1** ui — **Separator**(components) — `orientation` horizontal|vertical · `decorative`(true면 role none, 아니면 separator) · 토큰 border 색. 브랜치 `feat/ui-separator`. 커밋: `feat(ui): Separator 컴포넌트 추가`
+- [x] **P4-1** (2026-09-17 `03cbbc9`·갤러리 `1d508c2`·리뷰 8건 `bcd949c`–`4fa2a7c`, feat/ui-separator) ui — **Separator**(components) — `orientation` horizontal|vertical · `decorative`(true면 role none, 아니면 separator) · 토큰 border 색. 브랜치 `feat/ui-separator`. 커밋: `feat(ui): Separator 컴포넌트 추가`
 - [ ] **P4-2** ui — **Switch**(primitives, Base UI Switch) — 제어형 `checked`/`onCheckedChange` · `children` 라벨(없으면 `aria-label` 필수) · `disabled` · `name`. Checkbox와 같은 label 감싸기. 브랜치 `feat/ui-switch`. 커밋: `feat(ui): Switch 프리미티브 추가`
 - [ ] **P4-3** ui — **RadioGroup**(primitives, Base UI Radio/RadioGroup) — 제어형 `value`/`onValueChange` · `items: {value,label,description?,disabled?}[]` · `aria-label` · `orientation`. 아이템 레이아웃은 ItemContent 재사용. 브랜치 `feat/ui-radio-group`. 커밋: `feat(ui): RadioGroup 프리미티브 추가`
 - [ ] **P4-4** ui — **FormField**(primitives, Base UI Field) — `label` · `description?` · `error?`(string, 있으면 aria-invalid·aria-describedby 연결) · `required?` · `children`에 Input/Textarea/Select/Switch. Input·Textarea `invalid`는 FormField error가 있으면 Base UI Field 컨텍스트로 자동(연결 안 되면 소비자가 `invalid`를 직접 넘기는 방식으로 두고 보고). 브랜치 `feat/ui-form-field`. 커밋: `feat(ui): FormField 프리미티브 추가`
