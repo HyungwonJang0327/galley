@@ -51,3 +51,10 @@
 .errorRegion {
   max-width: 100%;
 }
+
+/* Form의 errors가 배열이면 Base UI가 문구를 ul로 그린다 — 불릿·들여쓰기 없이 줄로만 쌓는다. */
+.error ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
