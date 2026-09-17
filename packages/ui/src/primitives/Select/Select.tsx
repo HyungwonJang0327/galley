@@ -3,6 +3,7 @@ import { Select as BaseSelect } from '@base-ui/react/select';
 import { Check, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ItemContent } from '../ItemContent';
+import { useFieldRequired } from '../FormField/FormFieldContext';
 import styles from './Select.module.css';
 
 export interface SelectItem {
@@ -26,6 +27,8 @@ export interface SelectProps {
   disabled?: boolean;
   /** 폼 제출용 hidden input 이름. */
   name?: string;
+  /** 필수. FormField 안에서는 필드의 required를 물려받는다(직접 주면 그 값이 우선). */
+  required?: boolean;
   'aria-label'?: string;
   /** 트리거에 병합. */
   className?: string;
@@ -42,9 +45,11 @@ export function Select({
   placeholder,
   disabled,
   name,
+  required,
   'aria-label': ariaLabel,
   className,
 }: SelectProps) {
+  const isRequired = useFieldRequired(required);
   const triggerClass = [styles.trigger, className].filter(Boolean).join(' ');
   const lookup = items.map(({ value: v, label }) => ({ value: v, label }));
 
@@ -57,6 +62,7 @@ export function Select({
       items={lookup}
       disabled={disabled}
       name={name}
+      required={isRequired}
     >
       <BaseSelect.Trigger className={triggerClass} aria-label={ariaLabel}>
         <BaseSelect.Value className={styles.value} placeholder={placeholder} />
