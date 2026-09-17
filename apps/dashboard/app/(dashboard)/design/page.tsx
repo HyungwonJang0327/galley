@@ -23,6 +23,7 @@ import {
   FormFieldDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
+  PopoverAtBottomDemo,
   PopoverDemo,
   RadioGroupDemo,
   RadioGroupDisabledDemo,
@@ -489,7 +490,7 @@ export default function DesignPage() {
 
         {/* 페이지 맨 아래 카드여야 한다 — verify:layout이 main을 끝까지 스크롤해 뒤집힘을 잰다. */}
         <Card>
-          <h2 className={styles.sectionTitle}>화면 하단 · Select · Menu</h2>
+          <h2 className={styles.sectionTitle}>화면 하단 · Select · Menu · Popover</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
               페이지 맨 아래에서 열면 팝업이 위로 뒤집힌다(Base UI 충돌 회피)
@@ -499,6 +500,7 @@ export default function DesignPage() {
                 <SelectAtBottomDemo />
               </div>
               <MenuAtBottomDemo />
+              <PopoverAtBottomDemo />
             </div>
           </div>
         </Card>
