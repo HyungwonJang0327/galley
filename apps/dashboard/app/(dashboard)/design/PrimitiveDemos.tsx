@@ -13,6 +13,7 @@ import {
   Menu,
   Select,
   SplitPane,
+  Switch,
   Tabs,
   TimelineItem,
   TimelineItems,
@@ -351,6 +352,44 @@ export function CheckboxDisabledDemo() {
 export function CheckboxUnlabeledDemo() {
   const [checked, setChecked] = useState(false);
   return <Checkbox checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 체크" />;
+}
+
+// 토글 횟수를 같이 보여준다 — label 감싸기에서 클릭 한 번이 두 번 토글되지 않는지 눈으로 확인.
+export function SwitchDemo() {
+  const [checked, setChecked] = useState(false);
+  const [count, setCount] = useState(0);
+  return (
+    <>
+      <Switch
+        checked={checked}
+        onCheckedChange={(next) => {
+          setChecked(next);
+          setCount((n) => n + 1);
+        }}
+      >
+        스위치 항목
+      </Switch>
+      <span data-demo="switch-count">토글 {count}회</span>
+    </>
+  );
+}
+
+export function SwitchDisabledDemo() {
+  return (
+    <>
+      <Switch checked={false} onCheckedChange={() => {}} disabled>
+        비활성(꺼짐)
+      </Switch>
+      <Switch checked onCheckedChange={() => {}} disabled>
+        비활성(켜짐)
+      </Switch>
+    </>
+  );
+}
+
+export function SwitchUnlabeledDemo() {
+  const [checked, setChecked] = useState(true);
+  return <Switch checked={checked} onCheckedChange={setChecked} aria-label="라벨 없는 스위치" />;
 }
 
 // Tooltip 트리거는 props·ref를 DOM까지 넘기는 요소여야 한다 — 클라이언트 파일에서 만든다.
