@@ -2,6 +2,7 @@
 import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
 import { Check, Minus } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useFieldRequired } from '../FormField/FormFieldContext';
 import styles from './Checkbox.module.css';
 
 export interface CheckboxProps {
@@ -17,6 +18,8 @@ export interface CheckboxProps {
   /** 폼 제출용 이름·값. */
   name?: string;
   value?: string;
+  /** 필수. FormField 안에서는 필드의 required를 물려받는다(직접 주면 그 값이 우선). */
+  required?: boolean;
   /** 라벨 요소에 병합. */
   className?: string;
 }
@@ -34,8 +37,10 @@ export function Checkbox({
   disabled,
   name,
   value,
+  required,
   className,
 }: CheckboxProps) {
+  const isRequired = useFieldRequired(required);
   const classes = [styles.label, className].filter(Boolean).join(' ');
   return (
     <label className={classes} data-disabled={disabled || undefined}>
@@ -47,6 +52,7 @@ export function Checkbox({
         disabled={disabled}
         name={name}
         value={value}
+        required={isRequired}
         aria-label={ariaLabel}
       >
         <BaseCheckbox.Indicator className={styles.indicator}>

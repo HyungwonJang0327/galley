@@ -4,6 +4,7 @@ import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { ItemContent } from '../ItemContent';
+import { useFieldRequired } from '../FormField/FormFieldContext';
 import styles from './RadioGroup.module.css';
 
 export interface RadioItem {
@@ -28,6 +29,8 @@ export interface RadioGroupProps {
   disabled?: boolean;
   /** 폼 제출용 이름. */
   name?: string;
+  /** 필수. FormField 안에서는 필드의 required를 물려받는다(직접 주면 그 값이 우선). */
+  required?: boolean;
   /** 그룹 요소에 병합. */
   className?: string;
 }
@@ -44,8 +47,10 @@ export function RadioGroup({
   orientation = 'vertical',
   disabled,
   name,
+  required,
   className,
 }: RadioGroupProps) {
+  const isRequired = useFieldRequired(required);
   const baseId = useId();
   const classes = [styles.group, styles[orientation], className].filter(Boolean).join(' ');
   return (
@@ -58,6 +63,7 @@ export function RadioGroup({
       }}
       disabled={disabled}
       name={name}
+      required={isRequired}
       aria-label={ariaLabel}
       aria-orientation={orientation}
     >

@@ -2,6 +2,7 @@
 import { Field as BaseField } from '@base-ui/react/field';
 import { mergeProps } from '@base-ui/react/merge-props';
 import type { ComponentProps } from 'react';
+import { useFieldRequired } from '../FormField/FormFieldContext';
 import styles from './Textarea.module.css';
 
 export interface TextareaProps extends ComponentProps<'textarea'> {
@@ -24,6 +25,7 @@ export function Textarea({
   className,
   rows = 3,
   id,
+  required,
   value,
   defaultValue,
   ref,
@@ -31,6 +33,8 @@ export function Textarea({
   ...props
 }: TextareaProps) {
   const classes = [styles.textarea, className].filter(Boolean).join(' ');
+  // FormField 안에서는 필드의 required를 물려받는다(직접 주면 그 값이 우선).
+  const isRequired = useFieldRequired(required);
   return (
     // id·value·ref는 Control이 알아야 한다 — id는 라벨의 htmlFor, value는 filled 상태, ref는 검증·포커스와 묶인다.
     <BaseField.Control
@@ -42,7 +46,12 @@ export function Textarea({
       // aria-describedby·aria-invalid를 덮어쓴다(undefined 키도 이긴다). 여기서 직접 합친다.
       render={(fieldProps) => (
         <textarea
-          {...mergeProps<'textarea'>(fieldProps, { className: classes, rows, ...props })}
+          {...mergeProps<'textarea'>(fieldProps, {
+            className: classes,
+            rows,
+            required: isRequired,
+            ...props,
+          })}
           aria-describedby={joinIds(describedBy, fieldProps['aria-describedby'])}
           aria-invalid={invalid || fieldProps['aria-invalid'] || undefined}
         />
