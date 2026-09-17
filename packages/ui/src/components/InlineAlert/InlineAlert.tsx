@@ -26,6 +26,10 @@ const ICONS = {
  * 화면 안에 놓이는 알림 상자. 제목+본문이 live 영역이다 — tone이 danger·warning이면 role="alert"
  * (끼어들어 읽힘), info·success면 role="status"(하던 낭독 뒤에 읽힘). 아이콘은 장식이고 action은
  * live 영역 밖에 둔다.
+ *
+ * 낭독: alert tone(danger·warning)은 조건부로 렌더하면 나타나는 순간 읽힌다. status tone(info·success)은
+ * 영역과 문구가 동시에 생기면 스크린리더가 놓치기 쉽다 — 낭독이 꼭 필요하면 앱이 처음부터 마운트해 둔
+ * live 영역 안에 넣는다.
  */
 export function InlineAlert({
   tone = 'info',
