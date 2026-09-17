@@ -51,7 +51,10 @@ export function RadioGroup({
     <BaseRadioGroup
       className={classes}
       value={value}
-      onValueChange={(next) => onValueChange(next as string)}
+      onValueChange={(next) => {
+        // Base UI 타입은 null을 허용하지만 실제로는 고른 항목의 value만 온다.
+        if (next !== null) onValueChange(next);
+      }}
       disabled={disabled}
       name={name}
       aria-label={ariaLabel}
