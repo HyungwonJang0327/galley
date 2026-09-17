@@ -8,23 +8,29 @@ import { Input } from '../Input';
 import { Select } from '../Select';
 import { Switch } from '../Switch';
 
-/** Base UI는 제출 검증·포커스 이동을 비동기로 한다 — 제출하고 한 박자 기다린다. */
+/** Base UI는 제출 검증·포커스 이동을 비동기로 한다 — act가 그 작업을 비울 때까지 기다린다(고정 대기 없음). */
 async function submit(form: HTMLFormElement) {
   await act(async () => {
     fireEvent.submit(form);
-    await new Promise((resolve) => setTimeout(resolve, 20));
   });
 }
 
 async function type(el: HTMLElement, value: string) {
   await act(async () => {
     fireEvent.change(el, { target: { value } });
-    await new Promise((resolve) => setTimeout(resolve, 20));
   });
 }
 
-const errorOf = (el: HTMLElement) =>
-  el.closest('[class*="field"]')?.querySelector('[aria-live]')?.textContent ?? null;
+/** 컨트롤에 연결된(aria-describedby) 오류 문구. 오류 요소는 Base UI가 data-invalid로 표시한다. */
+function errorOf(el: HTMLElement): string {
+  return (el.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map((id) => document.getElementById(id))
+    .filter((node) => node?.closest('[aria-live]'))
+    .map((node) => node?.textContent ?? '')
+    .join('');
+}
 
 describe('Form', () => {
   it('이름 있는 form으로 렌더되고 브라우저 말풍선을 끈다(noValidate)', () => {
