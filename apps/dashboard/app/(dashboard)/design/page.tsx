@@ -244,8 +244,12 @@ export default function DesignPage() {
         <Card>
           <h2 className={styles.sectionTitle}>RadioGroup</h2>
           <div className={styles.group}>
-            <span className={styles.groupLabel}>세로(기본) — 라벨 + 보조, 항목 disabled</span>
-            <RadioGroupDemo />
+            <span className={styles.groupLabel}>
+              세로(기본) — 라벨 + 보조, 항목 disabled. 좁은 flex 행 상자 안에서 긴 보조는 말줄임
+            </span>
+            <div className={styles.radioBox}>
+              <RadioGroupDemo />
+            </div>
           </div>
           <div className={styles.group}>
             <span className={styles.groupLabel}>가로 — 미선택(value=null)에서 시작</span>

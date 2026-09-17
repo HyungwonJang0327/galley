@@ -399,7 +399,8 @@ const RADIO_ITEMS = [
   {
     value: 'second',
     label: '둘째 선택지',
-    description: '보조 설명은 이름이 아니라 설명으로 읽힌다',
+    description:
+      '보조 설명은 이름이 아니라 설명으로 읽힌다. 한 줄을 넘기면 말줄임으로 잘린다 — 그룹 폭을 넘겨 부모를 밀어내지 않는지 보려고 일부러 길게 쓴 문장이다.',
   },
   {
     value: 'third',

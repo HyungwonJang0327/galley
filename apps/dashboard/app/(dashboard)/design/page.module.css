@@ -40,6 +40,12 @@
   width: 200px;
 }
 
+/* 좁은 flex 행 부모 — RadioGroup의 긴 보조 텍스트가 상자를 밀지 않고 말줄임되는지 보는 자리 */
+.radioBox {
+  display: flex;
+  width: 320px;
+}
+
 /* 툴바 안 검색·필터 컨트롤 폭(Input·Select는 부모 폭을 채운다) */
 .filterBox {
   width: 160px;
