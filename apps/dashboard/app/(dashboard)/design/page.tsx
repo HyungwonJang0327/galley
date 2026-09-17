@@ -263,11 +263,11 @@ export default function DesignPage() {
         </Card>
 
         <Card>
-          <h2 className={styles.sectionTitle}>FormField</h2>
+          <h2 className={styles.sectionTitle}>Form · FormField</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
-              라벨 · 컨트롤 · 설명 · 오류 — Input(필수) / Textarea(오류) / Select(오류) / Switch /
-              RadioGroup
+              라벨 · 컨트롤 · 설명 · 오류 — Input(필수: 비운 채 제출하면 인라인 오류) / Input(Form
+              errors) / Textarea(앱 오류) / Select(앱 오류) / Switch / RadioGroup
             </span>
             <FormFieldDemo />
           </div>
