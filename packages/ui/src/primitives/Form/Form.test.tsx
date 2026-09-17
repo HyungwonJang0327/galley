@@ -128,6 +128,30 @@ describe('Form', () => {
     expect(email.hasAttribute('aria-invalid')).toBe(false);
   });
 
+  // Base UI 동작을 고정한다(Form.tsx errors JSDoc의 근거). 바뀌면 JSDoc·README도 같이 고친다.
+  it('errors의 참조가 바뀌면 지워진 오류가 되살아난다 — 안정 참조면 지워진 채로 남는다', async () => {
+    function Host({ inline }: { inline: boolean }) {
+      const [value, setValue] = useState('a@b.c');
+      const [stable] = useState<FormErrors>({ email: '서버 오류' });
+      return (
+        <Form aria-label="폼" errors={inline ? { email: '서버 오류' } : stable}>
+          <FormField label="이메일">
+            <Input name="email" value={value} onChange={(event) => setValue(event.target.value)} />
+          </FormField>
+        </Form>
+      );
+    }
+    // 제어형 입력은 키 입력마다 Host를 리렌더한다 → 인라인 객체는 매번 새 참조.
+    const inline = render(<Host inline />);
+    await type(screen.getByRole('textbox'), 'x@y.z');
+    expect(errorOf(screen.getByRole('textbox'))).toBe('서버 오류');
+    inline.unmount();
+
+    render(<Host inline={false} />);
+    await type(screen.getByRole('textbox'), 'x@y.z');
+    expect(errorOf(screen.getByRole('textbox'))).toBe('');
+  });
+
   it('FormField에 직접 준 error가 errors보다 우선한다', () => {
     render(
       <Form aria-label="폼" errors={{ email: '서버 오류' }}>

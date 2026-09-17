@@ -22,6 +22,11 @@ export interface FormProps<Values extends FormValues = FormValues> extends Compo
   /**
    * 밖에서 온 오류(서버 응답 등). 키는 컨트롤의 name. FormField의 오류 자리에 뜨고, 그 필드 값을
    * 바꾸면 지워진다. FormField에 직접 준 `error`가 있으면 그것이 우선한다.
+   *
+   * **참조를 안정적으로 든다(state·상수).** Base UI는 이 객체를 참조로 비교해, 참조가 바뀌면 이미 지워진
+   * 오류까지 전부 다시 적용한다. `errors={{ email: '…' }}`처럼 인라인으로 쓰면 제어형 입력은 키 입력마다
+   * 부모가 리렌더되므로 오류가 지워지자마자 되살아나고, 남은 오류가 제출을 막아 폼이 영영 제출되지 않는다.
+   * 새 서버 응답이 올 때만 객체를 교체한다.
    */
   errors?: FormErrors;
 }
