@@ -23,6 +23,7 @@ import {
   FormFieldDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
+  PopoverDemo,
   RadioGroupDemo,
   RadioGroupDisabledDemo,
   RadioGroupHorizontalDemo,
@@ -400,6 +401,19 @@ export default function DesignPage() {
               ListToolbarTab.
             </span>
             <TabsDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Popover</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              클릭으로 열림: 기본(아래·가운데, 제목) / 오른쪽·위 맞춤(제목 없음) / 제어형(본문
+              버튼이 닫는다)
+            </span>
+            <div className={styles.row}>
+              <PopoverDemo />
+            </div>
           </div>
         </Card>
 
