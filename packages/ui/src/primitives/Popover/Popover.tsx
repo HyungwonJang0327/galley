@@ -6,7 +6,7 @@ import styles from './Popover.module.css';
 export type PopoverSide = 'top' | 'bottom' | 'left' | 'right';
 export type PopoverAlign = 'start' | 'center' | 'end';
 
-export interface PopoverProps {
+interface PopoverBaseProps {
   /**
    * 트리거 요소(예: <Button>자세히</Button>). 팝오버가 이 요소에 props·ref를 병합하므로 받은
    * props를 DOM 요소까지 넘기는 요소여야 한다(props를 버리는 래퍼 컴포넌트는 열리지 않는다).
@@ -22,16 +22,30 @@ export interface PopoverProps {
   side?: PopoverSide;
   /** 트리거 기준 정렬. */
   align?: PopoverAlign;
-  /**
-   * 열림 상태. **선택** — 주지 않으면 팝오버가 스스로 관리한다(비제어). 이 패키지의 "제어형만" 원칙의
-   * 유일한 예외다: 단순 정보 팝업은 앱이 열림 상태를 가질 이유가 없다. 밖에서 닫아야 할 때만
-   * `onOpenChange`와 함께 준다.
-   */
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
   /** popup에 병합. */
   className?: string;
 }
+
+/** 비제어: 팝오버가 열림 상태를 스스로 관리한다. `onOpenChange`는 관찰용으로만 줄 수 있다. */
+interface PopoverUncontrolledProps {
+  open?: undefined;
+  onOpenChange?: (open: boolean) => void;
+}
+
+/**
+ * 제어형: `open`을 주면 `onOpenChange`도 반드시 준다 — 빠지면 영영 안 닫히는 팝오버가 된다.
+ * `open`에 `undefined`를 흘려보내도 된다(그때는 비제어로 돈다).
+ */
+interface PopoverControlledProps {
+  open: boolean | undefined;
+  onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * 열림 상태는 **선택**이다 — 주지 않으면 비제어. 이 패키지의 "제어형만" 원칙의 유일한 예외다:
+ * 단순 정보 팝업은 앱이 열림 상태를 가질 이유가 없다. 밖에서 닫아야 할 때만 제어형으로 쓴다.
+ */
+export type PopoverProps = PopoverBaseProps & (PopoverUncontrolledProps | PopoverControlledProps);
 
 /**
  * 팝오버(Base UI). 트리거를 누르면 열리고 Esc·바깥 클릭으로 닫힌다. 열리면 포커스가 팝업 안으로
