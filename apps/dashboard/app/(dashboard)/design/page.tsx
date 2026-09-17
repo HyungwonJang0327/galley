@@ -132,13 +132,15 @@ export default function DesignPage() {
             <Separator />
           </div>
           <div className={styles.group}>
-            <span className={styles.groupLabel}>수직 — flex 행 안에서 부모 높이를 채운다</span>
+            <span className={styles.groupLabel}>
+              수직 — flex 행 안에서 부모 높이를 채운다(선 높이 = 가장 큰 자식인 버튼 높이)
+            </span>
             <div className={styles.row}>
-              <span>왼쪽</span>
+              <span>글자</span>
               <Separator orientation="vertical" />
-              <span>가운데</span>
+              <Button variant="secondary">버튼</Button>
               <Separator orientation="vertical" />
-              <span>오른쪽</span>
+              <span>글자</span>
             </div>
           </div>
           <div className={styles.group}>
