@@ -7,6 +7,7 @@ import {
   Button,
   Checkbox,
   Dialog,
+  Form,
   FormField,
   Input,
   ListRow,
@@ -458,15 +459,19 @@ export function RadioGroupDisabledDemo() {
   );
 }
 
+// 서버가 돌려준 오류 흉내. 객체가 매 렌더 새로 만들어지지 않게 모듈 상수로 둔다.
+const FORM_SERVER_ERRORS = { email: '이미 쓰고 있는 주소' };
+
 const FORM_SELECT_ITEMS = [
   { value: 'a', label: '첫째' },
   { value: 'b', label: '둘째' },
 ];
 
 // verify:layout(form-field.mjs)이 form aria-label·컨트롤 name·data-demo="form-submit-count"에 결합한다 —
-// 이름 칸은 필수·빈 값으로 시작, 메모(Textarea)는 앱 오류가 있는 필드여야 한다.
+// 이름 칸은 필수·빈 값으로 시작, 메모(Textarea)는 비어 있는 동안 앱 오류, 선택(Select)은 고르기 전까지 앱 오류,
+// 이메일은 Form errors(서버 오류 흉내)가 있는 필드여야 한다.
 // 라벨·설명·오류가 컨트롤에 연결되는 모습. required는 필드에만 적는다 — 안쪽 컨트롤이 물려받아
-// 기본 input처럼 제출 검증에 참여한다. 이름을 비운 채 제출하면 브라우저가 제출을 막고 말풍선을 띄운다.
+// 제출 검증에 참여한다. Form 안이라 말풍선 대신 오류가 필드 아래에 뜨고 첫 오류 칸으로 포커스가 간다.
 export function FormFieldDemo() {
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
@@ -475,21 +480,30 @@ export function FormFieldDemo() {
   const [mode, setMode] = useState<string | null>('a');
   const [submitted, setSubmitted] = useState(0);
   return (
-    <form
+    <Form
       className={styles.formGrid}
       aria-label="폼 필드 데모"
-      onSubmit={(event) => {
-        event.preventDefault();
-        setSubmitted((n) => n + 1);
-      }}
+      errors={FORM_SERVER_ERRORS}
+      onFormSubmit={() => setSubmitted((n) => n + 1)}
     >
-      <FormField label="이름" description="필수 — 비운 채 제출하면 브라우저가 막는다" required>
+      <FormField label="이름" description="필수 — 비운 채 제출하면 오류가 여기 뜬다" required>
         <Input name="name" value={name} onChange={(event) => setName(event.target.value)} />
       </FormField>
-      <FormField label="메모" error="앱이 넘긴 오류 문구(여러 줄 입력)">
+      <FormField label="이메일" description="Form errors로 온 오류 — 값을 바꾸면 지워진다">
+        <Input name="email" type="email" defaultValue="taken@example.com" />
+      </FormField>
+      {/* 앱이 넘기는 error: 오류가 있는 동안 제출을 막으므로 값이 생기면 앱이 지운다. */}
+      <FormField
+        label="메모"
+        error={note === '' ? '앱이 넘긴 오류 — 메모를 입력하세요' : undefined}
+      >
         <Textarea name="note" value={note} onChange={(event) => setNote(event.target.value)} />
       </FormField>
-      <FormField label="선택" description="Select도 라벨로 이름이 잡힌다" error="하나를 고르세요">
+      <FormField
+        label="선택"
+        description="Select도 라벨로 이름이 잡힌다"
+        error={choice === null ? '하나를 고르세요' : undefined}
+      >
         <Select name="choice" value={choice} onValueChange={setChoice} items={FORM_SELECT_ITEMS} />
       </FormField>
       <FormField label="켜기" description="Switch는 내용 폭만큼만">
@@ -512,7 +526,7 @@ export function FormFieldDemo() {
         </Button>{' '}
         <span data-demo="form-submit-count">제출 {submitted}회</span>
       </div>
-    </form>
+    </Form>
   );
 }
 
