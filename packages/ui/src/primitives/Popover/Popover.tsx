@@ -34,6 +34,8 @@ interface PopoverUncontrolledProps {
 
 /**
  * 제어형: `open`을 주면 `onOpenChange`도 반드시 준다 — 빠지면 영영 안 닫히는 팝오버가 된다.
+ * `onOpenChange(false)`는 Esc · 바깥 클릭 · 트리거 재클릭, 그리고 **포커스가 팝업을 벗어날 때**(Tab으로
+ * 끝을 넘김)도 온다 — 사유는 넘기지 않는다.
  * `open`에 `undefined`를 흘려보내도 된다(그때는 비제어로 돈다).
  */
 interface PopoverControlledProps {
