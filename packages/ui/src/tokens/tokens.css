@@ -90,8 +90,7 @@
   --ui-timeline-gutter: 24px; /* 마커·세로선이 차지하는 좌측 폭 */
   --ui-checkbox-size: 16px; /* 체크박스 상자 한 변 */
   --ui-switch-width: 28px; /* 스위치 트랙 폭 */
-  --ui-switch-height: 16px; /* 스위치 트랙 높이(체크박스와 같은 줄 높이) */
-  --ui-switch-thumb: 12px; /* 손잡이 지름 = 높이 − 테두리 2 − 여백 2 */
+  --ui-switch-height: 16px; /* 스위치 트랙 높이(체크박스와 같은 줄 높이). 손잡이 지름은 여기서 파생 */
   --ui-tooltip-max-width: 240px; /* 툴팁은 짧은 보조 문구 — 이 폭에서 줄바꿈 */
 
   --ui-menu-popup-min-width: 160px; /* 작은 트리거(⋮)에서도 이 폭 이상 */
