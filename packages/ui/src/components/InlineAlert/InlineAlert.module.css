@@ -51,17 +51,15 @@
   color: var(--ui-color-danger-fg);
 }
 
+/* 줄바꿈 규칙은 제목·본문 공통 — 공백 없는 긴 제목(경로·식별자)이 action 위로 넘치지 않게. */
 .body {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .title {
   font-weight: var(--ui-weight-semibold);
-}
-
-.message {
-  overflow-wrap: anywhere;
 }
 
 /* 본문에 <p> 같은 블록을 넣어도 상자 안쪽 여백이 기본 margin만큼 벌어지지 않게. */
