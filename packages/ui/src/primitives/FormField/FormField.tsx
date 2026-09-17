@@ -8,7 +8,7 @@ export interface FormFieldProps {
   label: ReactNode;
   /** 라벨 아래 회색 보조 설명. 컨트롤의 aria-describedby에 연결된다. */
   description?: ReactNode;
-  /** 오류 문구. 있으면 필드가 invalid가 되고 문구가 aria-describedby에 연결된다. */
+  /** 오류 문구. 비어 있지 않으면 필드가 invalid가 되고 문구가 aria-describedby에 연결된다. */
   error?: string;
   /** 라벨 옆 필수 표시(*)만 그린다. 컨트롤의 required는 소비자가 컨트롤에 직접 준다. */
   required?: boolean;
@@ -31,8 +31,10 @@ export function FormField({
   className,
 }: FormFieldProps) {
   const classes = [styles.field, className].filter(Boolean).join(' ');
+  // 빈 문자열은 오류 없음 — `error={cond && '…'}`·`errors.x ?? ''` 같은 패턴에서 문구 없는 빨간 테두리가 나오지 않게.
+  const hasError = Boolean(error);
   return (
-    <BaseField.Root className={classes} invalid={error !== undefined}>
+    <BaseField.Root className={classes} invalid={hasError}>
       <BaseField.Label className={styles.label}>
         {label}
         {required ? (
@@ -45,7 +47,7 @@ export function FormField({
       {description !== undefined ? (
         <BaseField.Description className={styles.description}>{description}</BaseField.Description>
       ) : null}
-      {error !== undefined ? (
+      {hasError ? (
         <BaseField.Error className={styles.error} match>
           {error}
         </BaseField.Error>

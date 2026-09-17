@@ -57,6 +57,16 @@ describe('FormField', () => {
     expect(container.querySelector('[data-invalid]')).toBeNull();
   });
 
+  it('빈 문자열 error는 오류가 아니다', () => {
+    const { container } = render(
+      <FormField label="이름" error="">
+        <Input />
+      </FormField>,
+    );
+    expect(screen.getByRole('textbox').hasAttribute('aria-invalid')).toBe(false);
+    expect(container.querySelector('[data-invalid]')).toBeNull();
+  });
+
   it('error가 없어도 컨트롤에 직접 준 invalid는 살아 있다', () => {
     render(
       <FormField label="이름">
