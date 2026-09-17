@@ -141,7 +141,7 @@ export default function DesignPage() {
             <span className={styles.groupLabel}>
               tone — info·success는 role=&quot;status&quot;, warning·danger는 role=&quot;alert&quot;
             </span>
-            <div className={styles.stack}>
+            <div className={styles.stack} data-demo="alert-tones">
               <InlineAlert tone="info">참고할 내용이 있습니다.</InlineAlert>
               <InlineAlert tone="success">저장했습니다.</InlineAlert>
               <InlineAlert tone="warning">일부 항목이 비어 있습니다.</InlineAlert>
@@ -152,7 +152,7 @@ export default function DesignPage() {
             <span className={styles.groupLabel}>
               제목 + 여러 줄 본문 + action 슬롯 — 아이콘은 첫 줄에, 액션은 오른쪽 끝에
             </span>
-            <div className={styles.alertBox}>
+            <div className={styles.alertBox} data-demo="alert-multiline">
               <InlineAlert
                 tone="danger"
                 title="불러오지 못했습니다"
@@ -165,6 +165,31 @@ export default function DesignPage() {
                 좁은 상자 안에서는 본문이 여러 줄로 접힌다. 접혀도 아이콘은 첫 줄 옆에 남고 액션
                 버튼은 줄어들지 않는다.
               </InlineAlert>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              variant=&quot;plain&quot; — 상자 없이 아이콘과 글자만. 목록 행 안처럼 상자를 또 두기
+              어색한 자리
+            </span>
+            <div className={styles.stack} data-demo="alert-plain">
+              <InlineAlert tone="danger" variant="plain">
+                저장하지 못했습니다.
+              </InlineAlert>
+              <InlineAlert tone="success" variant="plain">
+                저장했습니다.
+              </InlineAlert>
+              <ListRows>
+                <ListRow
+                  title="행 안에 놓인 plain 알림"
+                  meta="보조 텍스트"
+                  trailing={
+                    <InlineAlert tone="danger" variant="plain">
+                      옮기지 못했습니다
+                    </InlineAlert>
+                  }
+                />
+              </ListRows>
             </div>
           </div>
         </Card>
