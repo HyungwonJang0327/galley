@@ -1,5 +1,7 @@
+/* min-width 0: flex 행 부모 안에서도 긴 보조 텍스트가 부모를 밀지 않고 말줄임된다. */
 .group {
   display: flex;
+  min-width: 0;
   color: var(--ui-color-text);
   font-family: var(--ui-font-sans);
   font-size: var(--ui-text-sm);
