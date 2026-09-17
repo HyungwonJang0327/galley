@@ -3,7 +3,11 @@ import styles from './Separator.module.css';
 
 type Orientation = 'horizontal' | 'vertical';
 
-export interface SeparatorProps extends Omit<ComponentProps<'div'>, 'children' | 'role'> {
+// role·aria-orientation은 orientation·decorative로만 정한다(소비자가 어긋난 조합을 못 만들게).
+export interface SeparatorProps extends Omit<
+  ComponentProps<'div'>,
+  'children' | 'role' | 'aria-orientation'
+> {
   /**
    * 선의 방향. vertical은 flex·grid 행의 직계 자식일 때 부모 높이를 채운다.
    * 그 밖에서는 글자 높이(1em)만큼만 그려지니 className으로 높이를 준다
