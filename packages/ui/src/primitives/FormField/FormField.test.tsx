@@ -86,6 +86,22 @@ describe('FormField', () => {
     expect(label.control).toBe(input);
   });
 
+  it('오류 문구는 처음부터 마운트된 polite live 영역 안에 나타난다', () => {
+    const field = (error?: string) => (
+      <FormField label="이름" error={error}>
+        <Input />
+      </FormField>
+    );
+    const { container, rerender } = render(field());
+    const region = container.querySelector('[aria-live="polite"]');
+    expect(region).not.toBeNull();
+    expect(region?.textContent).toBe('');
+    rerender(field('이름을 입력하세요'));
+    // 같은 요소가 유지돼야 스크린리더가 변화를 알린다.
+    expect(container.querySelector('[aria-live="polite"]')).toBe(region);
+    expect(region?.textContent).toBe('이름을 입력하세요');
+  });
+
   it('빈 문자열 error는 오류가 아니다', () => {
     const { container } = render(
       <FormField label="이름" error="">

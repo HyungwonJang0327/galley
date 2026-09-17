@@ -1,15 +1,18 @@
-/* 라벨 · 컨트롤 · 설명 · 오류를 세로로. 컨트롤은 제 폭 규칙을 따른다(Input·Select는 100%, Switch는 내용 폭). */
+/*
+ * 라벨 · 컨트롤 · 설명 · 오류를 세로로. 간격은 gap이 아니라 각 줄의 margin — 항상 마운트된 빈 오류 영역이
+ * 간격을 차지하지 않게. 컨트롤은 제 폭 규칙을 따른다(Input·Select는 100%, Switch는 내용 폭).
+ */
 .field {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--ui-space-1);
   min-width: 0;
   color: var(--ui-color-text);
   font-family: var(--ui-font-sans);
 }
 
 .label {
+  margin-bottom: var(--ui-space-1);
   font-size: var(--ui-text-sm);
   font-weight: var(--ui-weight-medium);
   line-height: var(--ui-leading-tight);
@@ -27,7 +30,7 @@
 
 .description,
 .error {
-  margin: 0;
+  margin: var(--ui-space-1) 0 0;
   font-size: var(--ui-text-xs);
   line-height: var(--ui-leading-normal);
 }
@@ -38,4 +41,9 @@
 
 .error {
   color: var(--ui-color-danger-fg);
+}
+
+/* 비어 있을 땐 높이 0. display:none은 쓰지 않는다 — 접근성 트리에서 빠지면 live 영역 구실을 못 한다. */
+.errorRegion {
+  max-width: 100%;
 }

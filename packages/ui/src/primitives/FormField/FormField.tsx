@@ -47,11 +47,17 @@ export function FormField({
       {description !== undefined ? (
         <BaseField.Description className={styles.description}>{description}</BaseField.Description>
       ) : null}
-      {hasError ? (
-        <BaseField.Error className={styles.error} match>
-          {error}
-        </BaseField.Error>
-      ) : null}
+      {/*
+        오류 문구는 항상 마운트된 live 영역 안에 그린다 — 문구와 동시에 생기는 live 영역은
+        스크린리더가 놓치고, aria-describedby 연결만으로는 포커스를 다시 옮기기 전까지 읽히지 않는다.
+      */}
+      <div className={styles.errorRegion} aria-live="polite">
+        {hasError ? (
+          <BaseField.Error className={styles.error} match>
+            {error}
+          </BaseField.Error>
+        ) : null}
+      </div>
     </BaseField.Root>
   );
 }
