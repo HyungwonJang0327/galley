@@ -24,7 +24,10 @@
   outline: 0;
 }
 
-/* 열리면 포커스가 팝업으로 온다 — 키보드 사용자에게만 링을 보인다. */
+/*
+ * 열리면 포커스는 본문의 첫 포커스 가능 요소로 간다. 그런 요소가 없거나 터치로 열었을 때만 팝업
+ * 자체가 포커스를 받는다 — 그때 키보드 사용자에게만 링을 보인다.
+ */
 .popup:focus-visible {
   outline: 2px solid var(--ui-color-accent);
   outline-offset: 1px;
