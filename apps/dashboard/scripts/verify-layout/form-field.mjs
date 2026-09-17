@@ -1,6 +1,7 @@
 // Form·FormField 컨트롤 폭·오류 테두리·라벨 클릭 포커스·제출 검증(인라인 오류) 실측.
-// 갤러리(/design)의 form[aria-label="폼 필드 데모"], 컨트롤 name(name·note·choice·enabled), [data-demo="form-submit-count"]에
-// 결합되어 있다(컨트롤 name에는 email도) — 갤러리를 바꾸면 여기도 맞춘다. 전부 happy-dom이 못 보는 것들이다(레이아웃·포커스·네이티브 제출 검증).
+// 갤러리(/design)의 form[aria-label="폼 필드 데모"], 컨트롤 name(name·email·note·choice·enabled),
+// [data-demo="form-submit-count"]에 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다.
+// 전부 happy-dom이 못 보는 것들이다(레이아웃·포커스·네이티브 제출 검증).
 import { join } from 'node:path';
 
 export async function verifyFormField(page, { outDir }) {
@@ -128,7 +129,10 @@ function measureExpression() {
       const listbox = document.getElementById(trigger.getAttribute('aria-controls') ?? '');
       option = listbox?.querySelector('[role="option"]') ?? null;
     }
-    if (option) for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) fire(option, type);
+    // 못 열었으면 여기서 멈춘다 — 그냥 가면 뒤 검사 둘이 원인 표시 없이 같이 실패한다.
+    // (합성 pointer 시퀀스는 select.mjs와 같은 방식 — Base UI가 바뀌면 그쪽도 같이 깨진다.)
+    if (!option) return JSON.stringify({ error: 'Select 옵션을 열지 못함(폼 필드 데모의 선택 필드)' });
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) fire(option, type);
     await settle();
     const serverErrorAfterChange = email ? regionOf(email).textContent : '';
     submit.click();
