@@ -57,6 +57,16 @@ describe('InlineAlert', () => {
     expect(live.textContent).toBe('제목실패');
   });
 
+  it.each([undefined, null, false])('action=%j면 action 자리를 그리지 않는다', (action) => {
+    const { container } = render(
+      <InlineAlert tone="danger" action={action}>
+        문구
+      </InlineAlert>,
+    );
+    // 루트의 자식은 아이콘과 live 영역 둘뿐 — 빈 action 래퍼가 gap을 만들지 않는다.
+    expect(container.firstElementChild?.children).toHaveLength(2);
+  });
+
   it('아이콘은 장식이다(aria-hidden)', () => {
     const { container } = render(<InlineAlert tone="warning">문구</InlineAlert>);
     const svg = container.querySelector('svg');
