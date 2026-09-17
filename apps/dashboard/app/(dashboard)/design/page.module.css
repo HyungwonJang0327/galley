@@ -46,6 +46,14 @@
   width: 320px;
 }
 
+/* FormField 데모: 같은 폭 칸에 나란히 — 필드는 부모 폭을 따른다 */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  align-items: start;
+  gap: var(--ui-space-4);
+}
+
 /* 툴바 안 검색·필터 컨트롤 폭(Input·Select는 부모 폭을 채운다) */
 .filterBox {
   width: 160px;
