@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Form } from './Form';
 import type { FormErrors } from './Form';
+import { Checkbox } from '../Checkbox';
 import { FormField } from '../FormField';
 import { Input } from '../Input';
+import { RadioGroup } from '../RadioGroup';
 import { Select } from '../Select';
 import { Switch } from '../Switch';
 
@@ -190,6 +192,64 @@ describe('Form', () => {
     await type(screen.getByRole('textbox', { name: '이메일' }), 'x@y.z');
     await submit(form);
     expect(onFormSubmit).toHaveBeenCalledWith({ memo: '값', email: 'x@y.z' });
+  });
+
+  it('errors 값이 배열이면 문구를 목록으로 모두 보여 준다', () => {
+    const errors: FormErrors = { pw: ['8자 이상', '숫자 포함'] };
+    render(
+      <Form aria-label="폼" errors={errors}>
+        <FormField label="암호">
+          <Input name="pw" />
+        </FormField>
+      </Form>,
+    );
+    const items = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(items).toEqual(['8자 이상', '숫자 포함']);
+    expect(errorOf(screen.getByRole('textbox'))).toBe('8자 이상숫자 포함');
+  });
+
+  it('검증을 통과하면 native onSubmit도 불린다', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Form aria-label="폼" onSubmit={onSubmit} onFormSubmit={() => {}}>
+        <FormField label="이름" required>
+          <Input name="name" defaultValue="홍길동" />
+        </FormField>
+      </Form>,
+    );
+    await submit(screen.getByRole('form') as HTMLFormElement);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('Checkbox는 boolean, RadioGroup은 고른 value로 값을 모은다', async () => {
+    const onFormSubmit = vi.fn();
+    render(
+      <Form aria-label="폼" onFormSubmit={onFormSubmit}>
+        <FormField label="동의">
+          <Checkbox name="agree" checked onCheckedChange={() => {}} />
+        </FormField>
+        <FormField label="방식">
+          <RadioGroup
+            name="mode"
+            value="b"
+            onValueChange={() => {}}
+            items={[
+              { value: 'a', label: '가' },
+              { value: 'b', label: '나' },
+            ]}
+            aria-label="방식"
+          />
+        </FormField>
+      </Form>,
+    );
+    await submit(screen.getByRole('form') as HTMLFormElement);
+    expect(onFormSubmit).toHaveBeenCalledWith({ agree: true, mode: 'b' });
+  });
+
+  it('ref를 form에 넘긴다', () => {
+    const ref = createRef<HTMLFormElement>();
+    render(<Form aria-label="폼" ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole('form'));
   });
 
   it('값의 모양을 제네릭으로 좁힐 수 있다', async () => {
