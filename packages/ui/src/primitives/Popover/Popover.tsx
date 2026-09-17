@@ -14,7 +14,7 @@ interface PopoverBaseProps {
   trigger: ReactElement;
   /** 팝업 본문. 버튼·링크 같은 상호작용 요소를 넣어도 된다(Tooltip과의 차이). */
   children: ReactNode;
-  /** 팝업 제목. 있으면 팝업(dialog)의 접근성 이름이 된다. */
+  /** 팝업 제목. 있으면 팝업(dialog)의 접근성 이름이 된다. null·false·빈 문자열은 제목 없음. */
   title?: ReactNode;
   /** title이 없을 때 팝업의 접근성 이름. */
   'aria-label'?: string;
@@ -63,6 +63,8 @@ export function Popover({
   className,
 }: PopoverProps) {
   const popupClass = [styles.popup, className].filter(Boolean).join(' ');
+  // `title={cond && '…'}` 같은 패턴에서 빈 제목 요소가 이름 자리를 차지하지 않게(aria-label까지 무시된다).
+  const hasTitle = title !== undefined && title !== null && title !== false && title !== '';
   return (
     <BasePopover.Root
       open={open}
@@ -77,7 +79,7 @@ export function Popover({
           sideOffset={6}
         >
           <BasePopover.Popup className={popupClass} aria-label={ariaLabel}>
-            {title !== undefined ? (
+            {hasTitle ? (
               // Base UI 기본은 <h2>. 팝오버는 비모달이라 뒤 화면과 같은 문서 개요에 섞인다 — 제목
               // 요소가 아닌 div로 그린다(aria-labelledby 연결은 그대로라 팝업 이름은 유지된다).
               <BasePopover.Title className={styles.title} render={<div />}>
