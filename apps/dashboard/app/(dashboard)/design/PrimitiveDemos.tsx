@@ -463,6 +463,8 @@ const FORM_SELECT_ITEMS = [
   { value: 'b', label: '둘째' },
 ];
 
+// verify:layout(form-field.mjs)이 form aria-label·컨트롤 name·data-demo="form-submit-count"에 결합한다 —
+// 이름 칸은 필수·빈 값으로 시작, 메모(Textarea)는 앱 오류가 있는 필드여야 한다.
 // 라벨·설명·오류가 컨트롤에 연결되는 모습. required는 필드에만 적는다 — 안쪽 컨트롤이 물려받아
 // 기본 input처럼 제출 검증에 참여한다. 이름을 비운 채 제출하면 브라우저가 제출을 막고 말풍선을 띄운다.
 export function FormFieldDemo() {
