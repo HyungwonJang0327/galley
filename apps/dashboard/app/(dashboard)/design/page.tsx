@@ -20,6 +20,7 @@ import {
   CheckboxIndeterminateDemo,
   CheckboxUnlabeledDemo,
   DialogDemo,
+  FormFieldDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
   RadioGroupDemo,
@@ -258,6 +259,19 @@ export default function DesignPage() {
           <div className={styles.group}>
             <span className={styles.groupLabel}>그룹 disabled — 잠긴 채 선택된 항목이 보인다</span>
             <RadioGroupDisabledDemo />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>FormField</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              라벨 · 컨트롤 · 설명 · 오류 — Input(필수) / Textarea(오류) / Select(오류) / Switch /
+              RadioGroup
+            </span>
+            <div className={styles.formGrid}>
+              <FormFieldDemo />
+            </div>
           </div>
         </Card>
 

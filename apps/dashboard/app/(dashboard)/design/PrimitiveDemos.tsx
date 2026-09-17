@@ -7,6 +7,7 @@ import {
   Button,
   Checkbox,
   Dialog,
+  FormField,
   Input,
   ListRow,
   ListRows,
@@ -16,6 +17,7 @@ import {
   SplitPane,
   Switch,
   Tabs,
+  Textarea,
   TimelineItem,
   TimelineItems,
   Tooltip,
@@ -453,6 +455,56 @@ export function RadioGroupDisabledDemo() {
       orientation="horizontal"
       disabled
     />
+  );
+}
+
+const FORM_SELECT_ITEMS = [
+  { value: 'a', label: '첫째' },
+  { value: 'b', label: '둘째' },
+];
+
+// 라벨·설명·오류가 컨트롤에 연결되는 모습. 이름 칸을 비우면 오류가 뜬다(검증은 앱 몫 — 여기선 데모가 한다).
+export function FormFieldDemo() {
+  const [name, setName] = useState('');
+  const [note, setNote] = useState('');
+  const [choice, setChoice] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState(true);
+  const [mode, setMode] = useState<string | null>('a');
+  const [touched, setTouched] = useState(false);
+  return (
+    <>
+      <FormField
+        label="이름"
+        description="비운 채 칸을 떠나면 오류가 뜬다"
+        error={touched && name === '' ? '이름을 입력하세요' : undefined}
+        required
+      >
+        <Input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onBlur={() => setTouched(true)}
+          required
+        />
+      </FormField>
+      <FormField label="메모" error="항상 오류인 필드(여러 줄 입력)">
+        <Textarea value={note} onChange={(event) => setNote(event.target.value)} />
+      </FormField>
+      <FormField label="선택" description="Select도 라벨로 이름이 잡힌다" error="하나를 고르세요">
+        <Select value={choice} onValueChange={setChoice} items={FORM_SELECT_ITEMS} />
+      </FormField>
+      <FormField label="켜기" description="Switch는 내용 폭만큼만">
+        <Switch checked={enabled} onCheckedChange={setEnabled} />
+      </FormField>
+      <FormField label="방식" description="그룹 이름은 필드 라벨이 우선한다">
+        <RadioGroup
+          value={mode}
+          onValueChange={setMode}
+          items={FORM_SELECT_ITEMS}
+          aria-label="방식"
+          orientation="horizontal"
+        />
+      </FormField>
+    </>
   );
 }
 
