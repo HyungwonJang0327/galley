@@ -1,0 +1,89 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+  cursor: pointer;
+  user-select: none;
+}
+
+.label[data-disabled] {
+  color: var(--ui-color-text-muted);
+  cursor: not-allowed;
+}
+
+/* 트랙: 높이는 체크박스와 같고 알약 모양. Input과 같은 테두리·포커스 링. */
+.track {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: var(--ui-switch-width);
+  height: var(--ui-switch-height);
+  padding: 0 1px;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-surface);
+  cursor: inherit;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.track:focus-visible {
+  outline: 2px solid var(--ui-color-accent);
+  outline-offset: 1px;
+}
+
+.track[data-checked] {
+  border-color: var(--ui-color-accent);
+  background-color: var(--ui-color-accent);
+}
+
+.track[data-disabled] {
+  background-color: var(--ui-color-bg);
+  border-color: var(--ui-color-border);
+}
+
+.track[data-disabled][data-checked] {
+  background-color: var(--ui-color-border);
+}
+
+/* 손잡이: 꺼짐은 muted 점, 켜짐은 accent 위 글자색. 이동 거리 = 트랙 폭 − 트랙 높이. */
+.thumb {
+  display: block;
+  width: var(--ui-switch-thumb);
+  height: var(--ui-switch-thumb);
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-text-muted);
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.thumb[data-checked] {
+  background-color: var(--ui-color-accent-fg);
+  transform: translateX(calc(var(--ui-switch-width) - var(--ui-switch-height)));
+}
+
+.thumb[data-disabled] {
+  background-color: var(--ui-color-border);
+}
+
+.thumb[data-disabled][data-checked] {
+  background-color: var(--ui-color-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .thumb {
+    transition: none;
+  }
+}
+
+.text {
+  min-width: 0;
+}

@@ -46,6 +46,8 @@ export { Dialog } from './primitives/Dialog';
 export type { DialogProps } from './primitives/Dialog';
 export { Select } from './primitives/Select';
 export type { SelectProps, SelectItem } from './primitives/Select';
+export { Switch } from './primitives/Switch';
+export type { SwitchProps } from './primitives/Switch';
 export { Input } from './primitives/Input';
 export type { InputProps } from './primitives/Input';
 export { Textarea } from './primitives/Textarea';
