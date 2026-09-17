@@ -45,8 +45,9 @@ describe('Switch', () => {
       </Switch>,
     );
     fireEvent.click(screen.getByText('항목'));
-    expect(onChange).toHaveBeenCalledTimes(1);
+    // 여기도 횟수는 보지 않는다(위 주석) — happy-dom의 호출 횟수는 브라우저와 다르다.
     expect(onChange).toHaveBeenCalledWith(false);
+    expect(onChange).not.toHaveBeenCalledWith(true);
   });
 
   it('제어형 — 부모가 값을 안 바꾸면 눌러도 상태가 그대로다', () => {
