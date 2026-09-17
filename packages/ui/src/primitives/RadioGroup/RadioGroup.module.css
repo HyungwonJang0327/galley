@@ -12,8 +12,10 @@
   gap: var(--ui-space-2);
 }
 
+/* 같은 줄에 보조가 있는 항목과 없는 항목이 섞여도 짧은 항목이 줄 높이만큼 늘어나지 않게. */
 .horizontal {
   flex-flow: row wrap;
+  align-items: flex-start;
   gap: var(--ui-space-2) var(--ui-space-4);
 }
 
