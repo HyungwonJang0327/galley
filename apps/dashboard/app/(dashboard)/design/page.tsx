@@ -36,13 +36,22 @@ import {
   ToolbarFiltersDemo,
   TooltipDemo,
 } from './PrimitiveDemos';
+import { ThemeToggle } from './ThemeToggle';
 
 // 개발 보조 갤러리(decisions/component-gallery.md). 셸 안에서 galley-ui 공개 배럴만
 // 소비해 컴포넌트를 상태별로 렌더한다. 도메인 무지 — 컴포넌트 추가 시 여기에 얹는다.
 export default function DesignPage() {
   return (
     <>
-      <PageHeader title="컴포넌트 갤러리" actions={<Button>액션 예시</Button>} />
+      <PageHeader
+        title="컴포넌트 갤러리"
+        actions={
+          <>
+            <ThemeToggle />
+            <Button>액션 예시</Button>
+          </>
+        }
+      />
       <div className={styles.sections}>
         <Card>
           <h2 className={styles.sectionTitle}>Button</h2>
