@@ -54,3 +54,4 @@ packages/ui/
 - 2026-09-08 빌드 도구 tsup→Vite 반영, `"use client"` 배포 호환 메모 추가.
 - 2026-09-09 `"use client"` 보존 방식 확정(번들 전체 배너). Base UI 패키지명 `@base-ui/react`(base-ui-over-shadcn 갱신 이력).
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+- 2026-09-17 P4-1 `Separator`는 `primitives/`가 아니라 `components/`(직접 작성). Base UI Separator는 `role="separator"` 고정이라 `decorative`(role none) 분기를 못 하고, div 하나라 래핑 이득이 없다. 결정 변경 없음(분류 기준 적용 사례).
