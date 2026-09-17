@@ -37,6 +37,7 @@ export interface FormProps<Values extends FormValues = FormValues> extends Compo
  * 폼(Base UI Form). 브라우저 말풍선 대신(noValidate) 제출 때 안쪽 FormField들을 검증해 오류를 필드
  * 아래에 띄우고, 첫 오류 필드로 포커스를 옮긴다. 검증 규칙은 컨트롤의 네이티브 제약(required 등)과
  * `errors`뿐 — 자체 규칙은 없다. 배치는 정하지 않는다(세로 간격만, className으로 바꾼다).
+ * `aria-label`(또는 `aria-labelledby`)을 주면 form landmark가 된다 — 한 화면에 폼이 둘 이상이면 준다.
  */
 export function Form<Values extends FormValues = FormValues>({
   className,
