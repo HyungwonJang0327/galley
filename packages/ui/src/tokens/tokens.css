@@ -92,6 +92,7 @@
   --ui-radio-size: 16px; /* 라디오 원 지름(체크박스와 같은 줄 높이) */
   --ui-switch-width: 28px; /* 스위치 트랙 폭 */
   --ui-switch-height: 16px; /* 스위치 트랙 높이(체크박스와 같은 줄 높이). 손잡이 지름은 여기서 파생 */
+  --ui-inline-alert-body-min-width: 160px; /* 알림 본문이 action에 눌려도 지키는 폭 — 모자라면 action이 줄바꿈 */
   --ui-tooltip-max-width: 240px; /* 툴팁은 짧은 보조 문구 — 이 폭에서 줄바꿈 */
   --ui-popover-max-width: min(
     320px,
