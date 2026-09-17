@@ -91,6 +91,25 @@ describe('Popover', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('타입 — open을 주면 onOpenChange가 필수다(비제어·관찰용은 그대로 허용)', () => {
+    // @ts-expect-error open만 주면 영영 안 닫힌다 — 타입이 막는다.
+    const broken = <Popover trigger={TRIGGER} title="제목" open children="본문" />;
+    const maybe: boolean | undefined = undefined;
+    const allowed = [
+      <Popover key="a" trigger={TRIGGER} title="제목" children="본문" />,
+      <Popover key="b" trigger={TRIGGER} title="제목" onOpenChange={() => {}} children="본문" />,
+      <Popover
+        key="c"
+        trigger={TRIGGER}
+        title="제목"
+        open={maybe}
+        onOpenChange={() => {}}
+        children="본문"
+      />,
+    ];
+    expect([broken, ...allowed]).toHaveLength(4);
+  });
+
   it('본문에 상호작용 요소를 넣을 수 있다', async () => {
     const onAction = vi.fn();
     render(
