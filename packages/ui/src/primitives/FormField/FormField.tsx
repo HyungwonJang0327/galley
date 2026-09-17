@@ -12,7 +12,11 @@ export interface FormFieldProps {
   error?: string;
   /** 라벨 옆 필수 표시(*)만 그린다. 컨트롤의 required는 소비자가 컨트롤에 직접 준다. */
   required?: boolean;
-  /** 컨트롤 하나(Input·Textarea·Select·Switch·Checkbox·RadioGroup). */
+  /**
+   * 컨트롤 하나(Input·Textarea·Select·Switch·Checkbox·RadioGroup).
+   * Switch·Checkbox는 children(안쪽 라벨) 없이 넣는다 — 이름은 필드 라벨이 주고, 안쪽 글자는
+   * 화면에는 보여도 접근성 이름에서 빠진다(aria-labelledby가 우선).
+   */
   children: ReactNode;
   /** 필드 루트에 병합. */
   className?: string;

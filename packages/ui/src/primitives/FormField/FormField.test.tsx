@@ -149,6 +149,18 @@ describe('FormField', () => {
     expect((input as HTMLInputElement).required).toBe(false);
   });
 
+  it('Switch의 안쪽 라벨은 이름에서 빠진다 — 필드 라벨이 이름이다(children 없이 쓰라는 이유)', () => {
+    render(
+      <FormField label="알림">
+        <Switch checked={false} onCheckedChange={() => {}}>
+          안쪽 글자
+        </Switch>
+      </FormField>,
+    );
+    expect(screen.getByRole('switch', { name: '알림' })).toBeTruthy();
+    expect(screen.queryByRole('switch', { name: /안쪽 글자/ })).toBeNull();
+  });
+
   it('className을 필드 루트에 병합한다', () => {
     const { container } = render(
       <FormField label="이름" className="extra">
