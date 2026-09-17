@@ -463,40 +463,39 @@ const FORM_SELECT_ITEMS = [
   { value: 'b', label: '둘째' },
 ];
 
-// 라벨·설명·오류가 컨트롤에 연결되는 모습. 이름 칸을 비우면 오류가 뜬다(검증은 앱 몫 — 여기선 데모가 한다).
+// 라벨·설명·오류가 컨트롤에 연결되는 모습. required는 필드에만 적는다 — 안쪽 컨트롤이 물려받아
+// 기본 input처럼 제출 검증에 참여한다. 이름을 비운 채 제출하면 브라우저가 제출을 막고 말풍선을 띄운다.
 export function FormFieldDemo() {
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [choice, setChoice] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(true);
   const [mode, setMode] = useState<string | null>('a');
-  const [touched, setTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(0);
   return (
-    <>
-      <FormField
-        label="이름"
-        description="비운 채 칸을 떠나면 오류가 뜬다"
-        error={touched && name === '' ? '이름을 입력하세요' : undefined}
-        required
-      >
-        <Input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          onBlur={() => setTouched(true)}
-          required
-        />
+    <form
+      className={styles.formGrid}
+      aria-label="폼 필드 데모"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setSubmitted((n) => n + 1);
+      }}
+    >
+      <FormField label="이름" description="필수 — 비운 채 제출하면 브라우저가 막는다" required>
+        <Input name="name" value={name} onChange={(event) => setName(event.target.value)} />
       </FormField>
-      <FormField label="메모" error="항상 오류인 필드(여러 줄 입력)">
-        <Textarea value={note} onChange={(event) => setNote(event.target.value)} />
+      <FormField label="메모" error="앱이 넘긴 오류 문구(여러 줄 입력)">
+        <Textarea name="note" value={note} onChange={(event) => setNote(event.target.value)} />
       </FormField>
       <FormField label="선택" description="Select도 라벨로 이름이 잡힌다" error="하나를 고르세요">
-        <Select value={choice} onValueChange={setChoice} items={FORM_SELECT_ITEMS} />
+        <Select name="choice" value={choice} onValueChange={setChoice} items={FORM_SELECT_ITEMS} />
       </FormField>
       <FormField label="켜기" description="Switch는 내용 폭만큼만">
-        <Switch checked={enabled} onCheckedChange={setEnabled} />
+        <Switch name="enabled" checked={enabled} onCheckedChange={setEnabled} />
       </FormField>
       <FormField label="방식" description="그룹 이름은 필드 라벨이 우선한다">
         <RadioGroup
+          name="mode"
           value={mode}
           onValueChange={setMode}
           items={FORM_SELECT_ITEMS}
@@ -505,7 +504,13 @@ export function FormFieldDemo() {
           orientation="horizontal"
         />
       </FormField>
-    </>
+      <div>
+        <Button type="submit" size="sm">
+          제출
+        </Button>{' '}
+        <span data-demo="form-submit-count">제출 {submitted}회</span>
+      </div>
+    </form>
   );
 }
 
