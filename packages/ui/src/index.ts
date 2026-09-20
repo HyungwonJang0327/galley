@@ -74,9 +74,9 @@ export { ToastProvider } from './primitives/Toast';
 export type { ToastProviderProps, ToastTone, ToastPosition } from './primitives/Toast';
 export { Tooltip } from './primitives/Tooltip';
 export type { TooltipProps, TooltipSide } from './primitives/Tooltip';
+export { Menu } from './primitives/Menu';
+export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
 
 // hooks
 export { useToast } from './hooks/useToast';
 export type { ToastOptions, UseToastReturn } from './hooks/useToast';
-export { Menu } from './primitives/Menu';
-export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
