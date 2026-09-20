@@ -22,6 +22,8 @@ export type {
 } from './components/InlineAlert';
 export { Separator } from './components/Separator';
 export type { SeparatorProps } from './components/Separator';
+export { Skeleton } from './components/Skeleton';
+export type { SkeletonProps, SkeletonRadius, SkeletonSize } from './components/Skeleton';
 
 export { AppShell } from './patterns/AppShell';
 export type { AppShellProps } from './patterns/AppShell';
