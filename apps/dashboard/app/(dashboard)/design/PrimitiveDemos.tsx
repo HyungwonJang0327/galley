@@ -22,7 +22,9 @@ import {
   Textarea,
   TimelineItem,
   TimelineItems,
+  ToastProvider,
   Tooltip,
+  useToast,
 } from 'galley-ui';
 import type { MenuEntry, SelectItem, TabItem } from 'galley-ui';
 import styles from './page.module.css';
@@ -591,6 +593,52 @@ export function PopoverAtBottomDemo() {
     >
       아래 공간이 없으면 트리거 위로 뒤집힌다.
     </Popover>
+  );
+}
+
+// Toast: Provider는 앱 셸에 한 번 두는 것이지만 갤러리는 자기 Provider를 가진다(뷰포트가 화면 모서리에 뜬다).
+function ToastButtons() {
+  const { toast, close } = useToast();
+  const [count, setCount] = useState(0);
+  const fire = (tone: 'info' | 'success' | 'warning' | 'danger') => {
+    const n = count + 1;
+    setCount(n);
+    toast({
+      title: `${tone} 토스트 ${n}`,
+      description: tone === 'danger' ? '잠시 뒤 다시 시도하세요.' : undefined,
+      tone,
+      duration: 0,
+    });
+  };
+  return (
+    <div className={styles.row}>
+      <Button variant="secondary" size="sm" onClick={() => fire('info')}>
+        info
+      </Button>
+      <Button variant="secondary" size="sm" onClick={() => fire('success')}>
+        success
+      </Button>
+      <Button variant="secondary" size="sm" onClick={() => fire('warning')}>
+        warning
+      </Button>
+      <Button variant="secondary" size="sm" onClick={() => fire('danger')}>
+        danger
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => close()}>
+        모두 닫기
+      </Button>
+      <span className={styles.groupLabel} data-demo="toast-count">
+        띄운 수 {count}
+      </span>
+    </div>
+  );
+}
+
+export function ToastDemo() {
+  return (
+    <ToastProvider limit={3}>
+      <ToastButtons />
+    </ToastProvider>
   );
 }
 
