@@ -2,11 +2,11 @@
  * 자리표시자 막대. 색은 경계선 회색(--ui-color-border)을 그대로 쓴다 — 표면 위에서 "아직 없음"을
  * 가장 약하게 표시하는 값이고 다크에서도 같은 토큰이 재정의된다.
  */
+/* flex-shrink는 두지 않는다 — 폭 없는 막대가 flex 행에서 형제와 폭을 나눠야 한다. 폭을 준 막대만 인라인으로 고정 */
 .bar {
   display: block;
   width: 100%;
   height: 1em;
-  flex-shrink: 0;
   background: var(--ui-color-border);
   animation: ui-skeleton-pulse 1.5s ease-in-out infinite;
 }

@@ -28,6 +28,13 @@ describe('Skeleton', () => {
     expect(el.style.height).toBe('var(--ui-space-5)');
   });
 
+  it('width를 주면 flex 행에서 눌리지 않게 flexShrink 0을 함께 넣는다(없으면 안 넣음)', () => {
+    const { rerender } = render(<Skeleton data-testid="s" width={40} />);
+    expect(screen.getByTestId('s').style.flexShrink).toBe('0');
+    rerender(<Skeleton data-testid="s" height={40} />);
+    expect(screen.getByTestId('s').style.flexShrink).toBe('');
+  });
+
   it('width·height를 안 주면 인라인 스타일을 만들지 않는다(CSS 기본값에 맡김)', () => {
     render(<Skeleton data-testid="s" />);
     expect(screen.getByTestId('s').getAttribute('style')).toBeNull();
