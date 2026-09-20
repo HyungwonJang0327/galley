@@ -94,6 +94,7 @@
   --ui-switch-height: 16px; /* 스위치 트랙 높이(체크박스와 같은 줄 높이). 손잡이 지름은 여기서 파생 */
   --ui-inline-alert-body-min-width: 160px; /* 알림 본문이 action에 눌려도 지키는 폭 — 모자라면 action이 줄바꿈 */
   --ui-tooltip-max-width: 240px; /* 툴팁은 짧은 보조 문구 — 이 폭에서 줄바꿈 */
+  --ui-toast-width: 320px; /* 토스트 뷰포트 폭(모서리 고정 스택). 좁은 화면에서는 뷰포트 여백만큼 줄어든다 */
   --ui-popover-max-width: min(
     320px,
     calc(100vw - var(--ui-space-6))

@@ -70,7 +70,13 @@ export { Textarea } from './primitives/Textarea';
 export type { TextareaProps } from './primitives/Textarea';
 export { Tabs } from './primitives/Tabs';
 export type { TabsProps, TabItem } from './primitives/Tabs';
+export { ToastProvider } from './primitives/Toast';
+export type { ToastProviderProps, ToastTone, ToastPosition } from './primitives/Toast';
 export { Tooltip } from './primitives/Tooltip';
 export type { TooltipProps, TooltipSide } from './primitives/Tooltip';
+
+// hooks
+export { useToast } from './hooks/useToast';
+export type { ToastOptions, UseToastReturn } from './hooks/useToast';
 export { Menu } from './primitives/Menu';
 export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
