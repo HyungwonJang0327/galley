@@ -11,9 +11,18 @@ describe('Skeleton', () => {
     expect(el.getAttribute('role')).toBeNull();
   });
 
-  it('aria-hidden={false}로 숨김을 풀 수 있다', () => {
-    render(<Skeleton data-testid="s" aria-hidden={false} />);
+  it('aria-hidden={false}로 숨김을 풀 수 있다(단일·여러 줄 모두)', () => {
+    const { rerender } = render(<Skeleton data-testid="s" aria-hidden={false} />);
     expect(screen.getByTestId('s').getAttribute('aria-hidden')).toBe('false');
+    rerender(<Skeleton data-testid="s" lines={2} aria-hidden={false} />);
+    expect(screen.getByTestId('s').getAttribute('aria-hidden')).toBe('false');
+  });
+
+  it('aria-hidden={undefined}를 명시로 넘겨도 기본 숨김이 지워지지 않는다', () => {
+    const { rerender } = render(<Skeleton data-testid="s" aria-hidden={undefined} />);
+    expect(screen.getByTestId('s').getAttribute('aria-hidden')).toBe('true');
+    rerender(<Skeleton data-testid="s" lines={2} aria-hidden={undefined} />);
+    expect(screen.getByTestId('s').getAttribute('aria-hidden')).toBe('true');
   });
 
   it('숫자 width·height는 px, 문자열은 그대로 인라인 스타일이 된다', () => {
