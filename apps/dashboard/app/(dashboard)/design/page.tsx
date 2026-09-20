@@ -225,7 +225,8 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Skeleton</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
-              radius sm(기본)·md·full — width·height는 숫자(px) 또는 CSS 값. 전부 aria-hidden
+              radius sm(기본)·md·full — width·height는 CSS 값(토큰 우선), 숫자(px)는 토큰에 없는
+              치수일 때만. 전부 aria-hidden
             </span>
             <div className={styles.row} data-demo="skeleton-shapes">
               <Skeleton width={120} height={16} />
