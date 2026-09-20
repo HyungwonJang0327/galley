@@ -9,7 +9,7 @@
   flex-direction: column;
   gap: var(--ui-space-2);
   width: var(--ui-toast-width);
-  max-width: calc(100vw - var(--ui-space-4) * 2);
+  max-width: calc(100vw - var(--ui-toast-inset) * 2);
   outline: 0;
 }
 
@@ -19,14 +19,15 @@
   border-radius: var(--ui-radius-md);
 }
 
+/* 뷰포트는 body로 포털되므로 소비자가 감싸서 위치를 바꿀 수 없다 — 여백은 토큰(--ui-toast-inset·-top)으로 조절 */
 .top-right {
-  top: var(--ui-space-4);
-  right: var(--ui-space-4);
+  top: var(--ui-toast-inset-top);
+  right: var(--ui-toast-inset);
 }
 
 .bottom-right {
-  bottom: var(--ui-space-4);
-  right: var(--ui-space-4);
+  bottom: var(--ui-toast-inset);
+  right: var(--ui-toast-inset);
   flex-direction: column-reverse;
 }
 

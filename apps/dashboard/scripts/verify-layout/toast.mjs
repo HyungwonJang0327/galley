@@ -22,8 +22,12 @@ export async function verifyToast(page, { outDir }) {
     m.viewport.role === 'region' && m.viewport.label !== '',
   );
   add(
-    `뷰포트가 화면 우상단, 여백 space-4 (top ${m.viewport.top} · right ${m.viewport.rightGap} = ${m.space4})`,
-    near(m.viewport.top, m.space4) && near(m.viewport.rightGap, m.space4),
+    `뷰포트 오른쪽 여백 = --ui-toast-inset (${m.viewport.rightGap} = ${m.space4})`,
+    near(m.viewport.rightGap, m.space4),
+  );
+  add(
+    `뷰포트가 TopBar 아래에서 시작한다 — 앱이 덧씌운 --ui-toast-inset-top (top ${m.viewport.top} = TopBar ${m.topbarHeight} + ${m.space4})`,
+    near(m.viewport.top, m.topbarHeight + m.space4),
   );
   add(
     `뷰포트 폭 = 토큰 (${m.viewport.width} = ${m.toastWidth})`,
@@ -152,6 +156,7 @@ async function measure(page) {
       return JSON.stringify({
         space2: px(rootStyle.getPropertyValue('--ui-space-2')),
         space4: px(rootStyle.getPropertyValue('--ui-space-4')),
+        topbarHeight: px(rootStyle.getPropertyValue('--ui-topbar-height')),
         toastWidth: px(rootStyle.getPropertyValue('--ui-toast-width')),
         innerHeight: window.innerHeight,
         viewport: {
