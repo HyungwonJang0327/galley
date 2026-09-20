@@ -26,8 +26,12 @@ const toLength = (value: SkeletonSize | undefined): string | undefined =>
   typeof value === 'number' ? `${value}px` : value;
 
 /**
- * 불러오는 동안 내용 자리를 잡아 두는 회색 막대. 보조 기술에는 숨긴다(`aria-hidden` 기본 true) —
- * "불러오는 중"은 자리표시자가 아니라 **그 내용을 담는 부모가** `aria-busy="true"`로 알린다.
+ * 불러오는 동안 내용 자리를 잡아 두는 회색 막대. 보조 기술에는 숨긴다(`aria-hidden` 기본 true).
+ * 로딩 상태를 알리는 일은 Skeleton 밖에서 한다 —
+ * (1) 내용을 담는 부모에 `aria-busy="true"`: "갱신 중이니 이 안의 변화는 낭독을 보류하라"는 힌트일 뿐,
+ *     이것만으로는 아무것도 읽히지 않는다.
+ * (2) "불러오는 중" 안내가 필요하면 그 부모 **밖**에 상시 `role="status"` 텍스트(시각 숨김)를 두고 문구를 바꾼다
+ *     (aria-busy 안에 두면 보류된다).
  * 내용이 오면 부모의 aria-busy를 내리고 Skeleton을 내용으로 바꾼다.
  *
  * 움직임(펄스)은 `prefers-reduced-motion: reduce`에서 꺼진다.

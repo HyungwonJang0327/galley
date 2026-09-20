@@ -256,8 +256,12 @@ export default function DesignPage() {
           </div>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
-              불러오는 카드 — &quot;불러오는 중&quot;은 부모가 aria-busy=&quot;true&quot;로 알리고
-              Skeleton은 자리만 잡는다
+              불러오는 카드 — Skeleton은 자리만 잡는다. 부모의 aria-busy=&quot;true&quot;는 낭독
+              보류 힌트일 뿐이라, &quot;불러오는 중&quot; 안내는 그 밖의 시각 숨김
+              role=&quot;status&quot; 텍스트가 한다
+            </span>
+            <span role="status" className={styles.srOnly}>
+              불러오는 중
             </span>
             <div className={styles.loadingCard} aria-busy="true" data-demo="skeleton-card">
               <Skeleton radius="full" width={40} height={40} />
