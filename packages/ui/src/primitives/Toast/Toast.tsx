@@ -1,8 +1,10 @@
 'use client';
 import { Toast as BaseToast } from '@base-ui/react/toast';
 import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import styles from './Toast.module.css';
+import { ToastManagerContext, createBufferedToastManager } from './ToastContext';
 
 export type ToastTone = 'info' | 'success' | 'warning' | 'danger';
 export type ToastPosition = 'top-right' | 'bottom-right';
@@ -34,6 +36,9 @@ const isTone = (type: string | undefined): type is ToastTone => type !== undefin
  * 토스트 뷰포트 + 컨텍스트(Base UI). 앱 루트(셸)에 한 번 두고, 띄우는 쪽은 `useToast()`.
  * 낭독: tone이 danger·warning이면 끼어들어 읽히고(`priority: high`), info·success는 하던 낭독 뒤에.
  * 키보드: F6으로 뷰포트 포커스, Esc·닫기 버튼으로 닫힘, 마우스 올리면 타이머 멈춤 — Base UI 기본.
+ *
+ * 명령(add·close)은 Provider가 한 번 만든 매니저로 보낸다 — `useToast()` 소비자는 토스트 목록을
+ * 구독하지 않으므로 토스트가 뜨고 닫혀도 리렌더되지 않는다. 목록을 구독하는 것은 뷰포트 안의 목록뿐.
  */
 export function ToastProvider({
   children,
@@ -43,10 +48,11 @@ export function ToastProvider({
   label = '알림',
   closeLabel = '닫기',
 }: ToastProviderProps) {
+  const [manager] = useState(createBufferedToastManager);
   const viewportClass = [styles.viewport, styles[position]].join(' ');
   return (
-    <BaseToast.Provider limit={limit} timeout={timeout}>
-      {children}
+    <BaseToast.Provider limit={limit} timeout={timeout} toastManager={manager}>
+      <ToastManagerContext.Provider value={manager}>{children}</ToastManagerContext.Provider>
       <BaseToast.Portal>
         <BaseToast.Viewport className={viewportClass} aria-label={label}>
           <ToastList closeLabel={closeLabel} />
