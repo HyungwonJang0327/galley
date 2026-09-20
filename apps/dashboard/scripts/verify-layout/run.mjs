@@ -13,6 +13,7 @@ import { verifyFormField } from './form-field.mjs';
 import { verifyInlineAlert } from './inline-alert.mjs';
 import { verifyMenu } from './menu.mjs';
 import { verifySelect } from './select.mjs';
+import { verifySkeleton } from './skeleton.mjs';
 import { verifyShellScroll } from './shell-scroll.mjs';
 import { verifySplitPane } from './split-pane.mjs';
 import { verifySwitch } from './switch.mjs';
@@ -116,6 +117,7 @@ async function main() {
         verifyFormField,
         verifyPopover,
         verifyInlineAlert,
+        verifySkeleton,
         verifyNotFound,
       ]) {
         // 대부분 /design 갤러리를 보지만, 404는 없는 경로여야 재현된다.
