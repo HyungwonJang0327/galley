@@ -51,6 +51,9 @@ export function Skeleton({
   if (h !== undefined) size.height = h;
 
   const barClass = [styles.bar, styles[radius]].filter(Boolean).join(' ');
+  // 스프레드 뒤에서 기본을 보장한다 — 소비자가 aria-hidden={false}로 풀 수는 있지만,
+  // undefined를 명시로 넘겨도(조건부 값) 기본 숨김이 지워지지 않는다.
+  const hidden = props['aria-hidden'] ?? true;
 
   if (lines !== undefined && lines >= 2) {
     const count = Math.floor(lines);
@@ -58,7 +61,7 @@ export function Skeleton({
     // 마지막 줄만 짧게 — 문단 끝처럼 보이게. width를 준 경우에도 그 폭의 60%(calc라 %·var()도 된다).
     const lastSize: CSSProperties = w === undefined ? size : { ...size, width: `calc(${w} * 0.6)` };
     return (
-      <div className={classes} aria-hidden="true" style={style} {...props}>
+      <div className={classes} style={style} {...props} aria-hidden={hidden}>
         {Array.from({ length: count }, (_, i) => {
           const last = i === count - 1;
           return (
@@ -74,6 +77,5 @@ export function Skeleton({
   }
 
   const classes = [barClass, className].filter(Boolean).join(' ');
-  // aria-hidden은 스프레드 앞에 둔다 — 기본은 숨김이지만 소비자가 aria-hidden={false}로 풀 수 있다.
-  return <div className={classes} aria-hidden="true" style={{ ...style, ...size }} {...props} />;
+  return <div className={classes} style={{ ...style, ...size }} {...props} aria-hidden={hidden} />;
 }
