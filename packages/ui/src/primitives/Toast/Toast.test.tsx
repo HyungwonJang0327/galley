@@ -238,6 +238,50 @@ describe('ToastProvider + useToast', () => {
     });
   });
 
+  it('F6을 누르면 뷰포트로 포커스가 간다(Base UI 전역 리스너)', async () => {
+    setup(<Fire title="제목" />);
+    await click(screen.getByRole('button', { name: '띄우기' }));
+    await screen.findByRole('dialog', { name: '제목' });
+    const region = screen.getByRole('region', { name: '알림' });
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'F6' });
+    });
+    expect(document.activeElement).toBe(region);
+  });
+
+  it('description이 없으면 설명 요소도 aria-describedby도 없다', async () => {
+    setup(<Fire title="제목만" />);
+    await click(screen.getByRole('button', { name: '띄우기' }));
+    const toast = await screen.findByRole('dialog', { name: '제목만' });
+    expect(toast.querySelector('p')).toBeNull();
+    expect(toast.getAttribute('aria-describedby')).toBeNull();
+  });
+
+  it('뷰포트에 마우스를 올리면 자동 닫힘 타이머가 멈추고, 떼면 다시 간다', async () => {
+    vi.useFakeTimers();
+    setup(<Fire title="잠깐" duration={1000} />);
+    await click(screen.getByRole('button', { name: '띄우기' }));
+    const region = screen.getByRole('region', { name: '알림' });
+    await act(async () => {
+      fireEvent.mouseEnter(region);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(screen.getByRole('dialog', { name: '잠깐' })).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.mouseLeave(region);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+    expect(screen.queryByRole('dialog', { name: '잠깐' })).toBeNull();
+  });
+
   it('position에 따라 뷰포트 클래스가 달라진다', () => {
     const { unmount } = setup(null);
     const top = screen.getByRole('region', { name: '알림' }).className;
