@@ -3,7 +3,10 @@ import styles from './Skeleton.module.css';
 
 export type SkeletonRadius = 'sm' | 'md' | 'full';
 
-/** 길이 값. 숫자는 px, 문자열은 CSS 값 그대로(`'60%'`, `'var(--ui-space-6)'`). */
+/**
+ * 길이 값. 문자열은 CSS 값 그대로 — 토큰(`'var(--ui-space-6)'`)이나 비율(`'60%'`)을 우선 쓴다.
+ * 숫자는 px로, 토큰에 없는 치수(아바타 40px 등)를 실제 내용 치수에 맞출 때만.
+ */
 export type SkeletonSize = number | string;
 
 // 자리표시자라 children이 없다. role은 뜻이 없고 aria-hidden으로만 다룬다.
