@@ -45,6 +45,7 @@ import {
   SwitchDisabledDemo,
   SwitchUnlabeledDemo,
   TabsDemo,
+  ToastDemo,
   ToolbarFiltersDemo,
   TooltipDemo,
 } from './PrimitiveDemos';
@@ -530,6 +531,19 @@ export default function DesignPage() {
             </span>
             <div className={styles.row}>
               <PopoverDemo />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Toast</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              tone 4종(duration 0) — 화면 우상단 뷰포트에 쌓인다. limit 3을 넘으면 오래된 것이
+              숨는다. 닫기: 버튼·Esc·마우스 올리면 타이머 멈춤·F6으로 뷰포트 포커스
+            </span>
+            <div data-demo="toast">
+              <ToastDemo />
             </div>
           </div>
         </Card>
