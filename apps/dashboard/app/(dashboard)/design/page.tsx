@@ -235,6 +235,19 @@ export default function DesignPage() {
           </div>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
+              flex 행 안 — 폭 없는 Skeleton은 형제와 폭을 나누고(넘치지 않음), 폭을 준 것은 눌리지
+              않는다
+            </span>
+            <div className={styles.loadingRow} data-demo="skeleton-flex">
+              <Skeleton radius="full" width="var(--ui-space-5)" height="var(--ui-space-5)" />
+              <Skeleton />
+              <Button variant="secondary" size="sm">
+                버튼
+              </Button>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
               lines=3 — 줄 수만큼 쌓고 마지막 줄은 짧게. 높이 기본은 글자 높이(1em)
             </span>
             <div className={styles.alertBox} data-demo="skeleton-lines">

@@ -43,7 +43,11 @@ export function Skeleton({
   const size: CSSProperties = {};
   const w = toLength(width);
   const h = toLength(height);
-  if (w !== undefined) size.width = w;
+  // 폭을 준 막대(아바타 등)는 flex 행에서 눌리지 않게 고정한다. 폭이 없으면 형제와 폭을 나눈다.
+  if (w !== undefined) {
+    size.width = w;
+    size.flexShrink = 0;
+  }
   if (h !== undefined) size.height = h;
 
   const barClass = [styles.bar, styles[radius]].filter(Boolean).join(' ');
