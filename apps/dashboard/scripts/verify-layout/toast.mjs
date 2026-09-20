@@ -61,7 +61,13 @@ export async function verifyToast(page, { outDir }) {
     new Set(m.toasts.map((t) => t.iconColor)).size === m.toasts.length,
   );
   add(`토스트 사이 간격 space-2 (${m.gap} = ${m.space2})`, near(m.gap, m.space2));
-  add('새 토스트가 위에 온다(top-right는 최신이 맨 위)', m.toasts[0]?.role === 'alertdialog');
+  // DOM 순서가 아니라 화면 좌표로 — 최신(alertdialog)이 이전 것보다 위에 그려져야 한다.
+  const newest = m.toasts.find((t) => t.role === 'alertdialog');
+  const older = m.toasts.find((t) => t.role === 'dialog');
+  add(
+    `새 토스트가 화면에서 위에 온다(top-right는 최신이 맨 위: ${newest?.top} < ${older?.top})`,
+    newest !== undefined && older !== undefined && newest.top < older.top,
+  );
   await page.screenshot(join(outDir, 'toast-1.png'));
 
   // 3. limit 3 초과 → 4번째부터 오래된 것이 data-limited로 숨는다
@@ -130,7 +136,8 @@ async function measure(page) {
       const toasts = [...viewport.querySelectorAll('[role="dialog"],[role="alertdialog"]')].map((el) => {
         const r = el.getBoundingClientRect();
         const icon = el.querySelector('svg');
-        const title = el.querySelector('[id]');
+        // 제목 = aria-labelledby가 가리키는 요소(설명도 id를 가지므로 "첫 id 요소"로 찾지 않는다)
+        const title = document.getElementById(el.getAttribute('aria-labelledby'));
         const close = el.querySelector('button[aria-label]');
         const ir = icon.getBoundingClientRect();
         const tr = title.getBoundingClientRect();
@@ -151,7 +158,8 @@ async function measure(page) {
           center: { x: r.left + r.width / 2, y: r.top + r.height / 2 },
         };
       });
-      const shown = toasts.filter((t) => t.visible);
+      // 화면 순서로 정렬해 간격을 잰다(DOM 순서 = 시각 순서를 가정하지 않는다)
+      const shown = toasts.filter((t) => t.visible).sort((a, b) => a.top - b.top);
       const gap = shown.length >= 2 ? round(shown[1].top - shown[0].bottom) : null;
       return JSON.stringify({
         space2: px(rootStyle.getPropertyValue('--ui-space-2')),
