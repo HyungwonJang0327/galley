@@ -7,7 +7,8 @@ export type SkeletonRadius = 'sm' | 'md' | 'full';
 export type SkeletonSize = number | string;
 
 // 자리표시자라 children이 없다. role은 뜻이 없고 aria-hidden으로만 다룬다.
-export interface SkeletonProps extends Omit<ComponentProps<'div'>, 'children' | 'role'> {
+// 루트는 span(display:block) — 텍스트 자리(<p> 안 등)에 놓아도 유효한 중첩이다.
+export interface SkeletonProps extends Omit<ComponentProps<'span'>, 'children' | 'role'> {
   /** 폭. 기본은 부모 폭(100%). */
   width?: SkeletonSize;
   /** 높이. 기본은 글자 높이(1em) — 텍스트 자리에 넣으면 폰트 크기를 따라간다. */
@@ -61,7 +62,7 @@ export function Skeleton({
     // 마지막 줄만 짧게 — 문단 끝처럼 보이게. width를 준 경우에도 그 폭의 60%(calc라 %·var()도 된다).
     const lastSize: CSSProperties = w === undefined ? size : { ...size, width: `calc(${w} * 0.6)` };
     return (
-      <div className={classes} style={style} {...props} aria-hidden={hidden}>
+      <span className={classes} style={style} {...props} aria-hidden={hidden}>
         {Array.from({ length: count }, (_, i) => {
           const last = i === count - 1;
           return (
@@ -72,10 +73,10 @@ export function Skeleton({
             />
           );
         })}
-      </div>
+      </span>
     );
   }
 
   const classes = [barClass, className].filter(Boolean).join(' ');
-  return <div className={classes} style={{ ...style, ...size }} {...props} aria-hidden={hidden} />;
+  return <span className={classes} style={{ ...style, ...size }} {...props} aria-hidden={hidden} />;
 }
