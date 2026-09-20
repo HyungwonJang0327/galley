@@ -89,6 +89,36 @@ describe('Skeleton', () => {
     expect(last.style.height).toBe('12px');
   });
 
+  it('여러 줄 모드에서 radius 클래스는 각 막대에 붙고 루트에는 안 붙는다', () => {
+    const { rerender } = render(<Skeleton data-testid="s" lines={2} />);
+    const root = screen.getByTestId('s');
+    const smBar = root.children[0]!.className;
+    rerender(<Skeleton data-testid="s" lines={2} radius="full" />);
+    const fullBar = root.children[0]!.className;
+    expect(fullBar).not.toBe(smBar);
+    expect(root.children[1]!.className).toContain(fullBar.split(' ')[1]!);
+    expect(root.className).not.toContain(fullBar.split(' ')[1]!);
+  });
+
+  it('여러 줄 루트에는 width·height 인라인이 없다(각 줄에만)', () => {
+    render(<Skeleton data-testid="s" lines={2} width={200} height={12} style={{ marginTop: 4 }} />);
+    const root = screen.getByTestId('s');
+    expect(root.style.width).toBe('');
+    expect(root.style.height).toBe('');
+    expect(root.style.marginTop).toBe('4px');
+  });
+
+  it('문자열 width + lines는 마지막 줄을 calc로 줄인다(%·var 모두)', () => {
+    const { rerender } = render(<Skeleton data-testid="s" lines={2} width="60%" />);
+    expect((screen.getByTestId('s').children[1] as HTMLElement).style.width).toBe(
+      'calc(60% * 0.6)',
+    );
+    rerender(<Skeleton data-testid="s" lines={2} width="var(--ui-space-6)" />);
+    expect((screen.getByTestId('s').children[1] as HTMLElement).style.width).toBe(
+      'calc(var(--ui-space-6) * 0.6)',
+    );
+  });
+
   it('lines가 1 이하면 막대 하나다(lines 없음과 같음)', () => {
     const { rerender } = render(<Skeleton data-testid="s" lines={1} />);
     expect(screen.getByTestId('s').children).toHaveLength(0);
