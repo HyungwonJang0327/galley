@@ -30,7 +30,9 @@ const ICONS = {
   danger: CircleAlert,
 } as const;
 
-const isTone = (type: string | undefined): type is ToastTone => type !== undefined && type in ICONS;
+// `in`은 프로토타입까지 본다('toString' in ICONS === true) — 자기 키만.
+const isTone = (type: string | undefined): type is ToastTone =>
+  type !== undefined && Object.hasOwn(ICONS, type);
 
 /**
  * 토스트 뷰포트 + 컨텍스트(Base UI). 앱 루트(셸)에 한 번 두고, 띄우는 쪽은 `useToast()`.
