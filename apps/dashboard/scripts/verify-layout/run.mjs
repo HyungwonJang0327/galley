@@ -17,6 +17,7 @@ import { verifySkeleton } from './skeleton.mjs';
 import { verifyShellScroll } from './shell-scroll.mjs';
 import { verifySplitPane } from './split-pane.mjs';
 import { verifySwitch } from './switch.mjs';
+import { verifyToast } from './toast.mjs';
 import { verifyNotFound } from './not-found.mjs';
 import { verifyPopover } from './popover.mjs';
 import { verifyRadio } from './radio.mjs';
@@ -118,6 +119,7 @@ async function main() {
         verifyPopover,
         verifyInlineAlert,
         verifySkeleton,
+        verifyToast,
         verifyNotFound,
       ]) {
         // 대부분 /design 갤러리를 보지만, 404는 없는 경로여야 재현된다.
