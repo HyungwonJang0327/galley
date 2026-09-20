@@ -101,10 +101,13 @@ describe('Skeleton', () => {
     expect(screen.getByTestId('s').children).toHaveLength(2);
   });
 
-  it('ref를 div에 넘긴다', () => {
-    const ref = createRef<HTMLDivElement>();
-    render(<Skeleton ref={ref} data-testid="s" />);
+  it('루트는 span이고 ref를 넘긴다(단일·여러 줄 모두) — 텍스트 안에 놓아도 유효한 중첩', () => {
+    const ref = createRef<HTMLSpanElement>();
+    const { rerender } = render(<Skeleton ref={ref} data-testid="s" />);
     expect(ref.current).toBe(screen.getByTestId('s'));
+    expect(screen.getByTestId('s').tagName).toBe('SPAN');
+    rerender(<Skeleton ref={ref} lines={2} data-testid="s" />);
+    expect(screen.getByTestId('s').tagName).toBe('SPAN');
   });
 
   it('className을 병합하고 나머지 props를 루트에 넘긴다(단일·여러 줄 모두)', () => {
