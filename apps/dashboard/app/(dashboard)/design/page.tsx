@@ -539,8 +539,10 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Toast</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
-              tone 4종(duration 0) — 화면 우상단 뷰포트에 쌓인다. limit 3을 넘으면 오래된 것이
-              숨는다. 닫기: 버튼·Esc·마우스 올리면 타이머 멈춤·F6으로 뷰포트 포커스
+              tone 4종(duration 0) — 화면 우상단 뷰포트에 쌓인다(TopBar 아래, 앱이
+              --ui-toast-inset-top으로 내림). limit 3을 넘으면 오래된 것이 숨는다. 닫기:
+              버튼·Esc·마우스 올리면 타이머 멈춤·F6으로 뷰포트 포커스. &quot;위치 바꾸기&quot;로
+              우하단(최신이 아래)
             </span>
             <div data-demo="toast">
               <ToastDemo />
