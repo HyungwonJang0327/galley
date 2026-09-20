@@ -24,10 +24,7 @@ export const LoadingCard = {
       <span role="status" style={VISUALLY_HIDDEN}>
         불러오는 중
       </span>
-      <div
-        aria-busy="true"
-        style={{ display: 'flex', gap: 'var(--ui-space-3)', width: 'var(--ui-dialog-width)' }}
-      >
+      <div aria-busy="true" style={{ display: 'flex', gap: 'var(--ui-space-3)' }}>
         <Skeleton radius="full" width={40} height={40} />
         <div
           style={{
