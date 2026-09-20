@@ -1,6 +1,6 @@
 // Toast 뷰포트 위치·폭·쌓임·limit·닫기·역할 실측.
-// 갤러리(/design) Toast 섹션(data-demo="toast", 버튼 글자 info·success·warning·danger·"모두 닫기", limit 3)에
-// 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다. 실제 마우스 클릭을 쓴다(뷰포트 hover 펼침과 구분하려고).
+// 갤러리(/design) Toast 섹션(data-demo="toast", 버튼 글자 info·success·warning·danger·"모두 닫기"·"위치 바꾸기",
+// limit 3, 시작 위치 top-right)에 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다. 실제 마우스 클릭을 쓴다(뷰포트 hover 펼침과 구분하려고).
 import { join } from 'node:path';
 import { sleep } from './cdp.mjs';
 
@@ -107,6 +107,29 @@ export async function verifyToast(page, { outDir }) {
   const end = await measure(page);
   add(`모두 닫기 뒤 토스트 0개 (${end.toasts.length})`, end.toasts.length === 0);
 
+  // 6. bottom-right — 화면 우하단, 최신이 아래
+  const toggle = await locate(page, '위치 바꾸기');
+  await page.mouseClick(toggle.x, toggle.y);
+  await sleep(200);
+  for (const label of ['info', 'success']) {
+    const b = await locate(page, label);
+    await page.mouseClick(b.x, b.y);
+    await sleep(250);
+  }
+  await sleep(400);
+  m = await measure(page);
+  add(
+    `[bottom-right] 뷰포트가 화면 우하단, 여백 --ui-toast-inset (bottom ${m.viewport.bottomGap} · right ${m.viewport.rightGap} = ${m.space4})`,
+    near(m.viewport.bottomGap, m.space4) && near(m.viewport.rightGap, m.space4),
+  );
+  const [olderB, newerB] = [...m.toasts].sort((a, b) => a.top - b.top);
+  add(
+    `[bottom-right] 최신이 화면에서 아래에 온다 (${m.toasts.length}개, ${olderB?.top} < ${newerB?.top})`,
+    m.toasts.length === 2 && newerB.iconColor !== olderB.iconColor && newerB.top > olderB.top,
+  );
+  add(`[bottom-right] 토스트 사이 간격 space-2 (${m.gap} = ${m.space2})`, near(m.gap, m.space2));
+  await page.screenshot(join(outDir, 'toast-2.png'));
+
   return { name, checks };
 }
 
@@ -172,6 +195,7 @@ async function measure(page) {
           label: viewport.getAttribute('aria-label') ?? '',
           top: round(vr.top),
           rightGap: round(window.innerWidth - vr.right),
+          bottomGap: round(window.innerHeight - vr.bottom),
           width: round(vr.width),
           bottom: round(vr.bottom),
         },

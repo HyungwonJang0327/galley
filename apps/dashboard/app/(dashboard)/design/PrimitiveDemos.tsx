@@ -26,7 +26,7 @@ import {
   Tooltip,
   useToast,
 } from 'galley-ui';
-import type { MenuEntry, SelectItem, TabItem } from 'galley-ui';
+import type { MenuEntry, SelectItem, TabItem, ToastPosition } from 'galley-ui';
 import styles from './page.module.css';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.
@@ -597,7 +597,14 @@ export function PopoverAtBottomDemo() {
 }
 
 // Toast: Provider는 앱 셸에 한 번 두는 것이지만 갤러리는 자기 Provider를 가진다(뷰포트가 화면 모서리에 뜬다).
-function ToastButtons() {
+// Provider를 둘 두면 F6 전역 리스너가 서로 싸우므로 position은 토글 하나로 바꾼다.
+function ToastButtons({
+  position,
+  onTogglePosition,
+}: {
+  position: ToastPosition;
+  onTogglePosition: () => void;
+}) {
   const { toast, close } = useToast();
   const [count, setCount] = useState(0);
   const fire = (tone: 'info' | 'success' | 'warning' | 'danger') => {
@@ -627,17 +634,26 @@ function ToastButtons() {
       <Button variant="ghost" size="sm" onClick={() => close()}>
         모두 닫기
       </Button>
-      <span className={styles.groupLabel} data-demo="toast-count">
-        띄운 수 {count}
+      <Button variant="ghost" size="sm" onClick={onTogglePosition}>
+        위치 바꾸기
+      </Button>
+      <span className={styles.groupLabel}>
+        띄운 수 {count} · 위치 {position}
       </span>
     </div>
   );
 }
 
 export function ToastDemo() {
+  const [position, setPosition] = useState<ToastPosition>('top-right');
   return (
-    <ToastProvider limit={3}>
-      <ToastButtons />
+    <ToastProvider limit={3} position={position}>
+      <ToastButtons
+        position={position}
+        onTogglePosition={() =>
+          setPosition((p) => (p === 'top-right' ? 'bottom-right' : 'top-right'))
+        }
+      />
     </ToastProvider>
   );
 }
