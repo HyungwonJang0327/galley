@@ -1,0 +1,106 @@
+import { createRef } from 'react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { Skeleton } from './Skeleton';
+
+describe('Skeleton', () => {
+  it('기본은 aria-hidden이고 role이 없다', () => {
+    render(<Skeleton data-testid="s" />);
+    const el = screen.getByTestId('s');
+    expect(el.getAttribute('aria-hidden')).toBe('true');
+    expect(el.getAttribute('role')).toBeNull();
+  });
+
+  it('aria-hidden={false}로 숨김을 풀 수 있다', () => {
+    render(<Skeleton data-testid="s" aria-hidden={false} />);
+    expect(screen.getByTestId('s').getAttribute('aria-hidden')).toBe('false');
+  });
+
+  it('숫자 width·height는 px, 문자열은 그대로 인라인 스타일이 된다', () => {
+    const { rerender } = render(<Skeleton data-testid="s" width={120} height={16} />);
+    let el = screen.getByTestId('s');
+    expect(el.style.width).toBe('120px');
+    expect(el.style.height).toBe('16px');
+
+    rerender(<Skeleton data-testid="s" width="60%" height="var(--ui-space-5)" />);
+    el = screen.getByTestId('s');
+    expect(el.style.width).toBe('60%');
+    expect(el.style.height).toBe('var(--ui-space-5)');
+  });
+
+  it('width·height를 안 주면 인라인 스타일을 만들지 않는다(CSS 기본값에 맡김)', () => {
+    render(<Skeleton data-testid="s" />);
+    expect(screen.getByTestId('s').getAttribute('style')).toBeNull();
+  });
+
+  it('소비자 style을 유지하고 width·height만 덧붙인다', () => {
+    render(<Skeleton data-testid="s" width={40} style={{ marginTop: 4 }} />);
+    const el = screen.getByTestId('s');
+    expect(el.style.marginTop).toBe('4px');
+    expect(el.style.width).toBe('40px');
+  });
+
+  it('radius에 따라 클래스가 달라진다', () => {
+    const { rerender } = render(<Skeleton data-testid="s" />);
+    const sm = screen.getByTestId('s').className;
+    rerender(<Skeleton data-testid="s" radius="md" />);
+    const md = screen.getByTestId('s').className;
+    rerender(<Skeleton data-testid="s" radius="full" />);
+    const full = screen.getByTestId('s').className;
+    expect(new Set([sm, md, full]).size).toBe(3);
+  });
+
+  it('lines가 2 이상이면 줄 수만큼 막대를 쌓고 마지막만 짧은 클래스를 받는다', () => {
+    render(<Skeleton data-testid="s" lines={3} />);
+    const root = screen.getByTestId('s');
+    expect(root.getAttribute('aria-hidden')).toBe('true');
+    const bars = Array.from(root.children);
+    expect(bars).toHaveLength(3);
+    const first = bars[0]!;
+    const last = bars[2]!;
+    expect(first.className).not.toBe(last.className);
+    expect(last.className).toContain(first.className);
+  });
+
+  it('lines가 있을 때 width는 각 줄에, 마지막 줄은 그 폭의 60%(calc)', () => {
+    render(<Skeleton data-testid="s" lines={2} width={200} height={12} />);
+    const bars = Array.from(screen.getByTestId('s').children) as HTMLElement[];
+    const first = bars[0]!;
+    const last = bars[1]!;
+    expect(first.style.width).toBe('200px');
+    expect(first.style.height).toBe('12px');
+    expect(last.style.width).toBe('calc(200px * 0.6)');
+    expect(last.style.height).toBe('12px');
+  });
+
+  it('lines가 1 이하면 막대 하나다(lines 없음과 같음)', () => {
+    const { rerender } = render(<Skeleton data-testid="s" lines={1} />);
+    expect(screen.getByTestId('s').children).toHaveLength(0);
+    rerender(<Skeleton data-testid="s" lines={0} />);
+    expect(screen.getByTestId('s').children).toHaveLength(0);
+  });
+
+  it('소수 lines는 내림한다', () => {
+    render(<Skeleton data-testid="s" lines={2.7} />);
+    expect(screen.getByTestId('s').children).toHaveLength(2);
+  });
+
+  it('ref를 div에 넘긴다', () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<Skeleton ref={ref} data-testid="s" />);
+    expect(ref.current).toBe(screen.getByTestId('s'));
+  });
+
+  it('className을 병합하고 나머지 props를 루트에 넘긴다(단일·여러 줄 모두)', () => {
+    const { rerender } = render(<Skeleton className="extra" id="one" data-testid="s" />);
+    let el = screen.getByTestId('s');
+    expect(el.className).toContain('extra');
+    expect(el.className).not.toBe('extra');
+    expect(el.id).toBe('one');
+
+    rerender(<Skeleton className="extra" id="two" lines={2} data-testid="s" />);
+    el = screen.getByTestId('s');
+    expect(el.className).toContain('extra');
+    expect(el.id).toBe('two');
+  });
+});
