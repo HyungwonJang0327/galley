@@ -59,6 +59,11 @@
   width: 420px;
 }
 
+/* 시각 숨김 텍스트의 위치 기준 — 없으면 absolute 요소가 안쪽 스크롤 영역에서 body를 늘린다(셸 실측이 잡음) */
+.loadingWrap {
+  position: relative;
+}
+
 /* 시각 숨김(스크린리더만) — Skeleton 데모의 로딩 안내 텍스트 */
 .srOnly {
   position: absolute;
@@ -67,6 +72,11 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* 폭 없는 Skeleton은 100%를 요구하므로 형제 버튼이 눌려 글자가 접힌다 — 버튼은 내용 폭 고정 */
+.noShrink {
+  flex-shrink: 0;
 }
 
 /* 줄바꿈 없는 flex 행 — 폭 없는 Skeleton이 형제와 폭을 나누는지 보는 자리 */

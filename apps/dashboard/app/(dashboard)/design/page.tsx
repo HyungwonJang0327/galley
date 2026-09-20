@@ -242,7 +242,7 @@ export default function DesignPage() {
             <div className={styles.loadingRow} data-demo="skeleton-flex">
               <Skeleton radius="full" width="var(--ui-space-5)" height="var(--ui-space-5)" />
               <Skeleton />
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" className={styles.noShrink}>
                 버튼
               </Button>
             </div>
@@ -261,14 +261,16 @@ export default function DesignPage() {
               보류 힌트일 뿐이라, &quot;불러오는 중&quot; 안내는 그 밖의 시각 숨김
               role=&quot;status&quot; 텍스트가 한다
             </span>
-            <span role="status" className={styles.srOnly}>
-              불러오는 중
-            </span>
-            <div className={styles.loadingCard} aria-busy="true" data-demo="skeleton-card">
-              <Skeleton radius="full" width={40} height={40} />
-              <div className={styles.loadingBody}>
-                <Skeleton width="40%" height="var(--ui-text-h2)" />
-                <Skeleton lines={2} />
+            <div className={styles.loadingWrap}>
+              <span role="status" className={styles.srOnly}>
+                불러오는 중
+              </span>
+              <div className={styles.loadingCard} aria-busy="true" data-demo="skeleton-card">
+                <Skeleton radius="full" width={40} height={40} />
+                <div className={styles.loadingBody}>
+                  <Skeleton width="40%" height="var(--ui-text-h2)" />
+                  <Skeleton lines={2} />
+                </div>
               </div>
             </div>
           </div>
