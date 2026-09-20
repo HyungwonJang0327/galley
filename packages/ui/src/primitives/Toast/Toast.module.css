@@ -64,16 +64,20 @@
   transform: translateX(var(--ui-space-4));
 }
 
-/* 개수 상한을 넘은 오래된 토스트는 자리에서 뺀다(Base UI는 지우지 않고 표시만 한다) */
+/*
+ * 개수 상한을 넘은 오래된 토스트는 자리에서 뺀다(Base UI는 지우지 않고 표시만 한다 — inert도 건다).
+ * 단순화: 앞 토스트가 닫혀 다시 드러날 때는 전환 없이 나타난다(starting-style이 다시 붙지 않는다).
+ */
 .toast[data-limited] {
   display: none;
 }
 
+/* 아이콘을 첫 줄(제목) 높이의 상자에 넣어 세로 가운데 — InlineAlert와 같은 방식(아이콘 px 리터럴 없음) */
 .icon {
   display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
-  /* 첫 줄(제목) 세로 가운데: (줄 높이 − 아이콘 16px) / 2 */
-  margin-top: calc((var(--ui-text-sm) * var(--ui-leading-normal) - 16px) / 2);
+  height: calc(1em * var(--ui-leading-normal));
 }
 
 .info .icon {
