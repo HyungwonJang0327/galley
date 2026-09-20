@@ -80,18 +80,20 @@
 
 ## 핵심 결정 표 (변경 불가 / 변경 시 decisions에 "결정 변경" 기록)
 
-| 결정                | 요지                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 로컬 우선           | 배포 보류, 가능성만 유지("막지 않기")                                                                               |
-| 승인 게이트         | 사람 승인 전 공개 발행 코드 없음. Zenn 下書き까지만                                                                 |
-| 클린룸              | 회사 리포 미열람·미복사                                                                                             |
-| 팀 네이밍           | 역할명 그대로(사람 이름 금지)                                                                                       |
-| ui 경계             | galley-ui는 도메인 단어·next·앱 의존 금지, 공개 배럴만                                                              |
-| 패키지명            | npm 배포명 `galley-ui`(unscoped — `@galley` 스코프 선점됨), 워크스페이스명도 통일. `@galley/pipeline`은 비공개 유지 |
-| 핵심 모듈 직접 작성 | (a') 실행 상세 2분할 화면(B2c), (b) 모델 어댑터(BM1 완료) — AI는 테스트·리뷰만. (a) 상태 머신에서 2026-09-12 교체   |
+| 결정                | 요지                                                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 로컬 우선           | 배포 보류, 가능성만 유지("막지 않기")                                                                                                   |
+| 승인 게이트         | 사람 승인 전 공개 발행 코드 없음. Zenn 下書き까지만                                                                                     |
+| 클린룸              | 회사 리포 미열람·미복사                                                                                                                 |
+| 팀 네이밍           | 역할명 그대로(사람 이름 금지)                                                                                                           |
+| ui 경계             | galley-ui는 도메인 단어·next·앱 의존 금지, 공개 배럴만                                                                                  |
+| 패키지명            | npm 배포명 `galley-ui`(unscoped — `@galley` 스코프 선점됨), 워크스페이스명도 통일. `@galley/pipeline`은 비공개 유지                     |
+| 리포 분리 안 함     | galley-ui는 이 모노레포에서 `packages/ui`째로 배포(`repository.directory`). 두 번째 소비자가 생기면 재검토 — decisions/ui-repo-split.md |
+| 핵심 모듈 직접 작성 | (a') 실행 상세 2분할 화면(B2c), (b) 모델 어댑터(BM1 완료) — AI는 테스트·리뷰만. (a) 상태 머신에서 2026-09-12 교체                       |
 
 ## 미결 질문
 
 - ~~apps/dashboard 단위 테스트 인프라 도입 여부~~ **해소(2026-09-10)** → decisions/dashboard-testing.md(vitest+happy-dom+testing-library, ui와 동일). ~~레이아웃 실측 스크립트 리포 반영~~ **해소(2026-09-10)** → decisions/layout-measurement.md(`apps/dashboard/scripts/verify-layout/`, 수동 `verify:layout`).
 - ~~실측 스크립트 CI 통합(2-B)~~ **해소(2026-09-10)** → decisions/layout-measurement.md 결정 변경: CI `layout` 잡을 `verify`와 병렬로 항상 실행 + 실패 시 스크린샷 artifact(A). required check 등록 완료(2026-09-10, 사용자 — decisions/branch-protection.md).
 - ~~사이드바 IA 재정비~~ **해소(2026-09-08)** → decisions/navigation.md 확정. layout.md §2~§4·라우트 표·CLAUDE.md·todo AN1~6 반영. 구현은 승인 후 AN1부터.
+- 공개 리포 상태 확인 2건(2026-09-20, decisions/ui-repo-split.md): ① CLAUDE.md §5·clean-room.md에 적힌 회사 리포 폴더명을 공개 상태에서 그대로 둘지 ② `@galley/pipeline`·`dashboard`(npm 비공개)도 루트 LICENSE(MIT)를 따르는 것이 의도인지. npm 배포(P6) 전에 사용자 판단.
