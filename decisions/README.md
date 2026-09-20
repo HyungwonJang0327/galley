@@ -44,6 +44,7 @@
 - navigation — 사이드바·TopBar IA(사용 흐름 순), 워크스페이스 제거
 - ui-package-boundary — galley-ui 경계 규칙
 - package-name — npm 배포명 `galley-ui`(unscoped, `@galley` 스코프는 선점됨), 워크스페이스명도 통일
+- ui-repo-split — galley-ui는 모노레포에서 `packages/ui`째로 배포(git 리포 분리 안 함, `repository.directory`). 재검토 신호·오픈소스 상태 미결 2건
 - server-only-boundary — pipeline 값을 쓰는 대시보드 파일은 `import 'server-only'`(클라 번들 유입을 빌드 실패로)
 - deploy-readiness — 배포 가능성 유지 규칙
 - toolchain-pins — 툴체인 버전 핀·빌드 우회(TS6 고정 등)
