@@ -11,6 +11,7 @@ import {
   ListToolbarTab,
   PageHeader,
   Separator,
+  Skeleton,
   StatTile,
   Textarea,
 } from 'galley-ui';
@@ -217,6 +218,41 @@ export default function DesignPage() {
               decorative — 모양은 같고 role=&quot;none&quot;(보조 기술이 읽지 않음)
             </span>
             <Separator decorative />
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Skeleton</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              radius sm(기본)·md·full — width·height는 숫자(px) 또는 CSS 값. 전부 aria-hidden
+            </span>
+            <div className={styles.row} data-demo="skeleton-shapes">
+              <Skeleton width={120} height={16} />
+              <Skeleton radius="md" width={120} height={40} />
+              <Skeleton radius="full" width={40} height={40} />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              lines=3 — 줄 수만큼 쌓고 마지막 줄은 짧게. 높이 기본은 글자 높이(1em)
+            </span>
+            <div className={styles.alertBox} data-demo="skeleton-lines">
+              <Skeleton lines={3} />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              불러오는 카드 — &quot;불러오는 중&quot;은 부모가 aria-busy=&quot;true&quot;로 알리고
+              Skeleton은 자리만 잡는다
+            </span>
+            <div className={styles.loadingCard} aria-busy="true" data-demo="skeleton-card">
+              <Skeleton radius="full" width={40} height={40} />
+              <div className={styles.loadingBody}>
+                <Skeleton width="40%" height="var(--ui-text-h2)" />
+                <Skeleton lines={2} />
+              </div>
+            </div>
           </div>
         </Card>
 
