@@ -166,7 +166,7 @@
 
 캐시(리포 인덱스)는 "어디를 볼지", 내용은 항상 원본에서. 단계 5→6(근거 검증). **선행: BM1~BM3(Mock 어댑터·레지스트리)**, BE8~BE11·BE14는 B1a(상태 머신 ✅)·BW2(워커 루프). 제품 코드는 승인 후. 각 항목 = 커밋 하나. 테스트는 전부 **tmpdir 픽스처 git 리포**(회사 리포 미열람).
 
-- [x] **BE1** (2026-09-21 `69bbd0b`·헬퍼 `8aefbe5`·테스트 `65816a1`·decisions `ccf5e45`, feat/evidence-schema — **TopicAnalysisLink 키는 topicSlug가 아니라 topicId**(리뷰로 결정 변경), RepoAnalysis.key·IndexJob.progressCursor 추가) pl — 스키마: `Repo`(aliases·lastIndexModelId 포함) · `RepoAnalysis`(pointers JSON ≥ 1) · `IndexJob`(modelId) · `TopicAnalysisLink`(topicSlug 키) · `QueueItem.repoNames/keywords/period` + 마이그레이션. 커밋: `feat(pipeline): 리포 인덱스와 주제 연결 스키마 추가`
+- [x] **BE1** (2026-09-21 `891428b`·헬퍼 `3a5efd0`·테스트 `3926d87`·decisions `e46207f`, feat/evidence-schema — **TopicAnalysisLink 키는 topicSlug가 아니라 topicId**(리뷰로 결정 변경), RepoAnalysis.key·IndexJob.progressCursor 추가) pl — 스키마: `Repo`(aliases·lastIndexModelId 포함) · `RepoAnalysis`(pointers JSON ≥ 1) · `IndexJob`(modelId) · `TopicAnalysisLink`(topicSlug 키) · `QueueItem.repoNames/keywords/period` + 마이그레이션. 커밋: `feat(pipeline): 리포 인덱스와 주제 연결 스키마 추가`
   - 완료조건: `prisma validate`·마이그레이션 적용. pointers 빈 배열 저장은 접근 함수에서 거부(테스트).
 - [ ] **BE2** pl — 식별 정보 필터: `.galley/redact.json` 로더 + `redact(text)` 적용 함수 + 테스트. 커밋: `feat(pipeline): 식별 정보 필터 추가`
   - 완료조건: 회사명·도메인·이메일·키 패턴·내부 URL 픽스처가 전부 치환되고 통과 여부가 반환된다. 함수 하나를 인덱싱·EvidenceBundle이 공유.
