@@ -13,6 +13,9 @@ export default defineConfig({
       insertTypesEntry: true,
     }),
   ],
+  // 개발 경고(src/internal/accessibleName.ts)의 NODE_ENV 분기를 빌드 시점 값으로 굳히지 않고 소비자 번들러에
+  // 맡긴다 — React·Base UI dist와 같은 관례. 치환하지 않으면 Vite는 라이브러리 모드에서 'production'으로 굳힌다.
+  define: { 'process.env.NODE_ENV': 'process.env.NODE_ENV' },
   build: {
     lib: {
       entry: fileURLToPath(new URL('src/index.ts', import.meta.url)),

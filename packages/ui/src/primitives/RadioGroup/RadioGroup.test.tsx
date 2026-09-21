@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { FormField } from '../FormField';
 import { useState } from 'react';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { RadioGroup } from './RadioGroup';
@@ -197,5 +198,33 @@ describe('RadioGroup', () => {
     const group = screen.getByRole('radiogroup');
     expect(group.className).toContain('extra');
     expect(group.className).not.toBe('extra');
+  });
+
+  it('이름 없이 FormField 밖에서 쓰면 개발 모드 경고, 이름이 있거나 FormField 안이면 없다', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { unmount } = render(
+      <RadioGroup value={null} onValueChange={() => {}} items={[{ value: 'a', label: 'A' }]} />,
+    );
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain('RadioGroup');
+    unmount();
+    warn.mockClear();
+    const second = render(
+      <RadioGroup
+        value={null}
+        onValueChange={() => {}}
+        items={[{ value: 'a', label: 'A' }]}
+        aria-label="이름"
+      />,
+    );
+    expect(warn).not.toHaveBeenCalled();
+    second.unmount();
+    render(
+      <FormField label="필드">
+        <RadioGroup value={null} onValueChange={() => {}} items={[{ value: 'a', label: 'A' }]} />
+      </FormField>,
+    );
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

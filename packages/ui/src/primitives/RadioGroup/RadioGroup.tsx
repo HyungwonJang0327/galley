@@ -5,6 +5,7 @@ import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { ItemContent } from '../ItemContent';
 import { useFieldRequired } from '../FormField/FormFieldContext';
+import { useAccessibleNameWarning } from '../../internal/accessibleName';
 import styles from './RadioGroup.module.css';
 
 export interface RadioItem {
@@ -23,8 +24,8 @@ export interface RadioGroupProps {
   value: string | null;
   onValueChange: (value: string) => void;
   items: RadioItem[];
-  /** 그룹의 접근성 이름. */
-  'aria-label': string;
+  /** 그룹의 접근성 이름. FormField 안이면 필드 라벨이 이름이라 생략한다(밖에서 생략하면 개발 모드 경고). */
+  'aria-label'?: string;
   /** 배치 방향. 방향키는 어느 쪽이든 네 방향 모두 듣는다(Base UI 기본값). */
   orientation?: RadioGroupOrientation;
   /** 그룹 전체 비활성. */
@@ -53,6 +54,7 @@ export function RadioGroup({
   className,
 }: RadioGroupProps) {
   const isRequired = useFieldRequired(required);
+  useAccessibleNameWarning('RadioGroup', ariaLabel !== undefined);
   const baseId = useId();
   const classes = [styles.group, styles[orientation], className].filter(Boolean).join(' ');
   return (

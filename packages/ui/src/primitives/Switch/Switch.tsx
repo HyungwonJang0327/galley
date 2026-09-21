@@ -2,13 +2,14 @@
 import { Switch as BaseSwitch } from '@base-ui/react/switch';
 import type { ReactNode } from 'react';
 import { useFieldRequired } from '../FormField/FormFieldContext';
+import { useAccessibleNameWarning } from '../../internal/accessibleName';
 import styles from './Switch.module.css';
 
 export interface SwitchProps {
   /** 제어형만. */
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-  /** 라벨. 클릭하면 토글된다. 없으면 aria-label을 준다. */
+  /** 라벨. 클릭하면 토글된다. 없으면 aria-label을 준다(둘 다 없으면 FormField 안이어야 한다 — 개발 모드 경고). */
   children?: ReactNode;
   'aria-label'?: string;
   disabled?: boolean;
@@ -35,6 +36,10 @@ export function Switch({
   className,
 }: SwitchProps) {
   const isRequired = useFieldRequired(required);
+  useAccessibleNameWarning(
+    'Switch',
+    (children !== undefined && children !== null) || ariaLabel !== undefined,
+  );
   const classes = [styles.label, className].filter(Boolean).join(' ');
   return (
     <label className={classes} data-disabled={disabled || undefined}>
