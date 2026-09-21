@@ -20,4 +20,17 @@ describe('Badge', () => {
     const after = screen.getByText('x').className;
     expect(after).not.toBe(before);
   });
+
+  it('className을 병합하고 tone마다 클래스가 다르다', () => {
+    const { rerender } = render(<Badge className="own">x</Badge>);
+    const el = screen.getByText('x');
+    expect(el.className).toContain('own');
+    const neutral = el.className;
+    rerender(
+      <Badge className="own" tone="danger">
+        x
+      </Badge>,
+    );
+    expect(screen.getByText('x').className).not.toBe(neutral);
+  });
 });

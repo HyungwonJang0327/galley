@@ -81,4 +81,26 @@ describe('Checkbox', () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  it('키보드 Space로 토글된다', () => {
+    const onChange = vi.fn();
+    render(
+      <Checkbox checked={false} onCheckedChange={onChange}>
+        항목
+      </Checkbox>,
+    );
+    const el = screen.getByRole('checkbox');
+    fireEvent.keyDown(el, { key: ' ' });
+    fireEvent.keyUp(el, { key: ' ' });
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('className을 라벨 요소에 병합한다', () => {
+    render(
+      <Checkbox checked={false} onCheckedChange={() => {}} className="own">
+        항목
+      </Checkbox>,
+    );
+    expect(screen.getByText('항목').closest('label')?.className).toContain('own');
+  });
 });

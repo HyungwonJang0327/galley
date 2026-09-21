@@ -76,4 +76,30 @@ describe('Menu', () => {
     openMenu();
     await waitFor(() => expect(screen.getByRole('menu').className).toContain('own'));
   });
+
+  it('Esc로 닫히고 포커스가 트리거로 돌아온다', async () => {
+    render(<Menu trigger={TRIGGER} items={ITEMS} onSelect={() => {}} />);
+    const trigger = openMenu();
+    const menu = await screen.findByRole('menu');
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it('열리면 방향키로 항목 사이를 이동하고 Enter로 고른다', async () => {
+    const onSelect = vi.fn();
+    render(<Menu trigger={TRIGGER} items={ITEMS} onSelect={onSelect} />);
+    openMenu();
+    const menu = await screen.findByRole('menu');
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
+    await waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('menuitem'));
+    const focused = document.activeElement as HTMLElement;
+    const expected = ITEMS.find(
+      (item) => 'label' in item && focused.textContent?.includes(item.label),
+    );
+    expect(expected && 'id' in expected).toBeTruthy();
+    fireEvent.keyDown(focused, { key: 'Enter' });
+    fireEvent.keyUp(focused, { key: 'Enter' });
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith((expected as { id: string }).id));
+  });
 });

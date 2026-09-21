@@ -73,4 +73,19 @@ describe('Select', () => {
       trigger.getAttribute('aria-disabled') === 'true' || trigger.hasAttribute('disabled'),
     ).toBe(true);
   });
+
+  it('className을 트리거에 병합한다', () => {
+    render(
+      <Select value="a" onValueChange={() => {}} items={ITEMS} aria-label="옵션" className="own" />,
+    );
+    expect(screen.getByRole('combobox').className).toContain('own');
+  });
+
+  it('트리거에서 ArrowDown으로 목록이 열린다', async () => {
+    render(<Select value="a" onValueChange={() => {}} items={ITEMS} aria-label="옵션" />);
+    const trigger = screen.getByRole('combobox');
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    await waitFor(() => expect(screen.getByRole('listbox')).toBeTruthy());
+  });
 });

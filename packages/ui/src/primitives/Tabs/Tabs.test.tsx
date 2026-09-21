@@ -52,4 +52,12 @@ describe('Tabs', () => {
     render(<Tabs value="c" onValueChange={() => {}} items={ITEMS} />);
     expect(screen.queryByRole('tabpanel')).toBeNull();
   });
+
+  // 방향키 이동은 Base UI composite가 실제 포커스 이동에 의존해 happy-dom에서 재현되지 않는다(RF-34 기록) — Chrome 실측 후보.
+  it('className을 루트에 병합한다', () => {
+    const { container } = render(
+      <Tabs value="a" onValueChange={() => {}} items={ITEMS} aria-label="구역" className="own" />,
+    );
+    expect((container.firstElementChild as HTMLElement).className).toContain('own');
+  });
 });
