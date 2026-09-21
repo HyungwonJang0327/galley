@@ -1,7 +1,7 @@
 'use client';
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { X } from 'lucide-react';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode, RefObject } from 'react';
 import styles from './Dialog.module.css';
 
 export interface DialogProps {
@@ -19,6 +19,11 @@ export interface DialogProps {
   trigger?: ReactElement;
   /** 우상단 닫기 버튼 접근성 이름. */
   closeLabel?: string;
+  /**
+   * 열릴 때 포커스를 둘 요소. 기본은 popup 안 첫 tabbable(= 우상단 닫기 버튼). 확인 다이얼로그는
+   * 위험한 액션이면 취소 버튼, 아니면 확인 버튼에 둔다(APG). false면 포커스를 옮기지 않는다.
+   */
+  initialFocus?: RefObject<HTMLElement | null> | false;
   /** popup에 병합. */
   className?: string;
 }
@@ -33,6 +38,7 @@ export function Dialog({
   footer,
   trigger,
   closeLabel = '닫기',
+  initialFocus,
   className,
 }: DialogProps) {
   const popupClass = [styles.popup, className].filter(Boolean).join(' ');
@@ -41,7 +47,7 @@ export function Dialog({
       {trigger ? <BaseDialog.Trigger render={trigger} /> : null}
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className={styles.backdrop} />
-        <BaseDialog.Popup className={popupClass}>
+        <BaseDialog.Popup className={popupClass} initialFocus={initialFocus}>
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             <BaseDialog.Close className={styles.close} aria-label={closeLabel}>
