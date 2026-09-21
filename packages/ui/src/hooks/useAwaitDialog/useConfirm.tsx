@@ -17,6 +17,8 @@ export interface ConfirmOptions {
   cancelLabel?: string;
   /** danger면 확인 버튼이 빨강이고 초기 포커스는 취소에(Enter가 곧 실행이 되지 않게). 기본 default(확인에 포커스). */
   tone?: ConfirmTone;
+  /** 본문(Dialog의 children 슬롯). description은 <p>라 표·목록 같은 블록은 여기에. */
+  children?: ReactNode;
 }
 
 export interface UseConfirmReturn {
@@ -41,6 +43,7 @@ export function useConfirm(): UseConfirmReturn {
       confirmLabel = '확인',
       cancelLabel = '취소',
       tone = 'default',
+      children,
     }: ConfirmOptions) =>
       open(({ open: isOpen, onOpenChange, resolve, cancel }) => (
         <Dialog
@@ -64,7 +67,9 @@ export function useConfirm(): UseConfirmReturn {
               </Button>
             </>
           }
-        />
+        >
+          {children}
+        </Dialog>
       )),
     [open],
   );

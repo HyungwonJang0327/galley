@@ -122,4 +122,31 @@ describe('useConfirm', () => {
       expect(document.activeElement).toBe(screen.getByRole('button', { name: '확인' })),
     );
   });
+
+  it('children을 본문(description 아래)에 렌더한다', async () => {
+    render(
+      <Consumer
+        options={{
+          title: '다시 실행할까요?',
+          description: '비용이 듭니다.',
+          children: (
+            <dl>
+              <dt>다시 도는 단계</dt>
+              <dd>본문 → 검증</dd>
+            </dl>
+          ),
+        }}
+        results={[]}
+      />,
+    );
+    await click('묻기');
+    const dialog = await screen.findByRole('dialog', { name: '다시 실행할까요?' });
+    const description = screen.getByText('비용이 듭니다.');
+    const body = screen.getByText('다시 도는 단계');
+    expect(dialog.contains(body)).toBe(true);
+    // description 다음에 본문
+    expect(
+      description.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });
