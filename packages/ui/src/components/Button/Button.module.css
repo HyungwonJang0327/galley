@@ -28,13 +28,13 @@
 
 /* size */
 .sm {
-  height: 28px;
+  height: var(--ui-button-height-sm);
   padding: 0 var(--ui-space-3);
   font-size: var(--ui-text-sm);
 }
 
 .md {
-  height: 36px;
+  height: var(--ui-button-height-md);
   padding: 0 var(--ui-space-4);
   font-size: var(--ui-text-body);
 }
