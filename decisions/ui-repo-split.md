@@ -28,8 +28,8 @@
 ## 오픈소스 상태라 함께 확인한 것 (2026-09-20)
 
 - 비밀값: `.env` gitignore + gitleaks(pre-commit·CI) — 장치 있음.
-- 회사 식별 정보: `.galley/redact.json`은 **산출물**(인덱싱 summary·EvidenceBundle snippet) 필터다. 커밋되는 코드·worklog·decisions는 사람이 지킨다. CLAUDE.md §5·decisions/clean-room.md에 회사 리포 폴더명이 "열지 않는 경로"로 적혀 있음 — 공개 상태에서 그대로 둘지는 **사용자 판단(미결)**.
-- 라이선스: `packages/ui/LICENSE`·루트 `LICENSE` 모두 MIT. `dashboard`·`@galley/pipeline`은 `private: true`라 npm에는 안 나가지만 리포가 공개이므로 코드는 루트 LICENSE를 따른다 — 파이프라인까지 MIT로 두는 것이 의도인지 **사용자 확인(미결)**.
+- 회사 식별 정보: `.galley/redact.json`은 **산출물**(인덱싱 summary·EvidenceBundle snippet) 필터다. 커밋되는 코드·worklog·decisions는 사람이 지킨다. CLAUDE.md §5·decisions/clean-room.md에 회사 리포 폴더명이 "열지 않는 경로"로 적혀 있음 — 공개 상태에서 그대로 둔다(2026-09-21 사용자 결정, 폴더명 자체는 비밀이 아님).
+- 라이선스: `packages/ui/LICENSE`·루트 `LICENSE` 모두 MIT. `dashboard`·`@galley/pipeline`은 `private: true`라 npm에는 안 나가지만 리포가 공개이므로 코드는 루트 LICENSE를 따른다 — 파이프라인까지 MIT로 둔다(2026-09-21 사용자 결정 — 리포 전체 MIT, 루트 README 라이선스 절).
 
 ## 결정일
 
@@ -38,3 +38,4 @@
 ## 갱신 이력
 
 - 2026-09-20 최초 결정(사용자 질문 "npm 배포할 때 git 리포를 분리하는 게 좋을까?"에서 파생).
+- 2026-09-21 미결 2건 해소(사용자): 회사 리포 폴더명 현행 유지 · 리포 전체 MIT.
