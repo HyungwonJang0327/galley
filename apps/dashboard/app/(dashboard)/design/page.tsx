@@ -74,6 +74,7 @@ export default function DesignPage() {
               <Button variant="primary">Primary</Button>
               <Button variant="secondary">Secondary</Button>
               <Button variant="ghost">Ghost</Button>
+              <Button variant="danger">Danger</Button>
             </div>
           </div>
           <div className={styles.group}>
@@ -89,6 +90,9 @@ export default function DesignPage() {
               <Button disabled>Primary</Button>
               <Button variant="secondary" disabled>
                 Secondary
+              </Button>
+              <Button variant="danger" disabled>
+                Danger
               </Button>
             </div>
           </div>
