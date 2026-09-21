@@ -95,6 +95,10 @@
   --ui-sidebar-collapsed-width: 56px; /* 접힘: 아이콘만 */
   --ui-dialog-width: 480px;
   --ui-control-height: 32px; /* Select 트리거 등 폼 컨트롤 */
+  --ui-button-height-sm: 28px;
+  --ui-button-height-md: 36px; /* 폼 컨트롤(32)보다 크다 — 나란히 놓일 때의 통일은 P7 */
+  --ui-toolbar-min-height: 44px; /* ListToolbar 한 줄 최소 높이 */
+  --ui-shell-min-width: 1200px; /* 데스크톱 전용 최소 폭 */
   --ui-select-popup-max-width: min(
     480px,
     calc(100vw - var(--ui-space-6))

@@ -3,7 +3,7 @@
   display: grid;
   grid-template-rows: var(--ui-topbar-height) 1fr;
   height: 100dvh;
-  min-width: 1200px; /* 데스크톱 전용 */
+  min-width: var(--ui-shell-min-width);
   overflow: hidden;
 }
 
