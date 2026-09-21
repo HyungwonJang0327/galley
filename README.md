@@ -52,4 +52,4 @@ pnpm --filter dashboard verify:layout # 레이아웃 실측(설치된 Chrome hea
 
 ## 라이선스
 
-TBD
+[MIT](./LICENSE) — 리포 전체(`galley-ui`·`@galley/pipeline`·`dashboard`). npm 패키지 `galley-ui`에는 같은 LICENSE 사본이 들어간다.

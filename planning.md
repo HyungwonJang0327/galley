@@ -96,4 +96,4 @@
 - ~~apps/dashboard 단위 테스트 인프라 도입 여부~~ **해소(2026-09-10)** → decisions/dashboard-testing.md(vitest+happy-dom+testing-library, ui와 동일). ~~레이아웃 실측 스크립트 리포 반영~~ **해소(2026-09-10)** → decisions/layout-measurement.md(`apps/dashboard/scripts/verify-layout/`, 수동 `verify:layout`).
 - ~~실측 스크립트 CI 통합(2-B)~~ **해소(2026-09-10)** → decisions/layout-measurement.md 결정 변경: CI `layout` 잡을 `verify`와 병렬로 항상 실행 + 실패 시 스크린샷 artifact(A). required check 등록 완료(2026-09-10, 사용자 — decisions/branch-protection.md).
 - ~~사이드바 IA 재정비~~ **해소(2026-09-08)** → decisions/navigation.md 확정. layout.md §2~§4·라우트 표·CLAUDE.md·todo AN1~6 반영. 구현은 승인 후 AN1부터.
-- 공개 리포 상태 확인 2건(2026-09-20, decisions/ui-repo-split.md): ① CLAUDE.md §5·clean-room.md에 적힌 회사 리포 폴더명을 공개 상태에서 그대로 둘지 ② `@galley/pipeline`·`dashboard`(npm 비공개)도 루트 LICENSE(MIT)를 따르는 것이 의도인지. npm 배포(P6) 전에 사용자 판단.
+- ~~공개 리포 상태 확인 2건~~ **해소(2026-09-21, 사용자)**: ① 회사 리포 폴더명은 현행 유지 ② 리포 전체 MIT(루트 README 라이선스 절, decisions/ui-repo-split.md 갱신 이력). 원문 — 공개 리포 상태 확인 2건(2026-09-20, decisions/ui-repo-split.md): ① CLAUDE.md §5·clean-room.md에 적힌 회사 리포 폴더명을 공개 상태에서 그대로 둘지 ② `@galley/pipeline`·`dashboard`(npm 비공개)도 루트 LICENSE(MIT)를 따르는 것이 의도인지. npm 배포(P6) 전에 사용자 판단.
