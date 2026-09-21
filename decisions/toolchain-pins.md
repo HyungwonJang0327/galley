@@ -42,3 +42,7 @@
 - 2026-09-08 `galley-ui` 빌드를 tsup→Vite 라이브러리 모드로 교체(tsup CSS Modules 스코프 미지원으로 스타일 전부 미적용 → 수정).
 - 2026-09-08 A4a: Prisma 6.19.3 핀(7↑의 datasource.url 제거로 결정 모델 충돌) + onlyBuiltDependencies에 prisma 3종 + pipeline postinstall generate 추가.
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+
+## galley-ui 런타임 의존성 범위 (2026-09-21, RF-32)
+
+- `packages/ui`의 `@base-ui/react`·`lucide-react`는 **caret 범위**(`^1.8.0`·`^1.43.0`). 정확 핀이면 소비자가 같은 라이브러리를 다른 버전으로 쓸 때 두 벌이 설치되고, Base UI는 컨텍스트 기반이라 Provider 불일치가 난다. 모노레포 lockfile이 실제 버전을 고정하므로 개발 재현성은 유지된다.
