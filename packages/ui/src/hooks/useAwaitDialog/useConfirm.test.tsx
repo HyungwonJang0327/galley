@@ -104,4 +104,22 @@ describe('useConfirm', () => {
     const reference = screen.getByRole('button', { name: '기준', hidden: true });
     expect(confirmButton.className).toBe(reference.className);
   });
+
+  it('초기 포커스: tone=danger면 취소 버튼, 기본이면 확인 버튼', async () => {
+    const { unmount } = render(
+      <Consumer options={{ title: '지울까요?', tone: 'danger' }} results={[]} />,
+    );
+    await click('묻기');
+    await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '취소' })),
+    );
+    unmount();
+    render(<Consumer options={{ title: '진행할까요?' }} results={[]} />);
+    await click('묻기');
+    await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '확인' })),
+    );
+  });
 });
