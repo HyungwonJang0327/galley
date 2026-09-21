@@ -14,7 +14,7 @@ export interface SelectItem {
   /** 우측 메타(회색·tabular-nums). */
   meta?: ReactNode;
   disabled?: boolean;
-  /** disabled 사유. Phase 1은 native title로 노출(Tooltip 프리미티브 전). */
+  /** disabled 사유. native title로 노출한다(Tooltip 프리미티브로 바꾸는 것은 후속). */
   disabledReason?: string;
 }
 
