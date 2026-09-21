@@ -32,8 +32,8 @@
 }
 
 .trigger:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
-  outline-offset: 1px;
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
 }
 
 /* FormField(Base UI Field)가 오류 상태를 컨텍스트로 넘긴다 — Input·Textarea의 invalid 테두리와 같은 색. */

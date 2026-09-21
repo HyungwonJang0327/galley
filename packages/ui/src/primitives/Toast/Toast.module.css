@@ -14,7 +14,7 @@
 }
 
 .viewport:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
+  outline: var(--ui-focus-ring);
   outline-offset: 2px;
   border-radius: var(--ui-radius-md);
 }
@@ -53,8 +53,8 @@
 }
 
 .toast:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
-  outline-offset: 1px;
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
 }
 
 /* 들어올 때·나갈 때: 오른쪽에서 살짝 밀려 들어오고 흐려지며 나간다 */
@@ -136,6 +136,6 @@
 }
 
 .close:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
-  outline-offset: 1px;
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
 }

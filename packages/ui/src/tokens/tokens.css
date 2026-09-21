@@ -75,6 +75,10 @@
   --ui-z-popup: 1;
   --ui-z-toast: 2;
 
+  /* 포커스 링(:focus-visible). offset은 요소가 붙어 있는 자리(탭 밑줄·뷰포트)에서만 따로 준다 */
+  --ui-focus-ring: 2px solid var(--ui-color-accent);
+  --ui-focus-ring-offset: 1px;
+
   /* 라운드 */
   --ui-radius-sm: 6px;
   --ui-radius-md: 8px; /* 카드 8~12 */

@@ -36,8 +36,8 @@
 }
 
 .box:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
-  outline-offset: 1px;
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
 }
 
 .box[data-checked],

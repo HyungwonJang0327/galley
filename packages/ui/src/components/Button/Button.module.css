@@ -21,6 +21,11 @@
   cursor: not-allowed;
 }
 
+.button:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
 /* size */
 .sm {
   height: 28px;
