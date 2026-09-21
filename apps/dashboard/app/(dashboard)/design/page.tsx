@@ -113,7 +113,7 @@ export default function DesignPage() {
         <Card>
           <h2 className={styles.sectionTitle}>Badge</h2>
           <div className={styles.group}>
-            <span className={styles.groupLabel}>variant</span>
+            <span className={styles.groupLabel}>tone</span>
             <div className={styles.row}>
               <Badge tone="neutral">neutral</Badge>
               <Badge tone="info">info</Badge>
