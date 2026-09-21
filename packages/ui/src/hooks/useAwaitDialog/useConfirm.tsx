@@ -1,5 +1,5 @@
 'use client';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '../../components/Button';
 import { Dialog } from '../../primitives/Dialog';
@@ -15,7 +15,7 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   /** 기본 '취소'. */
   cancelLabel?: string;
-  /** danger면 확인 버튼이 빨강(되돌릴 수 없는 액션). 기본 default. */
+  /** danger면 확인 버튼이 빨강이고 초기 포커스는 취소에(Enter가 곧 실행이 되지 않게). 기본 default(확인에 포커스). */
   tone?: ConfirmTone;
 }
 
@@ -32,6 +32,8 @@ export interface UseConfirmReturn {
  */
 export function useConfirm(): UseConfirmReturn {
   const { open, element } = useAwaitDialog<boolean>(false);
+  const cancelButton = useRef<HTMLButtonElement | null>(null);
+  const confirmButton = useRef<HTMLButtonElement | null>(null);
   const confirm = useCallback(
     ({
       title,
@@ -46,12 +48,15 @@ export function useConfirm(): UseConfirmReturn {
           onOpenChange={onOpenChange}
           title={title}
           description={description}
+          // 초기 포커스(APG): 위험한 액션은 취소 버튼, 아니면 확인 버튼.
+          initialFocus={tone === 'danger' ? cancelButton : confirmButton}
           footer={
             <>
-              <Button variant="secondary" onClick={cancel}>
+              <Button ref={cancelButton} variant="secondary" onClick={cancel}>
                 {cancelLabel}
               </Button>
               <Button
+                ref={confirmButton}
                 variant={tone === 'danger' ? 'danger' : 'primary'}
                 onClick={() => resolve(true)}
               >
