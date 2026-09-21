@@ -24,6 +24,9 @@ export interface MenuSeparator {
 
 export type MenuEntry = MenuItem | MenuSeparator;
 
+/** 트리거 기준 팝업 정렬. */
+export type MenuAlign = 'start' | 'end';
+
 export interface MenuProps {
   /**
    * 열기 버튼 요소(예: <Button aria-label="…" />). 메뉴가 이 요소에 props·ref를 병합하므로
@@ -34,7 +37,7 @@ export interface MenuProps {
   /** 항목을 고르면 그 id를 넘기고 메뉴는 닫힌다. */
   onSelect: (id: string) => void;
   /** 트리거 기준 팝업 정렬. 행 끝 ⋮ 메뉴가 기본이라 end. */
-  align?: 'start' | 'end';
+  align?: MenuAlign;
   /** popup에 병합. */
   className?: string;
 }

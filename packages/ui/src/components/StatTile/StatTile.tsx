@@ -6,6 +6,9 @@ import styles from './StatTile.module.css';
 /** render로 넘길 링크 요소. className은 병합, 임의 속성 허용. */
 type RenderElement = ReactElement<{ className?: string; [key: string]: unknown }>;
 
+/** 값 색. default=본문색 · muted=회색 · warning=주황. */
+export type StatTileTone = 'default' | 'muted' | 'warning';
+
 export interface StatTileProps {
   /** 위쪽 작은 회색 라벨. */
   label: string;
@@ -17,7 +20,7 @@ export interface StatTileProps {
    * 값 색. default=본문색 · muted=회색(값이 0일 때) · warning=주황(주의가 필요한 값).
    * 어떤 값이 어떤 톤인지는 앱이 정한다(ui는 도메인을 모른다).
    */
-  tone?: 'default' | 'muted' | 'warning';
+  tone?: StatTileTone;
   /** 링크 주소. 라우터 링크가 필요하면 render를 쓴다. */
   href?: string;
   /** 링크 요소(예: Next <Link href />). href보다 우선. */

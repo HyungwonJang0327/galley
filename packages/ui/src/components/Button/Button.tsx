@@ -3,16 +3,16 @@ import type { ComponentProps, ReactElement } from 'react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import styles from './Button.module.css';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type Size = 'sm' | 'md';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md';
 
 /** render로 넘길 링크 요소. className은 병합, 임의 속성 허용. */
 type RenderElement = ReactElement<{ className?: string; [key: string]: unknown }>;
 
 export interface ButtonProps extends ComponentProps<'button'> {
   /** primary=포인트 블루(주요 액션) · secondary=외곽선 · ghost=배경 없음 · danger=빨강 채움(되돌릴 수 없는 액션의 확인) */
-  variant?: Variant;
-  size?: Size;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   /**
    * 버튼 모양이지만 링크여야 할 때 그 요소(예: Next <Link href />). 넘기면 button 대신 이 요소로
    * 렌더하고 나머지 props(onClick·aria-*·data-* 등)는 그 요소의 props와 병합한다 — 이벤트 핸들러는

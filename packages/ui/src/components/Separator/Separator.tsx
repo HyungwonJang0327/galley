@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import styles from './Separator.module.css';
 
-type Orientation = 'horizontal' | 'vertical';
+export type SeparatorOrientation = 'horizontal' | 'vertical';
 
 // role·aria-orientation은 orientation·decorative로만 정한다(소비자가 어긋난 조합을 못 만들게).
 export interface SeparatorProps extends Omit<
@@ -12,7 +12,7 @@ export interface SeparatorProps extends Omit<
    * 선의 방향. vertical은 flex·grid 행의 직계 자식일 때 부모 높이를 채운다.
    * 그 밖에서는 글자 높이(1em)만큼만 그려지니 className으로 높이를 준다
    */
-  orientation?: Orientation;
+  orientation?: SeparatorOrientation;
   /** true면 시각 장식(role="none") — 보조 기술이 읽지 않는다. false면 role="separator" */
   decorative?: boolean;
 }
