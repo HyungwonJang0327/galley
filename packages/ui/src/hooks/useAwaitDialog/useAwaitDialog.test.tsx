@@ -40,6 +40,7 @@ function Consumer({
   const { open, element } = useAwaitDialog<Pick>('cancel');
   return (
     <>
+      <span data-testid="has-element">{String(element !== null)}</span>
       <button
         type="button"
         onClick={() => {
@@ -70,10 +71,14 @@ describe('useAwaitDialog', () => {
     vi.restoreAllMocks();
   });
 
-  it('한 번도 열지 않았으면 element는 null이다', () => {
+  it('한 번도 열지 않았으면 element는 null이고, 한 번 열면 닫힌 뒤에도 남는다', async () => {
     const results: Pick[] = [];
     render(<Consumer results={results} />);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('has-element').textContent).toBe('false');
+    await openDialog();
+    await click('A');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByTestId('has-element').textContent).toBe('true');
   });
 
   it('버튼으로 resolve한 값이 Promise로 전달되고 다이얼로그가 닫힌다', async () => {
@@ -154,6 +159,33 @@ describe('useAwaitDialog', () => {
     expect(seen).toContain(true);
     await click('A');
     await waitFor(() => expect(seen.at(-1)).toBe(false));
+  });
+
+  it('바깥(backdrop) 클릭은 cancel 값이다', async () => {
+    const results: Pick[] = [];
+    render(<Consumer results={results} />);
+    const dialog = await openDialog();
+    const backdrop = dialog.parentElement?.querySelector('[role="presentation"]') ?? document.body;
+    await act(async () => {
+      fireEvent.pointerDown(backdrop, { pointerType: 'mouse', button: 0 });
+      fireEvent.mouseDown(backdrop, { button: 0 });
+      fireEvent.pointerUp(backdrop, { pointerType: 'mouse', button: 0 });
+      fireEvent.mouseUp(backdrop, { button: 0 });
+      fireEvent.click(backdrop, { button: 0 });
+    });
+    await waitFor(() => expect(results).toEqual(['cancel']));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('닫힌 뒤 포커스는 열었던 버튼으로 돌아온다', async () => {
+    const results: Pick[] = [];
+    render(<Consumer results={results} />);
+    const trigger = screen.getByRole('button', { name: '열기' });
+    trigger.focus();
+    await openDialog();
+    await click('A');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it('새로 열면 렌더 함수가 돌려준 컴포넌트의 상태가 초기화된다(이전 세션 입력이 남지 않는다)', async () => {
