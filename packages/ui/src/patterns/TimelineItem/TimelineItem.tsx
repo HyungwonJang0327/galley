@@ -2,7 +2,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import styles from './TimelineItem.module.css';
 
-/** 표현 어휘. 도메인 상태(승인 대기 등)는 앱이 이 넷 중 하나로 매핑한다. */
+/** 표현 어휘. 앱의 도메인 상태는 이 넷 중 하나로 매핑해 넘긴다. */
 export type TimelineStatus = 'pending' | 'active' | 'done' | 'failed';
 
 export interface TimelineItemProps {
