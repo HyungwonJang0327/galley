@@ -35,8 +35,8 @@ describe('useConfirm', () => {
     await click('묻기');
     await screen.findByRole('dialog', { name: '지울까요?' });
     expect(screen.getByText('되돌릴 수 없어요.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '확인' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeTruthy();
   });
 
   it('확인이면 true, 취소면 false', async () => {
@@ -44,12 +44,12 @@ describe('useConfirm', () => {
     render(<Consumer options={{ title: '지울까요?' }} results={results} />);
     await click('묻기');
     await screen.findByRole('dialog');
-    await click('확인');
+    await click('Confirm');
     await waitFor(() => expect(results).toEqual([true]));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await click('묻기');
     await screen.findByRole('dialog');
-    await click('취소');
+    await click('Cancel');
     await waitFor(() => expect(results).toEqual([true, false]));
   });
 
@@ -64,7 +64,7 @@ describe('useConfirm', () => {
     await waitFor(() => expect(results).toEqual([false]));
     await click('묻기');
     await screen.findByRole('dialog');
-    await click('닫기');
+    await click('Close');
     await waitFor(() => expect(results).toEqual([false, false]));
   });
 
@@ -100,7 +100,7 @@ describe('useConfirm', () => {
     );
     await click('묻기');
     await screen.findByRole('dialog');
-    const confirmButton = screen.getByRole('button', { name: '확인' });
+    const confirmButton = screen.getByRole('button', { name: 'Confirm' });
     const reference = screen.getByRole('button', { name: '기준', hidden: true });
     expect(confirmButton.className).toBe(reference.className);
   });
@@ -112,14 +112,14 @@ describe('useConfirm', () => {
     await click('묻기');
     await screen.findByRole('dialog');
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: '취소' })),
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' })),
     );
     unmount();
     render(<Consumer options={{ title: '진행할까요?' }} results={[]} />);
     await click('묻기');
     await screen.findByRole('dialog');
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: '확인' })),
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Confirm' })),
     );
   });
 

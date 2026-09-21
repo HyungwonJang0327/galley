@@ -11,8 +11,10 @@ export interface AlertOptions {
   /** 안내 한 줄 — dialog의 접근성 이름. */
   title: string;
   description?: ReactNode;
-  /** 기본 '확인'. */
+  /** 기본 'OK'. */
   confirmLabel?: string;
+  /** 우상단 닫기 버튼 접근성 이름. 기본 'Close'. */
+  closeLabel?: string;
   /** danger면 확인 버튼이 빨강. 기본 default. */
   tone?: ConfirmTone;
   /** 본문(Dialog의 children 슬롯). */
@@ -36,13 +38,21 @@ export function useAlert(): UseAlertReturn {
   const { open, element } = useAwaitDialog<void>(undefined);
   const confirmButton = useRef<HTMLButtonElement | null>(null);
   const alert = useCallback(
-    ({ title, description, confirmLabel = '확인', tone = 'default', children }: AlertOptions) =>
+    ({
+      title,
+      description,
+      confirmLabel = 'OK',
+      closeLabel,
+      tone = 'default',
+      children,
+    }: AlertOptions) =>
       open(({ open: isOpen, onOpenChange, resolve }) => (
         <Dialog
           open={isOpen}
           onOpenChange={onOpenChange}
           title={title}
           description={description}
+          closeLabel={closeLabel}
           initialFocus={confirmButton}
           footer={
             <Button

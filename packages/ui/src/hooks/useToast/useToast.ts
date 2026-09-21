@@ -31,7 +31,7 @@ export interface UseToastReturn {
 export function useToast(): UseToastReturn {
   const manager = useContext(ToastManagerContext);
   if (manager === null) {
-    throw new Error('useToast()는 <ToastProvider> 안에서만 쓸 수 있습니다.');
+    throw new Error('useToast() must be used inside <ToastProvider>.');
   }
   return useMemo(
     () => ({

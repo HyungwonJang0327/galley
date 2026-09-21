@@ -110,6 +110,8 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       title: '다시 실행할까요?',
       description: '비용이 드는 작업입니다. 시작 단계와 그 뒤 단계가 전부 다시 돕니다.',
       confirmLabel: '재실행',
+      cancelLabel: '취소',
+      closeLabel: '닫기',
       children: (
         <dl className={styles.plan}>
           <dt>다시 도는 단계</dt>
@@ -148,6 +150,8 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       description:
         '이 초안을 검수 완료로 종결합니다. 공개 발행은 일어나지 않고, 발행 준비 화면에서 채널별로 이어집니다.',
       confirmLabel: '승인',
+      cancelLabel: '취소',
+      closeLabel: '닫기',
     });
     if (!ok) return;
     const result = await runBusy(

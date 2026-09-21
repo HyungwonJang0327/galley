@@ -77,6 +77,7 @@ export function DialogDemo() {
       onOpenChange={setOpen}
       title="제목 예시"
       description="한 줄 설명 텍스트."
+      closeLabel="닫기"
       trigger={<Button variant="secondary">Dialog 열기</Button>}
       footer={
         <>
@@ -105,6 +106,8 @@ function ConfirmDeleteButton() {
             title: '삭제할까요?',
             description: '되돌릴 수 없습니다.',
             confirmLabel: '삭제',
+            cancelLabel: '취소',
+            closeLabel: '닫기',
             tone: 'danger',
           });
           setResult(ok ? '삭제함' : '취소');
@@ -131,6 +134,7 @@ function RenameDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="새 이름"
+      closeLabel="닫기"
       footer={
         <>
           <Button variant="secondary" onClick={cancel}>
@@ -175,7 +179,12 @@ function SavedAlertButton() {
       <Button
         variant="secondary"
         onClick={async () => {
-          await alert({ title: '저장했습니다', description: '큐로 돌아갑니다.' });
+          await alert({
+            title: '저장했습니다',
+            description: '큐로 돌아갑니다.',
+            confirmLabel: '확인',
+            closeLabel: '닫기',
+          });
           setCount((n) => n + 1);
         }}
       >
@@ -763,7 +772,7 @@ function ToastButtons({
 export function ToastDemo() {
   const [position, setPosition] = useState<ToastPosition>('top-right');
   return (
-    <ToastProvider limit={3} position={position}>
+    <ToastProvider limit={3} position={position} aria-label="알림" closeLabel="닫기">
       <ToastButtons
         position={position}
         onTogglePosition={() =>
