@@ -1,6 +1,6 @@
 // 레이아웃 실측 진입점 (decisions/layout-measurement.md).
 //   pnpm --filter dashboard verify:layout [--no-build] [--port 3999] [--url http://localhost:3000] [--out <dir>]
-// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch·RadioGroup·FormField·Popover·InlineAlert를 실측.
+// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch·RadioGroup·FormField·Popover·InlineAlert·Toast·useConfirm을 실측.
 //   --no-build  기존 .next 재사용   --url  떠 있는 서버 사용(빌드·기동 생략)   --out  스크린샷 폴더
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyAwaitDialog } from './await-dialog.mjs';
 import { launchChrome, waitFor } from './cdp.mjs';
 import { verifyFormField } from './form-field.mjs';
 import { verifyInlineAlert } from './inline-alert.mjs';
@@ -120,6 +121,7 @@ async function main() {
         verifyInlineAlert,
         verifySkeleton,
         verifyToast,
+        verifyAwaitDialog,
         verifyNotFound,
       ]) {
         // 대부분 /design 갤러리를 보지만, 404는 없는 경로여야 재현된다.

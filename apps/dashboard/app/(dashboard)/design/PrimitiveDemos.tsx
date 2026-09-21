@@ -24,9 +24,17 @@ import {
   TimelineItems,
   ToastProvider,
   Tooltip,
+  useAwaitDialog,
+  useConfirm,
   useToast,
 } from 'galley-ui';
-import type { MenuEntry, SelectItem, TabItem, ToastPosition } from 'galley-ui';
+import type {
+  AwaitDialogRenderProps,
+  MenuEntry,
+  SelectItem,
+  TabItem,
+  ToastPosition,
+} from 'galley-ui';
 import styles from './page.module.css';
 
 // 갤러리용 상태 있는 데모. 서버 컴포넌트(page.tsx)는 함수 prop을 넘길 수 없어 여기서 상태를 갖는다.
@@ -80,6 +88,90 @@ export function DialogDemo() {
     >
       본문 내용. Esc·바깥 클릭·닫기 버튼으로 닫힌다.
     </Dialog>
+  );
+}
+
+// useConfirm · useAwaitDialog: await 한 줄로 결과를 받는다. 결과 글자는 실측(await-dialog.mjs)이 읽는다.
+function ConfirmDeleteButton() {
+  const { confirm, element } = useConfirm();
+  const [result, setResult] = useState('아직 없음');
+  return (
+    <>
+      <Button
+        variant="danger"
+        onClick={async () => {
+          const ok = await confirm({
+            title: '삭제할까요?',
+            description: '되돌릴 수 없습니다.',
+            confirmLabel: '삭제',
+            tone: 'danger',
+          });
+          setResult(ok ? '삭제함' : '취소');
+        }}
+      >
+        삭제 확인
+      </Button>
+      <span data-demo="await-dialog-confirm-result">{result}</span>
+      {element}
+    </>
+  );
+}
+
+function RenameDialog({
+  initial,
+  open,
+  onOpenChange,
+  resolve,
+  cancel,
+}: { initial: string } & AwaitDialogRenderProps<string | null>) {
+  const [value, setValue] = useState(initial);
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="새 이름"
+      footer={
+        <>
+          <Button variant="secondary" onClick={cancel}>
+            취소
+          </Button>
+          <Button onClick={() => resolve(value.trim())} disabled={value.trim() === ''}>
+            저장
+          </Button>
+        </>
+      }
+    >
+      <Input aria-label="이름" value={value} onChange={(e) => setValue(e.target.value)} />
+    </Dialog>
+  );
+}
+
+function RenameButton() {
+  const { open, element } = useAwaitDialog<string | null>(null);
+  const [name, setName] = useState('초안');
+  return (
+    <>
+      <Button
+        variant="secondary"
+        onClick={async () => {
+          const next = await open((dialog) => <RenameDialog initial={name} {...dialog} />);
+          if (next !== null) setName(next);
+        }}
+      >
+        이름 바꾸기
+      </Button>
+      <span data-demo="await-dialog-name-result">{name}</span>
+      {element}
+    </>
+  );
+}
+
+export function AwaitDialogDemo() {
+  return (
+    <>
+      <ConfirmDeleteButton />
+      <RenameButton />
+    </>
   );
 }
 
