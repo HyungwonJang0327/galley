@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { createRef } from 'react';
 import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
@@ -73,5 +74,37 @@ describe('Dialog', () => {
       </Dialog>,
     );
     expect(screen.getByRole('dialog').className).toContain('own');
+  });
+
+  it('initialFocus 없으면 첫 tabbable(닫기 버튼)에, 있으면 그 요소에 포커스가 간다', async () => {
+    const { unmount } = render(
+      <Dialog
+        open
+        onOpenChange={() => {}}
+        title="제목"
+        footer={<button type="button">확인</button>}
+      />,
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '닫기' })),
+    );
+    unmount();
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Dialog
+        open
+        onOpenChange={() => {}}
+        title="제목"
+        initialFocus={ref}
+        footer={
+          <button ref={ref} type="button">
+            확인
+          </button>
+        }
+      />,
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '확인' })),
+    );
   });
 });
