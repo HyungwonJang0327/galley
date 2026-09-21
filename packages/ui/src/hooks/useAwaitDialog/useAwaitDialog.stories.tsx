@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAwaitDialog } from './useAwaitDialog';
 import { useConfirm } from './useConfirm';
+import { useAlert } from './useAlert';
 import { Button } from '../../components/Button';
 import { Dialog } from '../../primitives/Dialog';
 import { Input } from '../../primitives/Input';
@@ -96,3 +97,23 @@ function RenameDialog({
 }
 
 export const AwaitValue = { render: () => <RenameButton /> };
+
+// 안내 — 확인 버튼 하나. 어떻게 닫아도 끝난다.
+function SavedButton() {
+  const { alert, element } = useAlert();
+  return (
+    <>
+      <Button
+        variant="secondary"
+        onClick={async () => {
+          await alert({ title: '저장했습니다', description: '큐로 돌아갑니다.' });
+        }}
+      >
+        저장 안내
+      </Button>
+      {element}
+    </>
+  );
+}
+
+export const Alert = { render: () => <SavedButton /> };
