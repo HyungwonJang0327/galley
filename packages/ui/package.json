@@ -1,6 +1,6 @@
 {
   "name": "galley-ui",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Small React design system on Base UI: tokens, primitives, patterns, CSS Modules.",
   "license": "MIT",
   "author": "Hyungwon Jang",
