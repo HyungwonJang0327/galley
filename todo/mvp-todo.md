@@ -296,12 +296,12 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### P6. 배포 — 브랜치 `chore/ui-release-0-1-0`
 
-- [ ] **P6a** — `/ship` 실행. 실패하면 멈춘다.
-- [ ] **P6b** ui — `pnpm changeset`: galley-ui minor(0.0.0 → 0.1.0), 요약 영어 한 줄("Initial public release: tokens (light/dark), N components" — N은 배럴 export를 세어 넣는다). 커밋: `chore(ui): 0.1.0 changeset 추가`
-- [ ] **P6c** ui — `pnpm changeset version` → CHANGELOG.md·package.json 확인. 커밋: `chore(ui): galley-ui 0.1.0 버전 반영`
-- [ ] **P6d** — `pnpm --filter galley-ui build && npm pack --dry-run` 결과(파일 목록·크기) 제시 후 **멈춤. 사용자 확인 후에만** `pnpm changeset publish`(npm 로그인은 사용자. 2FA 프롬프트가 뜨면 알린다).
-- [ ] **P6e** — 배포 확인: `npm view galley-ui version` · https://www.npmjs.com/package/galley-ui · 태그 `galley-ui@0.1.0` push(force 없음).
-- [ ] **P6f** doc — PR 머지 후 /log. worklog에 배포 시각·버전·tarball 크기·파일 수. planning.md에 "galley-ui 0.1.0 배포됨" 체크.
+- [x] **P6a** (2026-09-21 통과) — `/ship` 실행. 실패하면 멈춘다.
+- [x] **P6b** (2026-09-21 `2fc5511`) ui — `pnpm changeset`: galley-ui minor(0.0.0 → 0.1.0), 요약 영어 한 줄("Initial public release: tokens (light/dark), N components" — N은 배럴 export를 세어 넣는다). 커밋: `chore(ui): 0.1.0 changeset 추가`
+- [x] **P6c** (2026-09-21 `108b6b8`) ui — `pnpm changeset version` → CHANGELOG.md·package.json 확인. 커밋: `chore(ui): galley-ui 0.1.0 버전 반영`
+- [x] **P6d** (2026-09-21 — 90파일 141.7 kB 보고 → 사용자 확인 → 일반 터미널에서 `npm publish`(패스키 2FA 때문, worklog 09-21 P6 절)) — `pnpm --filter galley-ui build && npm pack --dry-run` 결과(파일 목록·크기) 제시 후 **멈춤. 사용자 확인 후에만** `pnpm changeset publish`(npm 로그인은 사용자. 2FA 프롬프트가 뜨면 알린다).
+- [x] **P6e** (2026-09-21 0.1.0 확인, 태그 `galley-ui@0.1.0` push) — 배포 확인: `npm view galley-ui version` · https://www.npmjs.com/package/galley-ui · 태그 `galley-ui@0.1.0` push(force 없음).
+- [x] **P6f** (2026-09-21, docs/ui-release-log) doc — PR 머지 후 /log. worklog에 배포 시각·버전·tarball 크기·파일 수. planning.md에 "galley-ui 0.1.0 배포됨" 체크.
 
 ### P7. 후속 (이번 작업 아님 — todo에만)
 
