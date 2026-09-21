@@ -222,6 +222,11 @@ model RepoAnalysis {
   // 입력 상한(INDEX_LIMITS) 초과로 파일명·커밋 메시지만 보고 요약했으면 true.
   summaryOnly Boolean @default(false)
 
+  // 식별 정보 필터: filtered = 필터를 거쳤는가(설정 없이 진행하면 false), redacted = 그 결과 치환이 있었는가.
+  // 둘을 나눠야 "필터 없이 진행"과 "거쳤지만 적중 0"을 구분한다(decisions/evidence-collection.md 2026-09-21).
+  filtered Boolean @default(false)
+  redacted Boolean @default(false)
+
   // 이 글을 만든 모델과 사용량·비용(IndexJob 합계와 TopBar 비용 칩의 재료).
   modelId      String
   inputTokens  Int?
