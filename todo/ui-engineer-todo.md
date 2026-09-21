@@ -15,7 +15,7 @@
 
 - B2a — SplitPane·TimelineItem·ActionBar 패턴
 - UM3 — Input 프리미티브(2026-09-14 완료, B2c 리뷰에서 파생).
-- UM4 — Textarea·Checkbox·Tooltip·Tabs 프리미티브 + 갤러리 맨 폼 요소 교체(2026-09-14 완료). 스펙 primitives 중 남은 것: Popover.
+- UM4 — Textarea·Checkbox·Tooltip·Tabs 프리미티브 + 갤러리 맨 폼 요소 교체(2026-09-14 완료). 스펙 primitives 전부 완료(Popover는 P4-5, 2026-09-17).
 - UM1 — Dialog·Select 프리미티브(Base UI 래퍼, 도메인 무지). 실행 시작 Dialog(BM6)·재실행 모델 Select(BM8)·TopBar 기본 모델 Select(BM9)가 소비. (Dialog는 core-modules에서 핵심 모듈 제외 → ui가 구현)
 
 각 작업: index 배럴 export · 토큰만 참조 · `X.test.tsx` · `pnpm --filter galley-ui build && test` 통과.
@@ -29,6 +29,6 @@
 - P3a · P3b — 다크 색 토큰 25개(대비표) · 갤러리 개발용 테마 토글 (`design/ui-dark-tokens`)
 - P4-1 Separator · P4-2 Switch · P4-3 RadioGroup · P4-4 FormField · P4-5 Popover(비제어 허용 유일 예외) · P4-6 InlineAlert(TD2 ui 부분) · P4-7 Skeleton · P4-8 Toast+useToast — 순서대로
 - ~~P4-9 useAwaitDialog·useConfirm~~ — 완료(2026-09-21, feat/ui-await-dialog, todo/mvp-todo.md P4-9). 테스트 5종 + 바깥 클릭·포커스 복귀·세션 상태 초기화·언마운트 뒤 open 포함
-- P4-10 — 9개 끝나면 아래 UM4 줄의 "남은 것: Popover" 정리
+- ~~P4-10~~ — 완료(2026-09-21, P5 PR)
 - ~~RF3~~ — 완료(2026-09-21, refactor/ui-pre-release 24항목, todo/mvp-todo.md RF3). 보류는 P7k
 - P6b · P6c — changeset 추가 · version 반영. publish는 사용자 확인 후에만
