@@ -11,7 +11,7 @@ export default meta;
 export const Default = {
   render: () => (
     <ActionBar
-      label="하단 액션 바"
+      aria-label="하단 액션 바"
       actions={
         <>
           <Button variant="secondary" size="sm">
