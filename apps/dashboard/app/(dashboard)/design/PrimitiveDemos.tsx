@@ -24,6 +24,7 @@ import {
   TimelineItems,
   ToastProvider,
   Tooltip,
+  useAlert,
   useAwaitDialog,
   useConfirm,
   useToast,
@@ -166,11 +167,34 @@ function RenameButton() {
   );
 }
 
+function SavedAlertButton() {
+  const { alert, element } = useAlert();
+  const [count, setCount] = useState(0);
+  return (
+    <>
+      <Button
+        variant="secondary"
+        onClick={async () => {
+          await alert({ title: '저장했습니다', description: '큐로 돌아갑니다.' });
+          setCount((n) => n + 1);
+        }}
+      >
+        저장 안내
+      </Button>
+      <span data-demo="await-dialog-alert-result">
+        {count === 0 ? '아직 없음' : `닫음 ${count}회`}
+      </span>
+      {element}
+    </>
+  );
+}
+
 export function AwaitDialogDemo() {
   return (
     <>
       <ConfirmDeleteButton />
       <RenameButton />
+      <SavedAlertButton />
     </>
   );
 }
