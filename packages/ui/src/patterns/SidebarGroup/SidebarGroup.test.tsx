@@ -23,4 +23,13 @@ describe('SidebarGroup', () => {
     expect(screen.getByRole('group', { name: '주제' })).toBeTruthy();
     expect(screen.queryByText('주제')).toBeNull();
   });
+
+  it('className을 루트에 병합한다', () => {
+    render(
+      <SidebarGroup label="그룹" className="own">
+        <a>항목</a>
+      </SidebarGroup>,
+    );
+    expect(screen.getByRole('group', { name: '그룹' }).className).toContain('own');
+  });
 });

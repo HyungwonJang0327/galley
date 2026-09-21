@@ -37,4 +37,13 @@ describe('AppShell', () => {
     expect(body.children[0]?.tagName).toBe('ASIDE');
     expect(body.children[1]?.tagName).toBe('MAIN');
   });
+
+  it('className을 루트에 병합한다', () => {
+    const { container } = render(
+      <AppShell topBar={<span>바</span>} sidebar={<nav>메뉴</nav>} className="own">
+        <p>본문</p>
+      </AppShell>,
+    );
+    expect((container.firstElementChild as HTMLElement).className).toContain('own');
+  });
 });
