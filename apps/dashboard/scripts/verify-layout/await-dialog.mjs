@@ -61,6 +61,10 @@ export async function verifyAwaitDialog(page, { outDir }) {
 
   // 4. 이름 입력 — 값을 돌려받는다
   const rename = await locate(page, '이름 바꾸기');
+  if (rename.error) {
+    add(rename.error, false);
+    return { name, checks };
+  }
   await page.mouseClick(rename.x, rename.y);
   await sleep(400);
   m = await measure(page);
