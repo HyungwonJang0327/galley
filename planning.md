@@ -41,7 +41,7 @@
 - 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(make_thumb.py 호출) + `evidence.json`(포인터)·`verification.json` = 7개. 발행정보에 `## 근거` 섹션(EvidenceBundle에서 생성)
 - 화면: TopBar/Sidebar 셸(사용 흐름 순 IA — decisions/navigation.md), 큐(패턴 A·탭 4개), 실행 상세(패턴 B)
 - 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스(Storybook)는 Phase 2. (decisions/component-gallery.md)
-- **galley-ui 0.1.0 npm 배포**(Phase P, 2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선): 라이트+다크 토큰 · 폼·피드백 최소 구색 8개 + `useAwaitDialog`/`useConfirm` · README · 배포 메타데이터. 배포명 `galley-ui`(unscoped, decisions/package-name.md). 절차는 todo/mvp-todo.md Phase P. [ ] 배포됨(P6f에서 체크)
+- **galley-ui 0.1.0 npm 배포**(Phase P, 2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선): 라이트+다크 토큰 · 폼·피드백 최소 구색 8개 + `useAwaitDialog`/`useConfirm`/`useAlert`(decisions/confirm-dialog-usage.md) · README · 배포 메타데이터. 배포명 `galley-ui`(unscoped, decisions/package-name.md). 절차는 todo/mvp-todo.md Phase P. [ ] 배포됨(P6f에서 체크)
 
 ### 제외
 
