@@ -29,8 +29,8 @@
  * 자체가 포커스를 받는다 — 그때 키보드 사용자에게만 링을 보인다.
  */
 .popup:focus-visible {
-  outline: 2px solid var(--ui-color-accent);
-  outline-offset: 1px;
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
 }
 
 .title {

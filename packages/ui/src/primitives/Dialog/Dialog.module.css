@@ -60,6 +60,11 @@
   color: var(--ui-color-text);
 }
 
+.close:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
 .description {
   margin: 0;
   color: var(--ui-color-text-muted);
