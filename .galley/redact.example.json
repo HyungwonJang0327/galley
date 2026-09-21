@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "internal-url",
+      "kind": "regex",
+      "pattern": "https?://[\\w.-]+\\.example\\.internal[^\\s)]*",
+      "flags": "i",
+      "replacement": "[INTERNAL_URL]"
+    },
+    {
+      "id": "internal-domain",
+      "kind": "regex",
+      "pattern": "\\b[\\w-]+\\.example\\.internal\\b",
+      "flags": "i",
+      "replacement": "[INTERNAL_DOMAIN]"
+    },
+    {
+      "id": "email",
+      "kind": "regex",
+      "pattern": "[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+",
+      "replacement": "[EMAIL]"
+    },
+    {
+      "id": "api-key",
+      "kind": "regex",
+      "pattern": "\\b(?:sk|ghp)_[A-Za-z0-9]{8,}\\b|\\bAKIA[A-Z0-9]{16}\\b",
+      "replacement": "[KEY]"
+    },
+    {
+      "id": "company-domain",
+      "kind": "regex",
+      "pattern": "\\bexample\\.com\\b",
+      "flags": "i",
+      "replacement": "[COMPANY_DOMAIN]"
+    },
+    {
+      "id": "company",
+      "kind": "literal",
+      "values": ["Example Corp", "Example", "예시상사"],
+      "replacement": "[COMPANY]"
+    }
+  ]
+}
