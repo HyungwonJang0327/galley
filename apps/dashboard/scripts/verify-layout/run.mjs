@@ -1,6 +1,6 @@
 // 레이아웃 실측 진입점 (decisions/layout-measurement.md).
 //   pnpm --filter dashboard verify:layout [--no-build] [--port 3999] [--url http://localhost:3000] [--out <dir>]
-// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch·RadioGroup·FormField·Popover·InlineAlert·Toast·useConfirm을 실측.
+// 기본: next build → next start → /design 을 headless Chrome으로 열어 AppShell 스크롤·Select·Menu 팝업·2분할·Switch·RadioGroup·FormField·Popover·InlineAlert·Toast·useConfirm·useAlert를 실측.
 //   --no-build  기존 .next 재사용   --url  떠 있는 서버 사용(빌드·기동 생략)   --out  스크린샷 폴더
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
