@@ -28,6 +28,8 @@ export interface UseAlertReturn {
 /**
  * `useAwaitDialog<void>` 위에 Dialog + 확인 버튼 하나. `await alert({ title })` 뒤에 이어서 쓴다.
  * 어떻게 닫아도 결과는 같다(값 없음). 초기 포커스는 확인 버튼. 열린 채 다시 부르면 이전 것은 그냥 끝난다.
+ * 이름은 alert지만 `role="alertdialog"`가 아니다 — 보조 기술이 끼어들어 읽지 않고, 바깥 클릭·Esc로도 닫힌다
+ * (일반 Dialog). 끼어들어 읽혀야 하는 오류는 Toast danger나 InlineAlert alert tone을 쓴다.
  */
 export function useAlert(): UseAlertReturn {
   const { open, element } = useAwaitDialog<void>(undefined);
@@ -45,7 +47,7 @@ export function useAlert(): UseAlertReturn {
             <Button
               ref={confirmButton}
               variant={tone === 'danger' ? 'danger' : 'primary'}
-              onClick={() => resolve(undefined)}
+              onClick={() => resolve()}
             >
               {confirmLabel}
             </Button>
