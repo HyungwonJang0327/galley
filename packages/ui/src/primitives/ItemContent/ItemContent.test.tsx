@@ -27,4 +27,9 @@ describe('ItemContent', () => {
     render(<ItemContent label={<em>강조 라벨</em>} />);
     expect(screen.getByText('강조 라벨').tagName).toBe('EM');
   });
+
+  it('className을 루트에 병합한다', () => {
+    const { container } = render(<ItemContent label="라벨" className="own" />);
+    expect((container.firstElementChild as HTMLElement).className).toContain('own');
+  });
 });

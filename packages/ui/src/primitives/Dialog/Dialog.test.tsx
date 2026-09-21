@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { createRef } from 'react';
+import { createRef, useState } from 'react';
 import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
@@ -106,5 +106,40 @@ describe('Dialog', () => {
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: '확인' })),
     );
+  });
+
+  it('Esc를 누르면 onOpenChange(false)', async () => {
+    const onOpenChange = vi.fn();
+    render(<Dialog open onOpenChange={onOpenChange} title="제목" />);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+  });
+
+  it('닫히면 포커스가 trigger로 돌아온다', async () => {
+    function Host() {
+      const [open, setOpen] = useState(false);
+      return (
+        <Dialog
+          open={open}
+          onOpenChange={setOpen}
+          title="제목"
+          trigger={<button type="button">열기</button>}
+          footer={
+            <button type="button" onClick={() => setOpen(false)}>
+              확인
+            </button>
+          }
+        />
+      );
+    }
+    render(<Host />);
+    const trigger = screen.getByRole('button', { name: '열기' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: '확인' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });

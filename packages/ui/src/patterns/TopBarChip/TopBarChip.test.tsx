@@ -20,4 +20,9 @@ describe('TopBarChip', () => {
     render(<TopBarChip trailing={<span>▾</span>}>Opus</TopBarChip>);
     expect(screen.getByText('▾')).toBeTruthy();
   });
+
+  it('className을 병합한다', () => {
+    render(<TopBarChip className="own">글</TopBarChip>);
+    expect(screen.getByRole('button', { name: '글' }).className).toContain('own');
+  });
 });

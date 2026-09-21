@@ -52,4 +52,26 @@ describe('Tooltip', () => {
     render(<Tooltip trigger={<button type="button" aria-label="메뉴 열기" />} content="설명" />);
     expect(screen.getByRole('button', { name: '메뉴 열기' })).toBeTruthy();
   });
+
+  it('키보드 포커스로 열리고 Esc로 닫힌다', async () => {
+    render(<Tooltip trigger={TRIGGER} content="설명" delay={0} />);
+    const trigger = screen.getByRole('button', { name: '아이콘' });
+    await act(async () => {
+      trigger.focus();
+      fireEvent.focus(trigger);
+    });
+    await waitFor(() => expect(screen.getByRole('tooltip')).toBeTruthy());
+    await act(async () => {
+      fireEvent.keyDown(trigger, { key: 'Escape' });
+    });
+    await waitFor(() => expect(screen.queryByRole('tooltip')).toBeNull());
+  });
+
+  it('className을 popup에 병합한다', async () => {
+    render(<Tooltip trigger={TRIGGER} content="설명" delay={0} className="own" />);
+    await act(async () => {
+      hover(screen.getByRole('button', { name: '아이콘' }));
+    });
+    await waitFor(() => expect(screen.getByRole('tooltip').className).toContain('own'));
+  });
 });
