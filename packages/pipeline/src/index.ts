@@ -139,3 +139,25 @@ export {
   INDEXING_DEFAULT_MODEL_ID,
 } from './model/ModelRegistry.ts';
 export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry.ts';
+export {
+  REPO_STATUS,
+  ANALYSIS_KIND,
+  LINK_SOURCE,
+  INDEX_JOB_KIND,
+  INDEX_JOB_STATUS,
+  parseStringArray,
+  serializeStringArray,
+  validatePointers,
+  parsePointers,
+  serializePointers,
+} from './index/schema.ts';
+export type {
+  RepoStatus,
+  AnalysisKind,
+  LinkSource,
+  IndexJobKind,
+  IndexJobStatus,
+  EvidencePointer,
+  PointersFailure,
+  PointersResult,
+} from './index/schema.ts';
