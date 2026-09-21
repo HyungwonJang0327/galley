@@ -10,4 +10,4 @@
 ## Phase P — galley-ui 0.1.0 npm 배포 (2026-09-16 추가 — 상세는 mvp-todo Phase P)
 
 - P4 각 컴포넌트 PR 리뷰(접근성 기준선: 키보드·포커스·대비·라벨)
-- RF1 — 배포 전 `packages/ui` 전체 감사 목록(관점 5개 고정, 코드 수정 없음, worklog 표)
+- ~~RF1~~ — 완료(2026-09-21, 37항목, worklog 09-21 RF 절)
