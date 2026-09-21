@@ -48,8 +48,8 @@
   line-height: var(--ui-leading-normal);
   outline: 0;
   transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+    opacity var(--ui-duration-normal) var(--ui-ease),
+    transform var(--ui-duration-normal) var(--ui-ease);
 }
 
 .toast:focus-visible {
@@ -138,10 +138,4 @@
 .close:focus-visible {
   outline: 2px solid var(--ui-color-accent);
   outline-offset: 1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .toast {
-    transition: none;
-  }
 }

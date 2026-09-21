@@ -62,6 +62,14 @@
   --ui-weight-medium: 500;
   --ui-weight-semibold: 600;
 
+  /* 모션. 전환은 fast(컨트롤 색)·normal(팝업 등장), 펄스는 컴포넌트별 주기. 아래 reduced-motion에서 한 번에 끈다 */
+  --ui-duration-fast: 120ms;
+  --ui-duration-normal: 150ms;
+  --ui-ease: ease;
+  --ui-duration-pulse-badge: 1.2s;
+  --ui-duration-pulse-skeleton: 1.5s;
+  --ui-pulse-play-state: running;
+
   /* 라운드 */
   --ui-radius-sm: 6px;
   --ui-radius-md: 8px; /* 카드 8~12 */
@@ -111,6 +119,15 @@
     320px,
     calc(100vw - var(--ui-space-6))
   ); /* 팝업은 내용 폭, 이 값까지 */
+}
+
+/* 움직임 줄이기 — 전환은 즉시, 펄스는 정지. 컴포넌트마다 media 블록을 두지 않는다 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ui-duration-fast: 0s;
+    --ui-duration-normal: 0s;
+    --ui-pulse-play-state: paused;
+  }
 }
 
 /*

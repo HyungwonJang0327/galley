@@ -35,8 +35,8 @@
   background-color: var(--ui-color-surface);
   cursor: inherit;
   transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease;
+    background-color var(--ui-duration-fast) var(--ui-ease),
+    border-color var(--ui-duration-fast) var(--ui-ease);
 }
 
 .track:focus-visible {
@@ -72,8 +72,8 @@
   border-radius: var(--ui-radius-pill);
   background-color: var(--ui-color-text-muted);
   transition:
-    transform 0.12s ease,
-    background-color 0.12s ease;
+    transform var(--ui-duration-fast) var(--ui-ease),
+    background-color var(--ui-duration-fast) var(--ui-ease);
 }
 
 .thumb[data-checked] {
@@ -89,14 +89,6 @@
 .thumb[data-disabled][data-checked] {
   background-color: var(--ui-color-surface);
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .track,
-  .thumb {
-    transition: none;
-  }
-}
-
 .text {
   min-width: 0;
 }
