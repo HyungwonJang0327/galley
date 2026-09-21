@@ -1,10 +1,12 @@
 'use client';
-// 실행 상세 하단 바: 단계 Select + 수정 지시 Textarea + 재실행(확인 Dialog) / 승인(확인 Dialog).
+// 실행 상세 하단 바: 단계 Select + 수정 지시 Textarea + 재실행(확인) / 승인(확인).
 // 판정("승인 대기인가")·단계 라벨은 서버가 props로 넘긴다 — 클라이언트는 pipeline·run-labels를
 // import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler(B2b)로 보낸다.
+// 확인 Dialog 둘은 useConfirm 하나로(decisions/confirm-dialog-usage.md): 확인을 누르면 즉시 닫히고,
+// API가 도는 동안은 바의 컨트롤 비활성 + role=status의 "요청 중" 문구가 진행 표시다.
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { ActionBar, Button, Dialog, Select, Textarea } from 'galley-ui';
+import { useState } from 'react';
+import { ActionBar, Button, Select, Textarea, useConfirm } from 'galley-ui';
 import { approveRun, planRerun, reviseRun } from '../../../lib/run-api-client';
 import {
   describeRerunPlan,
@@ -12,7 +14,6 @@ import {
   type StepOption,
 } from '../../../lib/run-action-bar';
 import { runsHref } from '../../../lib/run-view';
-import type { RerunPlanView } from '../../../lib/run-commands';
 import styles from './RunActionBar.module.css';
 
 export interface RunActionBarProps {
@@ -28,14 +29,15 @@ const AUTO_STEP = '__auto__';
 
 export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarProps) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { confirm, element: confirmElement } = useConfirm();
   const [instruction, setInstruction] = useState('');
   const [startStep, setStartStep] = useState<string>(AUTO_STEP);
+  /** 오류·안내 한 줄. */
   const [message, setMessage] = useState<string | null>(null);
-  const [plan, setPlan] = useState<RerunPlanView | null>(null);
-  const [approveOpen, setApproveOpen] = useState(false);
+  /** API가 도는 동안의 진행 문구. null이면 유휴. */
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const disabled = !enabled || pending;
+  const disabled = !enabled || busy !== null;
   const request = () => ({
     instruction: instruction.trim(),
     ...(startStep === AUTO_STEP ? {} : { startStep }),
@@ -50,58 +52,72 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
     ...steps.map((s) => ({ value: s.name, label: s.label })),
   ];
 
-  // 재실행: 먼저 계획(다시 도는 단계)을 받아 Dialog로 보여주고, 확인해야 실제로 보낸다.
-  const onRerunClick = () => {
+  // 재실행: 먼저 계획(다시 도는 단계)을 받아 확인 Dialog로 보여주고, 확인해야 실제로 보낸다.
+  const onRerunClick = async () => {
     const invalid = validateInstruction(instruction, maxLength);
     if (invalid !== null) {
       setMessage(invalid);
       return;
     }
     setMessage(null);
-    startTransition(async () => {
-      const result = await planRerun(runId, request());
-      if (!result.ok) {
-        setMessage(result.error.message);
-        return;
-      }
-      setPlan(result.data);
+    setBusy('재실행 계획을 확인하는 중…');
+    const planned = await planRerun(runId, request());
+    setBusy(null);
+    if (!planned.ok) {
+      setMessage(planned.error.message);
+      return;
+    }
+    const planText = describeRerunPlan(planned.data, steps);
+    const ok = await confirm({
+      title: '다시 실행할까요?',
+      description: '비용이 드는 작업입니다. 시작 단계와 그 뒤 단계가 전부 다시 돕니다.',
+      confirmLabel: '재실행',
+      children: (
+        <dl className={styles.plan}>
+          <dt>다시 도는 단계</dt>
+          <dd>{planText.fresh}</dd>
+          {planText.carried !== null ? (
+            <>
+              <dt>이전 결과 유지</dt>
+              <dd>{planText.carried}</dd>
+            </>
+          ) : null}
+        </dl>
+      ),
     });
+    if (!ok) return;
+    setBusy('재실행을 요청하는 중…');
+    const result = await reviseRun(runId, request());
+    setBusy(null);
+    if (!result.ok) {
+      setMessage(result.error.message);
+      return;
+    }
+    // 이 실행은 revised로 종결됐다. 새로 대기열에 오른 다음 시도를 연다.
+    setInstruction('');
+    router.push(runsHref({ tab: 'active', selectedId: result.data.run.id }));
   };
 
-  const onRerunConfirm = () => {
-    startTransition(async () => {
-      const result = await reviseRun(runId, request());
-      setPlan(null);
-      if (!result.ok) {
-        setMessage(result.error.message);
-        return;
-      }
-      // 이 실행은 revised로 종결됐다. 새로 대기열에 오른 다음 시도를 연다.
-      setInstruction('');
-      router.push(runsHref({ tab: 'active', selectedId: result.data.run.id }));
-    });
-  };
-
-  // 승인: 되돌릴 수 없는 종결이라 확인 Dialog를 거친다(decisions/layout.md "승인(주요, Dialog 확인)").
+  // 승인: 되돌릴 수 없는 종결이라 확인을 거친다(decisions/layout.md "승인(주요, Dialog 확인)").
   // 승인은 Run 상태 변경일 뿐 공개 발행이 아니다(decisions/publish-gate.md) — 문구도 그렇게.
-  const onApproveClick = () => {
+  const onApproveClick = async () => {
     setMessage(null);
-    setApproveOpen(true);
-  };
-
-  const onApproveConfirm = () => {
-    startTransition(async () => {
-      const result = await approveRun(runId);
-      setApproveOpen(false);
-      if (!result.ok) {
-        setMessage(result.error.message);
-        return;
-      }
-      router.refresh();
+    const ok = await confirm({
+      title: '승인할까요?',
+      description:
+        '이 초안을 검수 완료로 종결합니다. 공개 발행은 일어나지 않고, 발행 준비 화면에서 채널별로 이어집니다.',
+      confirmLabel: '승인',
     });
+    if (!ok) return;
+    setBusy('승인을 요청하는 중…');
+    const result = await approveRun(runId);
+    setBusy(null);
+    if (!result.ok) {
+      setMessage(result.error.message);
+      return;
+    }
+    router.refresh();
   };
-
-  const planText = plan === null ? null : describeRerunPlan(plan, steps);
 
   return (
     <>
@@ -109,10 +125,15 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
         label="수정 지시"
         actions={
           <>
-            <Button variant="secondary" size="sm" disabled={disabled} onClick={onRerunClick}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={disabled}
+              onClick={() => void onRerunClick()}
+            >
               재실행
             </Button>
-            <Button size="sm" disabled={disabled} onClick={onApproveClick}>
+            <Button size="sm" disabled={disabled} onClick={() => void onApproveClick()}>
               승인
             </Button>
           </>
@@ -144,65 +165,13 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
               disabled={disabled}
             />
           </div>
-          <p role="status" className={styles.message}>
-            {message ?? ''}
+          {/* 오류(빨강)와 진행 문구(회색)는 같은 live 영역 하나를 쓴다 — 오류가 있으면 오류 우선. */}
+          <p role="status" className={message !== null ? styles.message : styles.busy}>
+            {message ?? busy ?? ''}
           </p>
         </div>
       </ActionBar>
-
-      <Dialog
-        open={plan !== null}
-        onOpenChange={(open) => {
-          if (!open) setPlan(null);
-        }}
-        title="다시 실행할까요?"
-        description="비용이 드는 작업입니다. 시작 단계와 그 뒤 단계가 전부 다시 돕니다."
-        footer={
-          <>
-            <Button variant="secondary" size="sm" disabled={pending} onClick={() => setPlan(null)}>
-              취소
-            </Button>
-            <Button size="sm" disabled={pending} onClick={onRerunConfirm}>
-              재실행
-            </Button>
-          </>
-        }
-      >
-        {planText !== null ? (
-          <dl className={styles.plan}>
-            <dt>다시 도는 단계</dt>
-            <dd>{planText.fresh}</dd>
-            {planText.carried !== null ? (
-              <>
-                <dt>이전 결과 유지</dt>
-                <dd>{planText.carried}</dd>
-              </>
-            ) : null}
-          </dl>
-        ) : null}
-      </Dialog>
-
-      <Dialog
-        open={approveOpen}
-        onOpenChange={setApproveOpen}
-        title="승인할까요?"
-        description="이 초안을 검수 완료로 종결합니다. 공개 발행은 일어나지 않고, 발행 준비 화면에서 채널별로 이어집니다."
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-              onClick={() => setApproveOpen(false)}
-            >
-              취소
-            </Button>
-            <Button size="sm" disabled={pending} onClick={onApproveConfirm}>
-              승인
-            </Button>
-          </>
-        }
-      />
+      {confirmElement}
     </>
   );
 }
