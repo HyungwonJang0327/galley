@@ -14,11 +14,11 @@ datasource db {
 
 // 주제 큐 항목. 진실은 주제_큐.md 파일이며 DB는 파생 캐시다. (decisions/queue-sync-direction.md)
 model QueueItem {
-  id        String   @id @default(cuid())
-  title     String
+  id         String  @id @default(cuid())
+  title      String
   // 대기 | 후보 | 보류 | 완료 — 값 검증은 애플리케이션 레벨.
-  status    String   @default("대기")
-  order     Int
+  status     String  @default("대기")
+  order      Int
   // 보류로 내린 사유: removed-from-file | manual — 보류 탭에서 구분해 보여준다.
   // (decisions/queue-sync-direction.md 사라진 줄 처리)
   holdReason String?
@@ -35,12 +35,23 @@ model QueueItem {
   // 이 주제의 실행들. 파일에서 사라져도 QueueItem을 지우지 않는 이유다.
   runs Run[]
 
+  // 주제_큐.md 항목 끝 괄호 힌트 `(spacehome, react-router)` `(vendor manager, 2024.03)`에서 파서가
+  // 채우는 근거 힌트(decisions/evidence-collection.md "주제 ↔ 분석 글 연결"). 재적재 시 재생성된다.
+  // SQLite에 배열이 없어 JSON 문자열(`["a","b"]`)로 둔다 — 읽기·쓰기는 src/index/schema.ts 헬퍼만.
+  repoNames String  @default("[]")
+  keywords  String  @default("[]")
+  // 기간 힌트 원문(`2024.03` · `2024.07~2024.09` 등). 해석은 매칭 쪽에서.
+  period    String?
+
+  // 이 주제에 붙은 분석 글 연결(auto·manual). 키는 QueueItem.id — Run과 같은 규칙.
+  analysisLinks TopicAnalysisLink[]
+
   // 후보 섹션 ### 소제목(있을 때만). 파서 QueueTopic.category 보존.
   category    String?
   // 완료 항목의 날짜 접두 YYYY-MM-DD(완료 항목만). 파서 QueueTopic.completedOn 보존.
   completedOn String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // 섹션(status)별 정렬 조회 편의를 위한 최소 인덱스.
   @@index([status, order])
@@ -152,4 +163,138 @@ model RunStep {
   // 실행 상세 타임라인(순서대로), 재실행 시 단계 찾기.
   @@unique([runId, order])
   @@index([runId, order])
+}
+
+// ── 리포 인덱스 (decisions/evidence-collection.md "데이터 모델") ─────────────────────────────
+// 연결된 리포 하나. 회사 리포는 readOnly — 인덱싱·근거 수집은 git show/log 같은 읽기 명령만 쓴다.
+// 인덱스(RepoAnalysis)는 SQLite 캐시이고, 원본 조각은 실행 때 포인터로 다시 읽는다.
+model Repo {
+  id      String @id @default(cuid())
+  // 로컬 절대경로. 하드코딩 금지 — CLI 인자·.env(REPO_DIRS)에서 온다.
+  path    String @unique
+  // 주제_큐.md 괄호 힌트와 매칭되는 이름. aliases(JSON 배열)까지 합쳐서 매칭한다.
+  name    String @unique
+  aliases String @default("[]")
+
+  readOnly Boolean @default(false)
+
+  // 마지막 인덱스가 본 HEAD. 지금 HEAD와 다르면 status=stale.
+  headSha          String?
+  lastIndexedAt    DateTime?
+  // 마지막 인덱싱에 쓴 모델(레지스트리 id). 리포 행에 label로 표시(decisions/model-selection.md).
+  lastIndexModelId String?
+
+  // indexing | ready | stale | error — 어휘는 src/index/schema.ts REPO_STATUS가 소유.
+  // error = 마지막 IndexJob이 failed(잡은 failed, 리포는 error — 잡의 실패가 리포에 반영된 상태).
+  status String @default("indexing")
+
+  analyses  RepoAnalysis[]
+  indexJobs IndexJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+// 분석 글 = 인덱스 단위. 모델이 쓴 한국어 요약 + 원본을 가리키는 포인터(커밋·경로·라인).
+// 포인터 없는 분석 글은 저장하지 않는다(≥ 1, 애플리케이션 레벨 검증). 포인터는 commit 기준이라
+// HEAD가 바뀌어도 `git show <commit>:<path>`로 같은 조각을 읽는다. summary·pointers.note는 redact를 거친 뒤 저장.
+model RepoAnalysis {
+  id     String @id @default(cuid())
+  repoId String
+  repo   Repo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  // overview(리포 전체) | area(디렉터리·기능 영역) | change(커밋 묶음·기간별 변경) — ANALYSIS_KIND.
+  kind    String
+  // 안정 식별 키 — 증분 재인덱싱이 "이 영역의 글"을 upsert로 갱신해 id를 유지한다(그래야 manual 연결이
+  // 살아남는다). 형식은 인덱서가 소유: `overview` · `area:<디렉터리 경로>` · `change:<YYYY-MM>[:<경로>]`.
+  key     String
+  title   String
+  summary String
+
+  // JSON 배열. keywords: 매칭용 소문자 토큰. pointers: [{ commit, path, lineStart?, lineEnd?, note }].
+  keywords String @default("[]")
+  pointers String
+
+  // change의 기간(`2024-03` 등). area·overview는 null.
+  period      String?
+  // 입력 상한(INDEX_LIMITS) 초과로 파일명·커밋 메시지만 보고 요약했으면 true.
+  summaryOnly Boolean @default(false)
+
+  // 이 글을 만든 모델과 사용량·비용(IndexJob 합계와 TopBar 비용 칩의 재료).
+  modelId      String
+  inputTokens  Int?
+  outputTokens Int?
+  costUsd      Float?
+
+  links TopicAnalysisLink[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([repoId, key])
+  @@index([repoId, kind])
+}
+
+// 주제 ↔ 분석 글 연결. 키는 **QueueItem.id**(topicId) — Run과 같은 규칙. 원 결정(2026-09-09)은 슬러그였으나
+// 큐 적재가 매칭 upsert로 바뀌어 id가 안정 키가 됐고(queue-sync-direction 2026-09-12), 슬러그는 괄호 힌트까지
+// 포함한 제목에서 파생돼 힌트만 고쳐도 바뀐다(evidence-collection 갱신 이력 2026-09-21). auto=키워드·기간 매칭, manual=사용자 편집.
+model TopicAnalysisLink {
+  id         String       @id @default(cuid())
+  topicId    String
+  topic      QueueItem    @relation(fields: [topicId], references: [id])
+  analysisId String
+  analysis   RepoAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  // auto | manual — LINK_SOURCE. auto → manual 승격은 source 갱신(updatedAt이 시각).
+  source String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([topicId, analysisId])
+}
+
+// 인덱싱 작업 하나. Run과 별도 테이블이지만 같은 워커 루프가 집어간다(Run 우선 — decisions/run-location.md).
+// 디렉터리 단위로 진행 상태를 저장해 중단 뒤 재개한다. 토큰·비용은 TopBar 비용 칩 합계에 포함.
+model IndexJob {
+  id     String @id @default(cuid())
+  repoId String
+  repo   Repo   @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  // full | incremental — INDEX_JOB_KIND. incremental이면 fromSha..toSha 범위만.
+  kind    String
+  fromSha String?
+  toSha   String?
+
+  // 이 작업에 쓰는 모델(레지스트리 id). 기본값은 레지스트리 indexingDefault 한 곳.
+  modelId String
+
+  // queued | running | interrupted | done | failed — INDEX_JOB_STATUS. Run.workerState와 같은 감지 방식(heartbeat).
+  status    String    @default("queued")
+  workerId  String?
+  heartbeat DateTime?
+
+  // 진행: 처리한 디렉터리(배치) / 전체 — 화면 표시. 재개 지점은 progressCursor(마지막으로 끝낸 배치 키,
+  // 인덱서 소유 형식) — 재기동 사이에 트리가 바뀌어도 정수 인덱스가 엉뚱한 디렉터리를 가리키지 않게.
+  progressDone   Int     @default(0)
+  progressTotal  Int     @default(0)
+  progressCursor String?
+
+  inputTokens  Int?
+  outputTokens Int?
+  costUsd      Float?
+
+  // 실패 기록은 RunStep과 같은 규칙(decisions/error-handling.md) — 코드·문구만.
+  errorCode    String?
+  errorMessage String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([repoId, createdAt])
 }
