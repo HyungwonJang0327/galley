@@ -161,3 +161,17 @@ export type {
   PointersFailure,
   PointersResult,
 } from './index/schema.ts';
+export {
+  parseRedactConfig,
+  loadRedactConfig,
+  defaultRedactConfigPath,
+  redact,
+} from './evidence/redact.ts';
+export type {
+  RedactRule,
+  RedactConfig,
+  RedactConfigFailure,
+  RedactConfigResult,
+  RedactHit,
+  RedactResult,
+} from './evidence/redact.ts';
