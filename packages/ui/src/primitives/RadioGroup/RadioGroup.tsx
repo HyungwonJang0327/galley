@@ -16,6 +16,8 @@ export interface RadioItem {
   disabled?: boolean;
 }
 
+export type RadioGroupOrientation = 'vertical' | 'horizontal';
+
 export interface RadioGroupProps {
   /** 제어형만. null = 아무것도 고르지 않음. */
   value: string | null;
@@ -24,7 +26,7 @@ export interface RadioGroupProps {
   /** 그룹의 접근성 이름. */
   'aria-label': string;
   /** 배치 방향. 방향키는 어느 쪽이든 네 방향 모두 듣는다(Base UI 기본값). */
-  orientation?: 'vertical' | 'horizontal';
+  orientation?: RadioGroupOrientation;
   /** 그룹 전체 비활성. */
   disabled?: boolean;
   /** 폼 제출용 이름. */

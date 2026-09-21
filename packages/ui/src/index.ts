@@ -3,7 +3,7 @@
 import './tokens/tokens.css';
 
 export { Button } from './components/Button';
-export type { ButtonProps } from './components/Button';
+export type { ButtonProps, ButtonSize, ButtonVariant } from './components/Button';
 export { Badge } from './components/Badge';
 export type { BadgeProps, BadgeTone } from './components/Badge';
 export { Card } from './components/Card';
@@ -11,7 +11,7 @@ export type { CardProps } from './components/Card';
 export { PageHeader } from './components/PageHeader';
 export type { PageHeaderProps } from './components/PageHeader';
 export { StatTile } from './components/StatTile';
-export type { StatTileProps } from './components/StatTile';
+export type { StatTileProps, StatTileTone } from './components/StatTile';
 export { EmptyState } from './components/EmptyState';
 export type { EmptyStateProps } from './components/EmptyState';
 export { InlineAlert } from './components/InlineAlert';
@@ -21,7 +21,7 @@ export type {
   InlineAlertVariant,
 } from './components/InlineAlert';
 export { Separator } from './components/Separator';
-export type { SeparatorProps } from './components/Separator';
+export type { SeparatorOrientation, SeparatorProps } from './components/Separator';
 export { Skeleton } from './components/Skeleton';
 export type { SkeletonProps, SkeletonRadius, SkeletonSize } from './components/Skeleton';
 
@@ -59,7 +59,7 @@ export type { FormFieldProps } from './primitives/FormField';
 export { Popover } from './primitives/Popover';
 export type { PopoverProps, PopoverSide, PopoverAlign } from './primitives/Popover';
 export { RadioGroup } from './primitives/RadioGroup';
-export type { RadioGroupProps, RadioItem } from './primitives/RadioGroup';
+export type { RadioGroupOrientation, RadioGroupProps, RadioItem } from './primitives/RadioGroup';
 export { Select } from './primitives/Select';
 export type { SelectProps, SelectItem } from './primitives/Select';
 export { Switch } from './primitives/Switch';
@@ -75,7 +75,7 @@ export type { ToastProviderProps, ToastTone, ToastPosition } from './primitives/
 export { Tooltip } from './primitives/Tooltip';
 export type { TooltipProps, TooltipSide } from './primitives/Tooltip';
 export { Menu } from './primitives/Menu';
-export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
+export type { MenuAlign, MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives/Menu';
 
 // hooks
 export { useToast } from './hooks/useToast';
