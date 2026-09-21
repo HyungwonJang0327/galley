@@ -168,7 +168,7 @@
 
 - [x] **BE1** (2026-09-21 `891428b`·헬퍼 `3a5efd0`·테스트 `3926d87`·decisions `e46207f`, feat/evidence-schema — **TopicAnalysisLink 키는 topicSlug가 아니라 topicId**(리뷰로 결정 변경), RepoAnalysis.key·IndexJob.progressCursor 추가) pl — 스키마: `Repo`(aliases·lastIndexModelId 포함) · `RepoAnalysis`(pointers JSON ≥ 1) · `IndexJob`(modelId) · `TopicAnalysisLink`(topicSlug 키) · `QueueItem.repoNames/keywords/period` + 마이그레이션. 커밋: `feat(pipeline): 리포 인덱스와 주제 연결 스키마 추가`
   - 완료조건: `prisma validate`·마이그레이션 적용. pointers 빈 배열 저장은 접근 함수에서 거부(테스트).
-- [ ] **BE2** pl — 식별 정보 필터: `.galley/redact.json` 로더 + `redact(text)` 적용 함수 + 테스트. 커밋: `feat(pipeline): 식별 정보 필터 추가`
+- [x] **BE2** (2026-09-21 `9b0a103`·예시+gitignore `8e3796e`, feat/redact-filter — 실제 redact.json은 gitignore, `REDACT_CONFIG_PATH` 선택 env, 실패 값 `reason` 열거, `redacted`=치환 발생·`filtered`는 저장 쪽) pl — 식별 정보 필터: `.galley/redact.json` 로더 + `redact(text)` 적용 함수 + 테스트. 커밋: `feat(pipeline): 식별 정보 필터 추가`
   - 완료조건: 회사명·도메인·이메일·키 패턴·내부 URL 픽스처가 전부 치환되고 통과 여부가 반환된다. 함수 하나를 인덱싱·EvidenceBundle이 공유.
 - [ ] **BE3** pl — 리포 인덱서 1: 파일 트리 요약 + 주요 디렉터리별 `area` 분석 글 생성(입력 상한 `INDEX_LIMITS` 16KB/20개·160KB/30개, 초과분 `summaryOnly`). Mock 어댑터로 테스트. 커밋: `feat(pipeline): 리포 인덱서에 파일 트리·영역 분석 추가`
   - 완료조건: 픽스처 리포 인덱싱 시 분석 글마다 pointers ≥ 1, **모든 포인터가 실제 파일·라인을 가리킨다**(테스트).
