@@ -8,13 +8,10 @@ describe('Badge', () => {
     expect(screen.getByText('대기')).toBeTruthy();
   });
 
-  it.each(['neutral', 'info', 'warning', 'success', 'danger'] as const)(
-    'variant=%s 렌더',
-    (variant) => {
-      render(<Badge variant={variant}>{variant}</Badge>);
-      expect(screen.getByText(variant)).toBeTruthy();
-    },
-  );
+  it.each(['neutral', 'info', 'warning', 'success', 'danger'] as const)('tone=%s 렌더', (tone) => {
+    render(<Badge tone={tone}>{tone}</Badge>);
+    expect(screen.getByText(tone)).toBeTruthy();
+  });
 
   it('pulse가 클래스를 추가한다', () => {
     const { rerender } = render(<Badge>x</Badge>);

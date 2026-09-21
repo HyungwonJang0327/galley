@@ -16,12 +16,12 @@ describe('runStatusBadge', () => {
     ['done', '완료', 'success', false],
     ['failed', '실패', 'danger', false],
     ['revised', '수정 지시', 'neutral', false],
-  ] as const)('%s → %s(%s, pulse=%s)', (status, label, variant, pulse) => {
-    expect(runStatusBadge(status)).toEqual({ label, variant, pulse });
+  ] as const)('%s → %s(%s, pulse=%s)', (status, label, tone, pulse) => {
+    expect(runStatusBadge(status)).toEqual({ label, tone, pulse });
   });
 
   it('모르는 값은 그대로 회색으로(화면이 죽지 않는다)', () => {
-    expect(runStatusBadge('weird')).toEqual({ label: 'weird', variant: 'neutral', pulse: false });
+    expect(runStatusBadge('weird')).toEqual({ label: 'weird', tone: 'neutral', pulse: false });
   });
 });
 

@@ -15,7 +15,7 @@ export const Default = {
       <ListRow
         title="첫 번째 항목"
         meta="보조 · 텍스트"
-        trailing={<Badge variant="info">상태</Badge>}
+        trailing={<Badge tone="info">상태</Badge>}
       />
       <ListRow title="두 번째 항목" meta="보조 · 텍스트" trailing={<Badge>상태</Badge>} />
     </ListRows>
@@ -31,7 +31,7 @@ export const WithSlots = {
         meta="보조 · 텍스트"
         trailing={
           <>
-            <Badge variant="warning">상태</Badge>
+            <Badge tone="warning">상태</Badge>
             <span>3분 전</span>
           </>
         }

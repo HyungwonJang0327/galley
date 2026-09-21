@@ -7,9 +7,9 @@ const meta = {
 };
 export default meta;
 
-export const Neutral = { args: { children: 'Neutral', variant: 'neutral' } };
-export const Info = { args: { children: 'Info', variant: 'info' } };
-export const Running = { args: { children: 'Running', variant: 'info', pulse: true } };
-export const Warning = { args: { children: 'Warning', variant: 'warning' } };
-export const Success = { args: { children: 'Success', variant: 'success' } };
-export const Danger = { args: { children: 'Danger', variant: 'danger' } };
+export const Neutral = { args: { children: 'Neutral', tone: 'neutral' } };
+export const Info = { args: { children: 'Info', tone: 'info' } };
+export const Running = { args: { children: 'Running', tone: 'info', pulse: true } };
+export const Warning = { args: { children: 'Warning', tone: 'warning' } };
+export const Success = { args: { children: 'Success', tone: 'success' } };
+export const Danger = { args: { children: 'Danger', tone: 'danger' } };

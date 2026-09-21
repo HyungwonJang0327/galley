@@ -27,7 +27,7 @@ export const Expandable = {
         statusLabel="완료"
         title="펼치면 내용이 보이는 줄"
         meta="8초 · 900 토큰"
-        trailing={<Badge variant="success">완료</Badge>}
+        trailing={<Badge tone="success">완료</Badge>}
         defaultOpen
       >
         펼침 영역. 내용은 소비자가 넣는다.
