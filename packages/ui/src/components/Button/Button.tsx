@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement } from 'react';
 import type { ComponentProps, ReactElement } from 'react';
+import { mergeProps } from '@base-ui/react/merge-props';
 import styles from './Button.module.css';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -14,7 +15,8 @@ export interface ButtonProps extends ComponentProps<'button'> {
   size?: Size;
   /**
    * 버튼 모양이지만 링크여야 할 때 그 요소(예: Next <Link href />). 넘기면 button 대신 이 요소로
-   * 렌더하고 className만 병합한다(button 전용 속성은 쓰지 않는다).
+   * 렌더하고 나머지 props(onClick·aria-*·data-* 등)는 그 요소의 props와 병합한다 — 이벤트 핸들러는
+   * 둘 다 불리고 className은 합쳐진다. `type`·`disabled` 같은 button 전용 속성은 넘기지 않는다.
    */
   render?: RenderElement;
 }
@@ -33,8 +35,10 @@ export function Button({
     .join(' ');
 
   if (render !== undefined && isValidElement(render)) {
-    const merged = [classes, render.props.className].filter(Boolean).join(' ');
-    return cloneElement(render, { className: merged }, children);
+    // disabled는 <a>에 의미가 없다(타입은 button props라 들어올 수 있음) — 버린다.
+    const { disabled: _disabled, ...rest } = props;
+    void _disabled;
+    return cloneElement(render, mergeProps(rest, render.props, { className: classes }), children);
   }
   return (
     <button type={type} className={classes} {...props}>
