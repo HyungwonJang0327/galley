@@ -62,3 +62,13 @@
 .ghost:not(:disabled):hover {
   background-color: var(--ui-color-neutral-bg);
 }
+
+/* danger: 채운 빨강. 글자는 accent-fg(라이트 흰색·다크 어두운색)라 두 테마 모두 4.5:1을 넘긴다. */
+.danger {
+  background-color: var(--ui-color-danger-fg);
+  color: var(--ui-color-accent-fg);
+}
+
+.danger:not(:disabled):hover {
+  background-color: var(--ui-color-danger-hover);
+}

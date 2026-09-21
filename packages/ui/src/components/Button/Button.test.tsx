@@ -33,7 +33,7 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it.each(['primary', 'secondary', 'ghost'] as const)('variant=%s 렌더', (variant) => {
+  it.each(['primary', 'secondary', 'ghost', 'danger'] as const)('variant=%s 렌더', (variant) => {
     render(<Button variant={variant}>{variant}</Button>);
     expect(screen.getByRole('button', { name: variant })).toBeTruthy();
   });
