@@ -3,7 +3,7 @@
 ## 결정
 
 1. **footer 버튼 크기는 md(Button 기본)로 통일.** useConfirm에 `size` 옵션을 두지 않는다. RunActionBar의 확인 Dialog 버튼(현재 sm)은 md로 바뀐다.
-2. **확인을 누르면 즉시 닫힌다.** `await confirm()`은 "사용자가 무엇을 골랐나"에만 답한다. 그 뒤 비동기 작업(API 호출)이 도는 동안의 진행 표시는 소비자가 맡는다 — RunActionBar는 이미 있는 `pending`으로 컨트롤을 비활성하고, 바 아래 `role="status"`에 "요청 중" 문구를 띄운다.
+2. **확인을 누르면 즉시 닫힌다.** `await confirm()`은 "사용자가 무엇을 골랐나"에만 답한다. 그 뒤 비동기 작업(API 호출)이 도는 동안의 진행 표시는 소비자가 맡는다 — RunActionBar는 `busy: string | null` 상태(진행 문구 겸용)로 컨트롤을 비활성하고 바 아래 `role="status"`에 그 문구를 띄운다. `useTransition`은 확인 대기 중에도 pending이 켜져 버려 쓰지 않는다(구현 시 확인, 2026-09-21).
 3. **`ConfirmOptions.children?: ReactNode`를 추가한다.** Dialog가 이미 가진 본문 슬롯을 그대로 연다. 재실행 Dialog의 계획 표(`<dl>`)가 여기에 들어간다 — `description`은 `<p>`라 블록 요소를 넣을 수 없다.
 4. **Provider(전역 렌더) 방식은 0.1.0에 넣지 않는다.** 소비자가 `{element}`를 한 번 렌더하는 지금 방식 유지. 나중에 필요해지면 "Provider가 위에 있으면 훅이 거기에 그리고 `element`는 null, 없으면 지금처럼"으로 **호환되게** 추가할 수 있다(breaking 아님).
 5. **문자열 한 개 축약 호출(`confirm('...')`)은 두지 않는다.** 시그니처는 `confirm(options)` 하나.
@@ -34,3 +34,4 @@
 ## 갱신 이력
 
 - 2026-09-21 최초 결정.
+- 2026-09-21 결정 2 문구를 구현에 맞춤(`pending`(useTransition) → `busy` 상태). 리뷰 L8.
