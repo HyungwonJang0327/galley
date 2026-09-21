@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useToast } from './useToast';
 import type { UseToastReturn } from './useToast';
-import { ToastProvider } from '../../primitives/Toast';
+import { ToastProvider } from '../../primitives/ToastProvider';
 
 describe('useToast', () => {
   it('돌려주는 객체는 리렌더·토스트 추가·닫힘 뒤에도 참조가 같다(의존성 배열에 넣어도 안전)', async () => {

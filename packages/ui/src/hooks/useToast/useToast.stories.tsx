@@ -1,6 +1,6 @@
 // Storybook 스토리(CSF3). 훅은 Provider 아래 소비자 예시로 보인다. 실행 환경은 Phase 2.
 import { useToast } from './useToast';
-import { ToastProvider } from '../../primitives/Toast';
+import { ToastProvider } from '../../primitives/ToastProvider';
 import { Button } from '../../components/Button';
 
 const meta = {
