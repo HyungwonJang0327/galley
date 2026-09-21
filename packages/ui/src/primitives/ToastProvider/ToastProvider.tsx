@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { isTone, toneIcon } from '../../internal/tone';
 import type { Tone } from '../../internal/tone';
-import styles from './Toast.module.css';
+import styles from './ToastProvider.module.css';
 import { ToastManagerContext, createBufferedToastManager } from './ToastContext';
 
 export type ToastTone = Tone;

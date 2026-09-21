@@ -6,6 +6,8 @@
 
 ### 폴더 구조 (컴포넌트 하나 = 폴더 하나)
 
+> 규칙(2026-09-21, RF-27): 폴더 이름 = 주 export 이름(`ToastProvider/ToastProvider.tsx`). CSS를 공유하는 보조 export(`ListRow/ListRows.tsx`·`ListToolbar/ListToolbarTab.tsx`·`TimelineItem/TimelineItems.tsx`)와 배럴 비공개 컨텍스트 파일(`FormField/FormFieldContext.ts`·`ToastProvider/ToastContext.ts`), 훅 폴더의 파생 훅(`useAwaitDialog/useConfirm.tsx`·`useAlert.tsx`)은 같은 폴더에 둘 수 있다. 5파일 규칙은 주 export 기준.
+
 ```
 packages/ui/
   src/

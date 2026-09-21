@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ToastProvider } from './Toast';
-import type { ToastProviderProps } from './Toast';
+import { ToastProvider } from './ToastProvider';
+import type { ToastProviderProps } from './ToastProvider';
 import { useToast } from '../../hooks/useToast';
 import type { ToastOptions } from '../../hooks/useToast';
 

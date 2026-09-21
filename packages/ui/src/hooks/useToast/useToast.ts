@@ -1,8 +1,8 @@
 'use client';
 import { useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { ToastTone } from '../../primitives/Toast';
-import { ToastManagerContext } from '../../primitives/Toast/ToastContext';
+import type { ToastTone } from '../../primitives/ToastProvider';
+import { ToastManagerContext } from '../../primitives/ToastProvider/ToastContext';
 
 export interface ToastOptions {
   /** 굵은 한 줄 — 토스트의 접근성 이름. */

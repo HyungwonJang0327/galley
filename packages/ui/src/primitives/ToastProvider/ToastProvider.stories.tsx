@@ -1,6 +1,6 @@
 // Storybook 스토리(CSF3). Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
-import { ToastProvider } from './Toast';
-import type { ToastProviderProps } from './Toast';
+import { ToastProvider } from './ToastProvider';
+import type { ToastProviderProps } from './ToastProvider';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../../components/Button';
 
