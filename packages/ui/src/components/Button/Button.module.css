@@ -63,9 +63,10 @@
   background-color: var(--ui-color-neutral-bg);
 }
 
-/* danger: 채운 빨강. 글자는 accent-fg(라이트 흰색·다크 어두운색)라 두 테마 모두 4.5:1을 넘긴다. */
+/* danger: 채운 빨강(--ui-color-danger, primary의 accent와 같은 자리). 글자는 accent-fg를 같이 쓴다 —
+   채움 위 글자색은 테마마다 하나(라이트 흰색·다크 어두운색)라 두 테마 모두 4.5:1을 넘긴다. */
 .danger {
-  background-color: var(--ui-color-danger-fg);
+  background-color: var(--ui-color-danger);
   color: var(--ui-color-accent-fg);
 }
 

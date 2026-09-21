@@ -26,7 +26,7 @@ export async function verifyAwaitDialog(page, { outDir }) {
     m.dialog?.buttons.join(',') === '취소,삭제',
   );
   add(
-    `확인 버튼 배경 = --ui-color-danger-fg (${m.dialog?.confirmBg} = ${m.dangerFg})`,
+    `확인 버튼 배경 = --ui-color-danger (${m.dialog?.confirmBg} = ${m.dangerFg})`,
     m.dialog?.confirmBg === m.dangerFg,
   );
   add(
@@ -110,7 +110,7 @@ async function measure(page) {
         probe.style.color = rootStyle.getPropertyValue(token);
         return getComputedStyle(probe).color;
       };
-      const dangerFg = resolveColor('--ui-color-danger-fg');
+      const dangerFg = resolveColor('--ui-color-danger');
       const accentFg = resolveColor('--ui-color-accent-fg');
       probe.remove();
       const el = document.querySelector('[role="dialog"]');
