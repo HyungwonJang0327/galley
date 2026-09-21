@@ -46,5 +46,5 @@
 
 ## Phase P — galley-ui 0.1.0 npm 배포 (2026-09-15 추가 — 상세는 mvp-todo Phase P)
 
-- P4-11 — RunActionBar 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환. P4-9 머지 뒤, P5 앞. 브랜치 `refactor/dashboard-use-confirm`.
+- P4-11 — RunActionBar 확인 Dialog 2개(재실행·승인)를 `useConfirm`으로 치환. P4-9 머지 뒤, P5 앞. 브랜치 `refactor/dashboard-use-confirm`. 착수 전 todo/mvp-todo.md P4-11의 "P4-9 리뷰 L7 입력"(size sm·pending 동안 열어둠·재실행 children) 읽기.
 - P7e(후속) — TD2 앱 4곳 InlineAlert 치환.
