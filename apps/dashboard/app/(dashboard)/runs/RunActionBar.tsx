@@ -5,7 +5,7 @@
 // 확인 Dialog 둘은 useConfirm 하나로(decisions/confirm-dialog-usage.md): 확인을 누르면 즉시 닫히고,
 // API가 도는 동안은 바의 컨트롤 비활성 + role=status의 "요청 중" 문구가 진행 표시다.
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActionBar, Button, Select, Textarea, useConfirm } from 'galley-ui';
 import { approveRun, planRerun, reviseRun } from '../../../lib/run-api-client';
 import {
@@ -36,6 +36,41 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
   const [message, setMessage] = useState<string | null>(null);
   /** API가 도는 동안의 진행 문구. null이면 유휴. */
   const [busy, setBusy] = useState<string | null>(null);
+  const rerunButton = useRef<HTMLButtonElement | null>(null);
+  const approveButton = useRef<HTMLButtonElement | null>(null);
+  /** busy가 풀린 다음 렌더에서 포커스를 되돌릴 버튼. Dialog가 닫히며 돌려준 포커스는 버튼이
+   *  disabled인 동안 body로 떨어지므로(Base UI는 tabbable에만 복귀) 여기서 다시 잡는다. */
+  const focusAfterBusy = useRef<HTMLButtonElement | null>(null);
+  /** 요청 중 다른 실행을 고르면(page.tsx의 key) 이 바는 언마운트된다 — 그 뒤 push·refresh 금지. */
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (busy === null && focusAfterBusy.current !== null) {
+      focusAfterBusy.current.focus();
+      focusAfterBusy.current = null;
+    }
+  }, [busy]);
+
+  /** API 호출 하나를 감싼다: 진행 문구 → 호출 → (마운트돼 있으면) 문구 해제 + 포커스 복귀 예약. */
+  const runBusy = async <T,>(
+    text: string,
+    call: () => Promise<T>,
+    focusTarget: HTMLButtonElement | null,
+  ): Promise<T | null> => {
+    setBusy(text);
+    const result = await call();
+    if (!mounted.current) return null;
+    focusAfterBusy.current = focusTarget;
+    setBusy(null);
+    return result;
+  };
 
   const disabled = !enabled || busy !== null;
   const request = () => ({
@@ -60,9 +95,12 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       return;
     }
     setMessage(null);
-    setBusy('재실행 계획을 확인하는 중…');
-    const planned = await planRerun(runId, request());
-    setBusy(null);
+    const planned = await runBusy(
+      '재실행 계획을 확인하는 중…',
+      () => planRerun(runId, request()),
+      null,
+    );
+    if (planned === null) return;
     if (!planned.ok) {
       setMessage(planned.error.message);
       return;
@@ -86,9 +124,12 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       ),
     });
     if (!ok) return;
-    setBusy('재실행을 요청하는 중…');
-    const result = await reviseRun(runId, request());
-    setBusy(null);
+    const result = await runBusy(
+      '재실행을 요청하는 중…',
+      () => reviseRun(runId, request()),
+      rerunButton.current,
+    );
+    if (result === null) return;
     if (!result.ok) {
       setMessage(result.error.message);
       return;
@@ -109,9 +150,12 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       confirmLabel: '승인',
     });
     if (!ok) return;
-    setBusy('승인을 요청하는 중…');
-    const result = await approveRun(runId);
-    setBusy(null);
+    const result = await runBusy(
+      '승인을 요청하는 중…',
+      () => approveRun(runId),
+      approveButton.current,
+    );
+    if (result === null) return;
     if (!result.ok) {
       setMessage(result.error.message);
       return;
@@ -126,6 +170,7 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
         actions={
           <>
             <Button
+              ref={rerunButton}
               variant="secondary"
               size="sm"
               disabled={disabled}
@@ -133,7 +178,12 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
             >
               재실행
             </Button>
-            <Button size="sm" disabled={disabled} onClick={() => void onApproveClick()}>
+            <Button
+              ref={approveButton}
+              size="sm"
+              disabled={disabled}
+              onClick={() => void onApproveClick()}
+            >
               승인
             </Button>
           </>

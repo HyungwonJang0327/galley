@@ -226,4 +226,40 @@ describe('RunActionBar', () => {
       false,
     );
   });
+
+  // happy-dom은 disabled 버튼에도 focus()가 먹어 "Dialog 복귀가 disabled에 막혀 body로 떨어지는" 회귀 자체는
+  // 재현되지 않는다(Chrome에서만). 이 테스트는 busy 해제 뒤 복귀 effect가 눌렀던 버튼을 잡는 경로를 고정한다.
+  it('요청이 끝나면 포커스가 눌렀던 버튼으로 돌아온다(실패 경로)', async () => {
+    approveRun.mockResolvedValue({
+      ok: false,
+      error: { code: 'NOT_PENDING_APPROVAL', message: '승인 대기만' },
+    });
+    renderBar();
+
+    const approve = screen.getByRole('button', { name: '승인' });
+    approve.focus();
+    fireEvent.click(approve);
+    await screen.findByRole('dialog', { name: '승인할까요?' });
+    await clickDialogButton('승인');
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('승인 대기만'));
+    await waitFor(() => expect(document.activeElement).toBe(approve));
+  });
+
+  it('요청 중 언마운트되면(다른 실행 선택) 응답이 와도 이동·새로 그리기를 하지 않는다', async () => {
+    let finishRevise: (value: unknown) => void = () => {};
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    reviseRun.mockReturnValue(new Promise((resolve) => (finishRevise = resolve)));
+    const { unmount } = renderBar();
+
+    type('지시');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await clickDialogButton('재실행');
+    await waitFor(() => expect(reviseRun).toHaveBeenCalled());
+
+    unmount();
+    finishRevise({ ok: true, data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(push).not.toHaveBeenCalled();
+  });
 });
