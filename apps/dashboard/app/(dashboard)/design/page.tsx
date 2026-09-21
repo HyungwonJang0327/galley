@@ -405,11 +405,12 @@ export default function DesignPage() {
         </Card>
 
         <Card>
-          <h2 className={styles.sectionTitle}>useConfirm · useAwaitDialog</h2>
+          <h2 className={styles.sectionTitle}>useConfirm · useAwaitDialog · useAlert</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
               await 한 줄로 결과를 받는다. 취소·Esc·바깥 클릭·닫기 버튼은 cancel 값(useConfirm은
-              false, 이름 입력은 null). 열린 채 다시 열면 이전 것은 취소로 끝난다.
+              false, 이름 입력은 null, useAlert는 값 없음). 열린 채 다시 열면 이전 것은 취소로
+              끝난다.
             </span>
             <div className={styles.row} data-demo="await-dialog">
               <AwaitDialogDemo />

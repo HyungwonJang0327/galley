@@ -1,11 +1,11 @@
-// useConfirm · useAwaitDialog 실측: 열림 → 포커스가 안으로 → Esc는 취소(false) → 확인은 danger 버튼(빨강 채움) → 결과 글자.
-// 갤러리(/design) "useConfirm · useAwaitDialog" 섹션(data-demo="await-dialog", 버튼 "삭제 확인"·"이름 바꾸기",
-// 결과 span data-demo="await-dialog-confirm-result"·"await-dialog-name-result")에 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다.
+// useConfirm · useAwaitDialog · useAlert 실측: 열림 → 포커스가 안으로 → Esc는 취소(false) → 확인은 danger 버튼(빨강 채움) → 결과 글자 → alert는 버튼 하나.
+// 갤러리(/design) "useConfirm · useAwaitDialog · useAlert" 섹션(data-demo="await-dialog", 버튼 "삭제 확인"·"이름 바꾸기"·"저장 안내",
+// 결과 span data-demo="await-dialog-confirm-result"·"-name-result"·"-alert-result")에 결합되어 있다 — 갤러리를 바꾸면 여기도 맞춘다.
 import { join } from 'node:path';
 import { sleep } from './cdp.mjs';
 
 export async function verifyAwaitDialog(page, { outDir }) {
-  const name = 'useConfirm · useAwaitDialog 열림·취소·확인';
+  const name = 'useConfirm · useAwaitDialog · useAlert 열림·취소·확인';
   const checks = [];
   const add = (label, pass) => checks.push({ label, pass });
 
@@ -87,6 +87,28 @@ export async function verifyAwaitDialog(page, { outDir }) {
   );
   await page.screenshot(join(outDir, 'await-dialog-2.png'));
 
+  // 5. alert — 버튼 하나(확인), 초기 포커스가 그 버튼, Enter로 닫히고 결과 갱신
+  const alertButton = await locate(page, '저장 안내');
+  if (alertButton.error) {
+    add(alertButton.error, false);
+    return { name, checks };
+  }
+  await page.mouseClick(alertButton.x, alertButton.y);
+  await sleep(400);
+  m = await measure(page);
+  add(
+    `alert dialog "저장했습니다", footer 버튼 하나 (${m.dialog?.buttons.join('·')})`,
+    m.dialog?.label === '저장했습니다' && m.dialog?.buttons.length === 1,
+  );
+  add('alert 초기 포커스는 확인 버튼', m.dialog?.focusOnConfirm === true);
+  await page.pressKey('Enter');
+  await sleep(400);
+  m = await measure(page);
+  add(
+    `Enter로 닫히고 결과 갱신 (${m.alertResult})`,
+    m.dialog === null && m.alertResult === '닫음 1회',
+  );
+
   return { name, checks };
 }
 
@@ -130,6 +152,7 @@ async function measure(page) {
         dialog = {
           label: document.getElementById(el.getAttribute('aria-labelledby'))?.textContent ?? '',
           focusInside: el.contains(document.activeElement),
+          focusOnConfirm: confirm !== undefined && document.activeElement === confirm,
           buttons: footerButtons.map((b) => b.textContent.trim()),
           buttonCenters: centers,
           confirmBg: confirm ? getComputedStyle(confirm).backgroundColor : '',
@@ -144,6 +167,7 @@ async function measure(page) {
         dialog,
         confirmResult: text('[data-demo="await-dialog-confirm-result"]'),
         nameResult: text('[data-demo="await-dialog-name-result"]'),
+        alertResult: text('[data-demo="await-dialog-alert-result"]'),
       });
     })()`),
   );
