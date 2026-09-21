@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { FormField } from '../FormField';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Checkbox } from './Checkbox';
 
@@ -58,5 +59,26 @@ describe('Checkbox', () => {
   it('라벨 없이 aria-label만으로도 이름이 잡힌다', () => {
     render(<Checkbox checked={false} onCheckedChange={() => {}} aria-label="이름만" />);
     expect(screen.getByRole('checkbox', { name: '이름만' })).toBeTruthy();
+  });
+
+  it('이름 없이 FormField 밖에서 쓰면 개발 모드 경고, 이름이 있거나 FormField 안이면 없다', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { unmount } = render(<Checkbox checked={false} onCheckedChange={() => {}} />);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain('Checkbox');
+    unmount();
+    warn.mockClear();
+    const second = render(
+      <Checkbox checked={false} onCheckedChange={() => {}} aria-label="이름" />,
+    );
+    expect(warn).not.toHaveBeenCalled();
+    second.unmount();
+    render(
+      <FormField label="필드">
+        <Checkbox checked={false} onCheckedChange={() => {}} />
+      </FormField>,
+    );
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

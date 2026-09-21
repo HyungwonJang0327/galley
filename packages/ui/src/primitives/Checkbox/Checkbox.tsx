@@ -3,13 +3,14 @@ import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox';
 import { Check, Minus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useFieldRequired } from '../FormField/FormFieldContext';
+import { useAccessibleNameWarning } from '../../internal/accessibleName';
 import styles from './Checkbox.module.css';
 
 export interface CheckboxProps {
   /** 제어형만. */
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-  /** 라벨. 클릭하면 토글된다. 없으면 aria-label을 준다. */
+  /** 라벨. 클릭하면 토글된다. 없으면 aria-label을 준다(둘 다 없으면 FormField 안이어야 한다 — 개발 모드 경고). */
   children?: ReactNode;
   'aria-label'?: string;
   /** 일부만 선택된 상태(표시만 — checked 값은 그대로). */
@@ -41,6 +42,10 @@ export function Checkbox({
   className,
 }: CheckboxProps) {
   const isRequired = useFieldRequired(required);
+  useAccessibleNameWarning(
+    'Checkbox',
+    (children !== undefined && children !== null) || ariaLabel !== undefined,
+  );
   const classes = [styles.label, className].filter(Boolean).join(' ');
   return (
     <label className={classes} data-disabled={disabled || undefined}>
