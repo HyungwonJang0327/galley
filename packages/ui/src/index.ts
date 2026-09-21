@@ -80,3 +80,12 @@ export type { MenuProps, MenuItem, MenuSeparator, MenuEntry } from './primitives
 // hooks
 export { useToast } from './hooks/useToast';
 export type { ToastOptions, UseToastReturn } from './hooks/useToast';
+export { useAwaitDialog, useConfirm } from './hooks/useAwaitDialog';
+export type {
+  AwaitDialogRender,
+  AwaitDialogRenderProps,
+  ConfirmOptions,
+  ConfirmTone,
+  UseAwaitDialogReturn,
+  UseConfirmReturn,
+} from './hooks/useAwaitDialog';
