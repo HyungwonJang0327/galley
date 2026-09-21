@@ -1,8 +1,9 @@
-import { CircleAlert, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
+import { toneIcon } from '../../internal/tone';
+import type { Tone } from '../../internal/tone';
 import styles from './InlineAlert.module.css';
 
-export type InlineAlertTone = 'info' | 'success' | 'warning' | 'danger';
+export type InlineAlertTone = Tone;
 export type InlineAlertVariant = 'filled' | 'plain';
 
 export interface InlineAlertProps extends Omit<ComponentProps<'div'>, 'title' | 'role'> {
@@ -23,13 +24,6 @@ export interface InlineAlertProps extends Omit<ComponentProps<'div'>, 'title' | 
   /** 오른쪽 끝 슬롯(다시 시도 버튼 등). */
   action?: ReactNode;
 }
-
-const ICONS = {
-  info: Info,
-  success: CircleCheck,
-  warning: TriangleAlert,
-  danger: CircleAlert,
-} as const;
 
 /**
  * 화면 안에 놓이는 알림 상자. 제목+본문이 live 영역이다 — tone이 danger·warning이면 role="alert"
@@ -52,7 +46,7 @@ export function InlineAlert({
   const classes = [styles.alert, styles[tone], styles[variant], className]
     .filter(Boolean)
     .join(' ');
-  const Icon = ICONS[tone];
+  const Icon = toneIcon(tone);
   const hasTitle = title !== undefined && title !== null && title !== false && title !== '';
   return (
     // 루트는 상자일 뿐이다. role은 타입에서 뺐고, 우회해 넘어와도 지운다.
