@@ -3,9 +3,11 @@ import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '../../components/Button';
 import { Dialog } from '../../primitives/Dialog';
+import { confirmToneVariant } from '../../internal/tone';
+import type { ConfirmTone } from '../../internal/tone';
 import { useAwaitDialog } from './useAwaitDialog';
 
-export type ConfirmTone = 'default' | 'danger';
+export type { ConfirmTone };
 
 export interface ConfirmOptions {
   /** 질문 한 줄 — dialog의 접근성 이름. */
@@ -60,7 +62,7 @@ export function useConfirm(): UseConfirmReturn {
               </Button>
               <Button
                 ref={confirmButton}
-                variant={tone === 'danger' ? 'danger' : 'primary'}
+                variant={confirmToneVariant(tone)}
                 onClick={() => resolve(true)}
               >
                 {confirmLabel}

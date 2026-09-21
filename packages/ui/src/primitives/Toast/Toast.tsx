@@ -1,12 +1,14 @@
 'use client';
 import { Toast as BaseToast } from '@base-ui/react/toast';
-import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { isTone, toneIcon } from '../../internal/tone';
+import type { Tone } from '../../internal/tone';
 import styles from './Toast.module.css';
 import { ToastManagerContext, createBufferedToastManager } from './ToastContext';
 
-export type ToastTone = 'info' | 'success' | 'warning' | 'danger';
+export type ToastTone = Tone;
 export type ToastPosition = 'top-right' | 'bottom-right';
 
 export interface ToastProviderProps {
@@ -22,17 +24,6 @@ export interface ToastProviderProps {
   /** 각 토스트 닫기 버튼의 접근성 이름. */
   closeLabel?: string;
 }
-
-const ICONS = {
-  info: Info,
-  success: CircleCheck,
-  warning: TriangleAlert,
-  danger: CircleAlert,
-} as const;
-
-// `in`은 프로토타입까지 본다('toString' in ICONS === true) — 자기 키만.
-const isTone = (type: string | undefined): type is ToastTone =>
-  type !== undefined && Object.hasOwn(ICONS, type);
 
 /**
  * 토스트 뷰포트 + 컨텍스트(Base UI). 앱 루트(셸)에 한 번 두고, 띄우는 쪽은 `useToast()`.
@@ -68,7 +59,7 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
   const { toasts } = BaseToast.useToastManager();
   return toasts.map((toast) => {
     const tone: ToastTone = isTone(toast.type) ? toast.type : 'info';
-    const Icon = ICONS[tone];
+    const Icon = toneIcon(tone);
     return (
       <BaseToast.Root
         key={toast.id}
