@@ -39,7 +39,8 @@
   height: 0.5em;
   border-radius: var(--ui-radius-pill);
   background-color: currentColor;
-  animation: ui-badge-pulse 1.2s ease-in-out infinite;
+  animation: ui-badge-pulse var(--ui-duration-pulse-badge) ease-in-out infinite;
+  animation-play-state: var(--ui-pulse-play-state);
 }
 
 @keyframes ui-badge-pulse {
