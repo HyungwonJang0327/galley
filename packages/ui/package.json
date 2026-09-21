@@ -46,7 +46,8 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./styles.css": "./dist/index.css"
+    "./styles.css": "./dist/index.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
