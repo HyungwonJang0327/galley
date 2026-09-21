@@ -13,12 +13,21 @@ export interface ListToolbarTabProps {
   /** 활성(현재 URL 쿼리). 블루 텍스트 + 밑줄. */
   isActive?: boolean;
   className?: string;
-  /** 링크/버튼 요소(예: Next <Link href />). 미지정 시 <a>. */
+  /** 링크 주소. 라우터 링크가 필요하면 render를 쓴다. render나 href 중 하나는 있어야 키보드로 닿는다. */
+  href?: string;
+  /** 링크/버튼 요소(예: Next <Link href />). href보다 우선. 둘 다 없으면 href 없는 <a>(포커스 불가). */
   render?: RenderElement;
 }
 
 /** 툴바의 URL 링크 탭(?tab=). 페이지 내 상태 탭이 아니라 이동이다. */
-export function ListToolbarTab({ label, count, isActive, className, render }: ListToolbarTabProps) {
+export function ListToolbarTab({
+  label,
+  count,
+  isActive,
+  className,
+  href,
+  render,
+}: ListToolbarTabProps) {
   const content = (
     <>
       <span className={styles.tabLabel}>{label}</span>
@@ -43,5 +52,9 @@ export function ListToolbarTab({ label, count, isActive, className, render }: Li
   if (render && isValidElement(render)) {
     return cloneElement(render, props, content);
   }
-  return <a {...props}>{content}</a>;
+  return (
+    <a {...props} href={href}>
+      {content}
+    </a>
+  );
 }
