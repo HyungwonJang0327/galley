@@ -36,7 +36,8 @@
   --ui-color-success-fg: #15803d;
   --ui-color-danger-bg: #fdecec; /* 빨강 (실패) */
   --ui-color-danger-fg: #b91c1c;
-  --ui-color-danger-hover: #991b1b; /* danger 버튼 hover(채움) */
+  --ui-color-danger: #b91c1c; /* 채움(danger 버튼). 글자는 accent-fg를 같이 쓴다 */
+  --ui-color-danger-hover: #991b1b;
 
   /* 간격 (4px 스텝, 넉넉하게) */
   --ui-space-1: 4px;
@@ -150,5 +151,6 @@
   --ui-color-success-fg: #5fd08a;
   --ui-color-danger-bg: #3d1a1a;
   --ui-color-danger-fg: #f28b8b;
+  --ui-color-danger: #f28b8b;
   --ui-color-danger-hover: #f6a5a5;
 }
