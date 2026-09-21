@@ -1,7 +1,7 @@
 import type { ComponentProps, CSSProperties } from 'react';
 import styles from './Skeleton.module.css';
 
-export type SkeletonRadius = 'sm' | 'md' | 'full';
+export type SkeletonRadius = 'sm' | 'md' | 'lg' | 'pill';
 
 /**
  * 길이 값. 문자열은 CSS 값 그대로 — 토큰(`'var(--ui-space-6)'`)이나 비율(`'60%'`)을 우선 쓴다.
@@ -16,7 +16,7 @@ export interface SkeletonProps extends Omit<ComponentProps<'span'>, 'children' |
   width?: SkeletonSize;
   /** 높이. 기본은 글자 높이(1em) — 텍스트 자리에 넣으면 폰트 크기를 따라간다. */
   height?: SkeletonSize;
-  /** 모서리. sm(기본)·md는 토큰 라운드, full은 원·pill(아바타·배지 자리). */
+  /** 모서리 — 토큰 어휘(--ui-radius-*). sm(기본)·md·lg, pill은 원·알약(아바타·배지 자리). */
   radius?: SkeletonRadius;
   /**
    * 텍스트 여러 줄 자리. 2 이상이면 줄 수만큼 막대를 쌓고 마지막 줄은 짧게 그린다.
