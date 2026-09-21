@@ -71,6 +71,12 @@
   background-color: var(--ui-color-bg);
 }
 
+/* 잠긴 채 선택됨 — Switch·Checkbox와 같은 규칙: muted로 채우고 점은 surface. */
+.radio[data-disabled][data-checked] {
+  border-color: var(--ui-color-text-muted);
+  background-color: var(--ui-color-text-muted);
+}
+
 /* 가운데 점: 선택됐을 때만 Base UI가 그린다. 지름 = 원 − 테두리 2 − 둘레 여백 4×2. */
 .dot {
   display: block;
@@ -80,9 +86,9 @@
   background-color: var(--ui-color-accent-fg);
 }
 
-/* 잠긴 채 선택됨이 읽혀야 한다 — 빈 원 위에 muted 점. */
+/* 비활성 선택 점은 muted 채움 위의 surface. */
 .dot[data-disabled] {
-  background-color: var(--ui-color-text-muted);
+  background-color: var(--ui-color-surface);
 }
 
 /*

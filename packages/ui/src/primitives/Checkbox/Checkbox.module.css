@@ -52,9 +52,11 @@
   color: var(--ui-color-text-muted);
 }
 
+/* 잠긴 채 선택됨 — Switch·Radio와 같은 규칙: muted로 채우고 인디케이터는 surface(대비 ≈4.8:1). */
 .box[data-disabled][data-checked],
 .box[data-disabled][data-indeterminate] {
-  background-color: var(--ui-color-border);
+  border-color: var(--ui-color-text-muted);
+  background-color: var(--ui-color-text-muted);
   color: var(--ui-color-surface);
 }
 
