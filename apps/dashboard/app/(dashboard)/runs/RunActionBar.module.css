@@ -23,7 +23,8 @@
   flex: 1;
 }
 
-/* 결과·오류 한 줄(빨강)과 진행 문구(회색). 비어 있으면 자리를 차지하지 않는다(role=status 영역은 항상 둔다). */
+/* 결과·오류 한 줄(빨강)과 진행 문구(회색). role=status 영역은 비어 있어도 트리에 남긴다 — display:none으로
+   빼면 live 영역이 문구가 바뀌기 전에 존재하지 않아 낭독이 불안정하다. 빈 <p>는 margin 0이라 높이 0. */
 .message,
 .busy {
   margin: 0;
@@ -36,11 +37,6 @@
 
 .busy {
   color: var(--ui-color-text-muted);
-}
-
-.message:empty,
-.busy:empty {
-  display: none;
 }
 
 .plan {
