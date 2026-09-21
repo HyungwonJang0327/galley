@@ -10,7 +10,7 @@ export interface SidebarItemProps {
   icon?: ReactNode;
   /** 항목 라벨. */
   label: string;
-  /** 우측 배지(대기 n·실행 중 등). */
+  /** 우측 배지(개수·상태 등). */
   badge?: ReactNode;
   /** 활성(현재 URL). 텍스트·아이콘 블루 + 연한 틴트 배경. */
   isActive?: boolean;

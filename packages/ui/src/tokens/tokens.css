@@ -26,15 +26,15 @@
   --ui-color-topbar-chip-hover: rgba(255, 255, 255, 0.16);
 
   /* 색 — 상태 배지(variant. 도메인 매핑은 앱에서) : 배경 + 텍스트 쌍 */
-  --ui-color-neutral-bg: #eef0f2; /* 회색 (후보) */
+  --ui-color-neutral-bg: #eef0f2; /* 회색 (중립) */
   --ui-color-neutral-fg: #4b5563;
-  --ui-color-info-bg: #eef0ff; /* 블루 (대기·실행 중) */
+  --ui-color-info-bg: #eef0ff; /* 블루 (진행·안내) */
   --ui-color-info-fg: #3b45c7;
-  --ui-color-warning-bg: #fef3e2; /* 주황 (승인 대기) */
+  --ui-color-warning-bg: #fef3e2; /* 주황 (주의) */
   --ui-color-warning-fg: #b45309;
-  --ui-color-success-bg: #e7f7ec; /* 초록 (완료) */
+  --ui-color-success-bg: #e7f7ec; /* 초록 (성공) */
   --ui-color-success-fg: #15803d;
-  --ui-color-danger-bg: #fdecec; /* 빨강 (실패) */
+  --ui-color-danger-bg: #fdecec; /* 빨강 (위험·오류) */
   --ui-color-danger-fg: #b91c1c;
   --ui-color-danger: #b91c1c; /* 채움(danger 버튼). 글자는 accent-fg를 같이 쓴다 */
   --ui-color-danger-hover: #991b1b;
