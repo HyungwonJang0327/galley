@@ -23,14 +23,23 @@
   flex: 1;
 }
 
-/* 결과·오류 한 줄. 비어 있으면 자리를 차지하지 않는다(role=status 영역은 항상 둔다). */
-.message {
+/* 결과·오류 한 줄(빨강)과 진행 문구(회색). 비어 있으면 자리를 차지하지 않는다(role=status 영역은 항상 둔다). */
+.message,
+.busy {
   margin: 0;
-  color: var(--ui-color-danger-fg);
   font-size: var(--ui-text-sm);
 }
 
-.message:empty {
+.message {
+  color: var(--ui-color-danger-fg);
+}
+
+.busy {
+  color: var(--ui-color-text-muted);
+}
+
+.message:empty,
+.busy:empty {
   display: none;
 }
 

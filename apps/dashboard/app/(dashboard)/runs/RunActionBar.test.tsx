@@ -30,10 +30,7 @@ function renderBar(enabled = true) {
   return render(<RunActionBar runId="r1" enabled={enabled} steps={STEPS} maxLength={2000} />);
 }
 
-/**
- * Dialog 안 버튼을 누른다. 열린 직후엔 transition pending으로 잠시 비활성이고 그 사이 노드가 바뀔 수
- * 있어, 매번 새로 찾아 활성일 때만 누른다(클릭은 조건이 다 맞은 뒤 한 번).
- */
+/** Dialog 안 버튼을 이름으로 찾아 누른다(열림 직후 노드가 바뀔 수 있어 매번 새로 찾는다). */
 async function clickDialogButton(name: string): Promise<void> {
   await waitFor(() => {
     const dialog = screen.getByRole('dialog');
@@ -204,5 +201,29 @@ describe('RunActionBar', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('승인 대기만'));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('API가 도는 동안 컨트롤이 비활성이고 status에 진행 문구가 뜬다(Dialog는 확인 즉시 닫힘)', async () => {
+    let finish: (value: unknown) => void = () => {};
+    approveRun.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderBar();
+
+    fireEvent.click(screen.getByRole('button', { name: '승인' }));
+    await screen.findByRole('dialog', { name: '승인할까요?' });
+    await clickDialogButton('승인');
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('요청하는 중'));
+    expect((screen.getByRole('button', { name: '승인' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '재실행' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    finish({ ok: true, data: { id: 'r1' } });
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('status').textContent).toBe('');
+    expect((screen.getByRole('button', { name: '승인' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
   });
 });
