@@ -1,3 +1,4 @@
+'use client';
 import { useId, useState, type ReactNode } from 'react';
 import styles from './TimelineItem.module.css';
 
