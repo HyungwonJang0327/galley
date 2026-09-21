@@ -10,6 +10,7 @@ export interface DialogProps {
   onOpenChange: (open: boolean) => void;
   /** 제목 = dialog의 접근성 이름. */
   title: string;
+  /** 한 줄 설명(<p> 안) — 인라인만. 표·목록 같은 블록은 children에. */
   description?: ReactNode;
   /** 본문. */
   children?: ReactNode;
