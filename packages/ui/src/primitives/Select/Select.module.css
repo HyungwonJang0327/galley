@@ -67,7 +67,7 @@
 
 /* Positioner는 위치만. 폭은 팝업이 정한다(트리거 폭에 묶지 않는다). */
 .positioner {
-  z-index: 1;
+  z-index: var(--ui-z-popup);
   outline: 0;
 }
 

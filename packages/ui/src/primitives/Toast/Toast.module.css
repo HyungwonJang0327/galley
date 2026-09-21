@@ -4,7 +4,7 @@
  */
 .viewport {
   position: fixed;
-  z-index: 2;
+  z-index: var(--ui-z-toast);
   display: flex;
   flex-direction: column;
   gap: var(--ui-space-2);

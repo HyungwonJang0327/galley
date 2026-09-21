@@ -1,6 +1,6 @@
 /* Positioner는 위치만. */
 .positioner {
-  z-index: 1;
+  z-index: var(--ui-z-popup);
   outline: 0;
 }
 

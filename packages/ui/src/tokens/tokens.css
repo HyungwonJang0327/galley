@@ -70,6 +70,11 @@
   --ui-duration-pulse-skeleton: 1.5s;
   --ui-pulse-play-state: running;
 
+  /* 층. 팝업(Menu·Select·Popover·Tooltip) < 토스트. Dialog는 z를 주지 않는다 — 포털 DOM 순서로 위에 오고,
+     모달 안에서 여는 Menu가 그 위에 떠야 하므로 z를 주면 어긋난다 */
+  --ui-z-popup: 1;
+  --ui-z-toast: 2;
+
   /* 라운드 */
   --ui-radius-sm: 6px;
   --ui-radius-md: 8px; /* 카드 8~12 */
