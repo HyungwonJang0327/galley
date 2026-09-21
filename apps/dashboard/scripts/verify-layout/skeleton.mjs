@@ -1,6 +1,6 @@
 // Skeleton 치수·모양·여러 줄·접근성 속성 실측.
 // 갤러리(/design) Skeleton 섹션의 data-demo("skeleton-shapes"·"skeleton-lines"·"skeleton-card"·"skeleton-flex")에 결합되어 있다 —
-// 갤러리를 바꾸면 여기도 맞춘다. 전제: shapes는 [sm 120×16, md 120×40, full 40×40] 순서, lines는 lines={3} 하나,
+// 갤러리를 바꾸면 여기도 맞춘다. 전제: shapes는 [sm 120×16, md 120×40, pill 40×40] 순서, lines는 lines={3} 하나,
 // card는 aria-busy 부모 안에 원 아바타 + 제목(40%) + lines={2}, flex는 [space-5 원 아바타, 폭 없는 Skeleton, 버튼] 행.
 
 export async function verifySkeleton(page) {
@@ -20,11 +20,11 @@ export async function verifySkeleton(page) {
         near(m.shapes[2].height, 40),
     ],
     [
-      `radius sm < md < full(원) (${m.shapes.map((s) => s.radius).join(' < ')})`,
+      `radius sm < md < pill(원) (${m.shapes.map((s) => s.radius).join(' < ')})`,
       m.shapes[0].radius < m.shapes[1].radius && m.shapes[1].radius < m.shapes[2].radius,
     ],
     [
-      `radius=full 정사각형은 원이다 (반지름 ${m.shapes[2].radius} ≥ 변 절반 ${m.shapes[2].height / 2})`,
+      `radius=pill 정사각형은 원이다 (반지름 ${m.shapes[2].radius} ≥ 변 절반 ${m.shapes[2].height / 2})`,
       m.shapes[2].radius >= m.shapes[2].height / 2,
     ],
     [

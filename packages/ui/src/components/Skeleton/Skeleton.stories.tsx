@@ -9,7 +9,7 @@ export default meta;
 
 export const Text = { args: { width: 240 } };
 export const Lines = { args: { lines: 3 } };
-export const Circle = { args: { radius: 'full', width: 40, height: 40 } };
+export const Circle = { args: { radius: 'pill', width: 40, height: 40 } };
 export const Block = { args: { radius: 'md', width: '100%', height: 120 } };
 
 /**
@@ -25,7 +25,7 @@ export const LoadingCard = {
         불러오는 중
       </span>
       <div aria-busy="true" style={{ display: 'flex', gap: 'var(--ui-space-3)' }}>
-        <Skeleton radius="full" width={40} height={40} />
+        <Skeleton radius="pill" width={40} height={40} />
         <div
           style={{
             flex: 1,

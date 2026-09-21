@@ -231,13 +231,13 @@ export default function DesignPage() {
           <h2 className={styles.sectionTitle}>Skeleton</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>
-              radius sm(기본)·md·full — width·height는 CSS 값(토큰 우선), 숫자(px)는 토큰에 없는
+              radius sm(기본)·md·lg·pill — width·height는 CSS 값(토큰 우선), 숫자(px)는 토큰에 없는
               치수일 때만. 전부 aria-hidden
             </span>
             <div className={styles.row} data-demo="skeleton-shapes">
               <Skeleton width={120} height={16} />
               <Skeleton radius="md" width={120} height={40} />
-              <Skeleton radius="full" width={40} height={40} />
+              <Skeleton radius="pill" width={40} height={40} />
             </div>
           </div>
           <div className={styles.group}>
@@ -246,7 +246,7 @@ export default function DesignPage() {
               않는다
             </span>
             <div className={styles.loadingRow} data-demo="skeleton-flex">
-              <Skeleton radius="full" width="var(--ui-space-5)" height="var(--ui-space-5)" />
+              <Skeleton radius="pill" width="var(--ui-space-5)" height="var(--ui-space-5)" />
               <Skeleton />
               <Button variant="secondary" size="sm" className={styles.noShrink}>
                 버튼
@@ -272,7 +272,7 @@ export default function DesignPage() {
                 불러오는 중
               </span>
               <div className={styles.loadingCard} aria-busy="true" data-demo="skeleton-card">
-                <Skeleton radius="full" width={40} height={40} />
+                <Skeleton radius="pill" width={40} height={40} />
                 <div className={styles.loadingBody}>
                   <Skeleton width="40%" height="var(--ui-text-h2)" />
                   <Skeleton lines={2} />

@@ -61,9 +61,11 @@ describe('Skeleton', () => {
     const sm = screen.getByTestId('s').className;
     rerender(<Skeleton data-testid="s" radius="md" />);
     const md = screen.getByTestId('s').className;
-    rerender(<Skeleton data-testid="s" radius="full" />);
-    const full = screen.getByTestId('s').className;
-    expect(new Set([sm, md, full]).size).toBe(3);
+    rerender(<Skeleton data-testid="s" radius="pill" />);
+    const pill = screen.getByTestId('s').className;
+    rerender(<Skeleton data-testid="s" radius="lg" />);
+    const lg = screen.getByTestId('s').className;
+    expect(new Set([sm, md, lg, pill]).size).toBe(4);
   });
 
   it('lines가 2 이상이면 줄 수만큼 막대를 쌓고 마지막만 짧은 클래스를 받는다', () => {
@@ -93,11 +95,11 @@ describe('Skeleton', () => {
     const { rerender } = render(<Skeleton data-testid="s" lines={2} />);
     const root = screen.getByTestId('s');
     const smBar = root.children[0]!.className;
-    rerender(<Skeleton data-testid="s" lines={2} radius="full" />);
-    const fullBar = root.children[0]!.className;
-    expect(fullBar).not.toBe(smBar);
-    expect(root.children[1]!.className).toContain(fullBar.split(' ')[1]!);
-    expect(root.className).not.toContain(fullBar.split(' ')[1]!);
+    rerender(<Skeleton data-testid="s" lines={2} radius="pill" />);
+    const pillBar = root.children[0]!.className;
+    expect(pillBar).not.toBe(smBar);
+    expect(root.children[1]!.className).toContain(pillBar.split(' ')[1]!);
+    expect(root.className).not.toContain(pillBar.split(' ')[1]!);
   });
 
   it('여러 줄 루트에는 width·height 인라인이 없다(각 줄에만)', () => {
