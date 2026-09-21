@@ -13,8 +13,8 @@ describe('ActionBar', () => {
     expect(screen.getByRole('button', { name: '승인' })).toBeTruthy();
   });
 
-  it('label을 주면 group으로 노출한다', () => {
-    render(<ActionBar label="하단 바">내용</ActionBar>);
+  it('aria-label을 주면 group으로 노출한다', () => {
+    render(<ActionBar aria-label="하단 바">내용</ActionBar>);
     expect(screen.getByRole('group', { name: '하단 바' })).toBeTruthy();
   });
 

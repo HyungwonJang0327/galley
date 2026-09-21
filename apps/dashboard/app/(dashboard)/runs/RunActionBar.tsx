@@ -166,7 +166,7 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
   return (
     <>
       <ActionBar
-        label="수정 지시"
+        aria-label="수정 지시"
         actions={
           <>
             <Button

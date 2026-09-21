@@ -45,8 +45,8 @@ describe('ToastProvider + useToast', () => {
     expect(screen.getByRole('region', { name: '알림' })).toBeTruthy();
   });
 
-  it('label로 뷰포트 이름을 바꿀 수 있다', () => {
-    setup(null, { label: 'Notifications' });
+  it('aria-label로 뷰포트 이름을 바꿀 수 있다', () => {
+    setup(null, { 'aria-label': 'Notifications' });
     expect(screen.getByRole('region', { name: 'Notifications' })).toBeTruthy();
   });
 
