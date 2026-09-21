@@ -17,7 +17,7 @@
 
 - **사람이 검수하는 파이프라인** — "AI가 글을 쓴다"가 아니라 큐·상태·승인 게이트로 초안 흐름을 지휘한다.
 - **경계로 배포 가능성 유지** — 파일 I/O는 `Storage`, DB는 접근 계층, 실행은 `@galley/pipeline` 뒤. 로컬 우선이되 나중을 막지 않는다.
-- **디자인 시스템 분리** — `galley-ui`는 Base UI 위 자체 토큰·컴포넌트. 도메인 무지, 독립 배포 예정.
+- **디자인 시스템 분리** — `galley-ui`는 Base UI 위 자체 토큰·컴포넌트. 도메인 무지, npm 패키지 [`galley-ui`](./packages/ui/README.md)로 이 모노레포에서 배포(decisions/ui-repo-split.md).
 - **클린룸** — 회사 코드를 보지 않고 정보 구조만 참고해 다시 설계한다.
 
 ## 스택
@@ -28,7 +28,7 @@ pnpm 모노레포 · Next.js App Router · TypeScript(strict) · Base UI + CSS M
 
 ```
 apps/dashboard      Next.js 앱 (galley-ui 첫 소비자)
-packages/ui         galley-ui — 자체 디자인 시스템 (독립 배포 예정)
+packages/ui         galley-ui — 자체 디자인 시스템 (npm `galley-ui`로 배포, packages/ui/README.md)
 packages/pipeline   @galley/pipeline — 단계 실행·상태머신·모델 어댑터·Storage (서버 전용)
 ```
 
