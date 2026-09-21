@@ -12,4 +12,9 @@ describe('PageHeader', () => {
     render(<PageHeader title="제목" actions={<button>액션</button>} />);
     expect(screen.getByRole('button', { name: '액션' })).toBeTruthy();
   });
+
+  it('className을 루트 header에 병합한다', () => {
+    render(<PageHeader title="제목" className="own" />);
+    expect(screen.getByRole('banner').className).toContain('own');
+  });
 });
