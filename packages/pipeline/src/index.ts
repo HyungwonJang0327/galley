@@ -175,3 +175,26 @@ export type {
   RedactHit,
   RedactResult,
 } from './evidence/redact.ts';
+export { INDEX_LIMITS, INDEX_IGNORE } from './index/limits.ts';
+export type { IndexLimits } from './index/limits.ts';
+export { planAreas, describeTree, isIgnoredPath } from './index/tree.ts';
+export type { TreeFile, AreaFile, AreaPlan, TreeSummary } from './index/tree.ts';
+export { gitHead, gitListFiles, gitShowFile } from './index/gitRead.ts';
+export type { GitFailure, GitResult } from './index/gitRead.ts';
+export { analyzeArea } from './index/areaAnalysis.ts';
+export type {
+  AreaAnalysisInput,
+  AreaAnalysisDraft,
+  AreaAnalysisFailure,
+  AreaAnalysisResult,
+  AreaFileContent,
+} from './index/areaAnalysis.ts';
+export { upsertRepoAnalysis } from './index/repoAnalysisRepo.ts';
+export type { AnalysisDraft, UpsertAnalysisResult } from './index/repoAnalysisRepo.ts';
+export { indexRepoAreas } from './index/indexRepoAreas.ts';
+export type {
+  IndexAreasInput,
+  IndexAreasReport,
+  IndexAreasFailure,
+  IndexAreasResult,
+} from './index/indexRepoAreas.ts';
