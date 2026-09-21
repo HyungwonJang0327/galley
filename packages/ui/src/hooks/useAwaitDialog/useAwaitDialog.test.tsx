@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { useAwaitDialog } from './useAwaitDialog';
-import type { AwaitDialogRender } from './useAwaitDialog';
+import type { AwaitDialogRender, AwaitDialogRenderProps } from './useAwaitDialog';
 import { Dialog } from '../../primitives/Dialog';
 
 type Pick = 'a' | 'b' | 'cancel';
@@ -153,5 +154,52 @@ describe('useAwaitDialog', () => {
     expect(seen).toContain(true);
     await click('A');
     await waitFor(() => expect(seen.at(-1)).toBe(false));
+  });
+
+  it('새로 열면 렌더 함수가 돌려준 컴포넌트의 상태가 초기화된다(이전 세션 입력이 남지 않는다)', async () => {
+    function NameDialog({ open, onOpenChange, resolve, cancel }: AwaitDialogRenderProps<Pick>) {
+      const [value, setValue] = useState('');
+      return (
+        <Dialog
+          open={open}
+          onOpenChange={onOpenChange}
+          title="고르세요"
+          footer={
+            <>
+              <button type="button" onClick={cancel}>
+                취소
+              </button>
+              <button type="button" onClick={() => resolve('a')}>
+                A
+              </button>
+            </>
+          }
+        >
+          <input aria-label="이름" value={value} onChange={(e) => setValue(e.target.value)} />
+        </Dialog>
+      );
+    }
+    const results: Pick[] = [];
+    render(<Consumer results={results} render={(props) => <NameDialog {...props} />} />);
+    await openDialog();
+    fireEvent.change(screen.getByLabelText('이름'), { target: { value: '버린 초안' } });
+    expect((screen.getByLabelText('이름') as HTMLInputElement).value).toBe('버린 초안');
+    await click('취소');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await openDialog();
+    expect((screen.getByLabelText('이름') as HTMLInputElement).value).toBe('');
+  });
+
+  it('언마운트된 뒤 stale 클로저로 open하면 바로 cancel로 끝난다(영원히 pending 아님)', async () => {
+    let openFn: ((render: AwaitDialogRender<Pick>) => Promise<Pick>) | null = null;
+    function Leak() {
+      const { open, element } = useAwaitDialog<Pick>('cancel');
+      openFn = open;
+      return <>{element}</>;
+    }
+    const { unmount } = render(<Leak />);
+    unmount();
+    expect(openFn).not.toBeNull();
+    await expect(openFn!(pickRender)).resolves.toBe('cancel');
   });
 });
