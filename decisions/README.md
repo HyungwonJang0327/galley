@@ -43,6 +43,7 @@
 - layout — 대시보드 레이아웃 스펙
 - navigation — 사이드바·TopBar IA(사용 흐름 순), 워크스페이스 제거
 - ui-package-boundary — galley-ui 경계 규칙
+- confirm-dialog-usage — useConfirm 사용 규칙 6개(버튼 md·확인 즉시 닫힘·children 옵션·Provider 보류·축약 없음·useAlert 추가) — P4-11
 - package-name — npm 배포명 `galley-ui`(unscoped, `@galley` 스코프는 선점됨), 워크스페이스명도 통일
 - ui-repo-split — galley-ui는 모노레포에서 `packages/ui`째로 배포(git 리포 분리 안 함, `repository.directory`). 재검토 신호·오픈소스 상태 미결 2건
 - server-only-boundary — pipeline 값을 쓰는 대시보드 파일은 `import 'server-only'`(클라 번들 유입을 빌드 실패로)
