@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { RunActionBar } from './RunActionBar';
 
 const { refresh, push, approveRun, planRerun, reviseRun } = vi.hoisted(() => ({
@@ -30,18 +30,14 @@ function renderBar(enabled = true) {
   return render(<RunActionBar runId="r1" enabled={enabled} steps={STEPS} maxLength={2000} />);
 }
 
-/** Dialog 안 버튼을 이름으로 찾아 누른다(열림 직후 노드가 바뀔 수 있어 매번 새로 찾는다). */
+/** Dialog 안 버튼을 이름으로 찾아 누른다. */
 async function clickDialogButton(name: string): Promise<void> {
-  await waitFor(() => {
-    const dialog = screen.getByRole('dialog');
-    const button = [...dialog.querySelectorAll('button')].find(
-      (b) => b.textContent?.trim() === name,
-    );
-    expect(button).toBeTruthy();
-    expect(button!.disabled).toBe(false);
-    fireEvent.click(button!);
-  });
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('button', { name }));
 }
+
+const isDisabled = (name: string) =>
+  (screen.getByRole('button', { name }) as HTMLButtonElement).disabled;
 
 const type = (text: string) =>
   fireEvent.change(screen.getByRole('textbox', { name: '수정 지시 입력' }), {
@@ -140,6 +136,7 @@ describe('RunActionBar', () => {
       expect(screen.getByRole('status').textContent).toBe('수정 지시가 너무 깁니다.'),
     );
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(isDisabled('재실행')).toBe(false);
   });
 
   it('revise가 실패하면 Dialog를 닫고 메시지를 보여준다(이동하지 않는다)', async () => {
@@ -157,6 +154,7 @@ describe('RunActionBar', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('최신 시도에서만'));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(push).not.toHaveBeenCalled();
+    expect(isDisabled('재실행')).toBe(false);
   });
 
   it('승인: 확인 Dialog를 거쳐야 API를 부르고, 성공이면 화면을 다시 그린다', async () => {
@@ -201,6 +199,7 @@ describe('RunActionBar', () => {
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('승인 대기만'));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(refresh).not.toHaveBeenCalled();
+    expect(isDisabled('승인')).toBe(false);
   });
 
   it('API가 도는 동안 컨트롤이 비활성이고 status에 진행 문구가 뜬다(Dialog는 확인 즉시 닫힘)', async () => {
@@ -261,5 +260,33 @@ describe('RunActionBar', () => {
     finishRevise({ ok: true, data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN } });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('재실행 경로: 계획 확인 중·요청 중 두 문구가 차례로 뜨고 그동안 컨트롤이 비활성이다', async () => {
+    let finishPlan: (value: unknown) => void = () => {};
+    let finishRevise: (value: unknown) => void = () => {};
+    planRerun.mockReturnValue(new Promise((resolve) => (finishPlan = resolve)));
+    reviseRun.mockReturnValue(new Promise((resolve) => (finishRevise = resolve)));
+    renderBar();
+
+    type('지시');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toContain('계획을 확인하는 중'),
+    );
+    expect(isDisabled('재실행')).toBe(true);
+    expect(isDisabled('승인')).toBe(true);
+
+    finishPlan({ ok: true, data: PLAN });
+    await screen.findByRole('dialog', { name: '다시 실행할까요?' });
+    // 모달이 열린 동안 바깥 live 영역은 aria-hidden — 조회만 hidden으로
+    expect(screen.getByRole('status', { hidden: true }).textContent).toBe('');
+    await clickDialogButton('재실행');
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('요청하는 중'));
+    expect(isDisabled('재실행')).toBe(true);
+
+    finishRevise({ ok: true, data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN } });
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/runs?tab=active&id=r2'));
   });
 });
