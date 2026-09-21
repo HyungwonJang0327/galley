@@ -55,4 +55,9 @@ describe('ListToolbarTab', () => {
     const el = screen.getByRole('button', { name: '첫째' });
     expect(el.className).toContain('own');
   });
+
+  it('href를 주면 링크(role=link)로 렌더한다', () => {
+    render(<ListToolbarTab label="첫째" href="/list?tab=a" />);
+    expect(screen.getByRole('link', { name: '첫째' }).getAttribute('href')).toBe('/list?tab=a');
+  });
 });

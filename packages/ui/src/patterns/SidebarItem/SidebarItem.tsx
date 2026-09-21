@@ -17,7 +17,9 @@ export interface SidebarItemProps {
   /** 접힘: 아이콘만, 라벨은 title로. */
   collapsed?: boolean;
   className?: string;
-  /** 링크/버튼 요소(예: Next <Link href />). 미지정 시 <a>. */
+  /** 링크 주소. 라우터 링크가 필요하면 render를 쓴다. render나 href 중 하나는 있어야 키보드로 닿는다. */
+  href?: string;
+  /** 링크/버튼 요소(예: Next <Link href />). href보다 우선. 둘 다 없으면 href 없는 <a>(포커스 불가). */
   render?: RenderElement;
 }
 
@@ -28,6 +30,7 @@ export function SidebarItem({
   isActive,
   collapsed,
   className,
+  href,
   render,
 }: SidebarItemProps) {
   const content = (
@@ -61,5 +64,9 @@ export function SidebarItem({
   if (render && isValidElement(render)) {
     return cloneElement(render, props, content);
   }
-  return <a {...props}>{content}</a>;
+  return (
+    <a {...props} href={href}>
+      {content}
+    </a>
+  );
 }

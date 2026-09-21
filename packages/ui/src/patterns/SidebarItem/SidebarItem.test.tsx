@@ -30,4 +30,9 @@ describe('SidebarItem', () => {
     const el = screen.getByRole('button', { name: '큐' });
     expect(el.className).toContain('own');
   });
+
+  it('href를 주면 링크(role=link)로 렌더한다', () => {
+    render(<SidebarItem label="항목" href="/items" />);
+    expect(screen.getByRole('link', { name: '항목' }).getAttribute('href')).toBe('/items');
+  });
 });
