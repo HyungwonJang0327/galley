@@ -53,4 +53,29 @@ describe('Button', () => {
 
     expect(screen.getByTestId('link').className).toContain('own');
   });
+
+  it('render 경로에서 onClick·aria-label 같은 나머지 props가 요소에 전달되고 핸들러는 둘 다 불린다', () => {
+    const onButton = vi.fn();
+    const onLink = vi.fn();
+    render(
+      <Button
+        aria-label="큐로"
+        data-testid="link"
+        onClick={onButton}
+        render={<a href="/queue" onClick={onLink} />}
+      >
+        큐
+      </Button>,
+    );
+    const link = screen.getByRole('link', { name: '큐로' });
+    fireEvent.click(link);
+    expect(onButton).toHaveBeenCalledOnce();
+    expect(onLink).toHaveBeenCalledOnce();
+    expect(link.getAttribute('data-testid')).toBe('link');
+  });
+
+  it('일반 button에도 className을 병합한다', () => {
+    render(<Button className="own">x</Button>);
+    expect(screen.getByRole('button').className).toContain('own');
+  });
 });
