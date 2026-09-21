@@ -105,7 +105,7 @@ describe('useAwaitDialog', () => {
     const results: Pick[] = [];
     render(<Consumer results={results} />);
     await openDialog();
-    await click('닫기');
+    await click('Close');
     await waitFor(() => expect(results).toEqual(['cancel']));
     await openDialog();
     await click('취소');

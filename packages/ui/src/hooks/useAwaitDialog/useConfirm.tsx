@@ -13,10 +13,12 @@ export interface ConfirmOptions {
   /** 질문 한 줄 — dialog의 접근성 이름. */
   title: string;
   description?: ReactNode;
-  /** 기본 '확인'. */
+  /** 기본 'Confirm'. */
   confirmLabel?: string;
-  /** 기본 '취소'. */
+  /** 기본 'Cancel'. */
   cancelLabel?: string;
+  /** 우상단 닫기 버튼 접근성 이름. 기본 'Close'. */
+  closeLabel?: string;
   /** danger면 확인 버튼이 빨강이고 초기 포커스는 취소에(Enter가 곧 실행이 되지 않게). 기본 default(확인에 포커스). */
   tone?: ConfirmTone;
   /** 본문(Dialog의 children 슬롯). description은 <p>라 표·목록 같은 블록은 여기에. */
@@ -42,8 +44,9 @@ export function useConfirm(): UseConfirmReturn {
     ({
       title,
       description,
-      confirmLabel = '확인',
-      cancelLabel = '취소',
+      confirmLabel = 'Confirm',
+      cancelLabel = 'Cancel',
+      closeLabel,
       tone = 'default',
       children,
     }: ConfirmOptions) =>
@@ -53,6 +56,7 @@ export function useConfirm(): UseConfirmReturn {
           onOpenChange={onOpenChange}
           title={title}
           description={description}
+          closeLabel={closeLabel}
           // 초기 포커스(APG): 위험한 액션은 취소 버튼, 아니면 확인 버튼.
           initialFocus={tone === 'danger' ? cancelButton : confirmButton}
           footer={

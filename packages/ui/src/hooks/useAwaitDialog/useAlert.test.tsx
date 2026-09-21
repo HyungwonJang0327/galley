@@ -38,8 +38,8 @@ describe('useAlert', () => {
     await click('알리기');
     await screen.findByRole('dialog', { name: '저장했습니다' });
     expect(screen.getByText('큐로 돌아갑니다.')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '취소' })).toBeNull();
-    const confirm = screen.getByRole('button', { name: '확인' });
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+    const confirm = screen.getByRole('button', { name: 'OK' });
     await waitFor(() => expect(document.activeElement).toBe(confirm));
   });
 
@@ -48,7 +48,7 @@ describe('useAlert', () => {
     render(<Consumer options={{ title: '안내' }} done={() => void count++} />);
     await click('알리기');
     await screen.findByRole('dialog');
-    await click('확인');
+    await click('OK');
     await waitFor(() => expect(count).toBe(1));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 
@@ -61,7 +61,7 @@ describe('useAlert', () => {
 
     await click('알리기');
     await screen.findByRole('dialog');
-    await click('닫기');
+    await click('Close');
     await waitFor(() => expect(count).toBe(3));
   });
 

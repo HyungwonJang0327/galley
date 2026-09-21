@@ -38,7 +38,7 @@ describe('Dialog', () => {
         본문
       </Dialog>,
     );
-    fireEvent.click(screen.getByRole('button', { name: '닫기' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -86,7 +86,7 @@ describe('Dialog', () => {
       />,
     );
     await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: '닫기' })),
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' })),
     );
     unmount();
     const ref = createRef<HTMLButtonElement>();

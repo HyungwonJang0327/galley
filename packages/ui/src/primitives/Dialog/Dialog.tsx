@@ -17,7 +17,7 @@ export interface DialogProps {
   footer?: ReactNode;
   /** 열기 버튼 요소(예: <Button />). 미지정 시 앱이 onOpenChange(true)로 연다. */
   trigger?: ReactElement;
-  /** 우상단 닫기 버튼 접근성 이름. */
+  /** 우상단 닫기 버튼 접근성 이름. 기본 'Close' — 한국어 앱은 '닫기'를 넘긴다. */
   closeLabel?: string;
   /**
    * 열릴 때 포커스를 둘 요소. 기본은 popup 안 첫 tabbable(= 우상단 닫기 버튼). 확인 다이얼로그는
@@ -37,7 +37,7 @@ export function Dialog({
   children,
   footer,
   trigger,
-  closeLabel = '닫기',
+  closeLabel = 'Close',
   initialFocus,
   className,
 }: DialogProps) {

@@ -42,7 +42,7 @@ afterEach(() => {
 describe('ToastProvider + useToast', () => {
   it('뷰포트는 role="region"이고 label이 접근성 이름이다(기본 "알림")', () => {
     setup(null);
-    expect(screen.getByRole('region', { name: '알림' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Notifications' })).toBeTruthy();
   });
 
   it('aria-label로 뷰포트 이름을 바꿀 수 있다', () => {
@@ -55,7 +55,7 @@ describe('ToastProvider + useToast', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await click(screen.getByRole('button', { name: '띄우기' }));
     const toast = await screen.findByRole('dialog', { name: '저장했습니다' });
-    expect(screen.getByRole('region', { name: '알림' }).contains(toast)).toBe(true);
+    expect(screen.getByRole('region', { name: 'Notifications' }).contains(toast)).toBe(true);
     expect(toast.textContent).toContain('방금 전');
   });
 
@@ -107,11 +107,11 @@ describe('ToastProvider + useToast', () => {
 
   // Base UI는 닫기 버튼을 뷰포트가 펼쳐지기(hover·포커스) 전까지 aria-hidden으로 둔다 —
   // 보조 기술 사용자는 Esc·F6으로 다룬다. aria-hidden 요소는 role+name으로 못 찾으니 aria-label로 찾는다.
-  it('닫기 버튼(closeLabel, 기본 "닫기")을 누르면 사라진다', async () => {
+  it('닫기 버튼(closeLabel, 기본 "Close")을 누르면 사라진다', async () => {
     setup(<Fire title="제목" />);
     await click(screen.getByRole('button', { name: '띄우기' }));
     const toast = await screen.findByRole('dialog', { name: '제목' });
-    await click(screen.getByLabelText('닫기'));
+    await click(screen.getByLabelText('Close'));
     await waitFor(() => expect(toast.isConnected).toBe(false));
   });
 
@@ -126,10 +126,10 @@ describe('ToastProvider + useToast', () => {
     setup(<Fire title="제목" />);
     await click(screen.getByRole('button', { name: '띄우기' }));
     await screen.findByRole('dialog', { name: '제목' });
-    const close = screen.getByLabelText('닫기');
+    const close = screen.getByLabelText('Close');
     expect(close.getAttribute('aria-hidden')).toBe('true');
     await act(async () => {
-      fireEvent.mouseEnter(screen.getByRole('region', { name: '알림' }));
+      fireEvent.mouseEnter(screen.getByRole('region', { name: 'Notifications' }));
     });
     await waitFor(() => expect(close.getAttribute('aria-hidden')).not.toBe('true'));
   });
@@ -242,7 +242,7 @@ describe('ToastProvider + useToast', () => {
     setup(<Fire title="제목" />);
     await click(screen.getByRole('button', { name: '띄우기' }));
     await screen.findByRole('dialog', { name: '제목' });
-    const region = screen.getByRole('region', { name: '알림' });
+    const region = screen.getByRole('region', { name: 'Notifications' });
     await act(async () => {
       fireEvent.keyDown(window, { key: 'F6' });
     });
@@ -261,7 +261,7 @@ describe('ToastProvider + useToast', () => {
     vi.useFakeTimers();
     setup(<Fire title="잠깐" duration={1000} />);
     await click(screen.getByRole('button', { name: '띄우기' }));
-    const region = screen.getByRole('region', { name: '알림' });
+    const region = screen.getByRole('region', { name: 'Notifications' });
     await act(async () => {
       fireEvent.mouseEnter(region);
     });
@@ -284,9 +284,9 @@ describe('ToastProvider + useToast', () => {
 
   it('position에 따라 뷰포트 클래스가 달라진다', () => {
     const { unmount } = setup(null);
-    const top = screen.getByRole('region', { name: '알림' }).className;
+    const top = screen.getByRole('region', { name: 'Notifications' }).className;
     unmount();
     setup(null, { position: 'bottom-right' });
-    expect(screen.getByRole('region', { name: '알림' }).className).not.toBe(top);
+    expect(screen.getByRole('region', { name: 'Notifications' }).className).not.toBe(top);
   });
 });

@@ -19,9 +19,9 @@ export interface ToastProviderProps {
   limit?: number;
   /** 자동 닫힘까지 ms. 0이면 자동으로 닫지 않는다. `toast({ duration })`이 우선. 기본 5000. */
   timeout?: number;
-  /** 뷰포트(role="region")의 접근성 이름. F6으로 여기로 포커스가 온다. */
+  /** 뷰포트(role="region")의 접근성 이름. F6으로 여기로 포커스가 온다. 기본 'Notifications'. */
   'aria-label'?: string;
-  /** 각 토스트 닫기 버튼의 접근성 이름. */
+  /** 각 토스트 닫기 버튼의 접근성 이름. 기본 'Close'. */
   closeLabel?: string;
 }
 
@@ -38,8 +38,8 @@ export function ToastProvider({
   position = 'top-right',
   limit = 3,
   timeout = 5000,
-  'aria-label': ariaLabel = '알림',
-  closeLabel = '닫기',
+  'aria-label': ariaLabel = 'Notifications',
+  closeLabel = 'Close',
 }: ToastProviderProps) {
   const [manager] = useState(createBufferedToastManager);
   const viewportClass = [styles.viewport, styles[position]].join(' ');
