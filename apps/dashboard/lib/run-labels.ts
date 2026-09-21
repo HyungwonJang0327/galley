@@ -1,8 +1,8 @@
-// 실행·단계 상태(DB 영어 값) → 화면 한국어 라벨·Badge variant·TimelineStatus.
+// 실행·단계 상태(DB 영어 값) → 화면 한국어 라벨·Badge tone·TimelineStatus.
 // 어휘는 pipeline 상태 머신이 소유하고, 여기서는 표시만 붙인다(decisions/db-value-language.md).
-// ui는 variant·status 이름만 알고 "승인 대기"를 모른다(decisions/ui-package-boundary.md).
+// ui는 tone·status 이름만 알고 "승인 대기"를 모른다(decisions/ui-package-boundary.md).
 import 'server-only';
-import type { BadgeProps, TimelineStatus } from 'galley-ui';
+import type { BadgeTone, TimelineStatus } from 'galley-ui';
 import {
   isRunStatus,
   isStepName,
@@ -14,8 +14,6 @@ import {
   type StepName,
   type StepStatus,
 } from '@galley/pipeline';
-
-type BadgeVariant = NonNullable<BadgeProps['variant']>;
 
 // ── 검수 상태 ────────────────────────────────────────────────────────────────
 
@@ -30,7 +28,7 @@ const RUN_STATUS_LABEL: Record<RunStatus, string> = {
 };
 
 // decisions/layout.md §5: 진행 블루 / 승인 대기 주황 / 완료 초록 / 실패 빨강 / 종결된 옛 시도 회색
-const RUN_STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
+const RUN_STATUS_TONE: Record<RunStatus, BadgeTone> = {
   running: 'info',
   pendingApproval: 'warning',
   done: 'success',
@@ -40,17 +38,17 @@ const RUN_STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
 
 export interface RunStatusBadge {
   label: string;
-  variant: BadgeVariant;
+  tone: BadgeTone;
   /** 실행 중만 펄스 점. */
   pulse: boolean;
 }
 
 /** 모르는 값(스키마엔 enum이 없다)은 값 그대로 회색으로 — 화면이 죽지 않는다. */
 export function runStatusBadge(status: string): RunStatusBadge {
-  if (!isRunStatus(status)) return { label: status, variant: 'neutral', pulse: false };
+  if (!isRunStatus(status)) return { label: status, tone: 'neutral', pulse: false };
   return {
     label: RUN_STATUS_LABEL[status],
-    variant: RUN_STATUS_VARIANT[status],
+    tone: RUN_STATUS_TONE[status],
     pulse: status === RUN_STATUS.running,
   };
 }

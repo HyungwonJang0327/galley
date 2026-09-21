@@ -6,6 +6,7 @@ import {
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { GripVertical } from 'lucide-react';
 import { Badge, ListRow, ListRows } from 'galley-ui';
+import type { BadgeTone } from 'galley-ui';
 import type { MoveQueueTopicInput, QueueStatus, ReorderQueueTopicInput } from '@galley/pipeline';
 import { buildReorderInput, type DropEdge } from '../../../lib/queue-drag';
 import type { QueueMoveResult } from '../../../lib/queue-move';
@@ -20,12 +21,12 @@ import styles from './DraggableQueueRows.module.css';
 interface Props {
   rows: QueueRowView[];
   status: QueueStatus;
-  badgeVariant: 'neutral' | 'info' | 'warning' | 'success' | 'danger';
+  badgeTone: BadgeTone;
   move: (input: MoveQueueTopicInput) => Promise<QueueMoveResult>;
   reorder: (input: ReorderQueueTopicInput) => Promise<QueueReorderResult>;
 }
 
-export function DraggableQueueRows({ rows, status, badgeVariant, move, reorder }: Props) {
+export function DraggableQueueRows({ rows, status, badgeTone, move, reorder }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
 
@@ -42,7 +43,7 @@ export function DraggableQueueRows({ rows, status, badgeVariant, move, reorder }
             key={`${row.index}-${row.title}`}
             row={row}
             status={status}
-            badgeVariant={badgeVariant}
+            badgeTone={badgeTone}
             isDragging={dragging === row.index}
             onDragStateChange={(active) => setDragging(active ? row.index : null)}
             onDrop={async (source, edge) => {
@@ -64,7 +65,7 @@ export function DraggableQueueRows({ rows, status, badgeVariant, move, reorder }
 function DraggableRow({
   row,
   status,
-  badgeVariant,
+  badgeTone,
   isDragging,
   onDragStateChange,
   onDrop,
@@ -72,7 +73,7 @@ function DraggableRow({
 }: {
   row: QueueRowView;
   status: QueueStatus;
-  badgeVariant: Props['badgeVariant'];
+  badgeTone: Props['badgeTone'];
   isDragging: boolean;
   onDragStateChange: (active: boolean) => void;
   onDrop: (source: { index: number; title: string }, edge: DropEdge) => void;
@@ -148,7 +149,7 @@ function DraggableRow({
       }
       title={row.title}
       meta={row.meta}
-      trailing={<Badge variant={badgeVariant}>{status}</Badge>}
+      trailing={<Badge tone={badgeTone}>{status}</Badge>}
       actions={<QueueRowMenu title={row.title} status={status} index={row.index} move={move} />}
     />
   );

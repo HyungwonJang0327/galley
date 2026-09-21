@@ -358,7 +358,7 @@ export function SplitPaneDemo() {
         detailLabel="상세 영역"
         header={
           <div className={styles.pad}>
-            <strong>항목 제목</strong> <Badge variant="warning">상태</Badge>
+            <strong>항목 제목</strong> <Badge tone="warning">상태</Badge>
           </div>
         }
         footer={
@@ -383,7 +383,7 @@ export function SplitPaneDemo() {
                 key={i}
                 title={`항목 ${i + 1}`}
                 meta="보조 · 텍스트"
-                trailing={<Badge variant={i === 0 ? 'info' : 'neutral'}>상태</Badge>}
+                trailing={<Badge tone={i === 0 ? 'info' : 'neutral'}>상태</Badge>}
                 isActive={i === 0}
               />
             ))}
@@ -409,7 +409,7 @@ export function SplitPaneDemo() {
             statusLabel="완료"
             title="둘째 줄"
             meta="8초 · 900 토큰"
-            trailing={<Badge variant="success">완료</Badge>}
+            trailing={<Badge tone="success">완료</Badge>}
           />
           <TimelineItem
             status="active"
@@ -417,7 +417,7 @@ export function SplitPaneDemo() {
             title="셋째 줄"
             meta="진행 중"
             trailing={
-              <Badge variant="info" pulse>
+              <Badge tone="info" pulse>
                 진행
               </Badge>
             }
@@ -427,7 +427,7 @@ export function SplitPaneDemo() {
             statusLabel="실패"
             title="넷째 줄"
             meta="3초 · 오류"
-            trailing={<Badge variant="danger">실패</Badge>}
+            trailing={<Badge tone="danger">실패</Badge>}
           />
           <TimelineItem status="pending" statusLabel="대기" title="다섯째 줄" meta="대기" />
           <TimelineItem status="pending" statusLabel="대기" title="여섯째 줄" meta="대기" />

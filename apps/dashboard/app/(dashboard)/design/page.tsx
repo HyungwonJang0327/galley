@@ -115,20 +115,20 @@ export default function DesignPage() {
           <div className={styles.group}>
             <span className={styles.groupLabel}>variant</span>
             <div className={styles.row}>
-              <Badge variant="neutral">neutral</Badge>
-              <Badge variant="info">info</Badge>
-              <Badge variant="warning">warning</Badge>
-              <Badge variant="success">success</Badge>
-              <Badge variant="danger">danger</Badge>
+              <Badge tone="neutral">neutral</Badge>
+              <Badge tone="info">info</Badge>
+              <Badge tone="warning">warning</Badge>
+              <Badge tone="success">success</Badge>
+              <Badge tone="danger">danger</Badge>
             </div>
           </div>
           <div className={styles.group}>
             <span className={styles.groupLabel}>pulse</span>
             <div className={styles.row}>
-              <Badge variant="info" pulse>
+              <Badge tone="info" pulse>
                 실행 중
               </Badge>
-              <Badge variant="success" pulse>
+              <Badge tone="success" pulse>
                 진행
               </Badge>
             </div>
@@ -315,7 +315,7 @@ export default function DesignPage() {
             <ListRow
               title="제목 · 보조 · 배지가 있는 행"
               meta="보조 텍스트 · 항목 · 3건"
-              trailing={<Badge variant="info">상태</Badge>}
+              trailing={<Badge tone="info">상태</Badge>}
             />
             <ListRow
               leading={<span aria-hidden="true">⋮⋮</span>}
@@ -323,7 +323,7 @@ export default function DesignPage() {
               meta="보조 텍스트"
               trailing={
                 <>
-                  <Badge variant="warning">상태</Badge>
+                  <Badge tone="warning">상태</Badge>
                   <span>3분 전</span>
                 </>
               }

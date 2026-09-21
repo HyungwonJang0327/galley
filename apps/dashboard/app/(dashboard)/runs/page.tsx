@@ -75,7 +75,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       </Link>
                     }
                     trailing={
-                      <Badge variant={badge.variant} pulse={badge.pulse}>
+                      <Badge tone={badge.tone} pulse={badge.pulse}>
                         {badge.label}
                       </Badge>
                     }
@@ -91,7 +91,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               <div className={styles.detailHeader}>
                 <h2 className={styles.topicTitle}>{selected.topicTitle}</h2>
                 <span className={styles.attempt}>{selected.attempt}차</span>
-                <Badge variant={headerBadge.variant} pulse={headerBadge.pulse}>
+                <Badge tone={headerBadge.tone} pulse={headerBadge.pulse}>
                   {headerBadge.label}
                 </Badge>
               </div>

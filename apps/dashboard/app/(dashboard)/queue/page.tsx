@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
 import { getQueueSections } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
-import { queueStatusBadgeVariant } from '../../../lib/queue-status-badge';
+import { queueStatusBadgeTone } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
 import {
@@ -43,7 +43,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
 
   const view = buildQueueView(result.data, { tab: params.tab, category: params.category });
-  const badgeVariant = queueStatusBadgeVariant(view.active.status);
+  const badgeTone = queueStatusBadgeTone(view.active.status);
 
   return (
     <>
@@ -80,7 +80,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           <DraggableQueueRows
             rows={view.rows}
             status={view.active.status}
-            badgeVariant={badgeVariant}
+            badgeTone={badgeTone}
             move={moveQueueRowAction}
             reorder={reorderQueueRowAction}
           />
@@ -91,7 +91,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 key={`${row.index}-${row.title}`}
                 title={row.title}
                 meta={row.meta}
-                trailing={<Badge variant={badgeVariant}>{view.active.status}</Badge>}
+                trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
                 // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
                 actions={
                   view.active.status === '완료' ? undefined : (
