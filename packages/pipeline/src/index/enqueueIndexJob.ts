@@ -6,11 +6,12 @@ import { gitHead } from './gitRead.ts';
 import { INDEX_JOB_KIND, INDEX_JOB_STATUS, REPO_STATUS, serializeStringArray } from './schema.ts';
 
 export interface EnqueueIndexJobInput {
-  /** 리포 경로(상대면 cwd 기준으로 절대화). 하드코딩 금지 — CLI 인자·.env에서 온다. */
+  /** 리포 경로(상대면 cwd 기준으로 절대화 — CLI는 사용자 셸 기준으로 먼저 푼다). 하드코딩 금지. */
   path: string;
   /** 주제_큐.md 힌트와 매칭되는 이름. 없으면 폴더 이름. 기존 리포면 바꾸지 않는다(값이 있을 때만 갱신). */
   name?: string;
   aliases?: readonly string[];
+  /** 값이 있을 때만 갱신 — 호출자는 "읽기 전용으로 만든다"는 뜻일 때만 true를 넘기고, 플래그가 없으면 넘기지 않는다(false로 되돌리지 않게). */
   readOnly?: boolean;
   /** 레지스트리 어댑터 id. 호출자가 기본값(indexingDefault)을 채워 넘긴다 — 이 모듈은 레지스트리를 모른다. */
   modelId: string;
@@ -49,21 +50,46 @@ export async function enqueueIndexJob(
   if (taken !== null && taken.path !== path)
     return { ok: false, code: 'REPO_NAME_TAKEN', path: taken.path };
 
+  // 실패면 아무것도 바꾸지 않는다(decisions/error-handling.md) — 활성 작업 검사는 어떤 쓰기보다 앞에.
+  // 돌고 있는 작업은 클레임 시점의 readOnly로 필터 필수 여부를 정했으므로 그 밑에서 리포를 바꾸지도 않는다.
+  if (existing !== null) {
+    const active = await prisma.indexJob.findFirst({
+      where: { repoId: existing.id, status: { in: ACTIVE } },
+      select: { id: true },
+    });
+    if (active !== null) return { ok: false, code: 'INDEX_JOB_ACTIVE', jobId: active.id };
+  }
+
   const data = {
     name,
     ...(input.aliases !== undefined ? { aliases: serializeStringArray(input.aliases) } : {}),
     ...(input.readOnly !== undefined ? { readOnly: input.readOnly } : {}),
   };
-  const repo =
-    existing === null
-      ? await prisma.repo.create({ data: { path, ...data, status: REPO_STATUS.indexing } })
-      : await prisma.repo.update({ where: { id: existing.id }, data });
+  const incremental =
+    !input.full &&
+    existing !== null &&
+    existing.headSha !== null &&
+    existing.status !== REPO_STATUS.error;
+  const sameHead = incremental && existing.headSha === head.value;
+  const kind = incremental ? INDEX_JOB_KIND.incremental : INDEX_JOB_KIND.full;
+  const fromSha = incremental ? existing.headSha : null;
 
-  const active = await prisma.indexJob.findFirst({
-    where: { repoId: repo.id, status: { in: ACTIVE } },
-    select: { id: true },
+  // 리포 갱신 + 작업 생성 + stale 전이를 한 트랜잭션으로(중간 상태가 남지 않게).
+  const { repo, jobId } = await prisma.$transaction(async (tx) => {
+    const repo =
+      existing === null
+        ? await tx.repo.create({ data: { path, ...data, status: REPO_STATUS.indexing } })
+        : await tx.repo.update({ where: { id: existing.id }, data });
+    if (sameHead) return { repo, jobId: undefined };
+    const job = await tx.indexJob.create({
+      data: { repoId: repo.id, kind, fromSha, toSha: head.value, modelId: input.modelId },
+      select: { id: true },
+    });
+    // HEAD가 마지막 인덱스와 달라졌을 때만 stale(스키마 정의 그대로). 실행자가 잡으면 indexing, 끝나면 ready/error.
+    if (existing !== null && existing.headSha !== null && existing.headSha !== head.value)
+      await tx.repo.update({ where: { id: repo.id }, data: { status: REPO_STATUS.stale } });
+    return { repo, jobId: job.id };
   });
-  if (active !== null) return { ok: false, code: 'INDEX_JOB_ACTIVE', jobId: active.id };
 
   const base = {
     id: repo.id,
@@ -72,25 +98,13 @@ export async function enqueueIndexJob(
     readOnly: repo.readOnly,
     created: existing === null,
   };
-  const incremental = !input.full && repo.headSha !== null && repo.status !== REPO_STATUS.error;
-  if (incremental && repo.headSha === head.value)
-    return { ok: true, value: { repo: base, headSha: head.value } };
-
-  const kind = incremental ? INDEX_JOB_KIND.incremental : INDEX_JOB_KIND.full;
-  const fromSha = incremental ? repo.headSha! : null;
-  const job = await prisma.indexJob.create({
-    data: { repoId: repo.id, kind, fromSha, toSha: head.value, modelId: input.modelId },
-    select: { id: true },
-  });
-  // HEAD가 바뀌었으니 실행 전까지는 stale(첫 인덱스는 indexing). 실행자가 잡으면 indexing, 끝나면 ready/error.
-  if (existing !== null && repo.headSha !== null)
-    await prisma.repo.update({ where: { id: repo.id }, data: { status: REPO_STATUS.stale } });
+  if (jobId === undefined) return { ok: true, value: { repo: base, headSha: head.value } };
   return {
     ok: true,
     value: {
       repo: base,
       headSha: head.value,
-      job: { id: job.id, kind, ...(fromSha !== null ? { fromSha } : {}), toSha: head.value },
+      job: { id: jobId, kind, ...(fromSha !== null ? { fromSha } : {}), toSha: head.value },
     },
   };
 }
