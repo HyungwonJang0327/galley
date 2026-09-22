@@ -7,8 +7,14 @@ export const INDEX_LIMITS = {
   filesPerArea: 20,
   /** 디렉터리(area)당 본문 합계 바이트. */
   bytesPerArea: 160 * 1024,
-  /** 커밋 묶음(change)당 커밋 수(BE4). */
+  /** 커밋 묶음(change)당 상세(본문·파일 목록)를 넘기는 커밋 수. 넘는 커밋은 제목만(summaryOnly). */
   commitsPerBatch: 30,
+  /** 커밋 본문(body) 1개 최대 글자 수. 넘는 부분은 자른다. */
+  commitBodyChars: 400,
+  /** 커밋 1개당 프롬프트에 나열하는 파일 수. 넘는 파일은 "외 n개". 포인터 후보는 전부 남긴다. */
+  filesPerCommit: 40,
+  /** 한 번의 인덱싱에서 읽는 커밋 수 상한(최신부터). 큰 리포의 비용 폭주 방지. */
+  maxCommits: 2000,
 } as const;
 
 /** 테스트·CLI가 상한을 바꿔 넘길 수 있는 형태(값은 숫자). */
