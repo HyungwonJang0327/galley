@@ -1,12 +1,12 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import {
-  defaultTonePromptsDir,
   hashPromptText,
   isTonePromptStep,
   loadTonePrompt,
+  resolveTonePromptsDir,
   TONE_PROMPT_STEPS,
 } from './tonePrompts.ts';
 
@@ -28,6 +28,10 @@ describe('hashPromptText', () => {
     expect(a).not.toBe(hashPromptText('담백하게!'));
     expect(a).not.toBe(hashPromptText('담백하게. '));
     expect(a).toMatch(/^[0-9a-f]{64}$/);
+    // BOM·CRLF·끝 개행도 내용이다(결정 ③) — 파일 바이트가 다르면 다른 해시
+    expect(hashPromptText('\uFEFFa')).not.toBe(hashPromptText('a'));
+    expect(hashPromptText('a\r\n')).not.toBe(hashPromptText('a\n'));
+    expect(hashPromptText('a\n')).not.toBe(hashPromptText('a'));
   });
 });
 
@@ -62,11 +66,23 @@ describe('loadTonePrompt', () => {
     });
   });
 
-  test('어투 단계는 velog·linkedin·zenn뿐, 기본 폴더는 PROMPTS_DIR 우선 아니면 리포 루트 .galley/prompts', () => {
+  test('어투 단계는 velog·linkedin·zenn뿐, 폴더는 PROMPTS_DIR(절대경로만) 우선 아니면 리포 루트 .galley/prompts', () => {
     expect(TONE_PROMPT_STEPS).toEqual(['velog', 'linkedin', 'zenn']);
     expect(isTonePromptStep('verify')).toBe(false);
-    expect(defaultTonePromptsDir({ PROMPTS_DIR: '/x/prompts' })).toBe('/x/prompts');
-    expect(defaultTonePromptsDir({ PROMPTS_DIR: '  ' })).toMatch(/\.galley\/prompts$/);
-    expect(defaultTonePromptsDir({})).toMatch(/\/Galley\/\.galley\/prompts$/);
+    expect(resolveTonePromptsDir({ PROMPTS_DIR: '/x/prompts' })).toEqual({
+      ok: true,
+      dir: '/x/prompts',
+    });
+    expect(resolveTonePromptsDir({ PROMPTS_DIR: './prompts' })).toEqual({
+      ok: false,
+      code: 'PROMPTS_DIR_NOT_ABSOLUTE',
+      value: './prompts',
+    });
+    const fallback = resolveTonePromptsDir({ PROMPTS_DIR: '  ' });
+    expect(fallback.ok && fallback.dir.endsWith(join('.galley', 'prompts'))).toBe(true);
+    const none = resolveTonePromptsDir({});
+    expect(none.ok && isAbsolute(none.dir) && none.dir.endsWith(join('.galley', 'prompts'))).toBe(
+      true,
+    );
   });
 });
