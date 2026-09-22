@@ -50,7 +50,9 @@ export type IndexTickOutcome =
   | 'completed'
   | 'failed'
   | 'recovered'
-  | 'released';
+  | 'released'
+  /** 배치를 도는 사이에 회수돼 다른 워커의 것이 됐다 — 이 워커의 결과는 버린다(새 워커가 같은 배치를 다시 돈다). */
+  | 'lost';
 
 export interface IndexTickResult {
   outcome: IndexTickOutcome;
@@ -98,12 +100,7 @@ export async function runIndexTick(
       const head = await gitHead(job.repo.path);
       if (!head.ok) {
         deps.logger.error('인덱싱 작업 실패', { jobId: job.id, code: head.code });
-        await finishIndexJob(
-          prisma,
-          { ...job, repoId: job.repo.id },
-          { ok: false, code: head.code },
-          now,
-        );
+        await finishIndexJob(prisma, owner(deps, job), { ok: false, code: head.code }, now);
         return { outcome: 'failed', jobId: job.id };
       }
       await pinIndexJobCommit(prisma, job.id, head.value);
@@ -115,12 +112,14 @@ export async function runIndexTick(
   }
 
   const stopHeartbeat = deps.timers.every(INDEX_HEARTBEAT_INTERVAL_MS, () => {
-    beatIndexJob(prisma, job.id, deps.clock.now()).catch((error: unknown) => {
-      deps.logger.error('인덱싱 heartbeat 쓰기 실패', {
-        jobId: job.id,
-        detail: error instanceof Error ? error.message : String(error),
-      });
-    });
+    beatIndexJob(prisma, { id: job.id, workerId: deps.workerId }, deps.clock.now()).catch(
+      (error: unknown) => {
+        deps.logger.error('인덱싱 heartbeat 쓰기 실패', {
+          jobId: job.id,
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      },
+    );
   });
   try {
     return await runBatch(deps, job, signal);
@@ -130,9 +129,9 @@ export async function runIndexTick(
       jobId: job.id,
       detail: error instanceof Error ? error.stack : String(error),
     });
-    await finishIndexJob(
+    const recorded = await finishIndexJob(
       prisma,
-      { ...job, repoId: job.repo.id },
+      owner(deps, job),
       {
         ok: false,
         code: 'INDEX_UNEXPECTED',
@@ -140,11 +139,26 @@ export async function runIndexTick(
       },
       deps.clock.now(),
     );
-    return { outcome: 'failed', jobId: job.id };
+    return { outcome: recorded ? 'failed' : 'lost', jobId: job.id };
   } finally {
     stopHeartbeat();
   }
 }
+
+const owner = (deps: IndexTickDeps, job: ClaimedIndexJob) => ({
+  id: job.id,
+  workerId: deps.workerId,
+  repoId: job.repo.id,
+  modelId: job.modelId,
+  toSha: job.toSha,
+});
+
+const lost = (deps: IndexTickDeps, jobId: string): IndexTickResult => {
+  deps.logger.info('인덱싱 작업이 회수돼 다른 워커의 것이 됐다 — 이 배치의 결과는 버린다', {
+    jobId,
+  });
+  return { outcome: 'lost', jobId };
+};
 
 async function runBatch(
   deps: IndexTickDeps,
@@ -153,14 +167,22 @@ async function runBatch(
 ): Promise<IndexTickResult> {
   const { prisma } = deps;
   const ref = { jobId: job.id };
-  const fail = async (code: string, message?: string): Promise<IndexTickResult> => {
-    deps.logger.error('인덱싱 작업 실패', { ...ref, code });
-    await finishIndexJob(
+  const fail = async (
+    code: string,
+    message?: string,
+    partial?: { usage: ModelUsage; costUsd: number },
+  ): Promise<IndexTickResult> => {
+    // 실패 직전까지의 과금도 남긴다(MODEL_FAILED 전에 끝난 배치들).
+    if (partial !== undefined && (partial.usage.inputTokens > 0 || partial.costUsd > 0))
+      await recordIndexProgress(prisma, owner(deps, job), partial, deps.clock.now());
+    const recorded = await finishIndexJob(
       prisma,
-      { ...job, repoId: job.repo.id },
+      owner(deps, job),
       { ok: false, code, ...(message !== undefined ? { message } : {}) },
       deps.clock.now(),
     );
+    if (!recorded) return lost(deps, job.id);
+    deps.logger.error('인덱싱 작업 실패', { ...ref, code });
     return { outcome: 'failed', jobId: job.id };
   };
   // 클레임 틱이 고정해 둔 기준 커밋. 없으면(클레임 뒤 행이 바뀐 경우) 프로그래머 오류다.
@@ -203,7 +225,12 @@ async function runBatch(
         costUsd = p.costUsd;
       },
     });
-    if (!r.ok) return fail(r.code, 'errorName' in r ? r.errorName : undefined);
+    if (!r.ok)
+      return fail(
+        r.code,
+        'errorName' in r ? r.errorName : undefined,
+        'partial' in r ? r.partial : undefined,
+      );
     remaining = r.report.remaining;
     if (remaining === 0) {
       const pruned = await pruneAnalyses(prisma, job.repo.id, ANALYSIS_KIND.area, r.plannedKeys);
@@ -222,7 +249,12 @@ async function runBatch(
         costUsd = p.costUsd;
       },
     });
-    if (!r.ok) return fail(r.code, 'errorName' in r ? r.errorName : undefined);
+    if (!r.ok)
+      return fail(
+        r.code,
+        'errorName' in r ? r.errorName : undefined,
+        'partial' in r ? r.partial : undefined,
+      );
     remaining = r.report.remaining;
     if (remaining === 0) {
       const pruned = await pruneAnalyses(prisma, job.repo.id, ANALYSIS_KIND.change, r.plannedKeys);
@@ -250,20 +282,22 @@ async function runBatch(
     nextPhase === phase
       ? formatCursor(phase, processedKey ?? afterKey)
       : formatCursor(nextPhase === 'done' ? 'overview' : nextPhase);
-  await recordIndexProgress(
+  const recorded = await recordIndexProgress(
     prisma,
-    job.id,
+    owner(deps, job),
     { cursor, done, total: done + remaining + (nextPhase === 'done' ? 0 : 1), usage, costUsd },
     now,
   );
+  if (!recorded) return lost(deps, job.id);
 
   if (nextPhase === 'done') {
-    await finishIndexJob(prisma, { ...job, repoId: job.repo.id }, { ok: true }, now);
+    const finished = await finishIndexJob(prisma, owner(deps, job), { ok: true }, now);
+    if (!finished) return lost(deps, job.id);
     deps.logger.info('인덱싱 작업 완료', { ...ref, batches: done });
     return { outcome: 'completed', jobId: job.id };
   }
   if (signal?.aborted) {
-    await releaseIndexJob(prisma, job.id, now);
+    await releaseIndexJob(prisma, owner(deps, job), now);
     deps.logger.info('종료 신호로 인덱싱 작업을 반환했다', ref);
     return { outcome: 'released', jobId: job.id };
   }
