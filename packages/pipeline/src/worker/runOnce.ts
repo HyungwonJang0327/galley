@@ -2,6 +2,7 @@
 // 그 사이에 끼어들 수 없다. bin/worker.ts는 이걸 반복해서 부르는 껍데기일 뿐이다.
 // (decisions/run-execution-model.md)
 import type { IndexTickResult } from '../index/runIndexTick.ts';
+import type { AutoLinkTickResult } from '../link/autoLink.ts';
 import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
 import { StepFailure, toStepFailure } from '../steps/StepRunner.ts';
 import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
@@ -42,7 +43,9 @@ export type TickOutcome =
   /** 종료 신호를 받아 돌던 단계를 반환했다(실패가 아니다 — 다음 기동이 그 단계부터 다시 돈다). */
   | 'released'
   /** Run이 없어 인덱싱 작업(IndexJob)을 한 배치 진행했다. 세부는 `index`. */
-  | 'indexed';
+  | 'indexed'
+  /** Run·IndexJob이 없어 주제 자동 연결을 몇 개 계산했다. 세부는 `link`. */
+  | 'linked';
 
 export interface TickResult {
   outcome: TickOutcome;
@@ -50,6 +53,8 @@ export interface TickResult {
   stepRef?: { runId: string; step: StepName };
   /** `indexed`일 때 인덱싱 틱의 결과. */
   index?: IndexTickResult;
+  /** `linked`일 때 자동 연결 틱의 결과. */
+  link?: AutoLinkTickResult;
 }
 
 /**
@@ -71,9 +76,16 @@ export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<T
 
   const claimed = await deps.repo.claimRun(deps.workerId, now);
   if (claimed === null) {
-    if (deps.indexer === undefined) return { outcome: 'idle' };
-    const index = await deps.indexer.tick(signal);
-    return index.outcome === 'idle' ? { outcome: 'idle' } : { outcome: 'indexed', index };
+    // Run → IndexJob → 자동 연결 순. 앞 것이 일했으면 이번 틱은 거기서 끝(다음 틱이 다시 Run부터 본다).
+    if (deps.indexer !== undefined) {
+      const index = await deps.indexer.tick(signal);
+      if (index.outcome !== 'idle') return { outcome: 'indexed', index };
+    }
+    if (deps.linker !== undefined) {
+      const link = await deps.linker.tick(signal);
+      if (link.outcome !== 'idle') return { outcome: 'linked', link };
+    }
+    return { outcome: 'idle' };
   }
 
   const { run } = claimed;

@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '../src/db.ts';
 import { defaultRedactConfigPath, loadRedactConfig } from '../src/evidence/redact.ts';
 import { runIndexTick } from '../src/index/runIndexTick.ts';
+import { runAutoLinkTick } from '../src/link/autoLink.ts';
 import { createModelRegistryFromEnv } from '../src/model/ModelRegistry.ts';
 import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
 import { runOnce } from '../src/worker/runOnce.ts';
@@ -112,6 +113,9 @@ async function main(): Promise<void> {
     return;
   }
   deps.indexer = indexer;
+  // 주제 ↔ 분석 글 자동 연결 — Run·IndexJob이 없을 때 runOnce가 부른다(모델 없음, DB만).
+  const linkDeps = { prisma, clock: deps.clock, logger: deps.logger };
+  deps.linker = { tick: (signal) => runAutoLinkTick(linkDeps, signal) };
   deps.logger.info('워커 시작', { workerId: deps.workerId });
 
   while (!stopping) {
