@@ -187,6 +187,7 @@
 - [ ] **BE9** pl — 근거 수집 단계 2: discovered 추가 탐색(키워드 겹침 + 기간 가중 점수, 모델 없음) + 상한 8. 커밋: `feat(run): 근거 수집에 추가 탐색 추가`
   - 완료조건: 연결에 없던 분석 글이 discovered로 들어오고 상한을 넘지 않는다.
 - [ ] **BE10** pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
+  - BS2 리뷰에서 넘어온 것(decisions 2026-09-23 BS2 ⑬): 일반화된 식별자·경로는 unsupported가 아니라 uncertain · 본문이 근거 조각을 N줄 이상 그대로 담으면 flag(클린룸 기계 검사) · 본문은 `ArtifactStore`에서, 번들은 `EvidenceStore`에서(`sources.*`).
   - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
 - [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
   - BE8 리뷰에서 넘어온 것(decisions 2026-09-22 BE8 ⑨): 번들에 `analyses: { id, kind, title, summary }[]` 옵션 필드(version 1 유지) · `StepContext.evidence`에 `EvidenceBundle` 타입 · 0건 번들로 본문을 쓸지(`EVIDENCE_EMPTY`) 결정 · 삭제 파일 포인터의 `date`는 부모 커밋(표기 규칙).
@@ -208,16 +209,18 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 - [x] **BS1** (2026-09-22 `c840dd3`·`51b631b`·`c8bb443`·`bad69cd`·`3d669f8`·리뷰 수정 `cd93e3d`·`789cd2f`·decisions `41e5408`+리뷰 반영, feat/tone-prompts — `PROMPTS_DIR` 절대경로만, 어투 파일은 prettier 제외·설명은 README) pl — 어투 프롬프트 로더: `.galley/prompts/{velog,linkedin,zenn}.md` 읽기(경로는 리포 루트 기준, 테스트는 tmpdir 주입) + 내용 sha256 → `RunStep.promptHash` 컬럼(nullable, 마이그레이션) + `StepResult.promptHash?` → 워커가 토큰·비용처럼 **기록만**. 파일 없음은 `{ ok:false, code:'PROMPT_NOT_FOUND' }`(재시도 불가). 커밋: `feat(pipeline): 어투 프롬프트 로더와 RunStep.promptHash 추가`
   - 완료조건: 같은 내용 → 같은 해시, 한 글자 바뀌면 다른 해시(테스트). 워커 통합 테스트에서 성공 단계 행에 promptHash가 남는다. 파일 없는 단계는 실패·재시도 없음.
-- [ ] **BS2** pl — 벨로그 본문 단계(`velog`): 입력 = 주제 + EvidenceBundle + 어투 프롬프트 + 수정 지시(재실행 시) → ModelAdapter 호출 → `artifacts.velog`(마크다운) + tokens·costUsd·model·promptHash. 입력 타입은 BE11 그대로(리포 경로·분석 글 원문 자리 없음). 커밋: `feat(run): 벨로그 본문 단계 구현`
+- [x] **BS2** (2026-09-23 `9849b41`·`7a343e4`·`619506d`·`171c252`·리뷰 수정 `c87fd5c`·`fa6958b`·`ffd8afd`·`b4d01c9`·decisions `bd25beb`+리뷰 반영, feat/velog-step — ArtifactStore(DATA_DIR)에 단계가 직접 저장, 근거 0개는 실패, `truncated` 🔒 변경) pl — 벨로그 본문 단계(`velog`): 입력 = 주제 + EvidenceBundle + 어투 프롬프트 + 수정 지시(재실행 시) → ModelAdapter 호출 → `artifacts.velog`(마크다운) + tokens·costUsd·model·promptHash. 입력 타입은 BE11 그대로(리포 경로·분석 글 원문 자리 없음). 커밋: `feat(run): 벨로그 본문 단계 구현`
   - BS1 리뷰에서 넘어온 것(decisions/tone-prompts.md 2026-09-22): `loadTonePrompt` 실패 셋 → `StepFailure(retryable=false)` 헬퍼 하나(BS3·BS4 재사용) · `errorMessage`에 절대경로 금지(파일명만) · `promptsDir`는 deps 주입 · 모델 텍스트의 앞 BOM 제거 가능(해시는 원본) · BE11 전 결정(번들 `analyses` 필드)을 여기서 같이.
   - 완료조건: Mock 어댑터로 프롬프트에 주제·조각·어투·지시가 전부 들어가고(캡처 테스트) 결과가 StepResult 형태. 지시 없는 첫 실행과 있는 재실행 두 경우.
 - [ ] **BS3** pl — 링크드인 단계(`linkedin`): 입력 = 벨로그 본문(직전 succeeded `velog` 산출물) + 어투 프롬프트 → `artifacts.linkedin`. 본문에서 파생만(EvidenceBundle 재입력 없음). 커밋: `feat(run): 링크드인 요약 단계 구현`
+  - BS2에서 넘어온 것: 벨로그 본문은 `ArtifactStore.read(slug, sources.velog ?? runId, 'velog.md')`로 · `tonePromptFailure`·`classifyModelError`·`abortable`·`unwrapFence` 재사용 · 산출물은 `artifacts.write(..., 'linkedin.md')` · 링크 자리는 `[벨로그 링크]`(어투에 있음) · 잘린 출력은 실패.
   - 완료조건: velog 산출물이 없으면 실패(`MISSING_INPUT`, 재시도 불가). Mock으로 tokens·promptHash 기록.
 - [ ] **BS4** pl — Zenn 일본어판 단계(`zenn`): 입력 = 벨로그 본문 + 어투 프롬프트 → `artifacts.zenn`(frontmatter `published: false` 고정, title·emoji·type·topics). 커밋: `feat(run): Zenn 일본어판 단계 구현`
   - 완료조건: 산출물 frontmatter에 `published: false`가 항상 있다(테스트). 모델 출력이 frontmatter를 만들어도 덮어쓴다.
 - [ ] **BS5** pl — 단계 라우팅: `createStepRunner({ registry, prompts, storage… })`가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · B3a publishInfo)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV=development`·테스트만). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
   - 완료조건: 6단계 전부 구현으로 이어지고 모르는 단계명은 프로그래머 오류(throw). 워커 스모크(`test:smoke`) 계속 통과.
   - BE8 리뷰에서 넘어온 것(decisions BE8 ⑩): `DATA_DIR`이 비었거나 `BLOG_DIR` 안이면 기동 거부(빈 문자열이면 cwd 상대경로). `LocalFsEvidenceStore(DATA_DIR)`·redact 설정·prisma·clock을 `createEvidenceStepRunner`에 배선.
+  - BS2 리뷰에서 넘어온 것: 어댑터 `maxRetries` 명시 + 워커 재시도 사이 `timers.after` 대기(429 최대 9회 방지) · `LocalFsArtifactStore(DATA_DIR)`·`resolveTonePromptsDir`(절대경로) 배선·기동 검증 · 환경 변수로 켜는 실모델 스모크 vitest 하나.
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
