@@ -165,10 +165,16 @@ async function attemptStep(
     });
 
     try {
+      // carried 단계의 출처 — 단계 구현이 앞 단계 결과(근거 번들 등)를 찾는 열쇠. 워커는 값을 옮길 뿐 해석하지 않는다.
+      const sources: Partial<Record<StepName, string>> = {};
+      for (const s of run.steps)
+        if (s.origin === 'carried' && s.sourceRunId !== undefined) sources[s.name] = s.sourceRunId;
       const result = await deps.stepRunner.run({
         runId: run.id,
         step,
         topic: { id: run.topicId, title: run.topicTitle, slug: run.topicSlug },
+        modelId: run.modelId,
+        sources,
         instruction: run.instruction,
         signal: controller.signal,
       });

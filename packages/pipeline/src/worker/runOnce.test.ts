@@ -621,6 +621,31 @@ describe('runOnce — 종료 신호(클레임 반환)', () => {
   });
 });
 
+describe('runOnce — StepContext', () => {
+  it('modelId와 carried 단계의 출처(sources)를 StepRunner에 넘긴다 — 워커는 해석하지 않는다', async () => {
+    const { repo, state } = fakeRepo();
+    // 근거 수집은 이전 Run(run_0)의 결과를 이어받은 carried 단계
+    const evidence = state.steps.find((s) => s.name === 'evidence')!;
+    Object.assign(evidence, {
+      status: STEP_STATUS.succeeded,
+      origin: 'carried',
+      sourceRunId: 'run_0',
+    });
+    const seen: { step: StepName; modelId: string; sources: Record<string, string | undefined> }[] =
+      [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        seen.push({ step: ctx.step, modelId: ctx.modelId, sources: { ...ctx.sources } });
+        return { artifacts: {} };
+      },
+    };
+    const d = deps({ repo, stepRunner: capturing });
+    await runOnce(d); // 잡는 틱
+    await runOnce(d); // velog(evidence는 carried+succeeded라 건너뛴다)
+    expect(seen[0]).toEqual({ step: 'velog', modelId: 'mock', sources: { evidence: 'run_0' } });
+  });
+});
+
 describe('runOnce — 인덱싱 틱 위임', () => {
   it('실행이 없을 때만 indexer.tick을 부르고, 결과가 idle이 아니면 indexed로 돌려준다', async () => {
     const tick = vi.fn<(signal?: AbortSignal) => Promise<IndexTickResult>>(async () => ({

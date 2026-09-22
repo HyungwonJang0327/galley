@@ -13,8 +13,13 @@ export interface StepContext {
   step: StepName;
   /** 그 실행이 다루는 주제(표시·프롬프트용 제목). */
   topic: { id: string; title: string; slug: string };
-  /** 근거 수집이 만든 번들. 본문·검증 단계가 쓴다(BE8~BE11에서 타입이 붙는다). */
-  evidence?: unknown;
+  /** 이 Run의 모델(레지스트리 id). 모델을 쓰는 단계는 이걸로 어댑터를 고른다. */
+  modelId: string;
+  /**
+   * carried 단계의 출처 Run id — 재실행에서 앞 단계 결과를 이어받았을 때 그 결과를 실제로 만든 Run. 없으면 이 Run.
+   * 본문 단계는 `sources.evidence ?? runId`로 근거 번들(EvidenceStore)을 찾는다(BE11).
+   */
+  sources: Partial<Record<StepName, string>>;
   /** 재실행이면 그때의 수정 지시. 첫 실행에는 없다. */
   instruction?: string;
   /** 워커가 소유하는 취소·타임아웃. 구현은 오래 걸리는 일 사이사이에 확인한다. */

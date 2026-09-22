@@ -7,6 +7,8 @@ const ctx = (step: (typeof STEP_ORDER)[number], extra: Partial<{ instruction: st
   runId: 'run_1',
   step,
   topic: { id: 't1', title: '무한 스크롤', slug: '무한-스크롤' },
+  modelId: 'mock',
+  sources: {},
   signal: new AbortController().signal,
   ...extra,
 });
