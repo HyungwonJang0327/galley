@@ -45,6 +45,11 @@ describe('expandPeriod', () => {
     ]);
     expect([...expandPeriod('2023~2024')]).toHaveLength(24);
     expect(expandPeriod('2020~2030').size).toBe(AUTO_LINK_LIMITS.maxMonths);
+    expect([...expandPeriod('2020~2030')].at(-1)).toBe('2030-12'); // 최근 달을 남긴다
+    expect([...expandPeriod('2024-01~2024-06', { ...AUTO_LINK_LIMITS, maxMonths: 2 })]).toEqual([
+      '2024-05',
+      '2024-06',
+    ]);
     expect(expandPeriod(null).size).toBe(0);
     expect(expandPeriod('2024.03').size).toBe(0);
     expect(expandPeriod('2024-13').size).toBe(0);
@@ -137,6 +142,14 @@ describe('matchTopic', () => {
     expect(
       matchTopic({ repoNames: ['gone'], keywords: ['react-router'], period: '2024-07' }, A),
     ).toEqual([]);
+  });
+
+  test('동점은 kind → 리포 이름 → key 순(리포 간 같은 key도 결정적)', () => {
+    expect(
+      matchTopic({ repoNames: [], keywords: [], period: '2024-07' }, [...A].reverse()).map(
+        (m) => m.id,
+      ),
+    ).toEqual(['chg-a-7', 'chg-b-7']);
   });
 
   test('리포만 적은 주제는 그 리포의 overview만', () => {

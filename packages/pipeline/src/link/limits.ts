@@ -4,7 +4,7 @@ export const AUTO_LINK_LIMITS = {
   maxPerTopic: 12,
   /** 틱 하나가 다시 계산하는 주제 수 — 틱 사이에 Run·IndexJob이 끼어들 수 있게 작게. */
   topicsPerTick: 20,
-  /** 연 단위 기간(`2024`)이 펼쳐지는 달 수 상한(12) — 범위가 이보다 길면 잘라서 앞부터. */
+  /** 기간이 펼쳐지는 달 수 상한 — 범위가 이보다 길면 **최근 달부터** 이만큼만(오래된 달을 버린다 — 최근 변경 글이 더 있을 법하다). */
   maxMonths: 36,
 } as const;
 

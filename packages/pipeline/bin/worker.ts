@@ -123,7 +123,8 @@ async function main(): Promise<void> {
       const { outcome } = await runOnce(deps, controller.signal);
       if (stopping) break;
       // 진행했으면 바로 다음 틱 — 6단계를 2초씩 기다리면 실행이 하염없이 길어진다.
-      if (outcome === 'idle') await sleep(IDLE_INTERVAL_MS);
+      // 자동 연결(linked)은 급하지 않은 가장 싼 일이라 쉰다 — 시계가 뒤로 가 stale 판정이 계속 참이어도 tight loop가 되지 않게.
+      if (outcome === 'idle' || outcome === 'linked') await sleep(IDLE_INTERVAL_MS);
     } catch (error) {
       // 틱 하나가 실패해도 루프는 살아 있어야 한다(다음 틱이 다시 본다).
       deps.logger.error('틱 실패', {
