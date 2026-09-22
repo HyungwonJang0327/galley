@@ -179,8 +179,31 @@ export { INDEX_LIMITS, INDEX_IGNORE } from './index/limits.ts';
 export type { IndexLimits } from './index/limits.ts';
 export { planAreas, describeTree, isIgnoredPath } from './index/tree.ts';
 export type { TreeFile, AreaFile, AreaPlan, TreeSummary } from './index/tree.ts';
-export { gitHead, gitListFiles, gitShowFile } from './index/gitRead.ts';
-export type { GitFailure, GitResult } from './index/gitRead.ts';
+export { gitHead, gitListFiles, gitShowFile, gitLog } from './index/gitRead.ts';
+export type {
+  GitFailure,
+  GitResult,
+  GitCommit,
+  GitCommitFile,
+  GitFileStatus,
+  GitLogOptions,
+} from './index/gitRead.ts';
+export { planChangeBatches, pointerCandidates, periodOf, primaryDir } from './index/changes.ts';
+export type { ChangeBatch, ChangeCommit, ChangePlan } from './index/changes.ts';
+export type { AnalysisFailure } from './index/analysisText.ts';
+export { analyzeChange } from './index/changeAnalysis.ts';
+export type {
+  ChangeAnalysisInput,
+  ChangeAnalysisDraft,
+  ChangeAnalysisResult,
+} from './index/changeAnalysis.ts';
+export { analyzeOverview, selectOverviewSources, OVERVIEW_KEY } from './index/overviewAnalysis.ts';
+export type {
+  OverviewSource,
+  OverviewAnalysisInput,
+  OverviewAnalysisDraft,
+  OverviewAnalysisResult,
+} from './index/overviewAnalysis.ts';
 export { analyzeArea } from './index/areaAnalysis.ts';
 export type {
   AreaAnalysisInput,
@@ -197,4 +220,20 @@ export type {
   IndexAreasReport,
   IndexAreasFailure,
   IndexAreasResult,
+  AreaProgress,
 } from './index/indexRepoAreas.ts';
+export { indexRepoChanges } from './index/indexRepoChanges.ts';
+export type {
+  IndexChangesInput,
+  IndexChangesReport,
+  IndexChangesFailure,
+  IndexChangesResult,
+  ChangeProgress,
+} from './index/indexRepoChanges.ts';
+export { indexRepoOverview } from './index/indexRepoOverview.ts';
+export type {
+  IndexOverviewInput,
+  IndexOverviewReport,
+  IndexOverviewFailure,
+  IndexOverviewResult,
+} from './index/indexRepoOverview.ts';

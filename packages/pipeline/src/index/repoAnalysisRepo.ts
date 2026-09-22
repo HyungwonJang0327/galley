@@ -3,8 +3,10 @@
 import type { PrismaClient } from '@prisma/client';
 import { serializePointers, serializeStringArray, type PointersFailure } from './schema.ts';
 import type { AreaAnalysisDraft } from './areaAnalysis.ts';
+import type { ChangeAnalysisDraft } from './changeAnalysis.ts';
+import type { OverviewAnalysisDraft } from './overviewAnalysis.ts';
 
-export type AnalysisDraft = AreaAnalysisDraft;
+export type AnalysisDraft = AreaAnalysisDraft | ChangeAnalysisDraft | OverviewAnalysisDraft;
 
 export type UpsertAnalysisResult = { ok: true; id: string; created: boolean } | PointersFailure;
 
