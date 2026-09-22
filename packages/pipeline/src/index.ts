@@ -234,6 +234,24 @@ export type {
   ChangeProgress,
 } from './index/indexRepoChanges.ts';
 export { indexRepoOverview } from './index/indexRepoOverview.ts';
+export {
+  runIndexTick,
+  parseCursor,
+  formatCursor,
+  INDEX_HEARTBEAT_TIMEOUT_MS,
+  INDEX_HEARTBEAT_INTERVAL_MS,
+} from './index/runIndexTick.ts';
+export type { IndexTickDeps, IndexTickOutcome, IndexTickResult } from './index/runIndexTick.ts';
+export {
+  claimIndexJob,
+  reclaimStaleIndexJobs,
+  beatIndexJob,
+  recordIndexProgress,
+  releaseIndexJob,
+  finishIndexJob,
+  markRepoIndexing,
+} from './index/indexJobRepo.ts';
+export type { ClaimedIndexJob, IndexProgress, IndexJobEnd } from './index/indexJobRepo.ts';
 export type {
   IndexOverviewInput,
   IndexOverviewReport,
