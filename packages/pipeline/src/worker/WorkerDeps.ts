@@ -52,6 +52,8 @@ export interface StepOutcome {
   outputTokens?: number;
   costUsd?: number;
   durationMs?: number;
+  /** 어투 프롬프트 해시 — StepRunner가 준 값을 그대로. */
+  promptHash?: string;
 }
 
 /**

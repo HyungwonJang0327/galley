@@ -245,6 +245,21 @@ describe('runOnce — 정상 진행', () => {
     expect(publishInfo?.outcome.inputTokens).toBeUndefined();
     expect(velog?.outcome.modelId).toBe('mock');
   });
+
+  it('StepRunner가 준 promptHash를 그대로 기록하고, 어투 단계가 아니면 비운다(워커는 추정하지 않는다)', async () => {
+    const { repo, state } = fakeRepo();
+    const d = deps({ repo });
+    await runOnce(d);
+    for (let i = 0; i < STEP_ORDER.length; i += 1) await runOnce(d);
+    const hashes = Object.fromEntries(state.outcomes.map((o) => [o.step, o.outcome.promptHash]));
+    expect(hashes['velog']).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashes['linkedin']).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashes['zenn']).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashes['velog']).not.toBe(hashes['linkedin']);
+    expect(hashes['evidence']).toBeUndefined();
+    expect(hashes['verify']).toBeUndefined();
+    expect(hashes['publishInfo']).toBeUndefined();
+  });
 });
 
 describe('runOnce — 승인 대기', () => {

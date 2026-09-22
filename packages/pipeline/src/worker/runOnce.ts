@@ -181,6 +181,7 @@ async function attemptStep(
         inputTokens: result.tokens?.input,
         outputTokens: result.tokens?.output,
         costUsd: result.costUsd,
+        promptHash: result.promptHash,
         durationMs: finishedAt.getTime() - startedAt.getTime(),
       };
       await deps.repo.finishStep(run.id, step, outcome, finishedAt);

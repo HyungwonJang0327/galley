@@ -136,6 +136,9 @@ describe('워커 전체 흐름', () => {
     expect(publishInfo?.modelId).toBeNull();
     expect(publishInfo?.inputTokens).toBeNull();
     expect(velog?.modelId).toBe('mock');
+    // 어투 단계 행에는 promptHash가 남고, 모델 없는 단계·어투 없는 단계는 null(BS1 완료 조건)
+    expect(velog?.promptHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(publishInfo?.promptHash).toBeNull();
     expect(velog?.inputTokens).toBeGreaterThan(0);
   });
 });
