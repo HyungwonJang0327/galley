@@ -45,6 +45,9 @@ model QueueItem {
 
   // 이 주제에 붙은 분석 글 연결(auto·manual). 키는 QueueItem.id — Run과 같은 규칙.
   analysisLinks TopicAnalysisLink[]
+  // 워커가 마지막으로 자동 연결(source=auto)을 계산한 시각. null이거나 updatedAt(힌트 재적재)·리포의 lastIndexedAt(새 분석 글)보다
+  // 오래됐으면 다시 계산한다 — 대시보드가 워커에 신호를 보내지 않고 상태로만 알리는 방식(decisions/run-location.md).
+  autoLinkedAt  DateTime?
 
   // 후보 섹션 ### 소제목(있을 때만). 파서 QueueTopic.category 보존.
   category    String?
