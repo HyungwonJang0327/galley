@@ -157,6 +157,9 @@ model RunStep {
   outputTokens Int?
   costUsd      Float?
   durationMs   Int?
+  // 어투 프롬프트 파일(.galley/prompts/<단계>.md) 내용의 sha256 — 같은 주제 시도 간 결과 차이를 지시만으로 설명 못 할 때
+  // "어투가 바뀌었다"를 판별한다(decisions/tone-prompts.md). StepRunner가 읽어 돌려주고 워커는 기록만. 표시 없음.
+  promptHash   String?
 
   startedAt  DateTime?
   finishedAt DateTime?
