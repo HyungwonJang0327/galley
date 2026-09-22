@@ -21,10 +21,13 @@ export interface TopicHints {
 
 /** 괄호 묶음 전부(반각·전각). normalizeTopicTitle이 매칭에서 빼는 것과 같은 범위 — 제목 어디에 있든 힌트로 본다. */
 const GROUPS = /[(（]([^)）]*)[)）]/g;
-/** 항 구분자: 쉼표(반각·전각)·플러스·슬래시·화살표·가운뎃점. 하이픈·공백은 항의 일부(`react-router`, `vendor manager`). */
-const SEPARATORS = /[,，+/·→]/;
-/** 기간: 연 또는 연.월(구분자 . - /), 선택적으로 `~`·`-`·`–`로 이은 범위. */
-const YEAR_MONTH = String.raw`\d{4}(?:[.\-/]\d{1,2})?`;
+/**
+ * 항 구분자: 쉼표(반각·전각)·플러스·화살표·가운뎃점. 하이픈·공백·슬래시는 항의 일부(`react-router`, `vendor manager`,
+ * `A/B 테스트`, `src/app`, `next 13/14`) — 슬래시를 구분자로 두면 경로·버전 표기가 쪼개진다(2026-09-22 BE6 리뷰).
+ */
+const SEPARATORS = /[,，+·→]/;
+/** 기간: 연(19xx·20xx) 또는 연.월(월 1~12, 구분자 . -), 선택적으로 `~`·`-`·`–`로 이은 범위. `2024/12`는 기간이 아니다(키워드). */
+const YEAR_MONTH = String.raw`(?:19|20)\d{2}(?:[.\-](?:0?[1-9]|1[0-2]))?`;
 const PERIOD = new RegExp(`^${YEAR_MONTH}(?:\\s*[~\\-–]\\s*${YEAR_MONTH})?$`);
 
 export const isPeriodHint = (term: string): boolean => PERIOD.test(term.trim());
@@ -63,6 +66,8 @@ export function resolveTopicHints(
   raw: RawTopicHints,
   repos: readonly RepoNameSource[],
 ): TopicHints {
+  // 같은 alias가 두 리포에 있으면 목록의 앞 리포가 이긴다 — 호출자가 순서를 결정적으로(생성 순) 넘긴다. alias 유일성
+  // 검사는 리포 등록 쪽 몫(기록: BE6 리뷰 4).
   const byAlias = new Map<string, string>();
   for (const repo of repos) {
     byAlias.set(repo.name.normalize('NFC').toLowerCase(), repo.name);
@@ -74,7 +79,7 @@ export function resolveTopicHints(
   const repoNames: string[] = [];
   const keywords: string[] = [];
   for (const term of raw.terms) {
-    const name = byAlias.get(term.toLowerCase());
+    const name = byAlias.get(term.normalize('NFC').toLowerCase());
     if (name !== undefined) {
       if (!repoNames.includes(name)) repoNames.push(name);
     } else keywords.push(term.toLowerCase());

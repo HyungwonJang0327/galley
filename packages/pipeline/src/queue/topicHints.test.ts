@@ -20,12 +20,12 @@ describe('parseTopicHints', () => {
 
   test('힌트가 없으면 빈 값, 전각 괄호·여러 묶음·공백 정리·중복(대소문자) 제거, 기간은 첫 것만', () => {
     expect(parseTopicHints('그냥 제목')).toEqual({ terms: [], period: null });
-    expect(parseTopicHints('제목 （SpaceHome， 2024.07 ~ 2024.09） (spacehome / Nest)')).toEqual({
+    expect(parseTopicHints('제목 （SpaceHome， 2024.07 ~ 2024.09） (spacehome + Nest)')).toEqual({
       terms: ['SpaceHome', 'Nest'],
       period: '2024.07~2024.09',
     });
     expect(
-      parseTopicHints('제목 (SpaceHome, 2024.07 ~ 2024.09) (spacehome / Nest, 2025.01)'),
+      parseTopicHints('제목 (SpaceHome, 2024.07 ~ 2024.09) (spacehome + Nest, 2025.01)'),
     ).toEqual({
       terms: ['SpaceHome', 'Nest'],
       period: '2024.07~2024.09',
@@ -36,17 +36,43 @@ describe('parseTopicHints', () => {
     });
   });
 
-  test('isPeriodHint: 연·연.월·범위, 구분자 . - /', () => {
+  test('슬래시는 항의 일부(경로·버전·A/B), `2024/12`는 기간이 아니라 키워드', () => {
+    expect(parseTopicHints('x (A/B 테스트, next 13/14, src/app, 2024/12)')).toEqual({
+      terms: ['A/B 테스트', 'next 13/14', 'src/app', '2024/12'],
+      period: null,
+    });
+  });
+
+  test('빈 괄호·짝 안 맞는 괄호·중첩·기간 둘', () => {
+    expect(parseTopicHints('x () (  ) (a')).toEqual({ terms: [], period: null });
+    // 중첩은 normalizeTopicTitle과 같은 범위로 본다(첫 닫는 괄호까지)
+    expect(parseTopicHints('x (a (b) c)')).toEqual({ terms: ['a (b'], period: null });
+    // 둘째 기간은 버린다 — 여러 달은 범위(2024.07~2024.09)로 적는다
+    expect(parseTopicHints('x (2024.07, 2024.09)')).toEqual({ terms: [], period: '2024.07' });
+  });
+
+  test('isPeriodHint: 연(19xx·20xx)·연.월(1~12)·범위, 구분자 . -', () => {
     for (const ok of [
       '2024',
       '2024.03',
       '2024-3',
-      '2024/12',
+      '2024.12',
       '2024.07~2024.09',
       '2024.07 – 2025.01',
+      '2024-2025',
     ])
       expect(isPeriodHint(ok), ok).toBe(true);
-    for (const no of ['24.03', '2024.13a', 'v2024', '2024.03.15', 'react-router'])
+    for (const no of [
+      '24.03',
+      '2024.13',
+      '2024.00',
+      '2024.13a',
+      '1000',
+      'v2024',
+      '2024.03.15',
+      '2024/12',
+      'react-router',
+    ])
       expect(isPeriodHint(no), no).toBe(false);
   });
 });
@@ -68,6 +94,20 @@ describe('resolveTopicHints', () => {
       keywords: ['react-router', 'nest'],
       period: '2024.03',
     });
+  });
+
+  test('alias가 두 리포에 겹치면 목록의 앞 리포가 이긴다(호출자가 생성 순으로 넘긴다), 한글 alias·NFC', () => {
+    const shared = [
+      { name: 'a', aliases: ['shared'] },
+      { name: 'b', aliases: ['SHARED', '스페이스홈'] },
+    ];
+    expect(resolveTopicHints({ terms: ['shared'], period: null }, shared).repoNames).toEqual(['a']);
+    expect(
+      resolveTopicHints({ terms: ['shared'], period: null }, [...shared].reverse()).repoNames,
+    ).toEqual(['b']);
+    expect(
+      resolveTopicHints({ terms: ['스페이스홈'.normalize('NFD')], period: null }, shared).repoNames,
+    ).toEqual(['b']);
   });
 
   test('등록된 리포가 없으면 전부 키워드', () => {

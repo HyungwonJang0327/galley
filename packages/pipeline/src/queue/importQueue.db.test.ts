@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { HOLD_REASON_REMOVED, disposeMissing, importQueueFromFile } from './importQueue.ts';
 import { RUN_STATUS } from '../run/stateMachine.ts';
+import { serializeStringArray } from '../index/schema.ts';
 import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -203,7 +204,7 @@ describe('importQueueFromFile', () => {
     });
 
     await prisma.repo.create({
-      data: { name: 'spacehome', path: '/tmp/spacehome', aliases: '["sh"]' },
+      data: { name: 'spacehome', path: '/tmp/spacehome', aliases: serializeStringArray(['sh']) },
     });
     await importQueueFromFile({
       storage: WAITING_ONLY(['무한 스크롤 (SH, react-router, 2024.08)']),
