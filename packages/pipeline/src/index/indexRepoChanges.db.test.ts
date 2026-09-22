@@ -224,20 +224,26 @@ describe('indexRepoChanges', () => {
       redactConfig: null,
       sinceSha: shas[1],
     });
+    // 저장된 글이 없는 달은 새 커밋이 없어도 만든다(행이 있어야 unchanged)
     expect(inc.ok && inc.report).toMatchObject({
       totalCommits: 4,
       ignoredCommits: 1,
       planned: 2,
-      saved: 1,
-      unchanged: 1,
+      saved: 2,
+      unchanged: 0,
       remaining: 0,
     });
     expect(inc.ok && inc.plannedKeys).toEqual(['change:2024-03', 'change:2024-04']);
-    const keys = (await prisma.repoAnalysis.findMany({ where: { repoId: repo.id } })).map(
-      (x) => x.key,
-    );
-    expect(keys).toEqual(['change:2024-04']);
-    // HEAD 이후 새 커밋이 없으면 전부 unchanged
+    await prisma.repoAnalysis.deleteMany({ where: { key: 'change:2024-03' } });
+    const partial = await indexRepoChanges(prisma, {
+      repo,
+      adapter,
+      redactConfig: null,
+      sinceSha: shas[1],
+    });
+    // 3월은 행이 없어 만들고, 4월은 새 커밋이 닿았다
+    expect(partial.ok && partial.report).toMatchObject({ saved: 2, unchanged: 0 });
+    // HEAD 이후 새 커밋이 없고 전부 저장돼 있으면 전부 unchanged
     const none = await indexRepoChanges(prisma, {
       repo,
       adapter,

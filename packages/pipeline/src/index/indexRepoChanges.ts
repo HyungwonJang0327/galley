@@ -12,7 +12,8 @@ import { periodOf, planChangeBatches } from './changes.ts';
 import { gitHead, gitLog } from './gitRead.ts';
 import type { GitFailure } from './gitRead.ts';
 import { INDEX_LIMITS, type IndexLimits } from './limits.ts';
-import { upsertRepoAnalysis } from './repoAnalysisRepo.ts';
+import { ANALYSIS_KIND } from './schema.ts';
+import { listAnalysisKeys, upsertRepoAnalysis } from './repoAnalysisRepo.ts';
 
 export interface ChangeProgress {
   key: string;
@@ -101,7 +102,11 @@ export async function indexRepoChanges(
     });
     if (!fresh.ok) return fresh;
     const touched = new Set(fresh.value.commits.map((c) => periodOf(c.authoredAt)));
-    unchangedKeys = new Set(plan.batches.filter((b) => !touched.has(b.period)).map((b) => b.key));
+    // 새 커밋이 없는 달이라도 저장된 글이 없으면(옛 분할·maxCommits 창 이동) 만든다.
+    const existing = await listAnalysisKeys(prisma, repo.id, ANALYSIS_KIND.change);
+    unchangedKeys = new Set(
+      plan.batches.filter((b) => !touched.has(b.period) && existing.has(b.key)).map((b) => b.key),
+    );
   }
   const execution = planExecution(plannedKeys, {
     ...(input.skipKeys !== undefined ? { skipKeys: input.skipKeys } : {}),

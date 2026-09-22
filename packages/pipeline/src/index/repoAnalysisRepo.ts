@@ -50,6 +50,19 @@ export async function upsertRepoAnalysis(
   return { ok: true, id: row.id, created: existing === null };
 }
 
+/** 같은 kind의 저장된 키 — 증분이 "두어도 되는 글"을 고를 때 쓴다(행이 없는 키는 입력이 안 바뀌었어도 만들어야 한다). */
+export async function listAnalysisKeys(
+  prisma: PrismaClient,
+  repoId: string,
+  kind: AnalysisKind,
+): Promise<Set<string>> {
+  const rows = await prisma.repoAnalysis.findMany({
+    where: { repoId, kind },
+    select: { key: true },
+  });
+  return new Set(rows.map((r) => r.key));
+}
+
 /**
  * 고아 행 정리 — 같은 kind에서 `keepKeys`에 없는 분석 글을 지운다(사라진 영역, 달 분할이 바뀐 옛 change 묶음).
  * 성공한 인덱싱 뒤에 실행자가 부른다(인덱서의 plannedKeys 기준). TopicAnalysisLink는 FK cascade로 함께 사라진다 —

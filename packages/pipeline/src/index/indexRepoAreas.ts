@@ -11,7 +11,8 @@ import { gitHead, gitListFiles, gitShowFile, looksBinary } from './gitRead.ts';
 import type { GitFailure } from './gitRead.ts';
 import { planExecution, type ExecutionOptions } from './batchControl.ts';
 import { INDEX_LIMITS, type IndexLimits } from './limits.ts';
-import { upsertRepoAnalysis } from './repoAnalysisRepo.ts';
+import { ANALYSIS_KIND } from './schema.ts';
+import { listAnalysisKeys, upsertRepoAnalysis } from './repoAnalysisRepo.ts';
 import { areaKeyForPath, planAreas } from './tree.ts';
 
 export interface AreaProgress {
@@ -38,7 +39,7 @@ export interface IndexAreasInput {
   resumeAfterKey?: string;
   /** 이번 호출에서 돌릴 최대 영역 수(실행자가 틱마다 하나씩). */
   maxBatches?: number;
-  /** 증분: 이 경로들이 속한 영역만 다시 만든다(`gitDiffPaths`). 나머지는 unchanged. 없으면 전체. */
+  /** 증분: 이 경로들이 속한 영역만 다시 만든다(`gitDiffPaths`). 나머지 중 **이미 저장된 글이 있는** 영역만 unchanged — 분할이 바뀌어 행이 없는 키는 만든다. 없으면 전체. */
   changedPaths?: readonly string[];
   /** 영역 하나가 끝날 때마다 — 진행 저장(progressCursor)·로그용. 던지지 않는 것으로 가정한다. */
   onAreaDone?: (progress: AreaProgress) => Promise<void> | void;
@@ -102,7 +103,8 @@ export async function indexRepoAreas(
       const key = areaKeyForPath(summary.areas, path);
       if (key !== undefined) touched.add(key);
     }
-    unchangedKeys = new Set(plannedKeys.filter((k) => !touched.has(k)));
+    const existing = await listAnalysisKeys(prisma, repo.id, ANALYSIS_KIND.area);
+    unchangedKeys = new Set(plannedKeys.filter((k) => !touched.has(k) && existing.has(k)));
   }
   const execution = planExecution(plannedKeys, {
     ...(input.skipKeys !== undefined ? { skipKeys: input.skipKeys } : {}),
