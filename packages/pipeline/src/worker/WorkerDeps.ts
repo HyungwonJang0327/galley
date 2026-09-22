@@ -1,6 +1,7 @@
 // runOnce가 바깥과 닿는 면 전부. **비결정성을 여기로 민다** — runOnce 안에서 Date.now()·
 // randomUUID를 직접 부르지 않는다. 그래야 heartbeat 만료·타임아웃을 실제 시간을 흘리지 않고
 // 테스트한다(decisions/run-execution-model.md "루프는 runOnce(deps)").
+import type { IndexTickResult } from '../index/runIndexTick.ts';
 import type { StepName, StepStatus } from '../run/stateMachine.ts';
 import type { StepRunner } from '../steps/StepRunner.ts';
 
@@ -95,4 +96,9 @@ export interface WorkerDeps {
   logger: Logger;
   repo: WorkerRepo;
   stepRunner: StepRunner;
+  /**
+   * 리포 인덱싱(IndexJob) 틱. **Run이 없을 때만** 불린다 — Run 우선(decisions/run-location.md). 없으면 워커는 Run만 돈다.
+   * 인덱싱 중 Run이 오면 현재 배치를 끝내고(틱 하나) 다음 틱이 Run을 잡는다.
+   */
+  indexer?: { tick(signal?: AbortSignal): Promise<IndexTickResult> };
 }

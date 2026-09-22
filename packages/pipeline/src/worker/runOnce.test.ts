@@ -12,6 +12,7 @@ import { createMockStepRunner } from '../steps/MockStepRunner.ts';
 import type { StepContext, StepResult, StepRunner } from '../steps/StepRunner.ts';
 import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine.ts';
 import type { ClaimedRun, StepOutcome, Timers, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
+import type { IndexTickResult } from '../index/runIndexTick.ts';
 
 /**
  * 손으로 발화시키는 타이머. 실제 시간은 흐르지 않는다 — 테스트가 `fireEvery`/`fireAfter`로
@@ -601,5 +602,42 @@ describe('runOnce — 종료 신호(클레임 반환)', () => {
 
     expect(await runOnce(d, controller.signal)).toEqual({ outcome: 'idle' });
     expect(state.claimed).toBe(false);
+  });
+});
+
+describe('runOnce — 인덱싱 틱 위임', () => {
+  it('실행이 없을 때만 indexer.tick을 부르고, 결과가 idle이 아니면 indexed로 돌려준다', async () => {
+    const tick = vi.fn<(signal?: AbortSignal) => Promise<IndexTickResult>>(async () => ({
+      outcome: 'progressed',
+      jobId: 'job_1',
+    }));
+    const d = deps({ repo: fakeRepo({ pendingApproval: true }).repo, indexer: { tick } });
+    expect(await runOnce(d)).toEqual({
+      outcome: 'indexed',
+      index: { outcome: 'progressed', jobId: 'job_1' },
+    });
+    expect(tick).toHaveBeenCalledTimes(1);
+
+    tick.mockResolvedValueOnce({ outcome: 'idle' });
+    expect(await runOnce(d)).toEqual({ outcome: 'idle' });
+  });
+
+  it('실행이 있으면(Run 우선) indexer는 부르지 않고, indexer가 없으면 idle', async () => {
+    const tick = vi.fn(async () => ({ outcome: 'progressed' as const }));
+    const { repo } = fakeRepo();
+    expect((await runOnce(deps({ repo, indexer: { tick } }))).outcome).toBe('claimed');
+    expect(tick).not.toHaveBeenCalled();
+    expect(await runOnce(deps({ repo: fakeRepo({ pendingApproval: true }).repo }))).toEqual({
+      outcome: 'idle',
+    });
+  });
+
+  it('종료 신호를 indexer.tick에 그대로 넘긴다', async () => {
+    const controller = new AbortController();
+    const tick = vi.fn(async (signal?: AbortSignal) => ({
+      outcome: signal === controller.signal ? ('released' as const) : ('idle' as const),
+    }));
+    const d = deps({ repo: fakeRepo({ pendingApproval: true }).repo, indexer: { tick } });
+    expect((await runOnce(d, controller.signal)).index?.outcome).toBe('released');
   });
 });

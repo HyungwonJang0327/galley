@@ -6,6 +6,9 @@
 // — decisions/node-runtime.md, CLAUDE.md 함정 절.
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../src/db.ts';
+import { defaultRedactConfigPath, loadRedactConfig } from '../src/evidence/redact.ts';
+import { runIndexTick } from '../src/index/runIndexTick.ts';
+import { createModelRegistryFromEnv } from '../src/model/ModelRegistry.ts';
 import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
 import { runOnce } from '../src/worker/runOnce.ts';
 import { createMockStepRunner } from '../src/steps/MockStepRunner.ts';
@@ -40,6 +43,30 @@ const deps: WorkerDeps = {
   stepRunner: createMockStepRunner(),
 };
 
+/**
+ * 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 모델은 레지스트리(id → 어댑터)만, 식별 정보 필터는
+ * 기동 시 한 번 읽는다(없으면 null — readOnly 리포 작업은 인덱서가 REDACT_CONFIG_REQUIRED로 실패시킨다).
+ */
+async function createIndexer(): Promise<NonNullable<WorkerDeps['indexer']>> {
+  const registry = createModelRegistryFromEnv(process.env);
+  const redactPath = defaultRedactConfigPath(process.env);
+  const loaded = await loadRedactConfig(redactPath);
+  if (!loaded.ok)
+    deps.logger.info('식별 정보 필터 설정 없이 기동한다(readOnly 리포 인덱싱은 거부된다)', {
+      code: loaded.code,
+    });
+  const tickDeps = {
+    prisma,
+    workerId: deps.workerId,
+    clock: deps.clock,
+    timers: deps.timers,
+    logger: deps.logger,
+    adapters: registry,
+    redactConfig: loaded.ok ? loaded.config : null,
+  };
+  return { tick: (signal) => runIndexTick(tickDeps, signal) };
+}
+
 const controller = new AbortController();
 let stopping = false;
 
@@ -72,6 +99,7 @@ const sleep = (ms: number) =>
   });
 
 async function main(): Promise<void> {
+  deps.indexer = await createIndexer();
   deps.logger.info('워커 시작', { workerId: deps.workerId });
 
   while (!stopping) {

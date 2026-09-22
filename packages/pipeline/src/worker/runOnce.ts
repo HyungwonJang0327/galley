@@ -1,6 +1,7 @@
 // 워커의 한 틱. **한 tick = 한 단계**만 처리한다 — 여러 단계를 이어 물면 승인·취소·heartbeat가
 // 그 사이에 끼어들 수 없다. bin/worker.ts는 이걸 반복해서 부르는 껍데기일 뿐이다.
 // (decisions/run-execution-model.md)
+import type { IndexTickResult } from '../index/runIndexTick.ts';
 import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
 import { StepFailure, toStepFailure } from '../steps/StepRunner.ts';
 import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
@@ -39,16 +40,20 @@ export type TickOutcome =
   /** 끊긴 실행을 회수했다. */
   | 'recovered'
   /** 종료 신호를 받아 돌던 단계를 반환했다(실패가 아니다 — 다음 기동이 그 단계부터 다시 돈다). */
-  | 'released';
+  | 'released'
+  /** Run이 없어 인덱싱 작업(IndexJob)을 한 배치 진행했다. 세부는 `index`. */
+  | 'indexed';
 
 export interface TickResult {
   outcome: TickOutcome;
   /** 이번 틱이 건드린 단계(있을 때만). 테스트가 DB를 뒤지지 않고 1차 검증한다. */
   stepRef?: { runId: string; step: StepName };
+  /** `indexed`일 때 인덱싱 틱의 결과. */
+  index?: IndexTickResult;
 }
 
 /**
- * 한 번 돈다. 순서: **끊긴 실행 회수 → 실행 잡기 → 다음 단계 하나 실행**.
+ * 한 번 돈다. 순서: **끊긴 실행 회수 → 실행 잡기 → 다음 단계 하나 실행**. 실행이 없으면 인덱싱 틱(있을 때).
  *
  * 잡은 직후에는 단계를 돌리지 않고 `claimed`로 끝낸다 — 잡는 것과 도는 것을 다른 틱으로 나눠야
  * 그 사이에 승인·취소가 끼어들 수 있고, 테스트도 단계 단위로 본다.
@@ -65,7 +70,11 @@ export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<T
   }
 
   const claimed = await deps.repo.claimRun(deps.workerId, now);
-  if (claimed === null) return { outcome: 'idle' };
+  if (claimed === null) {
+    if (deps.indexer === undefined) return { outcome: 'idle' };
+    const index = await deps.indexer.tick(signal);
+    return index.outcome === 'idle' ? { outcome: 'idle' } : { outcome: 'indexed', index };
+  }
 
   const { run } = claimed;
   if (claimed.justClaimed) {
