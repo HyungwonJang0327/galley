@@ -28,6 +28,7 @@ export async function loadAnalysisCandidates(prisma: PrismaClient): Promise<Anal
       period: true,
       repo: { select: { name: true } },
     },
+    orderBy: [{ repo: { name: 'asc' } }, { key: 'asc' }],
   });
   const out: AnalysisCandidate[] = [];
   for (const r of rows) {

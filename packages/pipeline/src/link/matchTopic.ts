@@ -52,9 +52,12 @@ const monthKey = (index: number) =>
 
 /**
  * 기간 정규형 → 달(`YYYY-MM`) 집합. `2024` → 12달, `2024-07~2024-09` → 3달, 범위 방향이 뒤집혀 있으면 바로잡는다.
- * 형식이 아니면 빈 집합(매칭에 기간을 쓰지 않는다). 상한 `maxMonths`를 넘으면 앞부터 자른다.
+ * 형식이 아니면 빈 집합(매칭에 기간을 쓰지 않는다). 상한 `maxMonths`를 넘으면 최근 달부터 그만큼만.
  */
-export function expandPeriod(period: string | null): Set<string> {
+export function expandPeriod(
+  period: string | null,
+  limits: AutoLinkLimits = AUTO_LINK_LIMITS,
+): Set<string> {
   const months = new Set<string>();
   if (period === null) return months;
   const [fromRaw, toRaw] = period.split('~');
@@ -75,8 +78,9 @@ export function expandPeriod(period: string | null): Set<string> {
   let start = monthIndex(from[0], from[1] === 0 ? 1 : from[1]);
   let end = monthIndex(to[0], to[1] === 0 ? 12 : to[1]);
   if (start > end) [start, end] = [end, start];
-  for (let i = start; i <= end && months.size < AUTO_LINK_LIMITS.maxMonths; i += 1)
-    months.add(monthKey(i));
+  // 상한을 넘으면 최근 달부터 maxMonths개.
+  start = Math.max(start, end - limits.maxMonths + 1);
+  for (let i = start; i <= end; i += 1) months.add(monthKey(i));
   return months;
 }
 
@@ -86,7 +90,7 @@ export function expandPeriod(period: string | null): Set<string> {
  * - 키워드 겹침(정확히 같은 토큰) 하나당 1점 → `keyword`.
  * - change 글의 달이 주제 기간 안이면 1점 → `period`.
  * - 리포만 적은 주제(키워드·기간 없음)는 그 리포의 `overview`만 붙인다 → `repo`(리포 전체 글을 다 붙이지 않는다).
- * 점수 0은 버리고, 점수 내림차순 → kind(overview·area·change) → key 순으로 상한(`maxPerTopic`)까지.
+ * 점수 0은 버리고, 점수 내림차순 → kind(overview·area·change) → 리포 이름 → key 순으로 상한(`maxPerTopic`)까지(결정적).
  */
 export function matchTopic(
   topic: TopicHintsInput,
@@ -95,7 +99,7 @@ export function matchTopic(
 ): MatchedAnalysis[] {
   const repoFilter = new Set(topic.repoNames);
   const keywords = new Set(usefulKeywords(topic.keywords));
-  const months = expandPeriod(topic.period);
+  const months = expandPeriod(topic.period, limits);
   const repoOnly = repoFilter.size > 0 && keywords.size === 0 && months.size === 0;
 
   const out: MatchedAnalysis[] = [];
@@ -132,6 +136,7 @@ export function matchTopic(
     const ay = byId.get(y.id)!;
     if (KIND_ORDER[ax.kind] !== KIND_ORDER[ay.kind])
       return KIND_ORDER[ax.kind] - KIND_ORDER[ay.kind];
+    if (ax.repoName !== ay.repoName) return ax.repoName < ay.repoName ? -1 : 1;
     return ax.key < ay.key ? -1 : ax.key > ay.key ? 1 : 0;
   });
   return out.slice(0, limits.maxPerTopic);
