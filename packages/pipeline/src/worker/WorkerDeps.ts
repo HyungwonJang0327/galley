@@ -2,6 +2,7 @@
 // randomUUID를 직접 부르지 않는다. 그래야 heartbeat 만료·타임아웃을 실제 시간을 흘리지 않고
 // 테스트한다(decisions/run-execution-model.md "루프는 runOnce(deps)").
 import type { IndexTickResult } from '../index/runIndexTick.ts';
+import type { AutoLinkTickResult } from '../link/autoLink.ts';
 import type { StepName, StepStatus } from '../run/stateMachine.ts';
 import type { StepRunner } from '../steps/StepRunner.ts';
 
@@ -101,4 +102,9 @@ export interface WorkerDeps {
    * 인덱싱 중 Run이 오면 현재 배치를 끝내고(틱 하나) 다음 틱이 Run을 잡는다.
    */
   indexer?: { tick(signal?: AbortSignal): Promise<IndexTickResult> };
+  /**
+   * 주제 ↔ 분석 글 자동 연결 틱(모델 없음). **Run도 IndexJob도 없을 때만** 불린다 — 가장 싼 일이라 맨 뒤.
+   * 없으면 자동 연결은 돌지 않는다(manual 연결만).
+   */
+  linker?: { tick(signal?: AbortSignal): Promise<AutoLinkTickResult> };
 }

@@ -254,6 +254,17 @@ export {
 } from './index/indexJobRepo.ts';
 export type { ClaimedIndexJob, IndexProgress, IndexJobEnd } from './index/indexJobRepo.ts';
 export { enqueueIndexJob } from './index/enqueueIndexJob.ts';
+export { AUTO_LINK_LIMITS } from './link/limits.ts';
+export type { AutoLinkLimits } from './link/limits.ts';
+export { matchTopic, usefulKeywords, expandPeriod } from './link/matchTopic.ts';
+export type { TopicHintsInput, AnalysisCandidate, MatchedAnalysis } from './link/matchTopic.ts';
+export {
+  linkTopicAuto,
+  loadAnalysisCandidates,
+  findStaleTopics,
+  runAutoLinkTick,
+} from './link/autoLink.ts';
+export type { AutoLinkResult, AutoLinkTickDeps, AutoLinkTickResult } from './link/autoLink.ts';
 export type {
   EnqueueIndexJobInput,
   EnqueuedIndexJob,

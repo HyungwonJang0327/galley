@@ -13,6 +13,7 @@ import type { StepContext, StepResult, StepRunner } from '../steps/StepRunner.ts
 import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine.ts';
 import type { ClaimedRun, StepOutcome, Timers, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
 import type { IndexTickResult } from '../index/runIndexTick.ts';
+import type { AutoLinkTickResult } from '../link/autoLink.ts';
 
 /**
  * 손으로 발화시키는 타이머. 실제 시간은 흐르지 않는다 — 테스트가 `fireEvery`/`fireAfter`로
@@ -639,5 +640,40 @@ describe('runOnce — 인덱싱 틱 위임', () => {
     }));
     const d = deps({ repo: fakeRepo({ pendingApproval: true }).repo, indexer: { tick } });
     expect((await runOnce(d, controller.signal)).index?.outcome).toBe('released');
+  });
+});
+
+describe('runOnce — 자동 연결 틱 위임', () => {
+  it('Run도 IndexJob도 없을 때만 linker.tick을 부르고, 결과가 idle이 아니면 linked', async () => {
+    const link = vi.fn<(signal?: AbortSignal) => Promise<AutoLinkTickResult>>(async () => ({
+      outcome: 'linked',
+      topics: 2,
+      added: 1,
+      removed: 0,
+    }));
+    const indexIdle = { tick: vi.fn(async () => ({ outcome: 'idle' as const })) };
+    const d = deps({
+      repo: fakeRepo({ pendingApproval: true }).repo,
+      indexer: indexIdle,
+      linker: { tick: link },
+    });
+    expect(await runOnce(d)).toEqual({
+      outcome: 'linked',
+      link: { outcome: 'linked', topics: 2, added: 1, removed: 0 },
+    });
+    expect(indexIdle.tick).toHaveBeenCalledTimes(1);
+    link.mockResolvedValueOnce({ outcome: 'idle' });
+    expect(await runOnce(d)).toEqual({ outcome: 'idle' });
+  });
+
+  it('IndexJob이 일했으면 linker는 부르지 않는다', async () => {
+    const link = vi.fn(async () => ({ outcome: 'idle' as const }));
+    const d = deps({
+      repo: fakeRepo({ pendingApproval: true }).repo,
+      indexer: { tick: async () => ({ outcome: 'progressed' as const }) },
+      linker: { tick: link },
+    });
+    expect((await runOnce(d)).outcome).toBe('indexed');
+    expect(link).not.toHaveBeenCalled();
   });
 });
