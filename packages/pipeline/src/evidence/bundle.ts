@@ -26,6 +26,14 @@ export interface EvidenceItem extends EvidenceItemBase {
   snippet: string;
 }
 
+/** 항목이 온 분석 글의 요약 — 본문 단계 입력의 "요약"(decisions 2026-09-22 BE8 ⑨). 인덱싱 때 이미 redact된 값. */
+export interface EvidenceAnalysis {
+  id: string;
+  kind: 'overview' | 'area' | 'change';
+  title: string;
+  summary: string;
+}
+
 export interface EvidenceBundle {
   version: 1;
   runId: string;
@@ -34,6 +42,8 @@ export interface EvidenceBundle {
   /** 번들을 만든 시각(ISO). */
   collectedAt: string;
   items: EvidenceItem[];
+  /** 항목이 온 분석 글의 제목·요약(옵션 — 없으면 빈 배열로 읽는다, version 1 유지). */
+  analyses?: EvidenceAnalysis[];
   /** 읽지 못한 포인터 수(커밋·경로가 사라짐 등). 실패가 아니라 기록이다. */
   unreadable: number;
   /** 식별 정보 필터를 거쳤는가(설정 없이 진행하면 false — readOnly 리포가 있으면 단계가 거부한다). */
@@ -83,6 +93,13 @@ function isItem(v: unknown): v is EvidenceItem {
   );
 }
 
+const isAnalysis = (v: unknown): v is EvidenceAnalysis =>
+  isRecord(v) &&
+  typeof v['id'] === 'string' &&
+  (v['kind'] === 'overview' || v['kind'] === 'area' || v['kind'] === 'change') &&
+  typeof v['title'] === 'string' &&
+  typeof v['summary'] === 'string';
+
 export type ParseBundleResult =
   { ok: true; bundle: EvidenceBundle } | { ok: false; code: 'EVIDENCE_BUNDLE_INVALID' };
 
@@ -90,7 +107,7 @@ export type ParseBundleResult =
 export function parseEvidenceBundle(json: unknown): ParseBundleResult {
   const invalid = { ok: false as const, code: 'EVIDENCE_BUNDLE_INVALID' as const };
   if (!isRecord(json) || json['version'] !== 1) return invalid;
-  const { runId, topicId, topicSlug, collectedAt, items, unreadable, filtered } = json;
+  const { runId, topicId, topicSlug, collectedAt, items, unreadable, filtered, analyses } = json;
   if (
     typeof runId !== 'string' ||
     typeof topicId !== 'string' ||
@@ -99,7 +116,8 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
     !Array.isArray(items) ||
     !items.every(isItem) ||
     !Number.isInteger(unreadable) ||
-    typeof filtered !== 'boolean'
+    typeof filtered !== 'boolean' ||
+    (analyses !== undefined && !(Array.isArray(analyses) && analyses.every(isAnalysis)))
   )
     return invalid;
   return {
@@ -113,6 +131,7 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
       items,
       unreadable: unreadable as number,
       filtered,
+      analyses: analyses === undefined ? [] : (analyses as EvidenceAnalysis[]),
     },
   };
 }

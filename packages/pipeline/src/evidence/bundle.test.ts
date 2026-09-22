@@ -25,6 +25,7 @@ const BUNDLE: EvidenceBundle = {
       snippet: 'const secret = 1;\n',
     },
   ],
+  analyses: [{ id: 'a1', kind: 'area', title: 'src 영역', summary: '요약.' }],
   unreadable: 0,
   filtered: true,
 };
@@ -48,6 +49,14 @@ describe('stripSnippets · parseEvidenceBundle', () => {
       code: 'EVIDENCE_BUNDLE_INVALID',
     }); // snippet 없음
     expect(parseEvidenceBundle({ ...BUNDLE, version: 2 })).toMatchObject({ ok: false });
+    // analyses는 옵션 — 없으면 빈 배열, 형식이 틀리면 거부
+    const { analyses: _a, ...withoutAnalyses } = BUNDLE;
+    void _a;
+    const parsed = parseEvidenceBundle(withoutAnalyses);
+    expect(parsed.ok && parsed.bundle.analyses).toEqual([]);
+    expect(parseEvidenceBundle({ ...BUNDLE, analyses: [{ id: 'x' }] })).toMatchObject({
+      ok: false,
+    });
     expect(
       parseEvidenceBundle({
         ...BUNDLE,
