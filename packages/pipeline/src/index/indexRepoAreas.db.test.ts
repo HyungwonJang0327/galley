@@ -7,12 +7,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { indexRepoAreas, type AreaProgress } from './indexRepoAreas.ts';
-import { upsertRepoAnalysis } from './repoAnalysisRepo.ts';
+import { pruneAnalyses, upsertRepoAnalysis } from './repoAnalysisRepo.ts';
 import { gitShowFile } from './gitRead.ts';
 import { createScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
 import { parsePointers, parseStringArray, REPO_STATUS } from './schema.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
 import type { AreaAnalysisDraft } from './areaAnalysis.ts';
+import type { ChangeAnalysisDraft } from './changeAnalysis.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 let dir: string;
@@ -329,5 +330,49 @@ describe('upsertRepoAnalysis', () => {
       code: 'POINTERS_EMPTY',
     });
     expect(await prisma.repoAnalysis.count()).toBe(0);
+  });
+
+  test('pruneAnalyses는 같은 kind에서 keepKeys에 없는 행만 지운다(다른 kind·다른 리포는 그대로)', async () => {
+    const repo = await makeRepo(false);
+    const other = await prisma.repo.create({
+      data: { name: 'other', path: join(dir, 'other'), readOnly: false },
+    });
+    const common = {
+      title: 't',
+      summary: 's',
+      keywords: [],
+      pointers: [{ commit: 'abc1234', path: 'x' }],
+      summaryOnly: false,
+      modelId: 'mock',
+      usage: { inputTokens: 1, outputTokens: 1 },
+      costUsd: 0,
+      filtered: false,
+      redacted: false,
+    };
+    const area = (key: string): AreaAnalysisDraft => ({
+      ...common,
+      kind: 'area',
+      key,
+      period: null,
+    });
+    const change = (key: string, period: string): ChangeAnalysisDraft => ({
+      ...common,
+      kind: 'change',
+      key,
+      period,
+    });
+    await upsertRepoAnalysis(prisma, repo.id, area('area:keep'));
+    await upsertRepoAnalysis(prisma, repo.id, area('area:gone'));
+    await upsertRepoAnalysis(prisma, repo.id, change('change:2024-03', '2024-03'));
+    await upsertRepoAnalysis(prisma, other.id, area('area:gone'));
+    expect(await pruneAnalyses(prisma, repo.id, 'area', ['area:keep'])).toBe(1);
+    const left = await prisma.repoAnalysis.findMany({
+      orderBy: [{ repoId: 'asc' }, { key: 'asc' }],
+    });
+    expect(left.map((r) => `${r.repoId === repo.id ? 'repo' : 'other'}:${r.key}`).sort()).toEqual([
+      'other:area:gone',
+      'repo:area:keep',
+      'repo:change:2024-03',
+    ]);
   });
 });
