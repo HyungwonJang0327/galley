@@ -1,4 +1,4 @@
-// 읽기 전용 git 접근 — 리포 경로에서 `git rev-parse`·`ls-tree`·`show`·`log`·`rev-list`·`diff --name-only`만 실행한다. 파일·브랜치·git 상태를 바꾸는 명령은
+// 읽기 전용 git 접근 — 리포 경로에서 `git rev-parse`·`ls-tree`·`cat-file blob`·`log`·`rev-list`·`diff --name-only`만 실행한다. 파일·브랜치·git 상태를 바꾸는 명령은
 // 여기 없고 앞으로도 두지 않는다(CLAUDE.md §5 "읽기 전용 리포에 쓰기 금지"). 예상된 실패는 값으로.
 // 옵션 주입 방어: 커밋 인자는 형식 검증 + 모든 위치 인자 앞에 `--end-of-options`(`--output=…`같은 값이 옵션으로 읽히지 않게).
 import { execFile } from 'node:child_process';
@@ -44,7 +44,7 @@ async function git(repoPath: string, args: readonly string[]): Promise<GitResult
       typeof error === 'object' && error !== null && 'stderr' in error ? String(error.stderr) : '';
     if (/not a git repository/i.test(stderr)) return { ok: false, code: 'NOT_A_GIT_REPO' };
     if (
-      /does not exist in|exists on disk, but not in|bad revision|unknown revision|invalid object name|Not a valid object name|bad object|path .* does not exist|is outside repository/i.test(
+      /does not exist in|exists on disk, but not in|bad revision|unknown revision|invalid object name|Not a valid object name|bad object|bad file|path .* does not exist|is outside repository/i.test(
         stderr,
       )
     )
@@ -94,14 +94,18 @@ export async function gitListFiles(
   return { ok: true, value: files };
 }
 
-/** 커밋 시점의 파일 본문. `git show <commit>:<path>` — 포인터가 commit 기준이라 HEAD가 바뀌어도 같은 조각. */
+/**
+ * 커밋 시점의 파일 본문. `git cat-file blob <commit>:<path>` — 포인터가 commit 기준이라 HEAD가 바뀌어도 같은 조각.
+ * `show`가 아니라 `cat-file blob`인 이유: 경로가 디렉터리면 `show`는 트리 목록을 성공으로 돌려줘 "근거"가 된다(BE8 리뷰 3).
+ * blob이 아니면 `bad file` → GIT_OBJECT_NOT_FOUND.
+ */
 export async function gitShowFile(
   repoPath: string,
   commit: string,
   path: string,
 ): Promise<GitResult<string>> {
   if (!isCommitRef(commit)) return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
-  return git(repoPath, ['show', '--end-of-options', `${commit}:${path}`]);
+  return git(repoPath, ['cat-file', 'blob', '--end-of-options', `${commit}:${path}`]);
 }
 
 /** 커밋이 파일에 한 일 — `--raw`의 상태 문자(`--no-renames`라 R/C는 나오지 않고 A+D로 풀린다). T = 종류 변경. */
