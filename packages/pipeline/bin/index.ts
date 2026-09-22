@@ -2,6 +2,7 @@
 // (decisions/run-location.md — 대시보드·CLI는 워커에 신호를 보내지 않는다).
 //   pnpm --filter @galley/pipeline index <path> [--name <n>] [--alias a,b] [--read-only] [--model <id>] [--full]
 // Node 24 타입 스트리핑으로 그대로 돈다(상대 import 확장자 필수 — decisions/node-runtime.md).
+import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { prisma } from '../src/db.ts';
 import { defaultRedactConfigPath, loadRedactConfig } from '../src/evidence/redact.ts';
@@ -28,9 +29,9 @@ async function main(argv: readonly string[]): Promise<number> {
       options: {
         name: { type: 'string' },
         alias: { type: 'string' },
-        'read-only': { type: 'boolean', default: false },
+        'read-only': { type: 'boolean' },
         model: { type: 'string' },
-        full: { type: 'boolean', default: false },
+        full: { type: 'boolean' },
       },
     });
   } catch (error) {
@@ -63,7 +64,7 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   // readOnly 리포는 필터 설정이 없으면 워커가 REDACT_CONFIG_REQUIRED로 실패시킨다 — 여기서 먼저 막는다.
-  if (values['read-only']) {
+  if (values['read-only'] === true) {
     const redactPath = defaultRedactConfigPath(process.env);
     const loaded = await loadRedactConfig(redactPath);
     if (!loaded.ok) {
@@ -74,13 +75,16 @@ async function main(argv: readonly string[]): Promise<number> {
     }
   }
 
+  // pnpm 스크립트는 cwd가 packages/pipeline이다 — 상대경로는 사용자가 명령을 친 폴더(INIT_CWD) 기준으로 푼다.
+  const absolutePath = resolve(process.env['INIT_CWD'] ?? process.cwd(), path);
   const result = await enqueueIndexJob(prisma, {
-    path,
+    path: absolutePath,
     ...(values.name !== undefined ? { name: values.name } : {}),
     ...(values.alias !== undefined ? { aliases: values.alias.split(',') } : {}),
-    readOnly: values['read-only'],
+    // 플래그가 있을 때만 true — 없다고 기존 readOnly 리포를 false로 되돌리지 않는다(식별 정보 필터 필수 가드).
+    ...(values['read-only'] === true ? { readOnly: true } : {}),
     modelId: adapter.id,
-    full: values.full,
+    full: values.full === true,
   });
   if (!result.ok) {
     const detail =

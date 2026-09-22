@@ -73,13 +73,22 @@ describe('enqueueIndexJob', () => {
     expect(job).toMatchObject({ status: INDEX_JOB_STATUS.queued, modelId: 'm', fromSha: null });
   });
 
-  test('활성 작업이 있으면 INDEX_JOB_ACTIVE, 이름이 다른 경로에 쓰이면 REPO_NAME_TAKEN, git 리포가 아니면 NOT_A_GIT_REPO', async () => {
-    const first = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm' });
-    const again = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm' });
+  test('활성 작업이 있으면 INDEX_JOB_ACTIVE(리포 불변), 이름이 다른 경로에 쓰이면 REPO_NAME_TAKEN, git 리포가 아니면 NOT_A_GIT_REPO', async () => {
+    const first = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm', readOnly: true });
+    const again = await enqueueIndexJob(prisma, {
+      path: repoPath,
+      modelId: 'm',
+      name: 'renamed',
+      readOnly: false,
+    });
     expect(again).toEqual({
       ok: false,
       code: 'INDEX_JOB_ACTIVE',
       jobId: first.ok ? first.value.job!.id : '',
+    });
+    expect(await prisma.repo.findUniqueOrThrow({ where: { path: repoPath } })).toMatchObject({
+      name: 'my-repo',
+      readOnly: true,
     });
     await prisma.repo.create({ data: { name: 'other', path: join(dir, 'elsewhere') } });
     expect(await enqueueIndexJob(prisma, { path: repoPath, name: 'other', modelId: 'm' })).toEqual({
@@ -98,9 +107,14 @@ describe('enqueueIndexJob', () => {
     const repo = await prisma.repo.create({
       data: { name: 'my-repo', path: repoPath, headSha: head1, status: REPO_STATUS.ready },
     });
-    const same = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm' });
+    const same = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm', aliases: ['mr'] });
     expect(same.ok && same.value.job).toBeUndefined();
     expect(same.ok && same.value.repo.created).toBe(false);
+    // 작업이 없어도 별칭 갱신은 된다, stale로 바뀌지는 않는다
+    expect(await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } })).toMatchObject({
+      aliases: '["mr"]',
+      status: REPO_STATUS.ready,
+    });
 
     await writeFile(join(repoPath, 'b.txt'), 'b\n');
     g('add', '.');
@@ -112,6 +126,22 @@ describe('enqueueIndexJob', () => {
     );
     const updated = await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } });
     expect(updated).toMatchObject({ status: REPO_STATUS.stale, readOnly: true, name: 'my-repo' });
+    // readOnly를 넘기지 않으면 그대로(false로 되돌리지 않는다). --full인데 HEAD가 같으면 stale이 아니다.
+    await prisma.indexJob.deleteMany();
+    await prisma.repo.update({
+      where: { id: repo.id },
+      data: { headSha: head2, status: REPO_STATUS.ready },
+    });
+    const fullSame = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm', full: true });
+    expect(fullSame.ok && fullSame.value.job?.kind).toBe('full');
+    expect(await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } })).toMatchObject({
+      readOnly: true,
+      status: REPO_STATUS.ready,
+    });
+    await prisma.repo.update({
+      where: { id: repo.id },
+      data: { headSha: head1, status: REPO_STATUS.stale },
+    });
 
     await prisma.indexJob.deleteMany();
     const full = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'm', full: true });
