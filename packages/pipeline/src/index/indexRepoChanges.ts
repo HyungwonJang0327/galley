@@ -28,6 +28,8 @@ export interface IndexChangesInput {
   repo: { id: string; name: string; path: string; readOnly: boolean };
   adapter: ModelAdapter;
   redactConfig: RedactConfig | null;
+  /** 이 커밋 기준으로 읽는다(실행자가 작업의 toSha를 넘긴다). 없으면 HEAD. */
+  commit?: string;
   limits?: IndexLimits;
   /**
    * 증분: 이 커밋 이후의 새 커밋이 **닿은 달**만 다시 만든다. 이력은 처음부터 다시 읽어 묶음을 같은 규칙으로 계획하므로
@@ -80,7 +82,10 @@ export async function indexRepoChanges(
     return { ok: false, code: 'REDACT_CONFIG_REQUIRED' };
   const limits = input.limits ?? INDEX_LIMITS;
 
-  const head = await gitHead(repo.path);
+  const head =
+    input.commit !== undefined
+      ? { ok: true as const, value: input.commit }
+      : await gitHead(repo.path);
   if (!head.ok) return head;
   const log = await gitLog(repo.path, { to: head.value, maxCommits: limits.maxCommits });
   if (!log.ok) return log;

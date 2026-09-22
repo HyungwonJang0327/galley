@@ -14,7 +14,8 @@ import {
   type IndexTickOutcome,
 } from './runIndexTick.ts';
 import { createScriptedAdapter, type ScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
-import { INDEX_JOB_STATUS, REPO_STATUS } from './schema.ts';
+import { INDEX_JOB_STATUS, REPO_STATUS, parsePointers } from './schema.ts';
+import { enqueueIndexJob } from './enqueueIndexJob.ts';
 import type { Timers } from '../worker/WorkerDeps.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -306,6 +307,41 @@ describe('runIndexTick', () => {
     }
   });
 
+  test('틱 사이에 커밋이 들어와도 작업은 잡을 때 고정한 커밋 기준이고, 완료 후 Repo.headSha는 그 커밋이라 다음 enqueue가 증분으로 잡는다', async () => {
+    const repo = await makeRepo();
+    const job = await enqueue(repo.id); // toSha 없음 → 클레임 틱이 HEAD(shas[1])로 고정
+    const adapter = createScriptedAdapter((i) => answer(i.prompt));
+    const { deps } = fakeDeps(adapter);
+    expect((await runIndexTick(deps)).outcome).toBe('claimed');
+    expect((await prisma.indexJob.findUniqueOrThrow({ where: { id: job.id } })).toSha).toBe(
+      shas[1],
+    );
+    expect((await runIndexTick(deps)).outcome).toBe('progressed'); // area:.
+    await writeFile(join(repoPath, 'src', 'late.ts'), 'export const late = 1;\n');
+    g({}, 'add', '.');
+    commit('2024-06-01T10:00:00+09:00', 'feat: late commit during indexing');
+    try {
+      const outcomes = await drain(deps);
+      expect(outcomes.at(-2)).toBe('completed');
+      const rows = await prisma.repoAnalysis.findMany({ where: { repoId: repo.id } });
+      // late.ts는 어떤 글에도 없고, 모든 포인터는 고정 커밋(또는 그 조상) 기준
+      expect(rows.some((r) => r.pointers.includes('late.ts'))).toBe(false);
+      for (const r of rows)
+        for (const p of parsePointers(r.pointers)) expect(shas.slice(0, 2)).toContain(p.commit);
+      expect(rows.map((r) => r.key).sort()).not.toContain('change:2024-06');
+      const updated = await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } });
+      expect(updated.headSha).toBe(shas[1]);
+      expect(updated.status).toBe(REPO_STATUS.ready);
+      const next = await enqueueIndexJob(prisma, { path: repoPath, modelId: 'mock:scripted' });
+      expect(next.ok && next.value.job).toEqual(
+        expect.objectContaining({ kind: 'incremental', fromSha: shas[1], toSha: shas[2] }),
+      );
+    } finally {
+      g({}, 'reset', '-q', '--hard', shas[1]!);
+      shas.pop();
+    }
+  });
+
   test('중단·재개: interrupted 작업은 커서 다음부터 이어 돌고 이미 끝난 배치는 모델을 다시 부르지 않는다', async () => {
     const repo = await makeRepo();
     const job = await enqueue(repo.id);
@@ -400,9 +436,8 @@ describe('runIndexTick', () => {
       'INDEX_MODEL_UNKNOWN',
     );
 
-    const ro = await prisma.repo.create({
-      data: { name: 'ro', path: repoPath + '-ro', readOnly: true },
-    });
+    await prisma.repo.delete({ where: { id: repo.id } }); // 경로가 unique라 같은 픽스처로 readOnly 리포를 만든다
+    const ro = await prisma.repo.create({ data: { name: 'ro', path: repoPath, readOnly: true } });
     const roJob = await enqueue(ro.id);
     await drain(fakeDeps(createScriptedAdapter((i) => answer(i.prompt))).deps);
     expect((await prisma.indexJob.findUniqueOrThrow({ where: { id: roJob.id } })).errorCode).toBe(
