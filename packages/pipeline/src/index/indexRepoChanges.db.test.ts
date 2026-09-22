@@ -107,7 +107,10 @@ beforeAll(async () => {
   commit('2024-03-05T10:00:00+09:00', 'init');
   await writeFile(join(repoPath, 'docs', 'g.md'), 'guide\n');
   g({}, 'add', '.');
-  commit('2024-03-20T10:00:00+09:00', 'docs: guide\n\nExample Corp 가이드');
+  commit(
+    '2024-03-20T10:00:00+09:00',
+    'docs: guide\n\nExample Corp 가이드\n\nSigned-off-by: Dev <dev@corp.example>\nRef: https://jira.corp.example/T-1',
+  );
   g({}, 'mv', 'src/a.ts', 'src/b.ts');
   g({}, 'rm', '-q', 'README.md');
   commit('2024-04-01T10:00:00+09:00', 'chore: rename+delete');
@@ -172,8 +175,12 @@ describe('indexRepoChanges', () => {
       'change:2024-03:saved:1/2',
       'change:2024-04:saved:2/2',
     ]);
-    expect(adapter.calls.some((c) => c.prompt.includes('should-never-reach'))).toBe(false);
+    // change 단계는 파일 본문을 읽지 않는다 — INDEX_IGNORE는 경로로 검증한다(.env는 init 커밋에 있다)
+    expect(adapter.calls.some((c) => c.prompt.includes('.env'))).toBe(false);
     expect(adapter.calls.some((c) => c.prompt.includes('pnpm-lock'))).toBe(false);
+    // 트레일러(사내 이메일·이슈 URL)는 모델 입력에서 뺀다, 본문은 남는다
+    expect(adapter.calls.some((c) => c.prompt.includes('corp.example'))).toBe(false);
+    expect(adapter.calls.some((c) => c.prompt.includes('Example Corp 가이드'))).toBe(true);
 
     const rows = await prisma.repoAnalysis.findMany({
       where: { repoId: repo.id },

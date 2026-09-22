@@ -1,5 +1,11 @@
 import { describe, test, expect } from 'vitest';
-import { planChangeBatches, periodOf, pointerCandidates, primaryDir } from './changes.ts';
+import {
+  planChangeBatches,
+  periodOf,
+  pointerCandidates,
+  primaryDir,
+  stripTrailers,
+} from './changes.ts';
 import type { GitCommit } from './gitRead.ts';
 import { INDEX_LIMITS } from './limits.ts';
 
@@ -110,10 +116,27 @@ describe('planChangeBatches', () => {
     expect(plan.batches[1]!.summaryOnly).toBe(false);
   });
 
-  test('본문은 commitBodyChars로 자른다', () => {
+  test('stripTrailers는 마지막 문단이 전부 트레일러일 때만 뗀다', () => {
+    expect(
+      stripTrailers(
+        'desc line\n\nmore detail: with colon inside\n\nSigned-off-by: A <a@corp.example>\nCo-authored-by: B <b@corp.example>\n(cherry picked from commit 0123abcd)\n',
+      ),
+    ).toBe('desc line\n\nmore detail: with colon inside');
+    expect(stripTrailers('Signed-off-by: A <a@corp.example>')).toBe('');
+    expect(stripTrailers('desc\n\nFixes: #12 and also\nplain line')).toBe(
+      'desc\n\nFixes: #12 and also\nplain line',
+    );
+    expect(stripTrailers('')).toBe('');
+  });
+
+  test('본문은 트레일러를 뗀 뒤 commitBodyChars로 자른다', () => {
     const limits = { ...INDEX_LIMITS, commitBodyChars: 5 };
     const plan = planChangeBatches(
-      [commit(1, '2024-03-05T00:00:00+09:00', ['src/a.ts'], { body: 'abcdefghij' })],
+      [
+        commit(1, '2024-03-05T00:00:00+09:00', ['src/a.ts'], {
+          body: 'abcdefghij\n\nSigned-off-by: A <a@corp.example>',
+        }),
+      ],
       limits,
     );
     expect(plan.batches[0]!.commits[0]!.body).toBe('abcde');

@@ -12,7 +12,7 @@ export interface ChangeCommit {
   parentSha?: string;
   authoredAt: string;
   subject: string;
-  /** `commitBodyChars`로 자른 본문. */
+  /** 트레일러 문단을 떼고 `commitBodyChars`로 자른 본문. */
   body: string;
   /** INDEX_IGNORE를 뺀 변경 파일(전부 — 포인터 후보). 프롬프트는 `filesPerCommit`까지만 나열한다. */
   files: GitCommitFile[];
@@ -41,6 +41,22 @@ export interface ChangePlan {
   /** 변경 파일이 있었지만 전부 INDEX_IGNORE라 뺀 커밋 수. */
   ignoredCommits: number;
   batches: ChangeBatch[];
+}
+
+/** git 트레일러 줄 — `Signed-off-by: 이름 <이메일>`·`Co-authored-by:`·`Reviewed-by:` 등, 그리고 `(cherry picked from commit …)`. */
+const TRAILER_LINE = /^(?:[A-Za-z][A-Za-z0-9-]*:\s.*|\(cherry picked from commit [0-9a-f]+\))$/;
+
+/**
+ * 커밋 본문에서 트레일러 문단을 뗀다 — git 정의대로 **마지막 문단의 모든 줄**이 트레일러 형식일 때만. 트레일러에는
+ * 사내 이메일·리뷰어 이름·이슈 URL이 거의 항상 들어 있어 모델 입력에서 제외한다(저장 텍스트 redact와 별개의 입력 축소).
+ */
+export function stripTrailers(body: string): string {
+  const paragraphs = body.trimEnd().split(/\n[ \t]*\n/);
+  const last = paragraphs.at(-1);
+  if (last === undefined || paragraphs.length === 0) return body;
+  const lines = last.split('\n').filter((l) => l.trim() !== '');
+  if (lines.length === 0 || !lines.every((l) => TRAILER_LINE.test(l.trim()))) return body;
+  return paragraphs.slice(0, -1).join('\n\n');
 }
 
 /** 작성일(ISO 8601, 작성자 로컬 오프셋)의 연-월. 형식이 깨졌으면 `unknown`(그래도 묶는다). */
@@ -127,7 +143,7 @@ export function planChangeBatches(
       ...(c.parentSha !== undefined ? { parentSha: c.parentSha } : {}),
       authoredAt: c.authoredAt,
       subject: c.subject,
-      body: c.body.slice(0, limits.commitBodyChars),
+      body: stripTrailers(c.body).slice(0, limits.commitBodyChars),
       files,
       detail: true,
     };
