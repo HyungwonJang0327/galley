@@ -3,11 +3,16 @@
 // 파일이 없으면 값으로 실패(재시도 불가 — 파일을 만들어야 풀린다). 기본 어투를 코드에 두지 않는다.
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { StepName } from '../run/stateMachine.ts';
 
-/** 어투 프롬프트가 있는 단계 — 모델이 글을 쓰는 세 단계뿐. */
-export const TONE_PROMPT_STEPS = ['velog', 'linkedin', 'zenn'] as const;
+/** 어투 프롬프트가 있는 단계 — 모델이 글을 쓰는 세 단계뿐. STEP_ORDER의 이름이 바뀌면 여기서 컴파일 오류. */
+export const TONE_PROMPT_STEPS = [
+  'velog',
+  'linkedin',
+  'zenn',
+] as const satisfies readonly StepName[];
 export type TonePromptStep = (typeof TONE_PROMPT_STEPS)[number];
 export const isTonePromptStep = (value: string): value is TonePromptStep =>
   (TONE_PROMPT_STEPS as readonly string[]).includes(value);
@@ -52,13 +57,22 @@ export async function loadTonePrompt(
   return { ok: true, value: { step, text, hash: hashPromptText(text) } };
 }
 
+export type TonePromptsDirResult =
+  | { ok: true; dir: string }
+  /** `PROMPTS_DIR`이 상대경로다 — 워커(packages/pipeline)와 대시보드(apps/dashboard)는 cwd가 달라 같은 값이 다른 폴더를 가리킨다. */
+  | { ok: false; code: 'PROMPTS_DIR_NOT_ABSOLUTE'; value: string };
+
 /**
- * 기본 폴더. `.env`의 `PROMPTS_DIR`이 있으면 그것(다른 경로들과 같은 규칙 — 주입), 없으면 리포 루트 `.galley/prompts`
- * (이 파일 위치에서 파생 — 소스 트리 전용 폴백, redact.ts `defaultRedactConfigPath`와 같은 방식).
+ * 폴더 결정. `.env`의 `PROMPTS_DIR`이 있으면 그것 — **절대경로만**(상대경로는 값으로 거부, 2026-09-22 BS1 리뷰 3 사용자 결정).
+ * 없으면 리포 루트 `.galley/prompts`(이 파일 위치에서 파생 — 소스 트리 전용 폴백, redact.ts와 같은 방식).
  */
-export function defaultTonePromptsDir(env: NodeJS.ProcessEnv = process.env): string {
-  const fromEnv = env['PROMPTS_DIR'];
-  if (fromEnv !== undefined && fromEnv.trim() !== '') return fromEnv;
+export function resolveTonePromptsDir(env: NodeJS.ProcessEnv = process.env): TonePromptsDirResult {
+  const fromEnv = env['PROMPTS_DIR']?.trim();
+  if (fromEnv !== undefined && fromEnv !== '') {
+    if (!isAbsolute(fromEnv))
+      return { ok: false, code: 'PROMPTS_DIR_NOT_ABSOLUTE', value: fromEnv };
+    return { ok: true, dir: fromEnv };
+  }
   const here = dirname(fileURLToPath(import.meta.url));
-  return resolve(here, '..', '..', '..', '..', '.galley', 'prompts');
+  return { ok: true, dir: resolve(here, '..', '..', '..', '..', '.galley', 'prompts') };
 }
