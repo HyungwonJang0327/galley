@@ -182,7 +182,7 @@
 - [x] **BE7** (2026-09-22 `34b0a83`·`fb0b629`·`d3c5424`·`58ef579`·리뷰 수정 `fd7f413`·`a4f140c`·`d182d5e`·decisions `514c012`·`bc90155`, feat/topic-auto-link — 컬럼 트리거 `autoLinkedAt`, 한 트랜잭션 + updatedAt 조건부, manual 불변, Run → IndexJob → 링커 순) pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
   - BE6에서 넘어온 것: 입력은 `QueueItem.repoNames`(정식 이름으로 리포를 먼저 좁힘)·`keywords`(소문자)·`period`(정규형 `YYYY`·`YYYY-MM`·`YYYY-MM~YYYY-MM`, 범위 전개·방향 뒤집힘 해석은 여기서) · 본문 괄호의 잡음 키워드(`18`·`(`·`-`)는 1~2글자·숫자·기호만이면 거른다 · 인덱서 키워드와 비교는 양쪽 NFC 명시 · alias 유일성 검사(`REPO_ALIAS_TAKEN`)는 리포 등록(`enqueueIndexJob`) 쪽.
   - 완료조건: 픽스처 인덱스 + 큐에서 키워드 겹치는 분석 글만 연결. 재적재(전체 리셋) 후에도 `manual` 링크 유지(테스트).
-- [x] **BE8** (2026-09-22 `4f8cf8a`·`63ed6c7`·`e97ebff`·`55409e9`·`a298162`·리뷰 수정 `2d061cf`·`409fce1`·decisions `8a9cc7b`·`6e68ad4`, feat/evidence-collect — 번들 2곳은 타입 경계, EvidenceStore는 DATA_DIR 전용, `cat-file blob`, 범위 초과·빈 파일은 unreadable, 리포 실패는 단계 실패) pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
+- [x] **BE8** (2026-09-22 `54e597d`·`ef55ab0`·`db21540`·`4f52741`·`5033016`·리뷰 수정 `82ea491`·`59d1636`·decisions `9baeb16`·`99694f9`, feat/evidence-collect — 번들 2곳은 타입 경계, EvidenceStore는 DATA_DIR 전용, `cat-file blob`, 범위 초과·빈 파일은 unreadable, 리포 실패는 단계 실패) pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
   - 완료조건: **EvidenceBundle의 모든 snippet이 pointers가 가리키는 commit의 파일 내용과 일치**(테스트). posts 쪽 `evidence.json`에 `snippet` 키가 없다(테스트).
 - [ ] **BE9** pl — 근거 수집 단계 2: discovered 추가 탐색(키워드 겹침 + 기간 가중 점수, 모델 없음) + 상한 8. 커밋: `feat(run): 근거 수집에 추가 탐색 추가`
   - 완료조건: 연결에 없던 분석 글이 discovered로 들어오고 상한을 넘지 않는다.
@@ -330,6 +330,8 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
 Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
+
+- [ ] **P2-SCHED** pl+fe — 자동 실행 스케줄(클로드 데스크톱 스케줄 대체, decisions/ondemand-execution.md 전환 시점): `Settings`에 요일·시각·TZ·`lastScheduledSlot` → 워커 틱(Run → IndexJob → 자동 연결 앞)이 지난 슬롯 중 Run을 안 만든 것이 있으면 대기 맨 위 주제로 `startRun`(잠들었다 깨어나도 따라잡음, launchd 예약 아님). 실행 뒤는 승인 대기에서 멈춤 — "자동 승인"은 사람 검수 전제와 부딪혀 별도 결정. 조건: E2E 초록 + 실모델 산출물 확인 뒤.
 
 - [x] **A7** (2026-09-12 `7e8a351`, feat/worker-loop, PR #85) fe — **페이지 단위 실패 화면**: `app/not-found.tsx`(셸을 `AppFrame`으로 직접 두른다 — 매칭 실패는 라우트 그룹 레이아웃을 타지 않는다) · `(dashboard)/error.tsx`(클라이언트 경계, 그룹 안이라 셸 유지, 내부 사정은 콘솔로만) · `(dashboard)/loading.tsx` · `app/global-error.tsx`(최소). 셸 조립은 `_components/AppFrame.tsx` 한 곳. `verify:layout` 117→**125**(404 검사 8개, `verify.path`로 검사별 경로 선택). decisions/error-handling.md "페이지 단위 실패". 커밋: `feat(dashboard): 404·에러·로딩 화면을 셸 안에서 그리기`
 
