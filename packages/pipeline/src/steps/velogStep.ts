@@ -5,12 +5,15 @@
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
+import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import { loadTonePrompt, type TonePrompt, type TonePromptFailure } from '../prompts/tonePrompts.ts';
 import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 
 export interface VelogStepDeps {
   store: EvidenceStore;
+  /** 산출물 저장소(DATA_DIR) — 워커는 artifacts를 저장하지 않으므로 단계가 직접 쓴다. 뒤 단계가 sources.velog ?? runId로 읽는다. */
+  artifacts: ArtifactStore;
   /** 어투 프롬프트 폴더(절대경로) — 조립 루트가 resolveTonePromptsDir로 정해 넘긴다. */
   promptsDir: string;
   /** 레지스트리 조회(모델 id → 어댑터). */
@@ -183,13 +186,27 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
       const text = generated.text.trim();
       if (text === '')
         throw new StepFailure('VELOG_OUTPUT_EMPTY', '모델이 빈 본문을 돌려줬습니다.', true);
+      const body = `${text}\n`;
+      try {
+        await deps.artifacts.write(ctx.topic.slug, ctx.runId, VELOG_ARTIFACT, body);
+      } catch (error) {
+        throw new StepFailure(
+          'VELOG_STORE_WRITE_FAILED',
+          '본문을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
+          false,
+          { cause: error },
+        );
+      }
       return {
-        artifacts: { [VELOG_ARTIFACT]: `${text}\n` },
+        artifacts: { [VELOG_ARTIFACT]: body },
         tokens: { input: generated.usage.inputTokens, output: generated.usage.outputTokens },
         costUsd: generated.costUsd,
         model: adapter.id,
         promptHash: tone.value.hash,
       };
+    },
+    async discard(ctx) {
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, VELOG_ARTIFACT);
     },
   };
 }

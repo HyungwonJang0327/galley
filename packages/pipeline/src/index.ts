@@ -10,7 +10,7 @@ export {
   HOLD_REASON_REMOVED,
 } from './queue/importQueue.ts';
 export type { QueueItemRow, MissingDisposition } from './queue/importQueue.ts';
-export { normalizeTopicTitle } from './queue/normalizeTitle.ts';
+export { normalizeTopicTitle, stripTopicHints } from './queue/normalizeTitle.ts';
 export {
   parseTopicHints,
   resolveTopicHints,
@@ -199,6 +199,8 @@ export { readPointerSnippet } from './evidence/readSnippet.ts';
 export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
+export { LocalFsArtifactStore } from './artifacts/ArtifactStore.ts';
+export type { ArtifactStore, ArtifactReadResult } from './artifacts/ArtifactStore.ts';
 export { WRITING_LIMITS } from './steps/limits.ts';
 export type { WritingLimits } from './steps/limits.ts';
 export {
