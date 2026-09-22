@@ -62,7 +62,13 @@ export function createAnthropicAdapter(options: AnthropicAdapterOptions): ModelA
         outputTokens: response.usage.output_tokens,
       };
 
-      return { text, usage, costUsd: calculateCostUsd(usage, pricing), durationMs };
+      return {
+        text,
+        usage,
+        costUsd: calculateCostUsd(usage, pricing),
+        durationMs,
+        truncated: response.stop_reason === 'max_tokens',
+      };
     },
   };
 }
