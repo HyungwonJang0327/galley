@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import {
+  gitCommitMeta,
   gitDiffPaths,
   gitHead,
   gitListFiles,
@@ -304,6 +305,25 @@ describe('gitLog (읽기 전용)', () => {
     expect(exact.ok && exact.value.truncated).toBe(false);
     const zero = await gitLog(logRepo, { to: 'HEAD', maxCommits: Number.NaN });
     expect(zero.ok && zero.value).toEqual({ commits: [], truncated: true });
+  });
+
+  test('gitCommitMeta는 전체 sha·작성일·제목을 준다(짧은 해시도), 없는 커밋은 GIT_OBJECT_NOT_FOUND', async () => {
+    expect(await gitCommitMeta(logRepo, shas[1]!.slice(0, 7))).toEqual({
+      ok: true,
+      value: {
+        sha: shas[1],
+        authoredAt: '2024-03-20T10:00:00+09:00',
+        subject: 'feat: add korean file',
+      },
+    });
+    expect(await gitCommitMeta(logRepo, 'deadbeefdeadbeef')).toEqual({
+      ok: false,
+      code: 'GIT_OBJECT_NOT_FOUND',
+    });
+    expect(await gitCommitMeta(logRepo, 'main')).toEqual({
+      ok: false,
+      code: 'GIT_OBJECT_NOT_FOUND',
+    });
   });
 
   test('gitDiffPaths는 두 커밋 사이의 바뀐 경로(추가·수정·삭제, 이름 바꿈은 둘 다)를 준다', async () => {
