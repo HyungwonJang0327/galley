@@ -3,7 +3,7 @@
 // 테스트가 아니라 워커 종료 경로에 버그가 있는 것이다(decisions/run-execution-model.md §3).
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,5 +55,32 @@ describe('워커 프로세스', () => {
 
     expect(exitCode, stderr).toBe(0);
     expect(stdout).toContain('워커 종료');
+  });
+
+  test('식별 정보 필터 설정이 깨져 있으면 기동하지 않고 종료 코드 1', async () => {
+    const broken = join(dbDir, 'broken-redact.json');
+    await writeFile(broken, '{ not json');
+    const child = spawn(process.execPath, ['bin/worker.ts'], {
+      cwd: packageRoot,
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        NODE_ENV: 'test',
+        REDACT_CONFIG_PATH: broken,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    const exitCode = await new Promise<number | null>((resolve) => child.on('exit', resolve));
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('식별 정보 필터 설정이 깨져');
+    expect(stdout).not.toContain('워커 시작');
   });
 });

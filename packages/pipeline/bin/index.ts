@@ -63,16 +63,19 @@ async function main(argv: readonly string[]): Promise<number> {
     return 2;
   }
 
-  // readOnly 리포는 필터 설정이 없으면 워커가 REDACT_CONFIG_REQUIRED로 실패시킨다 — 여기서 먼저 막는다.
-  if (values['read-only'] === true) {
-    const redactPath = defaultRedactConfigPath(process.env);
-    const loaded = await loadRedactConfig(redactPath);
-    if (!loaded.ok) {
-      console.error(
-        `읽기 전용 리포는 식별 정보 필터 설정이 필요합니다(${loaded.code}): ${redactPath}`,
-      );
-      return 2;
-    }
+  // 식별 정보 필터: 깨진 설정(INVALID·UNREADABLE)은 무조건 거부(BE2 결정), 없는 설정(MISSING)은 readOnly 리포만 거부
+  // — 워커가 REDACT_CONFIG_REQUIRED로 실패시키기 전에 여기서 먼저 막는다.
+  const redactPath = defaultRedactConfigPath(process.env);
+  const loaded = await loadRedactConfig(redactPath);
+  if (!loaded.ok && loaded.code !== 'REDACT_CONFIG_MISSING') {
+    console.error(`식별 정보 필터 설정이 깨져 있습니다(${loaded.code}): ${redactPath}`);
+    return 2;
+  }
+  if (!loaded.ok && values['read-only'] === true) {
+    console.error(
+      `읽기 전용 리포는 식별 정보 필터 설정이 필요합니다(${loaded.code}): ${redactPath}`,
+    );
+    return 2;
   }
 
   // pnpm 스크립트는 cwd가 packages/pipeline이다 — 상대경로는 사용자가 명령을 친 폴더(INIT_CWD) 기준으로 푼다.

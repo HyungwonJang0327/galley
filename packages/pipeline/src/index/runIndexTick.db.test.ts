@@ -7,7 +7,6 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import {
-  INDEX_HEARTBEAT_TIMEOUT_MS,
   parseCursor,
   runIndexTick,
   type IndexTickDeps,
@@ -15,6 +14,7 @@ import {
 } from './runIndexTick.ts';
 import { createScriptedAdapter, type ScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
 import { INDEX_JOB_STATUS, REPO_STATUS, parsePointers } from './schema.ts';
+import { HEARTBEAT_TIMEOUT_MS } from '../worker/runOnce.ts';
 import { enqueueIndexJob } from './enqueueIndexJob.ts';
 import { claimIndexJob } from './indexJobRepo.ts';
 import type { Timers } from '../worker/WorkerDeps.ts';
@@ -382,7 +382,7 @@ describe('runIndexTick', () => {
     const adapter = createScriptedAdapter((i) => answer(i.prompt));
     const { deps, advance } = fakeDeps(adapter);
     await runIndexTick(deps); // claimed, heartbeat=now
-    advance(INDEX_HEARTBEAT_TIMEOUT_MS + 1);
+    advance(HEARTBEAT_TIMEOUT_MS + 1);
     expect((await runIndexTick(deps)).outcome).toBe('recovered');
     expect((await prisma.indexJob.findUniqueOrThrow({ where: { id: job.id } })).status).toBe(
       INDEX_JOB_STATUS.interrupted,
@@ -533,7 +533,7 @@ describe('runIndexTick', () => {
     expect(failed.progressDone).toBe(1);
   });
 
-  test('예상 밖 예외는 INDEX_UNEXPECTED로 실패 처리하고 스택은 로그에만 남긴다', async () => {
+  test('예상 밖 예외는 INDEX_TICK_FAILED로 실패 처리하고 스택은 로그에만 남긴다', async () => {
     const repo = await makeRepo();
     const job = await enqueue(repo.id);
     const adapter = createScriptedAdapter((i) => answer(i.prompt));
@@ -546,7 +546,7 @@ describe('runIndexTick', () => {
     });
     expect(await drain(deps)).toEqual(['claimed', 'failed']);
     const failed = await prisma.indexJob.findUniqueOrThrow({ where: { id: job.id } });
-    expect(failed).toMatchObject({ errorCode: 'INDEX_UNEXPECTED', errorMessage: 'TypeError' });
+    expect(failed).toMatchObject({ errorCode: 'INDEX_TICK_FAILED', errorMessage: 'TypeError' });
     expect(logs).toContain('error:인덱싱 틱 실패');
   });
 });

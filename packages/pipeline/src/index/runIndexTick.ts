@@ -1,10 +1,12 @@
 // IndexJob 실행 틱 — Run 워커(runOnce)와 같은 모양: **한 틱 = 배치 하나**(영역 하나·변경 묶음 하나·개요). 틱 사이에 Run이
 // 끼어들 수 있고(Run 우선 — decisions/run-location.md), 종료 신호는 배치 사이에서 반환하며, 진행은 배치마다 저장돼
 // 재기동이 커서 다음부터 이어 돈다. 단계: 영역(area) → 변경(change) → 개요(overview) → 끝(Repo ready·headSha).
-// 인덱서는 RepoAnalysis만 쓰고, IndexJob·Repo 상태는 indexJobRepo 한 곳에서 쓴다.
+// 인덱서는 RepoAnalysis만 쓰고, IndexJob·Repo 상태는 indexJobRepo 한 곳에서 쓴다. 예상 밖 예외는 `INDEX_TICK_FAILED`(<동작>_FAILED).
 import type { PrismaClient } from '@prisma/client';
 import type { ModelAdapter, ModelUsage } from '../model/ModelAdapter.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
+// heartbeat 간격·만료는 Run 워커와 같은 값 한 곳(decisions/run-location.md).
+import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_TIMEOUT_MS } from '../worker/runOnce.ts';
 import type { Clock, Logger, Timers } from '../worker/WorkerDeps.ts';
 import { gitDiffPaths, gitHead } from './gitRead.ts';
 import {
@@ -24,10 +26,6 @@ import { indexRepoOverview } from './indexRepoOverview.ts';
 import type { IndexLimits } from './limits.ts';
 import { pruneAnalyses } from './repoAnalysisRepo.ts';
 import { ANALYSIS_KIND, INDEX_JOB_KIND } from './schema.ts';
-
-/** Run 워커와 같은 값(decisions/run-location.md). */
-export const INDEX_HEARTBEAT_TIMEOUT_MS = 30_000;
-export const INDEX_HEARTBEAT_INTERVAL_MS = 5_000;
 
 export interface IndexTickDeps {
   prisma: PrismaClient;
@@ -84,7 +82,7 @@ export async function runIndexTick(
 
   const reclaimed = await reclaimStaleIndexJobs(
     prisma,
-    new Date(now.getTime() - INDEX_HEARTBEAT_TIMEOUT_MS),
+    new Date(now.getTime() - HEARTBEAT_TIMEOUT_MS),
   );
   if (reclaimed > 0) {
     deps.logger.info('끊긴 인덱싱 작업을 회수했다', { count: reclaimed });
@@ -111,7 +109,7 @@ export async function runIndexTick(
     return { outcome: 'claimed', jobId: job.id };
   }
 
-  const stopHeartbeat = deps.timers.every(INDEX_HEARTBEAT_INTERVAL_MS, () => {
+  const stopHeartbeat = deps.timers.every(HEARTBEAT_INTERVAL_MS, () => {
     beatIndexJob(prisma, { id: job.id, workerId: deps.workerId }, deps.clock.now()).catch(
       (error: unknown) => {
         deps.logger.error('인덱싱 heartbeat 쓰기 실패', {
@@ -134,7 +132,7 @@ export async function runIndexTick(
       owner(deps, job),
       {
         ok: false,
-        code: 'INDEX_UNEXPECTED',
+        code: 'INDEX_TICK_FAILED',
         message: error instanceof Error ? error.name : 'UnknownError',
       },
       deps.clock.now(),
