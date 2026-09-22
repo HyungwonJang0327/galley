@@ -5,7 +5,14 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { gitHead, gitListFiles, gitLog, gitShowFile, isCommitRef } from './gitRead.ts';
+import {
+  gitDiffPaths,
+  gitHead,
+  gitListFiles,
+  gitLog,
+  gitShowFile,
+  isCommitRef,
+} from './gitRead.ts';
 import { symlink } from 'node:fs/promises';
 
 let dir: string;
@@ -297,6 +304,15 @@ describe('gitLog (읽기 전용)', () => {
     expect(exact.ok && exact.value.truncated).toBe(false);
     const zero = await gitLog(logRepo, { to: 'HEAD', maxCommits: Number.NaN });
     expect(zero.ok && zero.value).toEqual({ commits: [], truncated: true });
+  });
+
+  test('gitDiffPaths는 두 커밋 사이의 바뀐 경로(추가·수정·삭제, 이름 바꿈은 둘 다)를 준다', async () => {
+    const r = await gitDiffPaths(logRepo, shas[1]!, shas[2]!);
+    expect(r.ok && [...r.value].sort()).toEqual(['README.md', 'src/a.ts', 'src/b.ts']);
+    expect(await gitDiffPaths(logRepo, 'main', shas[2]!)).toEqual({
+      ok: false,
+      code: 'GIT_OBJECT_NOT_FOUND',
+    });
   });
 
   test('커밋 인자가 해시·HEAD 형식이 아니면 실행 없이 GIT_OBJECT_NOT_FOUND, 없는 해시도 GIT_OBJECT_NOT_FOUND', async () => {

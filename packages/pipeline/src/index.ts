@@ -177,9 +177,9 @@ export type {
 } from './evidence/redact.ts';
 export { INDEX_LIMITS, INDEX_IGNORE } from './index/limits.ts';
 export type { IndexLimits } from './index/limits.ts';
-export { planAreas, describeTree, isIgnoredPath } from './index/tree.ts';
+export { planAreas, describeTree, isIgnoredPath, areaKeyForPath } from './index/tree.ts';
 export type { TreeFile, AreaFile, AreaPlan, TreeSummary } from './index/tree.ts';
-export { gitHead, gitListFiles, gitShowFile, gitLog } from './index/gitRead.ts';
+export { gitHead, gitListFiles, gitShowFile, gitLog, gitDiffPaths } from './index/gitRead.ts';
 export type {
   GitFailure,
   GitResult,
@@ -192,6 +192,8 @@ export type {
 export { planChangeBatches, pointerCandidates, periodOf, primaryDir } from './index/changes.ts';
 export type { ChangeBatch, ChangeCommit, ChangePlan } from './index/changes.ts';
 export type { AnalysisFailure } from './index/analysisText.ts';
+export { planExecution } from './index/batchControl.ts';
+export type { ExecutionOptions, ExecutionPlan } from './index/batchControl.ts';
 export { analyzeChange } from './index/changeAnalysis.ts';
 export type {
   ChangeAnalysisInput,

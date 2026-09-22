@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { planAreas, isIgnoredPath, describeTree } from './tree.ts';
+import { planAreas, isIgnoredPath, describeTree, areaKeyForPath } from './tree.ts';
 import { INDEX_LIMITS } from './limits.ts';
 
 const f = (path: string, size = 100) => ({ path, size });
@@ -119,5 +119,26 @@ describe('planAreas', () => {
 
   test('빈 입력은 영역 없음', () => {
     expect(planAreas([])).toEqual({ totalFiles: 0, ignoredFiles: 0, areas: [] });
+  });
+});
+
+describe('areaKeyForPath', () => {
+  const areas = [
+    { key: 'area:.', dir: '.', files: [], summaryOnly: false, includedBytes: 0 },
+    { key: 'area:packages', dir: 'packages', files: [], summaryOnly: false, includedBytes: 0 },
+    {
+      key: 'area:packages/ui',
+      dir: 'packages/ui',
+      files: [],
+      summaryOnly: false,
+      includedBytes: 0,
+    },
+  ];
+  test('가장 긴 디렉터리 접두의 영역, 최상위 파일은 area:., 무시 경로·계획에 없는 디렉터리는 undefined', () => {
+    expect(areaKeyForPath(areas, 'packages/ui/src/a.ts')).toBe('area:packages/ui');
+    expect(areaKeyForPath(areas, 'packages/pipeline/x.ts')).toBe('area:packages');
+    expect(areaKeyForPath(areas, 'README.md')).toBe('area:.');
+    expect(areaKeyForPath(areas, 'apps/web/a.ts')).toBeUndefined();
+    expect(areaKeyForPath(areas, 'packages/ui/.env')).toBeUndefined();
   });
 });

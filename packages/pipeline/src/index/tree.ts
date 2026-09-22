@@ -185,3 +185,17 @@ export function describeTree(summary: TreeSummary): string {
   );
   return [`${summary.totalFiles} files (${summary.ignoredFiles} ignored)`, ...lines].join('\n');
 }
+
+/**
+ * 경로가 속하는 영역 키 — 계획된 영역 중 **가장 긴 디렉터리 접두**. 최상위 파일은 `area:.`. 어느 영역에도 안 속하면(무시 경로,
+ * 계획에 없는 디렉터리 — 예: 그 디렉터리의 파일이 전부 삭제됨) undefined. 증분 재인덱싱이 바뀐 경로 → 다시 만들 영역을 고른다.
+ */
+export function areaKeyForPath(areas: readonly AreaPlan[], path: string): string | undefined {
+  if (isIgnoredPath(path)) return undefined;
+  let best: AreaPlan | undefined;
+  for (const area of areas) {
+    const matches = area.dir === '.' ? !path.includes('/') : path.startsWith(`${area.dir}/`);
+    if (matches && (best === undefined || area.dir.length > best.dir.length)) best = area;
+  }
+  return best?.key;
+}

@@ -1,4 +1,4 @@
-// 읽기 전용 git 접근 — 리포 경로에서 `git rev-parse`·`ls-tree`·`show`·`log`만 실행한다. 파일·브랜치·git 상태를 바꾸는 명령은
+// 읽기 전용 git 접근 — 리포 경로에서 `git rev-parse`·`ls-tree`·`show`·`log`·`rev-list`·`diff --name-only`만 실행한다. 파일·브랜치·git 상태를 바꾸는 명령은
 // 여기 없고 앞으로도 두지 않는다(CLAUDE.md §5 "읽기 전용 리포에 쓰기 금지"). 예상된 실패는 값으로.
 // 옵션 주입 방어: 커밋 인자는 형식 검증 + 모든 위치 인자 앞에 `--end-of-options`(`--output=…`같은 값이 옵션으로 읽히지 않게).
 import { execFile } from 'node:child_process';
@@ -253,6 +253,29 @@ export async function gitLog(
     if (c !== undefined) commits.push(c);
   }
   return { ok: true, value: { commits, truncated } };
+}
+
+/**
+ * 두 커밋 사이에 바뀐 경로(추가·수정·삭제 전부, 이름 바꿈은 A+D). `git diff --name-only -z --no-renames <from> <to>` —
+ * 증분 재인덱싱이 다시 만들 영역을 고르는 재료. 커밋 인자 형식 검증 + `--end-of-options`.
+ */
+export async function gitDiffPaths(
+  repoPath: string,
+  from: string,
+  to: string,
+): Promise<GitResult<string[]>> {
+  if (!isCommitRef(from) || !isCommitRef(to)) return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
+  const r = await git(repoPath, [
+    'diff',
+    '--name-only',
+    '-z',
+    '--no-renames',
+    '--end-of-options',
+    from,
+    to,
+  ]);
+  if (!r.ok) return r;
+  return { ok: true, value: r.value.split('\0').filter((p) => p !== '') };
 }
 
 /** 본문에 NUL이 있으면 바이너리 — 모델에 보내지 않는다(확장자 목록에 없는 바이너리 방어). */
