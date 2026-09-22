@@ -65,6 +65,7 @@ describe('planChangeBatches', () => {
       commit(1, '2024-03-05T10:00:00+09:00', ['src/a.ts']),
     ]);
     expect(plan.totalCommits).toBe(3);
+    expect(plan.emptyCommits).toBe(0);
     expect(plan.ignoredCommits).toBe(0);
     expect(plan.batches.map((b) => b.key)).toEqual(['change:2024-03', 'change:2024-04']);
     expect(plan.batches[0]).toMatchObject({ period: '2024-03', summaryOnly: false });
@@ -72,11 +73,13 @@ describe('planChangeBatches', () => {
     expect(plan.batches[0]!.commits.map((c) => c.subject)).toEqual(['commit 1', 'commit 2']);
   });
 
-  test('무시 경로만 손댄 커밋은 빼고 세며, 남은 커밋의 파일 목록에서도 뺀다', () => {
+  test('무시 경로만 손댄 커밋은 ignored, 파일이 없는 커밋은 empty로 따로 세며, 남은 커밋의 파일 목록에서도 뺀다', () => {
     const plan = planChangeBatches([
+      commit(3, '2024-03-21T10:00:00+09:00', []),
       commit(2, '2024-03-20T10:00:00+09:00', ['pnpm-lock.yaml', 'node_modules/x/i.js']),
       commit(1, '2024-03-05T10:00:00+09:00', ['src/a.ts', '.env']),
     ]);
+    expect(plan.emptyCommits).toBe(1);
     expect(plan.ignoredCommits).toBe(1);
     expect(plan.batches).toHaveLength(1);
     expect(plan.batches[0]!.commits[0]!.files).toEqual([{ status: 'M', path: 'src/a.ts' }]);
@@ -117,6 +120,11 @@ describe('planChangeBatches', () => {
   });
 
   test('빈 입력은 빈 계획', () => {
-    expect(planChangeBatches([])).toEqual({ totalCommits: 0, ignoredCommits: 0, batches: [] });
+    expect(planChangeBatches([])).toEqual({
+      totalCommits: 0,
+      emptyCommits: 0,
+      ignoredCommits: 0,
+      batches: [],
+    });
   });
 });
