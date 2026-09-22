@@ -158,6 +158,7 @@ describe('indexRepoChanges', () => {
       headSha: shas[3],
       totalCommits: 4,
       truncated: false,
+      emptyCommits: 0,
       ignoredCommits: 1,
       planned: 2,
       saved: 2,
@@ -233,6 +234,13 @@ describe('indexRepoChanges', () => {
       limits: { ...INDEX_LIMITS, maxCommits: 2 },
     });
     expect(capped.ok && capped.report).toMatchObject({ totalCommits: 2, truncated: true });
+    const exact = await indexRepoChanges(prisma, {
+      repo,
+      adapter,
+      redactConfig: null,
+      limits: { ...INDEX_LIMITS, maxCommits: 4 },
+    });
+    expect(exact.ok && exact.report).toMatchObject({ totalCommits: 4, truncated: false });
   });
 
   test('readOnly + 설정 없음은 REDACT_CONFIG_REQUIRED, 깨진 출력은 skipped, 호출 실패는 MODEL_FAILED(partial), skipKeys 재개', async () => {

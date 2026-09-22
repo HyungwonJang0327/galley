@@ -44,7 +44,7 @@ async function git(repoPath: string, args: readonly string[]): Promise<GitResult
       typeof error === 'object' && error !== null && 'stderr' in error ? String(error.stderr) : '';
     if (/not a git repository/i.test(stderr)) return { ok: false, code: 'NOT_A_GIT_REPO' };
     if (
-      /does not exist in|exists on disk, but not in|bad revision|unknown revision|invalid object name|Not a valid object name|path .* does not exist|is outside repository/i.test(
+      /does not exist in|exists on disk, but not in|bad revision|unknown revision|invalid object name|Not a valid object name|bad object|path .* does not exist|is outside repository/i.test(
         stderr,
       )
     )
@@ -104,7 +104,7 @@ export async function gitShowFile(
   return git(repoPath, ['show', '--end-of-options', `${commit}:${path}`]);
 }
 
-/** 커밋이 파일에 한 일 — `--name-status`(`--no-renames`라 R/C는 나오지 않고 A+D로 풀린다). T = 종류 변경(파일↔링크). */
+/** 커밋이 파일에 한 일 — `--raw`의 상태 문자(`--no-renames`라 R/C는 나오지 않고 A+D로 풀린다). T = 종류 변경. */
 export type GitFileStatus = 'A' | 'M' | 'D' | 'T';
 export interface GitCommitFile {
   status: GitFileStatus;
@@ -118,6 +118,7 @@ export interface GitCommit {
   authoredAt: string;
   subject: string;
   body: string;
+  /** 일반 파일만(서브모듈·심볼릭 링크 제외 — gitListFiles와 같은 기준). 빈 커밋은 []. */
   files: GitCommitFile[];
 }
 
@@ -130,63 +131,128 @@ export interface GitLogOptions {
   maxCommits: number;
 }
 
+export interface GitLogResult {
+  /** 최신 순. */
+  commits: GitCommit[];
+  /** maxCommits보다 오래된 커밋이 더 있었으면 true. */
+  truncated: boolean;
+}
+
 const isFileStatus = (v: string): v is GitFileStatus =>
   v === 'A' || v === 'M' || v === 'D' || v === 'T';
+/** 포인터로 열 수 없는 mode — 서브모듈(gitlink)·심볼릭 링크(본문이 대상 경로). src·dst 어느 쪽이든 해당하면 뺀다. */
+const EXCLUDED_MODES = new Set(['160000', '120000']);
+const FULL_SHA = /^[0-9a-f]{40}$/;
+
+/** 레코드 헤더 `<sha>\x1f<parents>\x1f<authoredAt>\x1f<subject>\x1f<body>` — body에 \x1f가 있어도 뒤를 전부 body로. */
+function parseHeader(header: string): Omit<GitCommit, 'files'> | undefined {
+  const parts = header.split('\x1f');
+  if (parts.length < 5) return undefined;
+  const [sha, parents, authoredAt, subject] = parts as [
+    string,
+    string,
+    string,
+    string,
+    ...string[],
+  ];
+  if (!FULL_SHA.test(sha)) return undefined;
+  const parentSha = parents.split(' ').find((p) => p !== '');
+  return {
+    sha,
+    ...(parentSha !== undefined ? { parentSha } : {}),
+    authoredAt,
+    subject: subject.trim(),
+    body: parts.slice(4).join('\x1f').trim(),
+  };
+}
+
+/** `--raw -z` 항목 `:<srcmode> <dstmode> <srcsha> <dstsha> <status>\0<path>\0`의 반복. */
+function parseRawFiles(rest: string): GitCommitFile[] {
+  const files: GitCommitFile[] = [];
+  const tokens = rest.replace(/^\n/, '').split('\0');
+  for (let i = 0; i + 1 < tokens.length; i += 2) {
+    const meta = tokens[i]!;
+    const path = tokens[i + 1]!;
+    if (!meta.startsWith(':') || path === '') continue;
+    const [srcMode = '', dstMode = '', , , status = ''] = meta.slice(1).split(' ');
+    if (EXCLUDED_MODES.has(srcMode) || EXCLUDED_MODES.has(dstMode)) continue;
+    const code = status.charAt(0);
+    if (!isFileStatus(code)) continue;
+    files.push({ status: code, path });
+  }
+  return files;
+}
 
 /**
- * 커밋 이력(최신 순). `git log -z --no-merges --no-renames --name-status` — 병합 커밋은 빼고(변경이 부모 커밋에 있다),
- * 이름 바꿈은 A+D로 풀어 경로가 항상 커밋에 실존하게 한다. 본문(diff)은 읽지 않는다 — 포인터가 커밋·경로를 가리키면
- * 근거 수집이 그때 `show`로 읽는다.
- * 레코드 형식: `\x1e<sha>\x1f<parents>\x1f<authoredAt>\x1f<subject>\x1f<body>\0\n(<status>\0<path>\0)*` (git 2.49 실측).
+ * 커밋 이력(최신 순). `git rev-list`로 **권위 있는 sha 목록**을 먼저 얻고, `git log -z --raw`의 레코드를 그 목록으로 대조한다 —
+ * 커밋 본문에 레코드 구분자(\x1e)가 들어 있어도 가짜 커밋이 생기지 않게(대조에 실패한 조각은 앞 레코드의 본문으로 되돌린다).
+ * 병합 커밋은 빼고(변경이 부모에 있다), 이름 바꿈은 A+D로 풀어 경로가 항상 커밋에 실존하게 하며, 서브모듈·심볼릭 링크는 뺀다.
+ * diff 본문은 읽지 않는다 — 포인터가 커밋·경로를 가리키면 근거 수집이 그때 `show`로 읽는다.
+ * 레코드 형식(git 2.49 실측): `\x1e<헤더>\0\n(:<meta>\0<path>\0)*`, 빈 커밋은 `\x1e<헤더>\0`.
  */
 export async function gitLog(
   repoPath: string,
   options: GitLogOptions,
-): Promise<GitResult<GitCommit[]>> {
+): Promise<GitResult<GitLogResult>> {
   if (!isCommitRef(options.to)) return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
   if (options.from !== undefined && !isCommitRef(options.from))
     return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
+  const max = Number.isFinite(options.maxCommits) ? Math.max(0, Math.floor(options.maxCommits)) : 0;
   const range = options.from === undefined ? options.to : `${options.from}..${options.to}`;
+
+  const listed = await git(repoPath, [
+    'rev-list',
+    '--no-merges',
+    `--max-count=${max + 1}`,
+    '--end-of-options',
+    range,
+  ]);
+  if (!listed.ok) return listed;
+  const all = listed.value.split('\n').filter((l) => FULL_SHA.test(l));
+  const truncated = all.length > max;
+  const order = all.slice(0, max);
+  if (order.length === 0) return { ok: true, value: { commits: [], truncated } };
+
   const r = await git(repoPath, [
     'log',
     '-z',
     '--no-merges',
     '--no-renames',
     '--date=iso-strict',
-    `--max-count=${Math.max(0, Math.floor(options.maxCommits))}`,
+    `--max-count=${max}`,
     '--format=%x1e%H%x1f%P%x1f%aI%x1f%s%x1f%b',
-    '--name-status',
+    '--raw',
     '--end-of-options',
     range,
   ]);
   if (!r.ok) return r;
-  const commits: GitCommit[] = [];
-  for (const record of r.value.split('\x1e')) {
-    if (record === '') continue;
-    const nul = record.indexOf('\0');
-    const header = nul === -1 ? record : record.slice(0, nul);
-    const rest = nul === -1 ? '' : record.slice(nul + 1);
-    const [sha = '', parents = '', authoredAt = '', subject = '', body = ''] = header.split('\x1f');
-    if (!/^[0-9a-f]{40}$/.test(sha)) continue;
-    const parentSha = parents.split(' ').find((p) => p !== '');
-    const files: GitCommitFile[] = [];
-    const tokens = rest.replace(/^\n/, '').split('\0');
-    for (let i = 0; i + 1 < tokens.length; i += 2) {
-      const status = tokens[i]!;
-      const path = tokens[i + 1]!;
-      if (!isFileStatus(status) || path === '') continue;
-      files.push({ status, path });
+
+  // 조각 → 레코드: sha가 목록에 있는(그리고 아직 안 나온) 조각만 새 레코드, 나머지는 앞 레코드 본문의 일부.
+  const expected = new Set(order);
+  const records: string[] = [];
+  for (const fragment of r.value.split('\x1e')) {
+    if (fragment === '' && records.length === 0) continue;
+    const sha = fragment.slice(0, 40);
+    if (expected.has(sha) && fragment.charAt(40) === '\x1f') {
+      expected.delete(sha);
+      records.push(fragment);
+    } else if (records.length > 0) {
+      records[records.length - 1] += `\x1e${fragment}`;
     }
-    commits.push({
-      sha,
-      ...(parentSha !== undefined ? { parentSha } : {}),
-      authoredAt,
-      subject: subject.trim(),
-      body: body.trim(),
-      files,
-    });
   }
-  return { ok: true, value: commits };
+  const bySha = new Map<string, GitCommit>();
+  for (const record of records) {
+    const nul = record.indexOf('\0');
+    const head = parseHeader(nul === -1 ? record : record.slice(0, nul));
+    if (head === undefined) continue;
+    bySha.set(head.sha, { ...head, files: nul === -1 ? [] : parseRawFiles(record.slice(nul + 1)) });
+  }
+  const commits: GitCommit[] = [];
+  for (const sha of order) {
+    const c = bySha.get(sha);
+    if (c !== undefined) commits.push(c);
+  }
+  return { ok: true, value: { commits, truncated } };
 }
 
 /** 본문에 NUL이 있으면 바이너리 — 모델에 보내지 않는다(확장자 목록에 없는 바이너리 방어). */

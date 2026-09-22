@@ -38,6 +38,7 @@ export interface IndexChangesReport {
   totalCommits: number;
   /** maxCommits에 걸려 더 오래된 커밋을 읽지 않았으면 true. */
   truncated: boolean;
+  emptyCommits: number;
   ignoredCommits: number;
   planned: number;
   saved: number;
@@ -74,11 +75,12 @@ export async function indexRepoChanges(
   });
   if (!log.ok) return log;
 
-  const plan = planChangeBatches(log.value, limits);
+  const plan = planChangeBatches(log.value.commits, limits);
   const report: IndexChangesReport = {
     headSha: head.value,
     totalCommits: plan.totalCommits,
-    truncated: log.value.length >= limits.maxCommits,
+    truncated: log.value.truncated,
+    emptyCommits: plan.emptyCommits,
     ignoredCommits: plan.ignoredCommits,
     planned: plan.batches.length,
     saved: 0,

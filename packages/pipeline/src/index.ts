@@ -187,6 +187,7 @@ export type {
   GitCommitFile,
   GitFileStatus,
   GitLogOptions,
+  GitLogResult,
 } from './index/gitRead.ts';
 export { planChangeBatches, pointerCandidates, periodOf, primaryDir } from './index/changes.ts';
 export type { ChangeBatch, ChangeCommit, ChangePlan } from './index/changes.ts';

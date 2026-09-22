@@ -36,7 +36,9 @@ export interface ChangeBatch {
 export interface ChangePlan {
   /** 입력 커밋 수(병합 제외, maxCommits 안). */
   totalCommits: number;
-  /** 변경 파일이 전부 INDEX_IGNORE라 뺀 커밋 수. */
+  /** 변경 파일이 없는 커밋 수(`--allow-empty` 등). 묶음에 넣지 않는다. */
+  emptyCommits: number;
+  /** 변경 파일이 있었지만 전부 INDEX_IGNORE라 뺀 커밋 수. */
   ignoredCommits: number;
   batches: ChangeBatch[];
 }
@@ -107,9 +109,14 @@ export function planChangeBatches(
   commits: readonly GitCommit[],
   limits: IndexLimits = INDEX_LIMITS,
 ): ChangePlan {
+  let emptyCommits = 0;
   let ignoredCommits = 0;
   const byPeriod = new Map<string, ChangeCommit[]>();
   for (const c of commits) {
+    if (c.files.length === 0) {
+      emptyCommits += 1;
+      continue;
+    }
     const files = c.files.filter((f) => !isIgnoredPath(f.path));
     if (files.length === 0) {
       ignoredCommits += 1;
@@ -148,5 +155,5 @@ export function planChangeBatches(
     for (const [dir, sub] of [...byDir.entries()].sort((a, b) => compareCodepoint(a[0], b[0])))
       batches.push(makeBatch(`change:${period}:${dir}`, period, dir, sub, limits));
   }
-  return { totalCommits: commits.length, ignoredCommits, batches };
+  return { totalCommits: commits.length, emptyCommits, ignoredCommits, batches };
 }
