@@ -79,4 +79,27 @@ describe('index CLI', () => {
     expect(badModel.status).toBe(2);
     expect(badModel.stderr).toContain('레지스트리에 없습니다');
   });
+
+  test('깨진 필터 설정이면 readOnly가 아니어도 exit 2, 없는 설정이면 readOnly만 exit 2', async () => {
+    const broken = join(dir, 'broken-redact.json');
+    await writeFile(broken, '{ not json');
+    const invalid = spawnSync(process.execPath, ['bin/index.ts', repoPath, '--model', 'mock'], {
+      cwd: packageRoot,
+      env: { ...env, REDACT_CONFIG_PATH: broken },
+      encoding: 'utf8',
+    });
+    expect(invalid.status).toBe(2);
+    expect(invalid.stderr).toContain('REDACT_CONFIG_INVALID');
+    const missing = spawnSync(
+      process.execPath,
+      ['bin/index.ts', repoPath, '--model', 'mock', '--read-only'],
+      {
+        cwd: packageRoot,
+        env: { ...env, REDACT_CONFIG_PATH: join(dir, 'nope.json') },
+        encoding: 'utf8',
+      },
+    );
+    expect(missing.status).toBe(2);
+    expect(missing.stderr).toContain('REDACT_CONFIG_MISSING');
+  });
 });

@@ -45,12 +45,18 @@ const deps: WorkerDeps = {
 
 /**
  * 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 모델은 레지스트리(id → 어댑터)만, 식별 정보 필터는
- * 기동 시 한 번 읽는다(없으면 null — readOnly 리포 작업은 인덱서가 REDACT_CONFIG_REQUIRED로 실패시킨다).
+ * 기동 시 한 번 읽는다. **없으면(MISSING)** null로 기동(readOnly 리포 작업은 인덱서가 REDACT_CONFIG_REQUIRED로 실패시킨다),
+ * **깨졌으면(INVALID·UNREADABLE)** 기동하지 않는다 — BE2 결정 "깨진 설정이면 무조건 거부"(decisions/evidence-collection.md).
+ * 조립 루트(bin)만 레지스트리를 import한다 — runOnce·runIndexTick은 어댑터 조회 인터페이스만 받는다.
  */
-async function createIndexer(): Promise<NonNullable<WorkerDeps['indexer']>> {
+async function createIndexer(): Promise<NonNullable<WorkerDeps['indexer']> | null> {
   const registry = createModelRegistryFromEnv(process.env);
   const redactPath = defaultRedactConfigPath(process.env);
   const loaded = await loadRedactConfig(redactPath);
+  if (!loaded.ok && loaded.code !== 'REDACT_CONFIG_MISSING') {
+    deps.logger.error('식별 정보 필터 설정이 깨져 기동하지 않는다', { code: loaded.code });
+    return null;
+  }
   if (!loaded.ok)
     deps.logger.info('식별 정보 필터 설정 없이 기동한다(readOnly 리포 인덱싱은 거부된다)', {
       code: loaded.code,
@@ -99,7 +105,13 @@ const sleep = (ms: number) =>
   });
 
 async function main(): Promise<void> {
-  deps.indexer = await createIndexer();
+  const indexer = await createIndexer();
+  if (indexer === null) {
+    await prisma.$disconnect();
+    process.exitCode = 1;
+    return;
+  }
+  deps.indexer = indexer;
   deps.logger.info('워커 시작', { workerId: deps.workerId });
 
   while (!stopping) {
