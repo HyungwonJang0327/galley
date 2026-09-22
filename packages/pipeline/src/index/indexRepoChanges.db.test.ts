@@ -215,25 +215,36 @@ describe('indexRepoChanges', () => {
     expect(g({}, 'rev-parse', 'HEAD')).toBe(shas[3]);
   });
 
-  test('fromSha(증분)는 그 다음 커밋만 읽고, maxCommits에 걸리면 truncated', async () => {
+  test('sinceSha(증분)는 이력 전체로 계획하되 새 커밋이 닿은 달만 돌리고, maxCommits에 걸리면 truncated', async () => {
     const repo = await makeRepo(false);
     const adapter = createScriptedAdapter((i) => answerChange(i.prompt));
     const inc = await indexRepoChanges(prisma, {
       repo,
       adapter,
       redactConfig: null,
-      fromSha: shas[1],
+      sinceSha: shas[1],
     });
     expect(inc.ok && inc.report).toMatchObject({
-      totalCommits: 2,
+      totalCommits: 4,
       ignoredCommits: 1,
-      planned: 1,
+      planned: 2,
       saved: 1,
+      unchanged: 1,
+      remaining: 0,
     });
+    expect(inc.ok && inc.plannedKeys).toEqual(['change:2024-03', 'change:2024-04']);
     const keys = (await prisma.repoAnalysis.findMany({ where: { repoId: repo.id } })).map(
       (x) => x.key,
     );
     expect(keys).toEqual(['change:2024-04']);
+    // HEAD 이후 새 커밋이 없으면 전부 unchanged
+    const none = await indexRepoChanges(prisma, {
+      repo,
+      adapter,
+      redactConfig: null,
+      sinceSha: shas[3],
+    });
+    expect(none.ok && none.report).toMatchObject({ saved: 0, unchanged: 2 });
     const capped = await indexRepoChanges(prisma, {
       repo,
       adapter,
@@ -268,7 +279,7 @@ describe('indexRepoChanges', () => {
       redactConfig: REDACT,
     });
     expect(broken.ok && broken.report).toMatchObject({ saved: 1, skipped: 1 });
-    expect(JSON.stringify(broken)).not.toMatch(/2024-0/); // skipped가 있어도 report에 기간 키가 없다
+    expect(JSON.stringify(broken.ok && broken.report)).not.toMatch(/2024-0/); // skipped가 있어도 report에 기간 키가 없다
 
     const failed = await indexRepoChanges(prisma, {
       repo,
@@ -294,6 +305,28 @@ describe('indexRepoChanges', () => {
     });
     expect(r.ok && r.report).toMatchObject({ planned: 2, saved: 1, resumedPast: 1 });
     expect(resumed.calls).toHaveLength(1);
+
+    // resumeAfterKey + maxBatches: 틱마다 하나씩
+    const stepwise = createScriptedAdapter((i) => answerChange(i.prompt));
+    const first = await indexRepoChanges(prisma, {
+      repo,
+      adapter: stepwise,
+      redactConfig: REDACT,
+      maxBatches: 1,
+    });
+    expect(first.ok && first.report).toMatchObject({ saved: 1, remaining: 1 });
+    const second = await indexRepoChanges(prisma, {
+      repo,
+      adapter: stepwise,
+      redactConfig: REDACT,
+      resumeAfterKey: 'change:2024-03',
+      maxBatches: 1,
+    });
+    expect(second.ok && second.report).toMatchObject({ saved: 1, resumedPast: 1, remaining: 0 });
+    expect(stepwise.calls.map((c) => /기간: (\S+)/.exec(c.prompt)![1])).toEqual([
+      '2024-03',
+      '2024-04',
+    ]);
   });
 
   test('git 리포가 아닌 경로는 NOT_A_GIT_REPO', async () => {

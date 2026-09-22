@@ -116,6 +116,8 @@ describe('indexRepoAreas', () => {
       saved: 3,
       skipped: 0,
       resumedPast: 0,
+      unchanged: 0,
+      remaining: 0,
       unreadableFiles: 0,
     });
     expect(r.report.usage.inputTokens).toBeGreaterThan(0);
@@ -243,6 +245,40 @@ describe('indexRepoAreas', () => {
     if (!r.ok) return;
     expect(r.report).toMatchObject({ planned: 3, saved: 1, resumedPast: 2 });
     expect(adapter.calls).toHaveLength(1);
+    expect(r.plannedKeys).toEqual(['area:.', 'area:docs', 'area:src']);
+  });
+
+  test('resumeAfterKey·maxBatches로 틱마다 영역 하나씩 돌리고, changedPaths가 있으면 그 영역만', async () => {
+    const repo = await makeRepo(false);
+    const adapter = createScriptedAdapter((input) => answerFromPrompt(input.prompt));
+    const first = await indexRepoAreas(prisma, {
+      repo: inputFor(repo, false),
+      adapter,
+      redactConfig: null,
+      resumeAfterKey: 'area:.',
+      maxBatches: 1,
+    });
+    expect(first.ok && first.report).toMatchObject({
+      planned: 3,
+      saved: 1,
+      resumedPast: 1,
+      remaining: 1,
+    });
+    expect(adapter.calls.at(-1)!.prompt).toContain('디렉터리: docs');
+
+    const inc = await indexRepoAreas(prisma, {
+      repo: inputFor(repo, false),
+      adapter,
+      redactConfig: null,
+      changedPaths: ['src/a.ts', 'gone/x.ts', 'node_modules/x/index.js'],
+    });
+    expect(inc.ok && inc.report).toMatchObject({
+      planned: 3,
+      saved: 1,
+      unchanged: 2,
+      remaining: 0,
+    });
+    expect(adapter.calls.at(-1)!.prompt).toContain('디렉터리: src');
   });
 
   test('다시 인덱싱하면 같은 key는 upsert로 id가 유지된다(연결이 살아남는 근거)', async () => {

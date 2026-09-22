@@ -9,9 +9,10 @@ import { analyzeArea } from './areaAnalysis.ts';
 import type { AreaFileContent } from './areaAnalysis.ts';
 import { gitHead, gitListFiles, gitShowFile, looksBinary } from './gitRead.ts';
 import type { GitFailure } from './gitRead.ts';
+import { planExecution, type ExecutionOptions } from './batchControl.ts';
 import { INDEX_LIMITS, type IndexLimits } from './limits.ts';
 import { upsertRepoAnalysis } from './repoAnalysisRepo.ts';
-import { planAreas } from './tree.ts';
+import { areaKeyForPath, planAreas } from './tree.ts';
 
 export interface AreaProgress {
   key: string;
@@ -29,8 +30,14 @@ export interface IndexAreasInput {
   /** null = 설정 없음. readOnly 리포에서는 거부한다(회사 리포는 필터 없이 요약을 저장하지 않는다). */
   redactConfig: RedactConfig | null;
   limits?: IndexLimits;
-  /** 재개: 이미 끝난 영역 키(IndexJob.progressCursor에서 복원). 이 영역은 모델을 부르지 않고 건너뛴다. */
+  /** 재개: 이미 끝난 영역 키. 이 영역은 모델을 부르지 않고 건너뛴다. */
   skipKeys?: readonly string[];
+  /** 재개: 이 키까지(포함) 끝났다고 보고 그 다음부터(IndexJob.progressCursor). */
+  resumeAfterKey?: string;
+  /** 이번 호출에서 돌릴 최대 영역 수(실행자가 틱마다 하나씩). */
+  maxBatches?: number;
+  /** 증분: 이 경로들이 속한 영역만 다시 만든다(`gitDiffPaths`). 나머지는 unchanged. 없으면 전체. */
+  changedPaths?: readonly string[];
   /** 영역 하나가 끝날 때마다 — 진행 저장(progressCursor)·로그용. 던지지 않는 것으로 가정한다. */
   onAreaDone?: (progress: AreaProgress) => Promise<void> | void;
 }
@@ -46,8 +53,12 @@ export interface IndexAreasReport {
   summaryOnly: number;
   /** 모델이 유효한 답을 주지 못해 건너뛴 영역 수. 실패가 아니라 기록이다(키는 onAreaDone으로만 — report에는 경로가 없다). */
   skipped: number;
-  /** skipKeys로 이번에 돌리지 않은 영역 수. */
+  /** skipKeys·resumeAfterKey로 이번에 돌리지 않은 영역 수. */
   resumedPast: number;
+  /** 증분에서 바뀐 경로가 없어 두는 영역 수. */
+  unchanged: number;
+  /** maxBatches에 걸려 이번에 못 돈 영역 수. */
+  remaining: number;
   /** 본문을 읽지 못한(또는 바이너리로 제외한) 파일 수. */
   unreadableFiles: number;
   usage: ModelUsage;
@@ -59,7 +70,9 @@ export type IndexAreasFailure =
   | GitFailure
   | { ok: false; code: 'MODEL_FAILED'; errorName: string; partial: IndexAreasReport }
   | { ok: false; code: 'POINTERS_EMPTY' | 'POINTER_INVALID'; partial: IndexAreasReport };
-export type IndexAreasResult = { ok: true; report: IndexAreasReport } | IndexAreasFailure;
+/** plannedKeys: 계획된 영역 키 전부(돌렸든 아니든) — 실행자가 사라진 영역의 고아 행을 지우는 기준. report에는 넣지 않는다. */
+export type IndexAreasResult =
+  { ok: true; report: IndexAreasReport; plannedKeys: string[] } | IndexAreasFailure;
 
 export async function indexRepoAreas(
   prisma: PrismaClient,
@@ -69,7 +82,6 @@ export async function indexRepoAreas(
   if (repo.readOnly && input.redactConfig === null)
     return { ok: false, code: 'REDACT_CONFIG_REQUIRED' };
   const limits = input.limits ?? INDEX_LIMITS;
-  const skip = new Set(input.skipKeys ?? []);
 
   const head = await gitHead(repo.path);
   if (!head.ok) return head;
@@ -77,6 +89,23 @@ export async function indexRepoAreas(
   if (!files.ok) return files;
 
   const summary = planAreas(files.value, limits);
+  const plannedKeys = summary.areas.map((a) => a.key);
+  let unchangedKeys: Set<string> | undefined;
+  if (input.changedPaths !== undefined) {
+    const touched = new Set<string>();
+    for (const path of input.changedPaths) {
+      const key = areaKeyForPath(summary.areas, path);
+      if (key !== undefined) touched.add(key);
+    }
+    unchangedKeys = new Set(plannedKeys.filter((k) => !touched.has(k)));
+  }
+  const execution = planExecution(plannedKeys, {
+    ...(input.skipKeys !== undefined ? { skipKeys: input.skipKeys } : {}),
+    ...(input.resumeAfterKey !== undefined ? { resumeAfterKey: input.resumeAfterKey } : {}),
+    ...(unchangedKeys !== undefined ? { unchangedKeys } : {}),
+    ...(input.maxBatches !== undefined ? { maxBatches: input.maxBatches } : {}),
+  } satisfies ExecutionOptions);
+  const toRun = new Set(execution.toRun);
   const report: IndexAreasReport = {
     headSha: head.value,
     totalFiles: summary.totalFiles,
@@ -85,7 +114,9 @@ export async function indexRepoAreas(
     saved: 0,
     summaryOnly: 0,
     skipped: 0,
-    resumedPast: 0,
+    resumedPast: execution.resumedPast,
+    unchanged: execution.unchanged,
+    remaining: execution.remaining,
     unreadableFiles: 0,
     usage: { inputTokens: 0, outputTokens: 0 },
     costUsd: 0,
@@ -97,10 +128,7 @@ export async function indexRepoAreas(
   };
 
   for (const [i, plan] of summary.areas.entries()) {
-    if (skip.has(plan.key)) {
-      report.resumedPast += 1;
-      continue;
-    }
+    if (!toRun.has(plan.key)) continue;
     const contents: AreaFileContent[] = [];
     for (const f of plan.files) {
       if (!f.include) continue;
@@ -146,5 +174,5 @@ export async function indexRepoAreas(
     });
   }
 
-  return { ok: true, report };
+  return { ok: true, report, plannedKeys };
 }
