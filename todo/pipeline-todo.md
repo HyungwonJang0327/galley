@@ -51,7 +51,7 @@
 
 어투 프롬프트는 `.galley/prompts/{velog,linkedin,zenn}.md`, 읽은 내용 해시를 `RunStep.promptHash`에 기록. 테스트는 Mock 어댑터 + tmpdir 프롬프트.
 
-- BS1 — 어투 프롬프트 로더 + `RunStep.promptHash` + `StepResult.promptHash`(워커는 기록만)
+- BS1 — 어투 프롬프트 로더 + `RunStep.promptHash` + `StepResult.promptHash`(워커는 기록만) — 완료 2026-09-22
 - BS2 — 벨로그 본문 단계(주제 + EvidenceBundle + 어투 + 지시 → 모델)
 - BS3 — 링크드인 단계(본문 파생 + 어투)
 - BS4 — Zenn 일본어판 단계(본문 파생 + 어투, `published: false` 고정)
