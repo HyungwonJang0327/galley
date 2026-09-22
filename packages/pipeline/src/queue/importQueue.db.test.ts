@@ -188,6 +188,46 @@ describe('importQueueFromFile', () => {
     expect(back).toMatchObject({ status: '대기', holdReason: null, missingSince: null });
   });
 
+  test('괄호 힌트를 repoNames·keywords·period에 채우고, 힌트를 고치거나 리포를 등록하면 재적재가 다시 만든다', async () => {
+    await prisma.repo.deleteMany();
+    await importQueueFromFile({
+      storage: WAITING_ONLY(['무한 스크롤 (spacehome, react-router, 2024.07)']),
+      prisma,
+    });
+    const first = await prisma.queueItem.findFirstOrThrow();
+    // 리포가 없으니 전부 키워드
+    expect(first).toMatchObject({
+      repoNames: '[]',
+      keywords: '["spacehome","react-router"]',
+      period: '2024.07',
+    });
+
+    await prisma.repo.create({
+      data: { name: 'spacehome', path: '/tmp/spacehome', aliases: '["sh"]' },
+    });
+    await importQueueFromFile({
+      storage: WAITING_ONLY(['무한 스크롤 (SH, react-router, 2024.08)']),
+      prisma,
+    });
+    const second = await prisma.queueItem.findFirstOrThrow();
+    expect(second.id).toBe(first.id); // 힌트만 고쳤으니 같은 항목
+    expect(second).toMatchObject({
+      title: '무한 스크롤 (SH, react-router, 2024.08)',
+      repoNames: '["spacehome"]',
+      keywords: '["react-router"]',
+      period: '2024.08',
+    });
+
+    await importQueueFromFile({ storage: WAITING_ONLY(['무한 스크롤']), prisma });
+    expect(await prisma.queueItem.findFirstOrThrow()).toMatchObject({
+      id: first.id,
+      repoNames: '[]',
+      keywords: '[]',
+      period: null,
+    });
+    await prisma.repo.deleteMany();
+  });
+
   test('category·completedOn을 DB에 보존한다', async () => {
     const storage = fakeStorage(
       '## 대기\n\n## 후보\n\n### 카테고리1\n\n- 후보글\n\n## 보류\n\n## 완료\n\n- 2026-09-01 완료글\n',
