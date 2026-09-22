@@ -68,6 +68,8 @@ export const INDEX_IGNORE = {
     'id_ecdsa',
     '.npmrc',
     '.netrc',
+    // 서브모듈 URL(드물게 `https://user:token@host`)이 든다. 서브모듈 자체는 gitRead가 mode 160000으로 뺀다.
+    '.gitmodules',
   ],
   /** 파일명 접두(`.env`, `.env.local`, `.env.production` …). */
   filePrefixes: ['.env'],
