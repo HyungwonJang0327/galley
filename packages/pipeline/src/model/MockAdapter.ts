@@ -35,6 +35,7 @@ export function createMockAdapter(options: MockAdapterOptions = {}): ModelAdapte
           outputTokens: estimateTokens(text),
         },
         costUsd: 0,
+        truncated: false,
         durationMs: Math.round(performance.now() - startedAt),
       });
     },

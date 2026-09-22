@@ -28,6 +28,7 @@ export function createScriptedAdapter(
         },
         costUsd: 0.001,
         durationMs: 1,
+        truncated: false,
       };
     },
   };

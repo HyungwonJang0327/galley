@@ -19,6 +19,8 @@ export interface GenerateResult {
   text: string;
   usage: ModelUsage;
   costUsd: number;
+  /** 출력이 maxOutputTokens에 걸려 잘렸는가(Anthropic stop_reason max_tokens · OpenAI status incomplete). 단계가 실패로 다룬다. */
+  truncated: boolean;
   durationMs: number;
 }
 

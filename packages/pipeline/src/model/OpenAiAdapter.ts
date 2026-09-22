@@ -81,6 +81,7 @@ export function createOpenAiAdapter(options: OpenAiAdapterOptions): ModelAdapter
         usage,
         costUsd: calculateCostUsd(usage, pricing),
         durationMs,
+        truncated: response.status === 'incomplete',
       };
     },
   };
