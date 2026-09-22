@@ -14,12 +14,52 @@ describe('parsedQueueToRows', () => {
       },
     };
 
+    const noHints = { repoNames: '[]', keywords: '[]', period: null };
     expect(parsedQueueToRows(parsed)).toEqual([
-      { title: 'A', status: '대기', order: 0, category: null, completedOn: null },
-      { title: 'B', status: '대기', order: 1, category: null, completedOn: null },
-      { title: 'C', status: '후보', order: 0, category: '카테고리1', completedOn: null },
-      { title: 'D', status: '완료', order: 0, category: null, completedOn: '2026-09-01' },
+      { title: 'A', status: '대기', order: 0, category: null, completedOn: null, ...noHints },
+      { title: 'B', status: '대기', order: 1, category: null, completedOn: null, ...noHints },
+      {
+        title: 'C',
+        status: '후보',
+        order: 0,
+        category: '카테고리1',
+        completedOn: null,
+        ...noHints,
+      },
+      {
+        title: 'D',
+        status: '완료',
+        order: 0,
+        category: null,
+        completedOn: '2026-09-01',
+        ...noHints,
+      },
     ]);
+  });
+
+  test('괄호 힌트를 리포·키워드·기간 컬럼으로 뽑되 제목은 원문 그대로 둔다', () => {
+    const parsed: ParsedQueue = {
+      preamble: '',
+      sections: {
+        대기: [{ title: '벤더 정산 (Vendor Manager, react-query, 2024.03)' }],
+        후보: [],
+        보류: [],
+        완료: [],
+      },
+    };
+    const repos = [{ name: 'vendor-manager', aliases: ['vendor manager'] }];
+    expect(parsedQueueToRows(parsed, repos)[0]).toMatchObject({
+      title: '벤더 정산 (Vendor Manager, react-query, 2024.03)',
+      repoNames: '["vendor-manager"]',
+      keywords: '["react-query"]',
+      period: '2024.03',
+    });
+    // 리포 목록이 없으면 전부 키워드
+    expect(parsedQueueToRows(parsed)[0]).toMatchObject({
+      repoNames: '[]',
+      keywords: '["vendor manager","react-query"]',
+      period: '2024.03',
+    });
   });
 
   test('빈 큐는 빈 배열을 낸다', () => {

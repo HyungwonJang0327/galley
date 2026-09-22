@@ -5,6 +5,8 @@
 import type { PrismaClient } from '@prisma/client';
 import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
 import { normalizeTopicTitle } from './normalizeTitle.ts';
+import { parseTopicHints, resolveTopicHints, type RepoNameSource } from './topicHints.ts';
+import { parseStringArray, serializeStringArray } from '../index/schema.ts';
 import { RUN_STATUS } from '../run/stateMachine.ts';
 import type { Storage } from '../storage/Storage.ts';
 
@@ -20,19 +22,33 @@ export interface QueueItemRow {
   order: number;
   category: string | null;
   completedOn: string | null;
+  /** 괄호 힌트에서 뽑은 근거 힌트(JSON 배열 문자열 — src/index/schema.ts 헬퍼로만 읽고 쓴다). 재적재 시 재생성. */
+  repoNames: string;
+  keywords: string;
+  period: string | null;
 }
 
-/** ParsedQueue를 QueueItem 행 배열로 변환한다(순수). order는 섹션 내 0기반. */
-export function parsedQueueToRows(parsed: ParsedQueue): QueueItemRow[] {
+/**
+ * ParsedQueue를 QueueItem 행 배열로 변환한다(순수). order는 섹션 내 0기반. 제목은 괄호 힌트까지 **원문 그대로**
+ * 두고(파일이 진실), 힌트는 여기(파일 → DB 경계)서 뽑아 컬럼으로. `repos`는 힌트의 어느 항이 리포 이름인지 가르는 기준.
+ */
+export function parsedQueueToRows(
+  parsed: ParsedQueue,
+  repos: readonly RepoNameSource[] = [],
+): QueueItemRow[] {
   const rows: QueueItemRow[] = [];
   for (const status of STATUS_ORDER) {
     parsed.sections[status].forEach((topic, order) => {
+      const hints = resolveTopicHints(parseTopicHints(topic.title), repos);
       rows.push({
         title: topic.title,
         status,
         order,
         category: topic.category ?? null,
         completedOn: topic.completedOn ?? null,
+        repoNames: serializeStringArray(hints.repoNames),
+        keywords: serializeStringArray(hints.keywords),
+        period: hints.period,
       });
     });
   }
@@ -116,7 +132,11 @@ export function importQueueFromFile(deps: {
 }
 
 async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Promise<void> {
-  const rows = parsedQueueToRows(parseQueue(await deps.storage.readQueueFile()));
+  // 등록된 리포 이름·alias — 힌트의 항을 리포/키워드로 가르는 기준. 리포를 나중에 등록하면 다음 적재가 다시 가른다.
+  const repos: RepoNameSource[] = (
+    await deps.prisma.repo.findMany({ select: { name: true, aliases: true } })
+  ).map((r) => ({ name: r.name, aliases: parseStringArray(r.aliases) }));
+  const rows = parsedQueueToRows(parseQueue(await deps.storage.readQueueFile()), repos);
   const existing: ExistingItem[] = await deps.prisma.queueItem.findMany({
     select: {
       id: true,
