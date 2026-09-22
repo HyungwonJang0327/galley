@@ -4,14 +4,14 @@
 // discovered(추가 탐색)는 BE9. 단계 라우팅(createStepRunner)은 BS5 — 여기는 evidence 단계만 아는 StepRunner다.
 import type { PrismaClient } from '@prisma/client';
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
-import type { EvidenceBundle, EvidenceItem } from '../evidence/bundle.ts';
+import type { EvidenceAnalysis, EvidenceBundle, EvidenceItem } from '../evidence/bundle.ts';
 import { stripSnippets } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
 import { readPointerSnippet, type CommitMetaResolver } from '../evidence/readSnippet.ts';
 import { gitCommitMeta } from '../index/gitRead.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
-import { LINK_SOURCE, parsePointers } from '../index/schema.ts';
+import { LINK_SOURCE, isAnalysisKind, parsePointers } from '../index/schema.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
 
 export interface EvidenceStepDeps {
@@ -48,7 +48,14 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         select: {
           source: true,
           analysis: {
-            select: { id: true, pointers: true, repo: { select: { path: true, readOnly: true } } },
+            select: {
+              id: true,
+              kind: true,
+              title: true,
+              summary: true,
+              pointers: true,
+              repo: { select: { path: true, readOnly: true } },
+            },
           },
         },
       });
@@ -132,6 +139,15 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         });
       }
 
+      // 항목이 실제로 담긴 글의 제목·요약만(인덱싱 때 redact된 값) — 본문 단계 입력의 "요약".
+      const usedAnalysisIds = new Set(items.map((i) => i.analysisId));
+      const analyses: EvidenceAnalysis[] = [];
+      for (const l of ordered) {
+        const a = l.analysis;
+        if (!usedAnalysisIds.has(a.id) || analyses.some((x) => x.id === a.id)) continue;
+        if (!isAnalysisKind(a.kind)) continue;
+        analyses.push({ id: a.id, kind: a.kind, title: a.title, summary: a.summary });
+      }
       const bundle: EvidenceBundle = {
         version: 1,
         runId: ctx.runId,
@@ -139,6 +155,7 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         topicSlug: ctx.topic.slug,
         collectedAt: deps.clock.now().toISOString(),
         items,
+        analyses,
         unreadable,
         filtered: deps.redactConfig !== null,
       };

@@ -143,6 +143,8 @@ const ctxFor = (
   runId: run.id,
   step: 'evidence' as const,
   topic: { id: topic.id, title: '무한 스크롤', slug: '무한-스크롤' },
+  modelId: 'mock',
+  sources: {},
   signal,
 });
 const deps = (redactConfig: RedactConfig | null, limits: EvidenceLimits = EVIDENCE_LIMITS) => ({
@@ -200,6 +202,10 @@ describe('evidence 단계', () => {
       expect(item.date).toBe('2024-03-05T10:00:00+09:00');
     }
     expect(stored.bundle.items.every((i) => i.redacted)).toBe(true);
+    // 항목이 담긴 글(change)의 제목·요약만 — area는 항목이 없어 빠진다
+    expect(stored.bundle.analyses).toEqual([
+      { id: change.id, kind: 'change', title: 'c', summary: 's' },
+    ]);
     expect(stored.bundle.items[1]!.note).toBeUndefined(); // change의 포인터엔 note가 없다
     const raw = await readFile(store.pathFor('무한-스크롤', run.id), 'utf8');
     expect(raw).not.toContain('Example Corp');
