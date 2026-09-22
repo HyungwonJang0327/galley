@@ -12,6 +12,7 @@ import {
 } from './velogStep.ts';
 import { WRITING_LIMITS } from './limits.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
+import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import { createScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
 import { hashPromptText } from '../prompts/tonePrompts.ts';
@@ -19,6 +20,7 @@ import type { StepContext } from './StepRunner.ts';
 
 let dir: string;
 let store: LocalFsEvidenceStore;
+let artifacts: LocalFsArtifactStore;
 let promptsDir: string;
 const TONE = '# 벨로그 어투\n- -다체. Example Corp라고 쓰지 않는다.\n';
 const BUNDLE: EvidenceBundle = {
@@ -59,6 +61,7 @@ const BUNDLE: EvidenceBundle = {
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), 'galley-velog-'));
   store = new LocalFsEvidenceStore(join(dir, 'data'));
+  artifacts = new LocalFsArtifactStore(join(dir, 'data'));
   await store.write(BUNDLE);
   await store.write({ ...BUNDLE, runId: 'run_0' }); // carried 출처
   await store.write({ ...BUNDLE, runId: 'run_empty', items: [] });
@@ -132,8 +135,19 @@ describe('buildVelogPrompt', () => {
 describe('createVelogStepRunner', () => {
   test('번들·어투로 모델을 부르고 velog.md·토큰·비용·모델·promptHash를 돌려준다', async () => {
     const a = adapters();
-    const r = await createVelogStepRunner({ store, promptsDir, adapters: a }).run(ctx());
+    const runner = createVelogStepRunner({ store, artifacts, promptsDir, adapters: a });
+    const r = await runner.run(ctx());
     expect(r.artifacts[VELOG_ARTIFACT]).toBe('# 무한 스크롤 붙이기\n\n본문.\n');
+    // DATA_DIR 산출물 저장소에도 같은 본문이 남고, discard가 지운다
+    expect(await artifacts.read('무한-스크롤', 'run_1', VELOG_ARTIFACT)).toEqual({
+      ok: true,
+      text: r.artifacts[VELOG_ARTIFACT],
+    });
+    await runner.discard!({ runId: 'run_1', step: 'velog', topic: ctx().topic });
+    expect(await artifacts.read('무한-스크롤', 'run_1', VELOG_ARTIFACT)).toEqual({
+      ok: false,
+      code: 'ARTIFACT_MISSING',
+    });
     expect(r.model).toBe('mock:scripted');
     expect(r.promptHash).toBe(hashPromptText(TONE));
     expect(r.tokens?.input).toBeGreaterThan(0);
@@ -147,7 +161,7 @@ describe('createVelogStepRunner', () => {
 
   test('carried 근거는 sources.evidence의 Run 번들을 읽는다', async () => {
     const a = adapters();
-    await createVelogStepRunner({ store, promptsDir, adapters: a }).run(
+    await createVelogStepRunner({ store, artifacts, promptsDir, adapters: a }).run(
       ctx({ runId: 'run_9', sources: { evidence: 'run_0' } }),
     );
     expect(a.adapter.calls).toHaveLength(1);
@@ -157,7 +171,8 @@ describe('createVelogStepRunner', () => {
     const run = (
       deps: Partial<Parameters<typeof createVelogStepRunner>[0]> = {},
       c: StepContext = ctx(),
-    ) => createVelogStepRunner({ store, promptsDir, adapters: adapters(), ...deps }).run(c);
+    ) =>
+      createVelogStepRunner({ store, artifacts, promptsDir, adapters: adapters(), ...deps }).run(c);
     await expect(run({}, ctx({ modelId: 'nope' }))).rejects.toMatchObject({
       code: 'VELOG_MODEL_UNKNOWN',
       retryable: false,
