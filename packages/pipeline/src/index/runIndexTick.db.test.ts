@@ -16,6 +16,7 @@ import {
 import { createScriptedAdapter, type ScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
 import { INDEX_JOB_STATUS, REPO_STATUS, parsePointers } from './schema.ts';
 import { enqueueIndexJob } from './enqueueIndexJob.ts';
+import { claimIndexJob } from './indexJobRepo.ts';
 import type { Timers } from '../worker/WorkerDeps.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
@@ -443,6 +444,93 @@ describe('runIndexTick', () => {
     expect((await prisma.indexJob.findUniqueOrThrow({ where: { id: roJob.id } })).errorCode).toBe(
       'REDACT_CONFIG_REQUIRED',
     );
+  });
+
+  test('배치를 도는 사이에 회수돼 남의 작업이 되면 진행·완료·실패 어느 쓰기도 남기지 않는다(lost)', async () => {
+    const repo = await makeRepo();
+    const job = await enqueue(repo.id);
+    const steal = async () => {
+      await prisma.indexJob.update({ where: { id: job.id }, data: { workerId: 'w2' } });
+    };
+    const snapshot = async () =>
+      prisma.indexJob.findUniqueOrThrow({
+        where: { id: job.id },
+        select: {
+          status: true,
+          workerId: true,
+          progressCursor: true,
+          progressDone: true,
+          inputTokens: true,
+          errorCode: true,
+        },
+      });
+
+    // ① 진행 경로: 모델이 답하는 사이 다른 워커가 잡아갔다
+    const stolenMid = createScriptedAdapter(async (i) => {
+      await steal();
+      return answer(i.prompt);
+    });
+    const { deps, logs } = fakeDeps(stolenMid);
+    expect((await runIndexTick(deps)).outcome).toBe('claimed');
+    const before = await snapshot();
+    expect((await runIndexTick(deps)).outcome).toBe('lost');
+    expect(await snapshot()).toEqual({ ...before, workerId: 'w2' });
+    expect(logs.at(-1)).toContain('info:인덱싱 작업이 회수돼');
+    // 이 워커는 더 이상 자기 것이 없다 → idle
+    expect((await runIndexTick(deps)).outcome).toBe('idle');
+
+    // ② 실패 경로: 모델 호출 실패 + 그새 남의 것 → 실패도 기록하지 않고 Repo도 그대로
+    await prisma.indexJob.update({ where: { id: job.id }, data: { workerId: 'w1' } });
+    const stolenThenFail = createScriptedAdapter(async () => {
+      await steal();
+      throw new Error('401');
+    });
+    expect((await runIndexTick(fakeDeps(stolenThenFail).deps)).outcome).toBe('lost');
+    expect(await snapshot()).toMatchObject({ status: INDEX_JOB_STATUS.running, errorCode: null });
+    expect((await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } })).status).toBe(
+      REPO_STATUS.indexing,
+    );
+
+    // ③ 완료 경로: 개요 배치 중 남의 것 → done을 기록하지 않는다
+    await prisma.indexJob.update({
+      where: { id: job.id },
+      data: { workerId: 'w1', progressCursor: 'overview:' },
+    });
+    const stolenAtOverview = createScriptedAdapter(async (i) => {
+      await steal();
+      return answer(i.prompt);
+    });
+    expect((await runIndexTick(fakeDeps(stolenAtOverview).deps)).outcome).toBe('lost');
+    expect(await snapshot()).toMatchObject({ status: INDEX_JOB_STATUS.running, workerId: 'w2' });
+    expect((await prisma.repo.findUniqueOrThrow({ where: { id: repo.id } })).status).toBe(
+      REPO_STATUS.indexing,
+    );
+  });
+
+  test('두 워커가 같은 작업을 잡지 못한다(조건부 updateMany)', async () => {
+    const repo = await makeRepo();
+    const job = await enqueue(repo.id);
+    const now = new Date();
+    const first = await claimIndexJob(prisma, 'w1', now);
+    expect(first?.justClaimed).toBe(true);
+    expect(await claimIndexJob(prisma, 'w2', now)).toBeNull();
+    const again = await claimIndexJob(prisma, 'w1', now);
+    expect(again).toMatchObject({ justClaimed: false, job: { id: job.id } });
+  });
+
+  test('모델 호출 실패 전까지 끝난 배치의 과금은 실패한 작업에도 남는다', async () => {
+    const repo = await makeRepo();
+    const job = await enqueue(repo.id);
+    // 첫 배치는 성공, 이후 실패 — 틱 하나에 배치 하나라 실패 틱 자체는 usage 0이지만 앞 틱의 합산이 남아야 한다
+    const adapter = createScriptedAdapter((i, n) => {
+      if (n >= 1) throw new Error('429');
+      return answer(i.prompt);
+    });
+    expect(await drain(fakeDeps(adapter).deps)).toEqual(['claimed', 'progressed', 'failed']);
+    const failed = await prisma.indexJob.findUniqueOrThrow({ where: { id: job.id } });
+    expect(failed.errorCode).toBe('MODEL_FAILED');
+    expect(failed.inputTokens).toBeGreaterThan(0);
+    expect(failed.progressDone).toBe(1);
   });
 
   test('예상 밖 예외는 INDEX_UNEXPECTED로 실패 처리하고 스택은 로그에만 남긴다', async () => {
