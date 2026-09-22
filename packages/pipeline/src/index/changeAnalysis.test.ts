@@ -122,6 +122,35 @@ describe('analyzeChange', () => {
     ]);
   });
 
+  test('짧은 접두가 여러 커밋에 맞으면 그 path를 바꾼 커밋을 찾을 때까지 순회한다', async () => {
+    const batch: ChangeBatch = {
+      ...BATCH,
+      commits: [
+        {
+          ...BATCH.commits[0]!,
+          sha: 'abcd1' + 'a'.repeat(35),
+          files: [{ status: 'M', path: 'src/one.ts' }],
+        },
+        {
+          ...BATCH.commits[1]!,
+          sha: 'abcd2' + 'b'.repeat(35),
+          files: [{ status: 'M', path: 'src/two.ts' }],
+        },
+      ],
+    };
+    const adapter = createScriptedAdapter(() =>
+      JSON.stringify({
+        title: 't',
+        summary: 's',
+        pointers: [{ commit: 'abcd', path: 'src/two.ts' }],
+      }),
+    );
+    const r = await analyzeChange(adapter, { ...base(null), batch });
+    expect(r.ok && r.draft.pointers).toEqual([
+      { commit: 'abcd2' + 'b'.repeat(35), path: 'src/two.ts' },
+    ]);
+  });
+
   test('유효한 포인터가 없으면 상세 커밋(최신부터)의 첫 변경 파일로 채운다', async () => {
     const adapter = createScriptedAdapter(() =>
       JSON.stringify({ title: 't', summary: 's', keywords: [], pointers: [] }),

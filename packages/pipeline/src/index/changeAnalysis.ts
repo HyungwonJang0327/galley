@@ -101,9 +101,13 @@ function resolvePointer(
 ): EvidencePointer | undefined {
   const prefix = rawCommit.trim().toLowerCase();
   if (!/^[0-9a-f]{4,40}$/.test(prefix)) return undefined;
-  const commit = batch.commits.find((c) => c.sha.startsWith(prefix));
-  if (commit === undefined) return undefined;
-  return pointerCandidates(commit).find((p) => p.path === rawPath);
+  // 접두가 여러 커밋에 맞을 수 있다(짧은 접두) — (commit, path)가 맞는 첫 것을 택한다.
+  for (const commit of batch.commits) {
+    if (!commit.sha.startsWith(prefix)) continue;
+    const found = pointerCandidates(commit).find((p) => p.path === rawPath);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 /**
