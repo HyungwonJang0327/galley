@@ -161,7 +161,7 @@ async function toClaimedRun(
   const rows = await prisma.runStep.findMany({
     where: { runId: run.id },
     orderBy: { order: 'asc' },
-    select: { name: true, status: true, origin: true },
+    select: { name: true, status: true, origin: true, sourceRunId: true },
   });
 
   return {
@@ -180,6 +180,7 @@ async function toClaimedRun(
               // 모르는 값이면 대기로 본다 — 단계는 원자적이라 다시 돌아도 안전하다.
               status: isStepStatus(row.status) ? row.status : STEP_STATUS.pending,
               origin: row.origin === STEP_ORIGIN.carried ? STEP_ORIGIN.carried : STEP_ORIGIN.fresh,
+              ...(row.sourceRunId !== null ? { sourceRunId: row.sourceRunId } : {}),
             },
           ]
         : [],

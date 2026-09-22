@@ -39,7 +39,13 @@ export interface ClaimedRun {
   modelId: string;
   /** 사람이 준 수정 지시(재실행일 때만). */
   instruction?: string;
-  steps: { name: StepName; status: StepStatus; origin?: 'fresh' | 'carried' }[];
+  steps: {
+    name: StepName;
+    status: StepStatus;
+    origin?: 'fresh' | 'carried';
+    /** carried일 때 그 결과를 만든 Run. */
+    sourceRunId?: string;
+  }[];
 }
 
 export interface StepOutcome {
