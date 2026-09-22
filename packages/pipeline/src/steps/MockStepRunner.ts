@@ -3,6 +3,7 @@
 // 단계마다 **결정적인** 산출물을 돌려준다 — 같은 입력이면 같은 결과여야 diff가 의미 있다.
 // (decisions/run-execution-model.md)
 import { STEP_ORDER, type StepName } from '../run/stateMachine.ts';
+import { hashPromptText, isTonePromptStep } from '../prompts/tonePrompts.ts';
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 
 /** 단계별 산출물 파일 이름. 실제 파일 쓰기는 B3a가 한다 — 여기서는 내용만 만든다. */
@@ -69,6 +70,8 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
       if (ctx.step === 'verify' && options.verifyFlags !== undefined) {
         result.flags = options.verifyFlags;
       }
+      // 어투 단계는 실제 구현처럼 promptHash를 돌려준다(결정적 — 파일 대신 고정 문자열의 해시). 워커가 기록하는 경로를 겪게.
+      if (isTonePromptStep(ctx.step)) result.promptHash = hashPromptText(`mock-tone:${ctx.step}`);
       return result;
     },
     async discard(ctx) {

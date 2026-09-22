@@ -29,6 +29,8 @@ export interface StepResult {
   costUsd?: number;
   /** 이 단계를 돌린 모델(레지스트리 id). 썸네일처럼 모델이 없는 단계는 비운다. */
   model?: string;
+  /** 어투 프롬프트 파일 내용의 sha256(벨로그·링크드인·Zenn 단계만). 워커는 기록만 한다(decisions/tone-prompts.md). */
+  promptHash?: string;
   /** 화면 표시용 플래그(근거 검증의 unsupported 등). **전이에 영향 없다.** */
   flags?: { unsupported: number; uncertain: number };
 }

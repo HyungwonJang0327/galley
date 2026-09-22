@@ -90,6 +90,7 @@ export function createPrismaWorkerRepo(prisma: PrismaClient): WorkerRepo {
           inputTokens: outcome.inputTokens ?? null,
           outputTokens: outcome.outputTokens ?? null,
           costUsd: outcome.costUsd ?? null,
+          promptHash: outcome.promptHash ?? null,
           durationMs: outcome.durationMs ?? null,
           finishedAt: now,
         },
