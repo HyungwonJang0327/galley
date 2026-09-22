@@ -40,7 +40,7 @@
 - BE4 — 리포 인덱서: git log 기간·경로별 change 분석 글 + overview (비용 기록은 BE5 실행자)
 - BE5 — 증분 재인덱싱(HEAD 비교·stale, change는 달 단위 재읽기) + IndexJob 실행자(Repo 상태·비용 기록) + `bin/index.ts` CLI — 완료 2026-09-22
 - BE6 — 주제_큐.md 괄호 힌트 파서 확장(리포 alias·키워드·기간) + ~~슬러그 파생~~(B1e) — 완료 2026-09-22
-- BE7 — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡)
+- BE7 — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡) — 완료 2026-09-22
 - BE8 — 근거 수집: linked 포인터 → git show 조각 → EvidenceBundle(snippet은 DATA_DIR, posts엔 포인터만)
 - BE9 — 근거 수집: discovered 추가 탐색(키워드 점수만) + 상한 8
 - BE10 — 근거 검증: 주장 추출(숫자·경로·식별자는 정규식, 서술은 모델) → 대조 → VerificationReport (본문 불변, 실패 아님)

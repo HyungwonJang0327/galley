@@ -179,7 +179,7 @@
   - ~~BE4 리뷰에서 넘어온 것~~ → 달 단위 증분(`sinceSha`)·usage 합산·고아 행·`.gitmodules`는 BE5에서 해소. 남은 이월(다음 결정): 월 분할이 잘게 쪼개지는 문제(BE4 M3) · overview 출력 불량 시 옛 행 유지(L7) · BE5 L1(커서 키 없으면 처음부터)·L2(틱마다 재계획 캐시)·L3(Run 도는 동안 자기 IndexJob 자기 회수).
 - [x] **BE6** (2026-09-22 `cf3215b`·`945092b`·리뷰 수정 `3821ace`·`bb9fc53`·decisions `659afef`·`2d84e28`, feat/queue-hint-parser — 파일 파서 불변, 추출은 적재 경계, 기간은 정규형 `YYYY-MM`) pl — `주제_큐.md` 괄호 힌트 파서 확장(리포 이름·alias·키워드·기간 추출, 괄호 형식 불변) + 테스트. ~~주제 슬러그 파생~~ → **B1e에서 이미 구현**(`topicSlug()`, 2026-09-12 `01c721c`). 커밋: `feat(queue): 주제 항목에서 리포·키워드·기간 추출`
   - 완료조건: `(spacehome, react-router)` `(vendor manager, 2024.03)` `(spacehome + vendor manager)` `(2024.07)` 4형이 파싱되고 라운드트립(A4c)이 그대로 통과.
-- [ ] **BE7** pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
+- [x] **BE7** (2026-09-22 `639e9a7`·`7b488b7`·`350cad5`·`48a872b`·리뷰 수정 `76800af`·`1748f67`·`c22244b`·decisions `7f59670`·`51f2f0b`, feat/topic-auto-link — 컬럼 트리거 `autoLinkedAt`, 한 트랜잭션 + updatedAt 조건부, manual 불변, Run → IndexJob → 링커 순) pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
   - BE6에서 넘어온 것: 입력은 `QueueItem.repoNames`(정식 이름으로 리포를 먼저 좁힘)·`keywords`(소문자)·`period`(정규형 `YYYY`·`YYYY-MM`·`YYYY-MM~YYYY-MM`, 범위 전개·방향 뒤집힘 해석은 여기서) · 본문 괄호의 잡음 키워드(`18`·`(`·`-`)는 1~2글자·숫자·기호만이면 거른다 · 인덱서 키워드와 비교는 양쪽 NFC 명시 · alias 유일성 검사(`REPO_ALIAS_TAKEN`)는 리포 등록(`enqueueIndexJob`) 쪽.
   - 완료조건: 픽스처 인덱스 + 큐에서 키워드 겹치는 분석 글만 연결. 재적재(전체 리셋) 후에도 `manual` 링크 유지(테스트).
 - [ ] **BE8** pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
@@ -191,6 +191,7 @@
 - [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
   - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
 - [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
+  - BE7 리뷰에서 넘어온 것(decisions 2026-09-22 BE7 ⑪): auto 연결 "제거" = `source=dismissed`(계산 결과에 있어도 안 붙임, 목록엔 안 보임, `LINK_SOURCE`에 값 추가·마이그레이션 없음) · "추가"가 이미 auto면 create가 아니라 source 갱신(승격) · 연결 이유는 `matchTopic` 재계산으로 표시(재인덱싱 뒤 어긋날 수 있음, 필요하면 `reason` 컬럼) · 큐 행 "근거 n건"은 `_count`.
   - 완료조건: 편집 결과가 `TopicAnalysisLink(manual)`로 저장, 큐 행 "근거 n건" 갱신.
 - [ ] **BE13** fe — 실행 상세 타임라인에 근거 수집("linked n · discovered n", 펼침 목록)·근거 검증("근거 없음 n · 불확실 n" 주황 배지, 펼침 주장 목록) 표시 + 좌 목록·홈 "지금 할 일" 작은 텍스트. 커밋: `feat(dashboard): 타임라인에 근거·검증 결과 표시`
       재실행 규칙(2026-09-12 교체 — decisions/evidence-collection.md): **시작 단계 + 이후 전부**. 시작 단계는 Select 지정 우선, 없으면 지시에 "근거"·"커밋"·"코드"가 있으면 `evidence`·없으면 `velog`. 범위 밖 앞 단계는 `carried`(이전 결과 유지, "건너뜀" 아님). 세 조각으로 나눈다.
