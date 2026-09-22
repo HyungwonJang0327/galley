@@ -267,6 +267,7 @@ describe('indexRepoAreas', () => {
     });
     expect(adapter.calls.at(-1)!.prompt).toContain('디렉터리: docs');
 
+    // 행이 있는 영역만 unchanged — 지금은 area:docs 하나만 저장돼 있다(area:.·area:src는 만든다)
     const inc = await indexRepoAreas(prisma, {
       repo: inputFor(repo, false),
       adapter,
@@ -275,10 +276,22 @@ describe('indexRepoAreas', () => {
     });
     expect(inc.ok && inc.report).toMatchObject({
       planned: 3,
-      saved: 1,
-      unchanged: 2,
+      saved: 2,
+      unchanged: 1,
       remaining: 0,
     });
+    expect(adapter.calls.slice(-2).map((c) => /디렉터리: (.+)/.exec(c.prompt)![1])).toEqual([
+      '.',
+      'src',
+    ]);
+    // 전부 저장된 뒤에는 바뀐 경로의 영역만
+    const again = await indexRepoAreas(prisma, {
+      repo: inputFor(repo, false),
+      adapter,
+      redactConfig: null,
+      changedPaths: ['src/a.ts'],
+    });
+    expect(again.ok && again.report).toMatchObject({ saved: 1, unchanged: 2 });
     expect(adapter.calls.at(-1)!.prompt).toContain('디렉터리: src');
   });
 
