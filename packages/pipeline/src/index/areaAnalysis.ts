@@ -13,6 +13,7 @@ import {
   readTitleSummary,
   type AnalysisFailure,
 } from './analysisText.ts';
+import { OUTPUT_LIMITS } from './limits.ts';
 import type { EvidencePointer } from './schema.ts';
 import type { AreaPlan } from './tree.ts';
 
@@ -105,7 +106,7 @@ export async function analyzeArea(
     generated = await adapter.generate({
       system: SYSTEM_PROMPT,
       prompt: buildPrompt(input),
-      maxOutputTokens: 2048,
+      maxOutputTokens: OUTPUT_LIMITS.maxOutputTokens.area,
     });
   } catch (error) {
     return modelFailed(error);

@@ -13,7 +13,7 @@ import {
   readTitleSummary,
   type AnalysisFailure,
 } from './analysisText.ts';
-import { INDEX_LIMITS, type IndexLimits } from './limits.ts';
+import { INDEX_LIMITS, OUTPUT_LIMITS, type IndexLimits } from './limits.ts';
 import type { EvidencePointer } from './schema.ts';
 import { compareCodepoint } from './tree.ts';
 
@@ -54,8 +54,6 @@ export interface OverviewAnalysisDraft {
 export type OverviewAnalysisResult = { ok: true; draft: OverviewAnalysisDraft } | AnalysisFailure;
 
 export const OVERVIEW_KEY = 'overview';
-/** 포인터 최대 개수(출처 글 하나당 하나). */
-const MAX_POINTERS = 12;
 
 const SYSTEM_PROMPT = `당신은 코드 리포지토리의 분석 글들을 종합해 기술 블로그 초안의 근거가 될 "리포 개요"를 쓰는 분석가입니다.
 영역별(디렉터리) 분석 글과 기간별 변경 분석 글의 제목·요약을 읽고 아래 JSON 하나만 출력하세요(코드 펜스·설명 없이).
@@ -120,7 +118,7 @@ export async function analyzeOverview(
     generated = await adapter.generate({
       system: SYSTEM_PROMPT,
       prompt: buildPrompt(input, selected, truncated),
-      maxOutputTokens: 3072,
+      maxOutputTokens: OUTPUT_LIMITS.maxOutputTokens.overview,
     });
   } catch (error) {
     return modelFailed(error);
@@ -159,7 +157,7 @@ export async function analyzeOverview(
       ...(first.lineEnd !== undefined ? { lineEnd: first.lineEnd } : {}),
       note: s.title,
     });
-    if (pointers.length >= MAX_POINTERS) break;
+    if (pointers.length >= OUTPUT_LIMITS.pointersPerOverview) break;
   }
   if (pointers.length === 0) return invalid();
 

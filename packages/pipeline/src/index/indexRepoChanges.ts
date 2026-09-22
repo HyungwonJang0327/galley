@@ -1,6 +1,8 @@
 // 리포 인덱서 2 — 커밋 이력을 기간(월)·주 디렉터리로 묶어 change 분석 글을 만든다. 워커의 IndexJob 실행(BE5)이 area 다음에
 // 부른다. 읽기: git log(읽기만) · 모델: ModelAdapter 하나 · 쓰기: RepoAnalysis(저장 함수 한 곳). indexRepoAreas와 같은 규칙 —
-// Repo 상태·IndexJob은 쓰지 않고(실행자 몫) report는 수치만(경로·기간 키는 콜백으로만).
+// Repo 상태·IndexJob은 쓰지 않고(실행자 몫) report는 수치만(경로·기간 키는 콜백으로만 — 결정 ⑨).
+// 증분(fromSha) 주의: 묶음 키는 입력 커밋 수에 따라 분할이 달라지므로, 같은 달을 일부만 다시 읽으면 기존 글을 덮어쓰거나
+// 중복이 생긴다. 증분 실행자(BE5)는 "새 커밋이 닿은 달 전체"를 다시 읽고 그 달의 기존 change 행을 지운 뒤 저장한다.
 import type { PrismaClient } from '@prisma/client';
 import type { ModelAdapter, ModelUsage } from '../model/ModelAdapter.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
@@ -43,7 +45,8 @@ export interface IndexChangesReport {
   planned: number;
   saved: number;
   summaryOnly: number;
-  skipped: string[];
+  /** 모델이 유효한 답을 주지 못해 건너뛴 묶음 수(키는 onBatchDone으로만). */
+  skipped: number;
   resumedPast: number;
   usage: ModelUsage;
   costUsd: number;
@@ -85,7 +88,7 @@ export async function indexRepoChanges(
     planned: plan.batches.length,
     saved: 0,
     summaryOnly: 0,
-    skipped: [],
+    skipped: 0,
     resumedPast: 0,
     usage: { inputTokens: 0, outputTokens: 0 },
     costUsd: 0,
@@ -111,7 +114,7 @@ export async function indexRepoChanges(
       if (analyzed.code === 'MODEL_FAILED')
         return { ok: false, code: 'MODEL_FAILED', errorName: analyzed.errorName, partial: report };
       addUsage(analyzed.usage, analyzed.costUsd);
-      report.skipped.push(batch.key);
+      report.skipped += 1;
       await input.onBatchDone?.({
         key: batch.key,
         status: 'skipped',
