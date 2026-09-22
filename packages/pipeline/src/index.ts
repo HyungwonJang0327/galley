@@ -182,11 +182,35 @@ export type {
   RedactHit,
   RedactResult,
 } from './evidence/redact.ts';
+export { EVIDENCE_LIMITS } from './evidence/limits.ts';
+export type { EvidenceLimits } from './evidence/limits.ts';
+export { stripSnippets, parseEvidenceBundle } from './evidence/bundle.ts';
+export type {
+  EvidenceBundle,
+  EvidenceItem,
+  EvidencePointers,
+  EvidencePointerItem,
+  EvidenceSource,
+  ParseBundleResult,
+} from './evidence/bundle.ts';
+export { LocalFsEvidenceStore } from './evidence/EvidenceStore.ts';
+export type { EvidenceStore, EvidenceReadResult } from './evidence/EvidenceStore.ts';
+export { readPointerSnippet } from './evidence/readSnippet.ts';
+export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
+export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
+export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
 export { INDEX_LIMITS, INDEX_IGNORE } from './index/limits.ts';
 export type { IndexLimits } from './index/limits.ts';
 export { planAreas, describeTree, isIgnoredPath, areaKeyForPath } from './index/tree.ts';
 export type { TreeFile, AreaFile, AreaPlan, TreeSummary } from './index/tree.ts';
-export { gitHead, gitListFiles, gitShowFile, gitLog, gitDiffPaths } from './index/gitRead.ts';
+export {
+  gitHead,
+  gitListFiles,
+  gitShowFile,
+  gitLog,
+  gitDiffPaths,
+  gitCommitMeta,
+} from './index/gitRead.ts';
 export type {
   GitFailure,
   GitResult,
@@ -195,6 +219,7 @@ export type {
   GitFileStatus,
   GitLogOptions,
   GitLogResult,
+  GitCommitMeta,
 } from './index/gitRead.ts';
 export { planChangeBatches, pointerCandidates, periodOf, primaryDir } from './index/changes.ts';
 export type { ChangeBatch, ChangeCommit, ChangePlan } from './index/changes.ts';
