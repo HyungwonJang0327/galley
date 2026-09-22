@@ -13,6 +13,7 @@
     "test": "vitest run --passWithNoTests",
     "test:smoke": "vitest run --config vitest.smoke.config.ts",
     "worker": "node --env-file=../../.env bin/worker.ts",
+    "index": "node --env-file=../../.env bin/index.ts",
     "seed:dev": "node --env-file=../../.env bin/seed-dev.ts"
   },
   "devDependencies": {
