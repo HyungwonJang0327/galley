@@ -9,6 +9,7 @@ describe('isIgnoredPath', () => {
     expect(isIgnoredPath('node_modules/x/index.js')).toBe(true);
     expect(isIgnoredPath('apps/web/dist/main.js')).toBe(true);
     expect(isIgnoredPath('pnpm-lock.yaml')).toBe(true);
+    expect(isIgnoredPath('.gitmodules')).toBe(true);
     expect(isIgnoredPath('public/logo.PNG')).toBe(true);
     expect(isIgnoredPath('src/index.ts')).toBe(false);
     expect(isIgnoredPath('README')).toBe(false);
