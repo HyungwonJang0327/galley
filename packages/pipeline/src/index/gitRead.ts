@@ -278,5 +278,32 @@ export async function gitDiffPaths(
   return { ok: true, value: r.value.split('\0').filter((p) => p !== '') };
 }
 
+export interface GitCommitMeta {
+  sha: string;
+  /** 작성일(ISO 8601). */
+  authoredAt: string;
+  subject: string;
+}
+
+/** 커밋 하나의 메타(전체 sha·작성일·제목). `git log -1 --format` — 읽기만. 근거 항목의 date에 쓴다. */
+export async function gitCommitMeta(
+  repoPath: string,
+  commit: string,
+): Promise<GitResult<GitCommitMeta>> {
+  if (!isCommitRef(commit)) return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
+  const r = await git(repoPath, [
+    'log',
+    '-1',
+    '--date=iso-strict',
+    '--format=%H%x1f%aI%x1f%s',
+    '--end-of-options',
+    commit,
+  ]);
+  if (!r.ok) return r;
+  const [sha = '', authoredAt = '', subject = ''] = r.value.trim().split('\x1f');
+  if (!/^[0-9a-f]{40}$/.test(sha)) return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
+  return { ok: true, value: { sha, authoredAt, subject: subject.trim() } };
+}
+
 /** 본문에 NUL이 있으면 바이너리 — 모델에 보내지 않는다(확장자 목록에 없는 바이너리 방어). */
 export const looksBinary = (text: string): boolean => text.includes('\0');
