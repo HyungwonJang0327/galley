@@ -29,3 +29,4 @@
 ## 갱신 이력
 
 - 2026-09-13 최초 결정(사용자). 해시 기록 요구는 사용자가 추가 — "같은 주제 시도 간 결과 차이를 지시 컬럼만으로 설명 못 하는 경우를 막기 위한 것".
+- 2026-09-22 BS1 구현에서 정한 것: ① 폴더는 `.env`의 `PROMPTS_DIR`이 있으면 그것, 없으면 리포 루트 `.galley/prompts`(redact 로더와 같은 규칙 — 테스트는 tmpdir 주입) ② 실패는 값으로 셋 — `PROMPT_NOT_FOUND`(파일 없음)·`PROMPT_UNREADABLE`(권한·디렉터리)·`PROMPT_EMPTY`(공백뿐 — 어투 없이 글을 쓰지 않는다). 셋 다 재시도 불가(단계 구현 BS2~~BS4가 `StepFailure`로 옮긴다) ③ 해시는 파일 내용 UTF-8 바이트의 sha256 hex — 앞뒤 공백도 내용이다(한 글자만 달라도 다른 해시) ④ 워커 경로: `StepResult.promptHash` → `StepOutcome.promptHash` → `RunStep.promptHash`(마이그레이션 `run_step_prompt_hash`). Mock 러너는 어투 단계에서 고정 문자열의 해시를 돌려줘 기록 경로를 CI가 겪는다 ⑤ 초안 파일 세 개를 리포에 커밋(`.gitignore`는 `.galley/redact*`만 무시) — 자리만 잡은 초안이며 실제 어투는 사용자가 채운다. 단계 구현(BS2~~BS4)이 `loadTonePrompt`를 부르고 프롬프트에 붙인다.
