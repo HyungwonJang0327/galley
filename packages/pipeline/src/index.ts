@@ -252,6 +252,13 @@ export {
   markRepoIndexing,
 } from './index/indexJobRepo.ts';
 export type { ClaimedIndexJob, IndexProgress, IndexJobEnd } from './index/indexJobRepo.ts';
+export { enqueueIndexJob } from './index/enqueueIndexJob.ts';
+export type {
+  EnqueueIndexJobInput,
+  EnqueuedIndexJob,
+  EnqueueIndexJobFailure,
+  EnqueueIndexJobResult,
+} from './index/enqueueIndexJob.ts';
 export type {
   IndexOverviewInput,
   IndexOverviewReport,
