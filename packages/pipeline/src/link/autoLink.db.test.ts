@@ -90,6 +90,8 @@ async function seedTopic(
       repoNames: serializeStringArray(hints.repoNames ?? []),
       keywords: serializeStringArray(hints.keywords ?? []),
       period: hints.period ?? null,
+      // 가짜 시계(T0 기준)와 맞추기 위해 적재 시각도 명시한다 — 실제 시각을 두면 autoLinkedAt(T0+n)보다 늘 뒤라 항상 stale.
+      updatedAt: at(0),
     },
   });
 }
@@ -121,13 +123,16 @@ describe('linkTopicAuto', () => {
 
     const candidates = await loadAnalysisCandidates(prisma);
     const r = await linkTopicAuto(prisma, topic.id, candidates, at(1));
-    expect(r).toEqual({ topicId: topic.id, linked: 1, added: 1, removed: 0, keptManual: 1 });
+    expect(r).toEqual({
+      ok: true,
+      result: { topicId: topic.id, linked: 1, added: 1, removed: 0, keptManual: 1 },
+    });
     expect(await linksOf(topic.id)).toEqual(
       [`${area.id}:auto`, `${chg3.id}:manual`, `${vmOv.id}:manual`].sort(),
     );
     const row = await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } });
     expect(row.autoLinkedAt?.getTime()).toBe(at(1).getTime());
-    expect(row.updatedAt.getTime()).toBe(at(1).getTime());
+    expect(row.updatedAt.getTime()).toBe(at(0).getTime()); // 적재 시각은 건드리지 않는다
 
     // 힌트를 7월·cart로 바꾸면 area는 떨어지고 chg7이 붙는다, manual 둘은 그대로
     await prisma.queueItem.update({
@@ -135,7 +140,10 @@ describe('linkTopicAuto', () => {
       data: { keywords: serializeStringArray(['cart']), period: '2024-07' },
     });
     const r2 = await linkTopicAuto(prisma, topic.id, candidates, at(2));
-    expect(r2).toMatchObject({ linked: 1, added: 1, removed: 1, keptManual: 0 });
+    expect(r2).toMatchObject({
+      ok: true,
+      result: { linked: 1, added: 1, removed: 1, keptManual: 0 },
+    });
     expect(await linksOf(topic.id)).toEqual(
       [`${chg7.id}:auto`, `${chg3.id}:manual`, `${vmOv.id}:manual`].sort(),
     );
@@ -147,7 +155,10 @@ describe('linkTopicAuto', () => {
     });
     await linkTopicAuto(prisma, topic.id, candidates, at(3));
     expect(await linksOf(topic.id)).toEqual([`${chg3.id}:manual`, `${vmOv.id}:manual`].sort());
-    expect(await linkTopicAuto(prisma, 'nope', candidates, at(3))).toBeNull();
+    expect(await linkTopicAuto(prisma, 'nope', candidates, at(3))).toEqual({
+      ok: false,
+      code: 'TOPIC_NOT_FOUND',
+    });
   });
 
   test('재적재(힌트 그대로)해도 manual·auto 연결이 유지되고, 힌트를 고치면 다음 계산이 auto만 바꾼다', async () => {
@@ -188,7 +199,85 @@ describe('linkTopicAuto', () => {
   });
 });
 
+describe('linkTopicAuto — 경합', () => {
+  test('읽은 뒤 적재가 힌트를 바꿨으면(updatedAt 변경) 아무것도 쓰지 않고 TOPIC_CHANGED', async () => {
+    const sh = await seedRepo('spacehome');
+    await seedAnalysis(sh.id, 'area:src', 'area', ['react-router']);
+    const topic = await seedTopic('A', { keywords: ['react-router'] });
+    // 트랜잭션 안의 힌트 읽기가 "옛 updatedAt"을 돌려주게 해 그 사이 적재가 있었던 상황을 만든다
+    const stale = prisma.$extends({
+      query: {
+        queueItem: {
+          async findUnique({ args, query }) {
+            const row = (await query(args)) as { updatedAt: Date } | null;
+            return row === null
+              ? row
+              : { ...row, updatedAt: new Date(row.updatedAt.getTime() - 60_000) };
+          },
+        },
+      },
+    }) as unknown as PrismaClient;
+    const candidates = await loadAnalysisCandidates(prisma);
+    expect(await linkTopicAuto(stale, topic.id, candidates, at(1))).toEqual({
+      ok: false,
+      code: 'TOPIC_CHANGED',
+    });
+    expect(await linksOf(topic.id)).toEqual([]); // 롤백 — 추가된 auto가 없다
+    expect(
+      (await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } })).autoLinkedAt,
+    ).toBeNull();
+    // 다음 틱이 정상 경로로 다시 계산한다
+    expect(await runAutoLinkTick(deps(at(2)))).toMatchObject({
+      outcome: 'linked',
+      topics: 1,
+      added: 1,
+    });
+  });
+
+  test('읽은 뒤 같은 글에 manual이 생겨 unique에 걸리면 LINK_CONFLICT, 틱은 skipped로 세고 다음 틱이 수렴한다', async () => {
+    const sh = await seedRepo('spacehome');
+    const area = await seedAnalysis(sh.id, 'area:src', 'area', ['react-router']);
+    const topic = await seedTopic('A', { keywords: ['react-router'] });
+    await prisma.topicAnalysisLink.create({
+      data: { topicId: topic.id, analysisId: area.id, source: LINK_SOURCE.manual },
+    });
+    // 기존 연결 읽기가 빈 목록을 돌려주게 해 "읽은 뒤 manual이 생긴" 상황을 만든다
+    const blind = prisma.$extends({
+      query: { topicAnalysisLink: { findMany: async () => [] } },
+    }) as unknown as PrismaClient;
+    const candidates = await loadAnalysisCandidates(prisma);
+    expect(await linkTopicAuto(blind, topic.id, candidates, at(1))).toEqual({
+      ok: false,
+      code: 'LINK_CONFLICT',
+    });
+    expect(await linksOf(topic.id)).toEqual([`${area.id}:manual`]);
+    const tick = await runAutoLinkTick({ ...deps(at(2)), prisma: blind });
+    expect(tick).toEqual({ outcome: 'linked', topics: 0, added: 0, removed: 0, skipped: 1 });
+    expect(await runAutoLinkTick(deps(at(3)))).toMatchObject({
+      outcome: 'linked',
+      topics: 1,
+      added: 0,
+    });
+    expect(await linksOf(topic.id)).toEqual([`${area.id}:manual`]);
+  });
+});
+
 describe('findStaleTopics · runAutoLinkTick', () => {
+  test('autoLinkedAt이 없는 주제가 먼저, 그다음 오래된 순', async () => {
+    const a = await seedTopic('A', {});
+    const b = await seedTopic('B', {});
+    const c = await seedTopic('C', {});
+    await prisma.queueItem.update({
+      where: { id: a.id },
+      data: { autoLinkedAt: at(-5), updatedAt: at(-1) },
+    });
+    await prisma.queueItem.update({
+      where: { id: c.id },
+      data: { autoLinkedAt: at(-9), updatedAt: at(-1) },
+    });
+    expect(await findStaleTopics(prisma, 10)).toEqual([b.id, c.id, a.id]);
+  });
+
   test('autoLinkedAt이 없거나 힌트 재적재·리포 재인덱싱보다 오래된 주제만, 오래된 순으로 상한까지', async () => {
     const repo = await seedRepo('r', at(0));
     await seedAnalysis(repo.id, 'area:src', 'area', ['react-router']);
@@ -203,7 +292,7 @@ describe('findStaleTopics · runAutoLinkTick', () => {
     expect(await runAutoLinkTick(deps(at(6)))).toMatchObject({
       outcome: 'linked',
       topics: 1,
-      added: expect.any(Number),
+      skipped: 0,
     });
     expect(await runAutoLinkTick(deps(at(7)))).toEqual({ outcome: 'idle' });
     expect(await linksOf(a.id)).toHaveLength(1);
@@ -212,7 +301,7 @@ describe('findStaleTopics · runAutoLinkTick', () => {
     // 힌트 재적재(updatedAt 갱신) → 그 주제만 다시
     await prisma.queueItem.update({
       where: { id: b.id },
-      data: { keywords: serializeStringArray(['react-router']) },
+      data: { keywords: serializeStringArray(['react-router']), updatedAt: at(9) },
     });
     expect(await findStaleTopics(prisma, 10)).toEqual([b.id]);
     expect(await runAutoLinkTick(deps(at(10)))).toEqual({
@@ -220,6 +309,7 @@ describe('findStaleTopics · runAutoLinkTick', () => {
       topics: 1,
       added: 1,
       removed: 0,
+      skipped: 0,
     });
 
     // 리포 재인덱싱(lastIndexedAt 갱신) → 전부 다시

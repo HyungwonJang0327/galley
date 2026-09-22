@@ -4,6 +4,12 @@ import { AUTO_LINK_LIMITS } from './limits.ts';
 
 describe('usefulKeywords', () => {
   test('잡음(숫자·기호·1글자)을 거르고 NFC·소문자·중복 제거', () => {
+    // 글자가 없는 항(`2024/12`·이모지)과 1글자는 잡음
+    expect(usefulKeywords(['c#', 'c++', '🚀', '큐', '2024/12', 'a/b'])).toEqual([
+      'c#',
+      'c++',
+      'a/b',
+    ]);
     expect(
       usefulKeywords([
         'React',
@@ -42,6 +48,8 @@ describe('expandPeriod', () => {
     expect(expandPeriod(null).size).toBe(0);
     expect(expandPeriod('2024.03').size).toBe(0);
     expect(expandPeriod('2024-13').size).toBe(0);
+    expect(expandPeriod('2024-00').size).toBe(0);
+    expect(expandPeriod('2024-03~2025').size).toBe(22); // 3월부터 이듬해 12월까지
   });
 });
 
@@ -120,6 +128,15 @@ describe('matchTopic', () => {
     expect(
       matchTopic({ repoNames: [], keywords: [], period: '2024-07' }, A).map((m) => m.id),
     ).toEqual(['chg-a-7', 'chg-b-7']);
+  });
+
+  test('리포 + 기간만이면 그 리포의 그 달 change만(overview는 안 붙는다), 등록 안 된 리포 이름이면 0건', () => {
+    expect(
+      matchTopic({ repoNames: ['spacehome'], keywords: [], period: '2024-07' }, A).map((m) => m.id),
+    ).toEqual(['chg-a-7']);
+    expect(
+      matchTopic({ repoNames: ['gone'], keywords: ['react-router'], period: '2024-07' }, A),
+    ).toEqual([]);
   });
 
   test('리포만 적은 주제는 그 리포의 overview만', () => {

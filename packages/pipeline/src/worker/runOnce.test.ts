@@ -650,6 +650,7 @@ describe('runOnce — 자동 연결 틱 위임', () => {
       topics: 2,
       added: 1,
       removed: 0,
+      skipped: 0,
     }));
     const indexIdle = { tick: vi.fn(async () => ({ outcome: 'idle' as const })) };
     const d = deps({
@@ -659,7 +660,7 @@ describe('runOnce — 자동 연결 틱 위임', () => {
     });
     expect(await runOnce(d)).toEqual({
       outcome: 'linked',
-      link: { outcome: 'linked', topics: 2, added: 1, removed: 0 },
+      link: { outcome: 'linked', topics: 2, added: 1, removed: 0, skipped: 0 },
     });
     expect(indexIdle.tick).toHaveBeenCalledTimes(1);
     link.mockResolvedValueOnce({ outcome: 'idle' });
