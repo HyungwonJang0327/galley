@@ -199,6 +199,16 @@ export { readPointerSnippet } from './evidence/readSnippet.ts';
 export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
+export { WRITING_LIMITS } from './steps/limits.ts';
+export type { WritingLimits } from './steps/limits.ts';
+export {
+  createVelogStepRunner,
+  buildVelogPrompt,
+  classifyModelError,
+  tonePromptFailure,
+  VELOG_ARTIFACT,
+} from './steps/velogStep.ts';
+export type { VelogStepDeps, VelogInput } from './steps/velogStep.ts';
 export {
   loadTonePrompt,
   hashPromptText,
