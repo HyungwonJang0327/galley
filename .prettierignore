@@ -5,3 +5,6 @@ out
 coverage
 pnpm-lock.yaml
 next-env.d.ts
+
+# 어투 프롬프트는 소스가 아니라 모델 입력 — 포맷터가 내용(=promptHash)을 바꾸지 않게(decisions/tone-prompts.md)
+.galley/prompts
