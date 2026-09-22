@@ -12,6 +12,7 @@ import {
   claimIndexJob,
   finishIndexJob,
   markRepoIndexing,
+  pinIndexJobCommit,
   recordIndexProgress,
   releaseIndexJob,
   reclaimStaleIndexJobs,
@@ -92,6 +93,22 @@ export async function runIndexTick(
   if (claimed === null) return { outcome: 'idle' };
   const { job } = claimed;
   if (claimed.justClaimed) {
+    // 기준 커밋 고정 — enqueue가 채운 toSha가 없으면(옛 작업·직접 만든 행) 지금 HEAD로.
+    if (job.toSha === null) {
+      const head = await gitHead(job.repo.path);
+      if (!head.ok) {
+        deps.logger.error('인덱싱 작업 실패', { jobId: job.id, code: head.code });
+        await finishIndexJob(
+          prisma,
+          { ...job, repoId: job.repo.id },
+          { ok: false, code: head.code },
+          now,
+        );
+        return { outcome: 'failed', jobId: job.id };
+      }
+      await pinIndexJobCommit(prisma, job.id, head.value);
+      job.toSha = head.value;
+    }
     await markRepoIndexing(prisma, job.repo.id);
     deps.logger.info('인덱싱 작업을 잡았다', { jobId: job.id, workerId: deps.workerId });
     return { outcome: 'claimed', jobId: job.id };
@@ -115,13 +132,12 @@ export async function runIndexTick(
     });
     await finishIndexJob(
       prisma,
-      { id: job.id, repoId: job.repo.id, modelId: job.modelId },
+      { ...job, repoId: job.repo.id },
       {
         ok: false,
         code: 'INDEX_UNEXPECTED',
         message: error instanceof Error ? error.name : 'UnknownError',
       },
-      null,
       deps.clock.now(),
     );
     return { outcome: 'failed', jobId: job.id };
@@ -141,13 +157,15 @@ async function runBatch(
     deps.logger.error('인덱싱 작업 실패', { ...ref, code });
     await finishIndexJob(
       prisma,
-      { id: job.id, repoId: job.repo.id, modelId: job.modelId },
+      { ...job, repoId: job.repo.id },
       { ok: false, code, ...(message !== undefined ? { message } : {}) },
-      null,
       deps.clock.now(),
     );
     return { outcome: 'failed', jobId: job.id };
   };
+  // 클레임 틱이 고정해 둔 기준 커밋. 없으면(클레임 뒤 행이 바뀐 경우) 프로그래머 오류다.
+  if (job.toSha === null) return fail('INDEX_COMMIT_MISSING');
+  const commit = job.toSha;
 
   const adapter = deps.adapters.get(job.modelId);
   if (adapter === undefined) return fail('INDEX_MODEL_UNKNOWN');
@@ -157,6 +175,7 @@ async function runBatch(
     repo: job.repo,
     adapter,
     redactConfig: deps.redactConfig,
+    commit,
     ...(deps.limits !== undefined ? { limits: deps.limits } : {}),
   };
 
@@ -169,9 +188,7 @@ async function runBatch(
   if (phase === 'areas') {
     let changedPaths: string[] | undefined;
     if (incremental) {
-      const head = await gitHead(job.repo.path);
-      if (!head.ok) return fail(head.code);
-      const diff = await gitDiffPaths(job.repo.path, job.fromSha!, head.value);
+      const diff = await gitDiffPaths(job.repo.path, job.fromSha!, commit);
       if (!diff.ok) return fail(diff.code);
       changedPaths = diff.value;
     }
@@ -214,7 +231,9 @@ async function runBatch(
       nextPhase = 'overview';
     }
   } else {
-    const r = await indexRepoOverview(prisma, common);
+    const { commit: _c, ...overviewInput } = common;
+    void _c;
+    const r = await indexRepoOverview(prisma, overviewInput);
     if (!r.ok && r.code !== 'NO_SOURCES')
       return fail(r.code, 'errorName' in r ? r.errorName : undefined);
     if (r.ok) {
@@ -239,14 +258,7 @@ async function runBatch(
   );
 
   if (nextPhase === 'done') {
-    const head = await gitHead(job.repo.path);
-    await finishIndexJob(
-      prisma,
-      { id: job.id, repoId: job.repo.id, modelId: job.modelId },
-      { ok: true },
-      head.ok ? head.value : null,
-      now,
-    );
+    await finishIndexJob(prisma, { ...job, repoId: job.repo.id }, { ok: true }, now);
     deps.logger.info('인덱싱 작업 완료', { ...ref, batches: done });
     return { outcome: 'completed', jobId: job.id };
   }

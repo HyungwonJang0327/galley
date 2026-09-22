@@ -29,6 +29,8 @@ export interface IndexAreasInput {
   adapter: ModelAdapter;
   /** null = 설정 없음. readOnly 리포에서는 거부한다(회사 리포는 필터 없이 요약을 저장하지 않는다). */
   redactConfig: RedactConfig | null;
+  /** 이 커밋 기준으로 읽는다(실행자가 작업의 toSha를 넘긴다 — 틱 사이에 HEAD가 움직여도 작업 전체가 한 커밋 기준). 없으면 HEAD. */
+  commit?: string;
   limits?: IndexLimits;
   /** 재개: 이미 끝난 영역 키. 이 영역은 모델을 부르지 않고 건너뛴다. */
   skipKeys?: readonly string[];
@@ -83,7 +85,10 @@ export async function indexRepoAreas(
     return { ok: false, code: 'REDACT_CONFIG_REQUIRED' };
   const limits = input.limits ?? INDEX_LIMITS;
 
-  const head = await gitHead(repo.path);
+  const head =
+    input.commit !== undefined
+      ? { ok: true as const, value: input.commit }
+      : await gitHead(repo.path);
   if (!head.ok) return head;
   const files = await gitListFiles(repo.path, head.value);
   if (!files.ok) return files;

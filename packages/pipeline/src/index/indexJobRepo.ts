@@ -10,6 +10,8 @@ export interface ClaimedIndexJob {
   id: string;
   kind: string;
   fromSha: string | null;
+  /** 작업이 기준으로 삼는 커밋. enqueue가 채우고, 비어 있으면 실행자가 잡을 때 HEAD로 고정한다(pinIndexJobCommit). */
+  toSha: string | null;
   modelId: string;
   progressCursor: string | null;
   progressDone: number;
@@ -29,6 +31,7 @@ const CLAIM_SELECT = {
   id: true,
   kind: true,
   fromSha: true,
+  toSha: true,
   modelId: true,
   progressCursor: true,
   progressDone: true,
@@ -71,6 +74,15 @@ export async function claimIndexJob(
     select: CLAIM_SELECT,
   });
   return { job, justClaimed: true };
+}
+
+/** 잡을 때 기준 커밋을 고정한다 — 그 뒤 모든 배치·diff·완료 기록이 이 커밋 기준(틱 사이에 HEAD가 움직여도 섞이지 않는다). */
+export async function pinIndexJobCommit(
+  prisma: PrismaClient,
+  id: string,
+  toSha: string,
+): Promise<void> {
+  await prisma.indexJob.update({ where: { id }, data: { toSha } });
 }
 
 export async function beatIndexJob(prisma: PrismaClient, id: string, now: Date): Promise<void> {
@@ -120,12 +132,14 @@ export async function releaseIndexJob(prisma: PrismaClient, id: string, now: Dat
 
 export type IndexJobEnd = { ok: true } | { ok: false; code: string; message?: string };
 
-/** 작업 끝 + 리포 상태를 **한 트랜잭션**으로(IndexJob failed ↔ Repo error, done ↔ ready). */
+/**
+ * 작업 끝 + 리포 상태를 **한 트랜잭션**으로(IndexJob failed ↔ Repo error, done ↔ ready).
+ * 성공이면 `Repo.headSha = job.toSha`(작업이 기준으로 삼은 커밋, 지금 HEAD가 아니다) — 그래야 작업 중 들어온 커밋을 다음 enqueue가 증분으로 잡는다.
+ */
 export async function finishIndexJob(
   prisma: PrismaClient,
-  job: { id: string; repoId: string; modelId: string },
+  job: { id: string; repoId: string; modelId: string; toSha: string | null },
   end: IndexJobEnd,
-  headSha: string | null,
   now: Date,
 ): Promise<void> {
   await prisma.$transaction([
@@ -137,7 +151,6 @@ export async function finishIndexJob(
         finishedAt: now,
         errorCode: end.ok ? null : end.code,
         errorMessage: end.ok ? null : (end.message ?? null),
-        ...(headSha !== null ? { toSha: headSha } : {}),
       },
     }),
     prisma.repo.update({
@@ -145,7 +158,7 @@ export async function finishIndexJob(
       data: end.ok
         ? {
             status: REPO_STATUS.ready,
-            headSha,
+            headSha: job.toSha,
             lastIndexedAt: now,
             lastIndexModelId: job.modelId,
           }
