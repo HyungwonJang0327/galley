@@ -182,13 +182,14 @@
 - [x] **BE7** (2026-09-22 `34b0a83`·`fb0b629`·`d3c5424`·`58ef579`·리뷰 수정 `fd7f413`·`a4f140c`·`d182d5e`·decisions `514c012`·`bc90155`, feat/topic-auto-link — 컬럼 트리거 `autoLinkedAt`, 한 트랜잭션 + updatedAt 조건부, manual 불변, Run → IndexJob → 링커 순) pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
   - BE6에서 넘어온 것: 입력은 `QueueItem.repoNames`(정식 이름으로 리포를 먼저 좁힘)·`keywords`(소문자)·`period`(정규형 `YYYY`·`YYYY-MM`·`YYYY-MM~YYYY-MM`, 범위 전개·방향 뒤집힘 해석은 여기서) · 본문 괄호의 잡음 키워드(`18`·`(`·`-`)는 1~2글자·숫자·기호만이면 거른다 · 인덱서 키워드와 비교는 양쪽 NFC 명시 · alias 유일성 검사(`REPO_ALIAS_TAKEN`)는 리포 등록(`enqueueIndexJob`) 쪽.
   - 완료조건: 픽스처 인덱스 + 큐에서 키워드 겹치는 분석 글만 연결. 재적재(전체 리셋) 후에도 `manual` 링크 유지(테스트).
-- [ ] **BE8** pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
+- [x] **BE8** (2026-09-22 `4f8cf8a`·`63ed6c7`·`e97ebff`·`55409e9`·`a298162`·리뷰 수정 `2d061cf`·`409fce1`·decisions `8a9cc7b`·`6e68ad4`, feat/evidence-collect — 번들 2곳은 타입 경계, EvidenceStore는 DATA_DIR 전용, `cat-file blob`, 범위 초과·빈 파일은 unreadable, 리포 실패는 단계 실패) pl — 근거 수집 단계 1: linked 포인터 → `git show <commit>:<path>` 라인 범위 읽기 → redact → snippet 포함 원본은 `<DATA_DIR>/evidence/<슬러그>/<runId>.json`, `posts/<슬러그>/evidence.json`은 포인터만. 커밋: `feat(run): 근거 수집 단계에 원본 조각 읽기 추가`
   - 완료조건: **EvidenceBundle의 모든 snippet이 pointers가 가리키는 commit의 파일 내용과 일치**(테스트). posts 쪽 `evidence.json`에 `snippet` 키가 없다(테스트).
 - [ ] **BE9** pl — 근거 수집 단계 2: discovered 추가 탐색(키워드 겹침 + 기간 가중 점수, 모델 없음) + 상한 8. 커밋: `feat(run): 근거 수집에 추가 탐색 추가`
   - 완료조건: 연결에 없던 분석 글이 discovered로 들어오고 상한을 넘지 않는다.
 - [ ] **BE10** pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
   - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
 - [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
+  - BE8 리뷰에서 넘어온 것(decisions 2026-09-22 BE8 ⑨): 번들에 `analyses: { id, kind, title, summary }[]` 옵션 필드(version 1 유지) · `StepContext.evidence`에 `EvidenceBundle` 타입 · 0건 번들로 본문을 쓸지(`EVIDENCE_EMPTY`) 결정 · 삭제 파일 포인터의 `date`는 부모 커밋(표기 규칙).
   - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
 - [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
   - BE7 리뷰에서 넘어온 것(decisions 2026-09-22 BE7 ⑪): auto 연결 "제거" = `source=dismissed`(계산 결과에 있어도 안 붙임, 목록엔 안 보임, `LINK_SOURCE`에 값 추가·마이그레이션 없음) · "추가"가 이미 auto면 create가 아니라 source 갱신(승격) · 연결 이유는 `matchTopic` 재계산으로 표시(재인덱싱 뒤 어긋날 수 있음, 필요하면 `reason` 컬럼) · 큐 행 "근거 n건"은 `_count`.
@@ -215,6 +216,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
   - 완료조건: 산출물 frontmatter에 `published: false`가 항상 있다(테스트). 모델 출력이 frontmatter를 만들어도 덮어쓴다.
 - [ ] **BS5** pl — 단계 라우팅: `createStepRunner({ registry, prompts, storage… })`가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · B3a publishInfo)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV=development`·테스트만). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
   - 완료조건: 6단계 전부 구현으로 이어지고 모르는 단계명은 프로그래머 오류(throw). 워커 스모크(`test:smoke`) 계속 통과.
+  - BE8 리뷰에서 넘어온 것(decisions BE8 ⑩): `DATA_DIR`이 비었거나 `BLOG_DIR` 안이면 기동 거부(빈 문자열이면 cwd 상대경로). `LocalFsEvidenceStore(DATA_DIR)`·redact 설정·prisma·clock을 `createEvidenceStepRunner`에 배선.
 
 ### B2. 실행 상세 2분할 화면(패턴 B) — [B] Phase 1-B #6
 
