@@ -52,13 +52,13 @@ describe('parsedQueueToRows', () => {
       title: '벤더 정산 (Vendor Manager, react-query, 2024.03)',
       repoNames: '["vendor-manager"]',
       keywords: '["react-query"]',
-      period: '2024.03',
+      period: '2024-03',
     });
     // 리포 목록이 없으면 전부 키워드
     expect(parsedQueueToRows(parsed)[0]).toMatchObject({
       repoNames: '[]',
       keywords: '["vendor manager","react-query"]',
-      period: '2024.03',
+      period: '2024-03',
     });
   });
 

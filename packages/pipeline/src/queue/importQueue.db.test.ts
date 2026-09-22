@@ -200,7 +200,7 @@ describe('importQueueFromFile', () => {
     expect(first).toMatchObject({
       repoNames: '[]',
       keywords: '["spacehome","react-router"]',
-      period: '2024.07',
+      period: '2024-07',
     });
 
     await prisma.repo.create({
@@ -216,7 +216,7 @@ describe('importQueueFromFile', () => {
       title: '무한 스크롤 (SH, react-router, 2024.08)',
       repoNames: '["spacehome"]',
       keywords: '["react-router"]',
-      period: '2024.08',
+      period: '2024-08',
     });
 
     await importQueueFromFile({ storage: WAITING_ONLY(['무한 스크롤']), prisma });
