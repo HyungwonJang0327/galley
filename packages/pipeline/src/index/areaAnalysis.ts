@@ -2,8 +2,17 @@
 // 모델은 ModelAdapter 하나로만 부른다(provider를 모른다 — decisions/model-selection.md). 저장되는 텍스트(title·summary·
 // keywords·pointer.note)는 전부 redact를 거친다. 포인터는 commit 기준·실제 읽은 파일·실제 줄 범위만 — 저장 규칙(≥ 1)을 만족시킨다.
 import type { ModelAdapter, ModelUsage } from '../model/ModelAdapter.ts';
-import { redact, type RedactConfig } from '../evidence/redact.ts';
-import { OUTPUT_LIMITS } from './limits.ts';
+import type { RedactConfig } from '../evidence/redact.ts';
+import {
+  cleanKeywords,
+  cleanTitle,
+  createRedactor,
+  extractJson,
+  isRecord,
+  modelFailed,
+  readTitleSummary,
+  type AnalysisFailure,
+} from './analysisText.ts';
 import type { EvidencePointer } from './schema.ts';
 import type { AreaPlan } from './tree.ts';
 
@@ -38,11 +47,7 @@ export interface AreaAnalysisDraft {
   redacted: boolean;
 }
 
-export type AreaAnalysisFailure =
-  /** 모델은 답했지만 쓸 수 없는 답 — 과금은 됐으므로 usage를 싣는다. 호출자는 건너뛰고 기록한다. */
-  | { ok: false; code: 'MODEL_OUTPUT_INVALID'; usage: ModelUsage; costUsd: number }
-  /** 모델 호출 자체가 실패(키·네트워크·429) — 출력 불량과 다른 종류. 호출자는 중단한다. */
-  | { ok: false; code: 'MODEL_FAILED'; errorName: string };
+export type AreaAnalysisFailure = AnalysisFailure;
 export type AreaAnalysisResult = { ok: true; draft: AreaAnalysisDraft } | AreaAnalysisFailure;
 
 const SYSTEM_PROMPT = `당신은 코드 리포지토리를 읽고 기술 블로그 초안의 근거가 될 "분석 글"을 쓰는 분석가입니다.
@@ -79,29 +84,6 @@ function buildPrompt(input: AreaAnalysisInput): string {
   return lines.join('\n');
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-
-function parseObject(text: string): unknown {
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end <= start) return undefined;
-  try {
-    return JSON.parse(text.slice(start, end + 1));
-  } catch {
-    return undefined;
-  }
-}
-
-/** 모델 출력에서 JSON 객체 하나를 뽑는다 — 코드 펜스를 먼저, 실패하면 전체 텍스트의 첫 `{`~마지막 `}`. */
-function extractJson(text: string): unknown {
-  for (const m of text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)) {
-    const parsed = parseObject(m[1]!);
-    if (isRecord(parsed)) return parsed;
-  }
-  return parseObject(text);
-}
-
 const posInt = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isInteger(v) && v >= 1 ? v : undefined;
 /** 줄 수 — 끝의 개행은 빈 줄로 세지 않는다(에디터가 보는 줄 번호와 같게). */
@@ -126,11 +108,7 @@ export async function analyzeArea(
       maxOutputTokens: 2048,
     });
   } catch (error) {
-    return {
-      ok: false,
-      code: 'MODEL_FAILED',
-      errorName: error instanceof Error ? error.name : 'UnknownError',
-    };
+    return modelFailed(error);
   }
   const invalid = (): AreaAnalysisFailure => ({
     ok: false,
@@ -140,15 +118,8 @@ export async function analyzeArea(
   });
   const json = extractJson(generated.text);
   if (!isRecord(json)) return invalid();
-  const title = json['title'];
-  const summary = json['summary'];
-  if (
-    typeof title !== 'string' ||
-    title.trim() === '' ||
-    typeof summary !== 'string' ||
-    summary.trim() === ''
-  )
-    return invalid();
+  const head = readTitleSummary(json);
+  if (head === undefined) return invalid();
 
   const lengths = new Map(input.contents.map((c) => [c.path, lineCount(c.text)] as const));
   const rawPointers = Array.isArray(json['pointers']) ? json['pointers'] : [];
@@ -183,25 +154,12 @@ export async function analyzeArea(
   if (pointers.length === 0) return invalid();
 
   // redact: 저장되는 텍스트 전부(title·summary·keywords·note). 설정이 없으면 그대로(filtered=false).
-  let redacted = false;
-  const apply = (text: string): string => {
-    if (input.redactConfig === null) return text;
-    const r = redact(text, input.redactConfig);
-    if (r.redacted) redacted = true;
-    return r.text;
-  };
-  const keywords = [
-    ...new Set(
-      (Array.isArray(json['keywords']) ? json['keywords'] : [])
-        .filter((k): k is string => typeof k === 'string')
-        .map((k) => apply(k).trim().toLowerCase().slice(0, OUTPUT_LIMITS.keywordChars))
-        .filter((k) => k !== ''),
-    ),
-  ].slice(0, OUTPUT_LIMITS.keywords);
-  const cleanTitle = apply(title.trim()).slice(0, OUTPUT_LIMITS.titleChars);
-  const cleanSummary = apply(summary.trim());
+  const redactor = createRedactor(input.redactConfig);
+  const keywords = cleanKeywords(json['keywords'], redactor);
+  const title = cleanTitle(head.title, redactor);
+  const summary = redactor.apply(head.summary);
   const cleanPointers = pointers.map((p) =>
-    p.note === undefined ? p : { ...p, note: apply(p.note) },
+    p.note === undefined ? p : { ...p, note: redactor.apply(p.note) },
   );
 
   return {
@@ -209,8 +167,8 @@ export async function analyzeArea(
     draft: {
       kind: 'area',
       key: input.plan.key,
-      title: cleanTitle,
-      summary: cleanSummary,
+      title,
+      summary,
       keywords,
       pointers: cleanPointers,
       period: null,
@@ -221,8 +179,8 @@ export async function analyzeArea(
       modelId: adapter.id,
       usage: generated.usage,
       costUsd: generated.costUsd,
-      filtered: input.redactConfig !== null,
-      redacted,
+      filtered: redactor.filtered,
+      redacted: redactor.redacted,
     },
   };
 }
