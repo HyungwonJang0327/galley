@@ -198,6 +198,20 @@ export type { EvidenceStore, EvidenceReadResult } from './evidence/EvidenceStore
 export { readPointerSnippet } from './evidence/readSnippet.ts';
 export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
+export {
+  loadTonePrompt,
+  hashPromptText,
+  defaultTonePromptsDir,
+  tonePromptPath,
+  TONE_PROMPT_STEPS,
+  isTonePromptStep,
+} from './prompts/tonePrompts.ts';
+export type {
+  TonePrompt,
+  TonePromptStep,
+  TonePromptFailure,
+  TonePromptResult,
+} from './prompts/tonePrompts.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
 export { INDEX_LIMITS, INDEX_IGNORE } from './index/limits.ts';
 export type { IndexLimits } from './index/limits.ts';
