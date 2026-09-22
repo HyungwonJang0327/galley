@@ -215,7 +215,7 @@ export type {
   AreaAnalysisResult,
   AreaFileContent,
 } from './index/areaAnalysis.ts';
-export { upsertRepoAnalysis } from './index/repoAnalysisRepo.ts';
+export { upsertRepoAnalysis, pruneAnalyses } from './index/repoAnalysisRepo.ts';
 export type { AnalysisDraft, UpsertAnalysisResult } from './index/repoAnalysisRepo.ts';
 export { indexRepoAreas } from './index/indexRepoAreas.ts';
 export type {
