@@ -133,8 +133,12 @@ export function importQueueFromFile(deps: {
 
 async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Promise<void> {
   // 등록된 리포 이름·alias — 힌트의 항을 리포/키워드로 가르는 기준. 리포를 나중에 등록하면 다음 적재가 다시 가른다.
+  // 생성 순으로 — alias가 겹치면 먼저 등록한 리포가 이긴다(결정적).
   const repos: RepoNameSource[] = (
-    await deps.prisma.repo.findMany({ select: { name: true, aliases: true } })
+    await deps.prisma.repo.findMany({
+      select: { name: true, aliases: true },
+      orderBy: { createdAt: 'asc' },
+    })
   ).map((r) => ({ name: r.name, aliases: parseStringArray(r.aliases) }));
   const rows = parsedQueueToRows(parseQueue(await deps.storage.readQueueFile()), repos);
   const existing: ExistingItem[] = await deps.prisma.queueItem.findMany({
