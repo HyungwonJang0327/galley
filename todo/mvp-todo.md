@@ -172,10 +172,11 @@
   - 완료조건: 회사명·도메인·이메일·키 패턴·내부 URL 픽스처가 전부 치환되고 통과 여부가 반환된다. 함수 하나를 인덱싱·EvidenceBundle이 공유.
 - [x] **BE3** (2026-09-22 `2b21d1a`·`f3d1523`·`80bb2b8`·`489da00`·`a24feee`·decisions `b2af8d5`, feat/repo-indexer — Repo 상태는 BE5 실행자가 쓴다, `skipKeys` 재개, report는 수치만) pl — 리포 인덱서 1: 파일 트리 요약 + 주요 디렉터리별 `area` 분석 글 생성(입력 상한 `INDEX_LIMITS` 16KB/20개·160KB/30개, 초과분 `summaryOnly`). Mock 어댑터로 테스트. 커밋: `feat(pipeline): 리포 인덱서에 파일 트리·영역 분석 추가`
   - 완료조건: 픽스처 리포 인덱싱 시 분석 글마다 pointers ≥ 1, **모든 포인터가 실제 파일·라인을 가리킨다**(테스트).
-- [ ] **BE4** pl — 리포 인덱서 2: `git log`를 기간(월)·경로로 묶어 `change` 분석 글 + `overview`. 인덱싱 토큰·비용을 IndexJob에 기록. 커밋: `feat(pipeline): 리포 인덱서에 변경 이력 분석 추가`
+- [x] **BE4** (2026-09-22 `94b79e1`·`24eb01c`·`626e0a5`·`3505a91`·`29a4e61`·`828dd39`·리뷰 수정 `749d396`·`d072bc4`·`a97fd20`·`a6049de`·decisions `be50c9f`, feat/repo-indexer-changes — ~~IndexJob에 기록~~ → 토큰·비용은 report로 돌려주고 **IndexJob 기록은 BE5 실행자**(결정 ⑧과 일관)) pl — 리포 인덱서 2: `git log`를 기간(월)·경로로 묶어 `change` 분석 글 + `overview`. 커밋: `feat(pipeline): 리포 인덱서에 변경 이력 분석 추가`
   - 완료조건: BE3와 동일 포인터 검증 + change 분석 글에 period가 있다.
 - [ ] **BE5** pl — 증분 재인덱싱(HEAD 비교 → `stale`, 바뀐 경로·새 커밋 범위만) + `--full` + CLI `bin/index.ts`(`pnpm --filter @galley/pipeline index <path> [--name --alias --read-only --model --full]`, 모델 기본 = 레지스트리 `indexingDefault` Haiku 4.5, 사용 모델을 `Repo.lastIndexModelId`에 기록). 커밋: `feat(pipeline): 증분 재인덱싱과 index CLI 추가`
   - 완료조건: 픽스처 리포에 커밋 하나 추가 후 재인덱싱하면 **바뀐 경로의 분석 글만 갱신**된다(테스트). 읽기 전용 리포에서 쓰기 명령 0(리포 git status 불변 테스트).
+  - BE4 리뷰에서 넘어온 것: change 증분은 **새 커밋이 닿은 달 전체**를 다시 읽고 그 달의 `change:<월>*` 행을 지운 뒤 저장(M2 ①) · IndexJob에 report의 usage·costUsd 합산 기록 · overview 출력 불량 시 옛 행 처리(L7) · 사라진 영역 고아 행(BE3 L13) · `.gitmodules`를 INDEX_IGNORE에(L11) · 월 분할이 잘게 쪼개지는 문제(M3)는 결정 필요.
 - [ ] **BE6** pl — `주제_큐.md` 괄호 힌트 파서 확장(리포 이름·alias·키워드·기간 추출, 괄호 형식 불변) + 테스트. ~~주제 슬러그 파생~~ → **B1e에서 이미 구현**(`topicSlug()`, 2026-09-12 `01c721c`). 커밋: `feat(queue): 주제 항목에서 리포·키워드·기간 추출`
   - 완료조건: `(spacehome, react-router)` `(vendor manager, 2024.03)` `(spacehome + vendor manager)` `(2024.07)` 4형이 파싱되고 라운드트립(A4c)이 그대로 통과.
 - [ ] **BE7** pl — 주제↔분석 글 자동 연결(키워드·기간 매칭, 모델 없음, 워커 잡, `source=auto`). 커밋: `feat(pipeline): 주제에 분석 글 자동 연결`
