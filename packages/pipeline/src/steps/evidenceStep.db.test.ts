@@ -252,6 +252,50 @@ describe('evidence 단계', () => {
     });
   });
 
+  test('리포 경로를 읽을 수 없으면 EVIDENCE_REPO_UNAVAILABLE(재시도 불가), 저장 실패는 EVIDENCE_STORE_WRITE_FAILED(경로 없는 문구)', async () => {
+    const { repo, topic, run } = await seed(false);
+    await prisma.repo.update({ where: { id: repo.id }, data: { path: join(dir, 'moved-away') } });
+    await expect(
+      createEvidenceStepRunner(deps(null)).run(ctxFor(run, topic)),
+    ).rejects.toMatchObject({
+      name: 'StepFailure',
+      code: 'EVIDENCE_REPO_UNAVAILABLE',
+      retryable: false,
+    });
+    await prisma.repo.update({ where: { id: repo.id }, data: { path: repoPath } });
+
+    const failingStore = {
+      write: async () => {
+        throw new Error(`EACCES: permission denied, open '${join(dir, 'data')}'`);
+      },
+      read: store.read.bind(store),
+      remove: store.remove.bind(store),
+    };
+    const err = await createEvidenceStepRunner({ ...deps(null), store: failingStore })
+      .run(ctxFor(run, topic))
+      .catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      name: 'StepFailure',
+      code: 'EVIDENCE_STORE_WRITE_FAILED',
+      retryable: false,
+    });
+    expect((err as Error).message).not.toContain(dir);
+    expect((err as Error).cause).toBeInstanceOf(Error);
+  });
+
+  test('상한은 담긴 항목 기준 — 중복·못 읽는 포인터가 예산을 먹지 않는다', async () => {
+    const { change, topic, run } = await seed(false);
+    // 계획 순서: change(b.ts, a.ts 1~2) → area(a.ts 1~2 중복, gone.ts 없음). maxLinked 2면 change 둘이 담긴다.
+    const r = await createEvidenceStepRunner(deps(null, { ...EVIDENCE_LIMITS, maxLinked: 2 })).run(
+      ctxFor(run, topic),
+    );
+    const pointers = JSON.parse(r.artifacts[EVIDENCE_ARTIFACT]!) as EvidencePointers;
+    expect(pointers.items.map((i) => [i.analysisId, i.path])).toEqual([
+      [change.id, 'src/b.ts'],
+      [change.id, 'src/a.ts'],
+    ]);
+  });
+
   test('종료 신호가 오면 AbortError로 끊고 번들을 쓰지 않는다, 다른 단계명은 프로그래머 오류', async () => {
     const { topic, run } = await seed(false);
     const controller = new AbortController();
