@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeTopicTitle } from './normalizeTitle.ts';
+import { normalizeTopicTitle, stripTopicHints } from './normalizeTitle.ts';
 
 describe('normalizeTopicTitle', () => {
   it('괄호 힌트를 뺀 제목 본문만 남긴다', () => {
@@ -26,5 +26,15 @@ describe('normalizeTopicTitle', () => {
 
   it('힌트뿐인 제목은 빈 문자열이 된다', () => {
     expect(normalizeTopicTitle('(hint)')).toBe('');
+  });
+});
+
+describe('stripTopicHints', () => {
+  it('괄호 힌트만 떼고 대소문자·원문은 유지한다(전각 괄호 포함)', () => {
+    expect(stripTopicHints('무한 스크롤 (spacehome, react-router)')).toBe('무한 스크롤');
+    expect(stripTopicHints('PG사 무중단 전환기 （Toss → NicePay） 정리')).toBe(
+      'PG사 무중단 전환기 정리',
+    );
+    expect(stripTopicHints('  Hello  ')).toBe('Hello');
   });
 });

@@ -1,6 +1,17 @@
 // 큐 줄 ↔ QueueItem 매칭 키. 적재는 전체 리셋이 아니라 이 값으로 기존 항목을 찾는 upsert다
 // (decisions/queue-sync-direction.md) — id가 안정적이어야 Run 이력이 끊기지 않는다.
 
+/** 괄호 힌트 묶음(반각·전각) — 매칭 키와 프롬프트용 제목이 같은 범위를 뗀다. */
+const HINT_GROUPS = /[(（][^)）]*[)）]/g;
+
+/**
+ * 표시·프롬프트용 제목: 괄호 힌트만 뗀 원문(대소문자 유지). 힌트에는 리포 별칭이 들어가므로 모델 입력에 넣지 않는다
+ * (BS2 리뷰 2). 매칭에는 `normalizeTopicTitle`을 쓴다.
+ */
+export function stripTopicHints(title: string): string {
+  return title.normalize('NFC').replace(HINT_GROUPS, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /**
  * 매칭용 정규화 제목: **괄호 힌트를 뺀 제목 본문**.
  *
@@ -11,10 +22,5 @@
  * Run이 붙은 항목이 사라지면 자동으로 내리지 않고 확인을 띄운다 — 같은 문서의 "사라진 줄 처리".
  */
 export function normalizeTopicTitle(title: string): string {
-  return title
-    .normalize('NFC')
-    .replace(/[(（][^)）]*[)）]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
+  return stripTopicHints(title).toLowerCase();
 }
