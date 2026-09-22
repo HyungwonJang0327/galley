@@ -57,8 +57,8 @@ export class StepFailure extends Error {
   /** 일시적 실패(네트워크·레이트리밋·5xx·타임아웃)면 true. 입력·설정 문제면 false. */
   readonly retryable: boolean;
 
-  constructor(code: string, message: string, retryable: boolean) {
-    super(message);
+  constructor(code: string, message: string, retryable: boolean, options?: { cause?: unknown }) {
+    super(message, options);
     this.name = 'StepFailure';
     this.code = code;
     this.retryable = retryable;

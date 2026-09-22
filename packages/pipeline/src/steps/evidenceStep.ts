@@ -8,7 +8,8 @@ import type { EvidenceBundle, EvidenceItem } from '../evidence/bundle.ts';
 import { stripSnippets } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
-import { readPointerSnippet } from '../evidence/readSnippet.ts';
+import { readPointerSnippet, type CommitMetaResolver } from '../evidence/readSnippet.ts';
+import { gitCommitMeta } from '../index/gitRead.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
 import { LINK_SOURCE, parsePointers } from '../index/schema.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
@@ -40,10 +41,10 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         throw new Error(`evidence 단계 러너에 ${ctx.step} 단계가 들어왔다 — 라우팅(BS5) 오류`);
       ctx.signal.throwIfAborted();
 
-      // manual → auto 순, 같은 소스 안에서는 만든 순. 사람이 고른 근거가 상한 안에 먼저 든다.
+      // manual → auto 순(아래 filter로 정렬), 같은 소스 안에서는 만든 순. 사람이 고른 근거가 상한 안에 먼저 든다.
       const links = await deps.prisma.topicAnalysisLink.findMany({
         where: { topicId: ctx.topic.id, source: { in: [LINK_SOURCE.manual, LINK_SOURCE.auto] } },
-        orderBy: [{ source: 'asc' }, { createdAt: 'asc' }],
+        orderBy: { createdAt: 'asc' },
         select: {
           source: true,
           analysis: {
@@ -77,16 +78,43 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
           false,
         );
 
+      // 같은 커밋을 여러 포인터가 가리킨다(area 포인터는 전부 HEAD) — 커밋 메타는 리포·커밋별로 한 번만 읽는다.
+      const metaCache = new Map<string, ReturnType<typeof gitCommitMeta>>();
+      const resolveMeta: CommitMetaResolver = (repoPath, commit) => {
+        const key = `${repoPath}\0${commit}`;
+        let pending = metaCache.get(key);
+        if (pending === undefined) {
+          pending = gitCommitMeta(repoPath, commit);
+          metaCache.set(key, pending);
+        }
+        return pending;
+      };
+
       const items: EvidenceItem[] = [];
       let unreadable = 0;
       const seen = new Set<string>();
-      for (const { link, pointer } of planned.slice(0, limits.maxLinked)) {
+      for (const { link, pointer } of planned) {
+        // 상한은 **담긴 항목** 기준 — 중복·못 읽는 포인터가 예산을 먹지 않는다.
+        if (items.length >= limits.maxLinked) break;
         ctx.signal.throwIfAborted();
         const key = `${pointer.commit}:${pointer.path}:${pointer.lineStart ?? ''}:${pointer.lineEnd ?? ''}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        const read = await readPointerSnippet(link.repoPath, pointer, deps.redactConfig, limits);
+        const read = await readPointerSnippet(
+          link.repoPath,
+          pointer,
+          deps.redactConfig,
+          limits,
+          resolveMeta,
+        );
         if (!read.ok) {
+          // 리포 수준 실패(경로가 옮겨짐·git 없음)는 포인터 하나의 문제가 아니다 — 근거 0건으로 "성공"하지 않고 단계를 실패시킨다.
+          if (read.code === 'NOT_A_GIT_REPO' || read.code === 'GIT_COMMAND_FAILED')
+            throw new StepFailure(
+              'EVIDENCE_REPO_UNAVAILABLE',
+              '연결된 리포를 읽을 수 없습니다(경로가 바뀌었거나 git 리포가 아닙니다).',
+              false,
+            );
           unreadable += 1;
           continue;
         }
@@ -115,7 +143,17 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         filtered: deps.redactConfig !== null,
       };
       ctx.signal.throwIfAborted();
-      await deps.store.write(bundle);
+      try {
+        await deps.store.write(bundle);
+      } catch (error) {
+        // fs 오류 메시지에는 DATA_DIR 절대경로가 들어간다 — 행에는 코드와 한 줄만(error-handling.md), 원인은 cause로.
+        throw new StepFailure(
+          'EVIDENCE_STORE_WRITE_FAILED',
+          '근거 번들을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
+          false,
+          { cause: error },
+        );
+      }
       return {
         artifacts: { [EVIDENCE_ARTIFACT]: JSON.stringify(stripSnippets(bundle), null, 2) },
       };
