@@ -229,6 +229,25 @@ describe('importQueueFromFile', () => {
     await prisma.repo.deleteMany();
   });
 
+  test('내용이 같은 줄은 update하지 않아 updatedAt이 그대로고, 힌트·순서가 바뀌면 갱신된다', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['A (x)', 'B']), prisma });
+    const before = new Map(
+      (await prisma.queueItem.findMany()).map((i) => [i.title, i.updatedAt.getTime()] as const),
+    );
+    await new Promise((r) => setTimeout(r, 5));
+    await importQueueFromFile({ storage: WAITING_ONLY(['A (x)', 'B']), prisma });
+    const same = await prisma.queueItem.findMany();
+    for (const i of same) expect(i.updatedAt.getTime(), i.title).toBe(before.get(i.title));
+
+    await new Promise((r) => setTimeout(r, 5));
+    await importQueueFromFile({ storage: WAITING_ONLY(['A (y)', 'B']), prisma });
+    const after = new Map(
+      (await prisma.queueItem.findMany()).map((i) => [i.title, i.updatedAt.getTime()] as const),
+    );
+    expect(after.get('A (y)')!).toBeGreaterThan(before.get('A (x)')!);
+    expect(after.get('B')).toBe(before.get('B'));
+  });
+
   test('category·completedOn을 DB에 보존한다', async () => {
     const storage = fakeStorage(
       '## 대기\n\n## 후보\n\n### 카테고리1\n\n- 후보글\n\n## 보류\n\n## 완료\n\n- 2026-09-01 완료글\n',

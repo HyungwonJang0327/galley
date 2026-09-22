@@ -68,8 +68,37 @@ interface ExistingItem {
   id: string;
   title: string;
   status: string;
+  order: number;
+  category: string | null;
+  completedOn: string | null;
+  repoNames: string;
+  keywords: string;
+  period: string | null;
   missingSince: Date | null;
+  missingAck: Date | null;
+  holdReason: string | null;
   runs: { status: string }[];
+}
+
+/**
+ * 파일 줄이 기존 행과 내용까지 같은가 — 같으면 update를 건너뛴다. 그래야 `updatedAt`이 "내용이 바뀐 시각"이 되고,
+ * 매 요청마다 도는 적재가 자동 연결(autoLinkedAt < updatedAt) 전 주제를 다시 계산하게 만들지 않는다(BE7 리뷰 M1).
+ * 되살아난 줄(missingSince·missingAck·holdReason이 남아 있음)은 같지 않다 — 그 표시를 지워야 한다.
+ */
+export function isUnchanged(item: ExistingItem, row: QueueItemRow): boolean {
+  return (
+    item.title === row.title &&
+    item.status === row.status &&
+    item.order === row.order &&
+    item.category === row.category &&
+    item.completedOn === row.completedOn &&
+    item.repoNames === row.repoNames &&
+    item.keywords === row.keywords &&
+    item.period === row.period &&
+    item.missingSince === null &&
+    item.missingAck === null &&
+    item.holdReason === null
+  );
 }
 
 /** 파일에서 사라진 항목 하나를 어떻게 할지 고른다(순수). */
@@ -146,7 +175,15 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
       id: true,
       title: true,
       status: true,
+      order: true,
+      category: true,
+      completedOn: true,
+      repoNames: true,
+      keywords: true,
+      period: true,
       missingSince: true,
+      missingAck: true,
+      holdReason: true,
       runs: { select: { status: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -161,7 +198,7 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
     const item = takeMatch(byTitle.get(normalizeTopicTitle(row.title)), row.status);
     if (item) {
       matched.add(item.id);
-      updates.push({ id: item.id, row });
+      if (!isUnchanged(item, row)) updates.push({ id: item.id, row });
     } else {
       creates.push(row);
     }
