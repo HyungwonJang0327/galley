@@ -7,7 +7,7 @@
 export interface RawTopicHints {
   /** 기간이 아닌 항(원문 공백 정리, 순서 유지, 중복 제거). 리포 이름·키워드가 섞여 있다. */
   terms: string[];
-  /** 기간 힌트 원문(`2024.03` · `2024.07~2024.09` · `2024`). 여러 개면 첫 것. 해석은 매칭 쪽에서. */
+  /** 기간 힌트 정규형 `YYYY` · `YYYY-MM` · `YYYY-MM~YYYY-MM`(RepoAnalysis.period과 같은 월 표기). 여러 개면 첫 것. 범위 전개는 매칭 쪽에서. */
   period: string | null;
 }
 
@@ -26,11 +26,24 @@ const GROUPS = /[(（]([^)）]*)[)）]/g;
  * `A/B 테스트`, `src/app`, `next 13/14`) — 슬래시를 구분자로 두면 경로·버전 표기가 쪼개진다(2026-09-22 BE6 리뷰).
  */
 const SEPARATORS = /[,，+·→]/;
-/** 기간: 연(19xx·20xx) 또는 연.월(월 1~12, 구분자 . -), 선택적으로 `~`·`-`·`–`로 이은 범위. `2024/12`는 기간이 아니다(키워드). */
-const YEAR_MONTH = String.raw`(?:19|20)\d{2}(?:[.\-](?:0?[1-9]|1[0-2]))?`;
-const PERIOD = new RegExp(`^${YEAR_MONTH}(?:\\s*[~\\-–]\\s*${YEAR_MONTH})?$`);
+const PERIOD = new RegExp(
+  `^((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?(?:\\s*[~\\-–]\\s*((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?)?$`,
+);
 
 export const isPeriodHint = (term: string): boolean => PERIOD.test(term.trim());
+
+/**
+ * 기간 표기를 정규형으로 — `2024.3`·`2024-03` → `2024-03`, `2024` → `2024`, 범위는 `~`로(`2024.07 – 2025.1` → `2024-07~2025-01`).
+ * 분석 글의 `period`(`YYYY-MM`)와 문자열·접두 비교가 바로 되게. 형식이 아니면 undefined(2026-09-22 BE6 리뷰 2).
+ */
+export function normalizePeriodHint(term: string): string | undefined {
+  const m = PERIOD.exec(term.trim());
+  if (m === null) return undefined;
+  const ym = (year: string, month: string | undefined) =>
+    month === undefined ? year : `${year}-${month.padStart(2, '0')}`;
+  const from = ym(m[1]!, m[2]);
+  return m[3] === undefined ? from : `${from}~${ym(m[3], m[4])}`;
+}
 
 export function parseTopicHints(title: string): RawTopicHints {
   const terms: string[] = [];
@@ -40,8 +53,9 @@ export function parseTopicHints(title: string): RawTopicHints {
     for (const raw of (m[1] ?? '').split(SEPARATORS)) {
       const term = raw.replace(/\s+/g, ' ').trim();
       if (term === '') continue;
-      if (isPeriodHint(term)) {
-        if (period === null) period = term.replace(/\s+/g, '');
+      const normalized = normalizePeriodHint(term);
+      if (normalized !== undefined) {
+        if (period === null) period = normalized;
         continue;
       }
       const key = term.toLowerCase();

@@ -11,7 +11,12 @@ export {
 } from './queue/importQueue.ts';
 export type { QueueItemRow, MissingDisposition } from './queue/importQueue.ts';
 export { normalizeTopicTitle } from './queue/normalizeTitle.ts';
-export { parseTopicHints, resolveTopicHints, isPeriodHint } from './queue/topicHints.ts';
+export {
+  parseTopicHints,
+  resolveTopicHints,
+  isPeriodHint,
+  normalizePeriodHint,
+} from './queue/topicHints.ts';
 export type { RawTopicHints, TopicHints, RepoNameSource } from './queue/topicHints.ts';
 export {
   listMissingTopics,

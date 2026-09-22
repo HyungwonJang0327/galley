@@ -40,7 +40,7 @@ model QueueItem {
   // SQLite에 배열이 없어 JSON 문자열(`["a","b"]`)로 둔다 — 읽기·쓰기는 src/index/schema.ts 헬퍼만.
   repoNames String  @default("[]")
   keywords  String  @default("[]")
-  // 기간 힌트 원문(`2024.03` · `2024.07~2024.09` 등). 해석은 매칭 쪽에서.
+  // 기간 힌트 정규형 `YYYY` · `YYYY-MM` · `YYYY-MM~YYYY-MM`(RepoAnalysis.period과 같은 월 표기, 적재가 통일). 범위 전개는 매칭 쪽에서.
   period    String?
 
   // 이 주제에 붙은 분석 글 연결(auto·manual). 키는 QueueItem.id — Run과 같은 규칙.

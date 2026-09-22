@@ -1,5 +1,10 @@
 import { describe, test, expect } from 'vitest';
-import { isPeriodHint, parseTopicHints, resolveTopicHints } from './topicHints.ts';
+import {
+  isPeriodHint,
+  normalizePeriodHint,
+  parseTopicHints,
+  resolveTopicHints,
+} from './topicHints.ts';
 
 describe('parseTopicHints', () => {
   test('결정의 네 형식', () => {
@@ -9,26 +14,26 @@ describe('parseTopicHints', () => {
     });
     expect(parseTopicHints('벤더 정산 (vendor manager, 2024.03)')).toEqual({
       terms: ['vendor manager'],
-      period: '2024.03',
+      period: '2024-03',
     });
     expect(parseTopicHints('콘솔 공유 (spacehome + vendor manager)')).toEqual({
       terms: ['spacehome', 'vendor manager'],
       period: null,
     });
-    expect(parseTopicHints('회고 (2024.07)')).toEqual({ terms: [], period: '2024.07' });
+    expect(parseTopicHints('회고 (2024.07)')).toEqual({ terms: [], period: '2024-07' });
   });
 
   test('힌트가 없으면 빈 값, 전각 괄호·여러 묶음·공백 정리·중복(대소문자) 제거, 기간은 첫 것만', () => {
     expect(parseTopicHints('그냥 제목')).toEqual({ terms: [], period: null });
     expect(parseTopicHints('제목 （SpaceHome， 2024.07 ~ 2024.09） (spacehome + Nest)')).toEqual({
       terms: ['SpaceHome', 'Nest'],
-      period: '2024.07~2024.09',
+      period: '2024-07~2024-09',
     });
     expect(
       parseTopicHints('제목 (SpaceHome, 2024.07 ~ 2024.09) (spacehome + Nest, 2025.01)'),
     ).toEqual({
       terms: ['SpaceHome', 'Nest'],
-      period: '2024.07~2024.09',
+      period: '2024-07~2024-09',
     });
     expect(parseTopicHints('PG사 무중단 전환기 (Toss → NicePay)')).toEqual({
       terms: ['Toss', 'NicePay'],
@@ -48,7 +53,7 @@ describe('parseTopicHints', () => {
     // 중첩은 normalizeTopicTitle과 같은 범위로 본다(첫 닫는 괄호까지)
     expect(parseTopicHints('x (a (b) c)')).toEqual({ terms: ['a (b'], period: null });
     // 둘째 기간은 버린다 — 여러 달은 범위(2024.07~2024.09)로 적는다
-    expect(parseTopicHints('x (2024.07, 2024.09)')).toEqual({ terms: [], period: '2024.07' });
+    expect(parseTopicHints('x (2024.07, 2024.09)')).toEqual({ terms: [], period: '2024-07' });
   });
 
   test('isPeriodHint: 연(19xx·20xx)·연.월(1~12)·범위, 구분자 . -', () => {
@@ -74,6 +79,16 @@ describe('parseTopicHints', () => {
       'react-router',
     ])
       expect(isPeriodHint(no), no).toBe(false);
+  });
+
+  test('normalizePeriodHint: 월 0패딩·구분자 통일·범위는 ~', () => {
+    expect(normalizePeriodHint('2024')).toBe('2024');
+    expect(normalizePeriodHint('2024.3')).toBe('2024-03');
+    expect(normalizePeriodHint('2024-12')).toBe('2024-12');
+    expect(normalizePeriodHint('2024.07 – 2025.1')).toBe('2024-07~2025-01');
+    expect(normalizePeriodHint('2024-2025')).toBe('2024~2025');
+    expect(normalizePeriodHint('2024-10-2025-01')).toBe('2024-10~2025-01');
+    expect(normalizePeriodHint('2024/12')).toBeUndefined();
   });
 });
 
