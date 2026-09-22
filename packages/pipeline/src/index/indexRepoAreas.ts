@@ -44,8 +44,8 @@ export interface IndexAreasReport {
   /** 저장한 영역 수. */
   saved: number;
   summaryOnly: number;
-  /** 모델이 유효한 답을 주지 못해 건너뛴 영역 키. 실패가 아니라 기록이다. */
-  skipped: string[];
+  /** 모델이 유효한 답을 주지 못해 건너뛴 영역 수. 실패가 아니라 기록이다(키는 onAreaDone으로만 — report에는 경로가 없다). */
+  skipped: number;
   /** skipKeys로 이번에 돌리지 않은 영역 수. */
   resumedPast: number;
   /** 본문을 읽지 못한(또는 바이너리로 제외한) 파일 수. */
@@ -84,7 +84,7 @@ export async function indexRepoAreas(
     planned: summary.areas.length,
     saved: 0,
     summaryOnly: 0,
-    skipped: [],
+    skipped: 0,
     resumedPast: 0,
     unreadableFiles: 0,
     usage: { inputTokens: 0, outputTokens: 0 },
@@ -119,7 +119,7 @@ export async function indexRepoAreas(
       if (analyzed.code === 'MODEL_FAILED')
         return { ok: false, code: 'MODEL_FAILED', errorName: analyzed.errorName, partial: report };
       addUsage(analyzed.usage, analyzed.costUsd);
-      report.skipped.push(plan.key);
+      report.skipped += 1;
       await input.onAreaDone?.({
         key: plan.key,
         status: 'skipped',

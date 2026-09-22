@@ -27,6 +27,12 @@ export const OUTPUT_LIMITS = {
   titleChars: 200,
   keywords: 20,
   keywordChars: 40,
+  /** change 글 포인터 최대 개수(프롬프트는 1~6개를 요구). */
+  pointersPerChange: 8,
+  /** overview 글 포인터 최대 개수(출처 글 하나당 하나). */
+  pointersPerOverview: 12,
+  /** 모델 출력 토큰 상한 — area·change는 JSON 한 덩어리, overview는 요약이 더 길다. */
+  maxOutputTokens: { area: 2048, change: 2048, overview: 3072 },
 } as const;
 
 /**

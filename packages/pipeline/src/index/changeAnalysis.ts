@@ -15,7 +15,7 @@ import {
   type AnalysisFailure,
 } from './analysisText.ts';
 import { pointerCandidates, type ChangeBatch, type ChangeCommit } from './changes.ts';
-import { INDEX_LIMITS, type IndexLimits } from './limits.ts';
+import { INDEX_LIMITS, OUTPUT_LIMITS, type IndexLimits } from './limits.ts';
 import type { EvidencePointer } from './schema.ts';
 
 export interface ChangeAnalysisInput {
@@ -42,9 +42,6 @@ export interface ChangeAnalysisDraft {
 }
 
 export type ChangeAnalysisResult = { ok: true; draft: ChangeAnalysisDraft } | AnalysisFailure;
-
-/** 포인터 최대 개수 — 프롬프트가 요구하는 1~6개를 넘어도 이 이상은 저장하지 않는다. */
-const MAX_POINTERS = 8;
 
 const SYSTEM_PROMPT = `당신은 코드 리포지토리의 커밋 이력을 읽고 기술 블로그 초안의 근거가 될 "분석 글"을 쓰는 분석가입니다.
 주어진 기간의 커밋 메시지와 변경 파일 목록을 읽고 아래 JSON 하나만 출력하세요(코드 펜스·설명 없이).
@@ -123,7 +120,7 @@ export async function analyzeChange(
     generated = await adapter.generate({
       system: SYSTEM_PROMPT,
       prompt: buildPrompt(input),
-      maxOutputTokens: 2048,
+      maxOutputTokens: OUTPUT_LIMITS.maxOutputTokens.change,
     });
   } catch (error) {
     return modelFailed(error);
@@ -155,7 +152,7 @@ export async function analyzeChange(
         ? { ...resolved, note: p['note'].trim() }
         : resolved,
     );
-    if (pointers.length >= MAX_POINTERS) break;
+    if (pointers.length >= OUTPUT_LIMITS.pointersPerChange) break;
   }
   if (pointers.length === 0) {
     // 커밋마다 하나 — 그 커밋에 살아 있는 파일(추가·수정)을 삭제 파일(부모 기준)보다 먼저.
@@ -166,7 +163,7 @@ export async function analyzeChange(
       if (pick === undefined || seen.has(`${pick.commit}:${pick.path}`)) continue;
       seen.add(`${pick.commit}:${pick.path}`);
       pointers.push(pick);
-      if (pointers.length >= MAX_POINTERS) break;
+      if (pointers.length >= OUTPUT_LIMITS.pointersPerChange) break;
     }
   }
   if (pointers.length === 0) return invalid();

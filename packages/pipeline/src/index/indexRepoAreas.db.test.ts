@@ -114,7 +114,7 @@ describe('indexRepoAreas', () => {
       ignoredFiles: 2,
       planned: 3,
       saved: 3,
-      skipped: [],
+      skipped: 0,
       resumedPast: 0,
       unreadableFiles: 0,
     });
@@ -201,7 +201,8 @@ describe('indexRepoAreas', () => {
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.report.skipped).toEqual(['area:docs']);
+    expect(r.report.skipped).toBe(1);
+    expect(JSON.stringify(r.report)).not.toMatch(/docs/); // skipped가 있어도 report에 경로가 없다
     expect(r.report.saved).toBe(2);
     const skippedProgress = progress.find((p) => p.key === 'area:docs')!;
     expect(skippedProgress.status).toBe('skipped');

@@ -163,7 +163,7 @@ describe('indexRepoChanges', () => {
       planned: 2,
       saved: 2,
       summaryOnly: 0,
-      skipped: [],
+      skipped: 0,
       resumedPast: 0,
     });
     expect(r.report.usage.inputTokens).toBeGreaterThan(0);
@@ -260,7 +260,8 @@ describe('indexRepoChanges', () => {
       ),
       redactConfig: REDACT,
     });
-    expect(broken.ok && broken.report).toMatchObject({ saved: 1, skipped: ['change:2024-04'] });
+    expect(broken.ok && broken.report).toMatchObject({ saved: 1, skipped: 1 });
+    expect(JSON.stringify(broken)).not.toMatch(/2024-0/); // skipped가 있어도 report에 기간 키가 없다
 
     const failed = await indexRepoChanges(prisma, {
       repo,
