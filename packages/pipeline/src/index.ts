@@ -227,6 +227,31 @@ export {
 } from './steps/zennStep.ts';
 export type { ZennStepDeps, ZennInput } from './steps/zennStep.ts';
 export {
+  createVerifyStepRunner,
+  buildJudgePrompt,
+  VERIFICATION_ARTIFACT,
+} from './steps/verifyStep.ts';
+export type { VerifyStepDeps } from './steps/verifyStep.ts';
+export { VERIFY_LIMITS } from './evidence/verifyLimits.ts';
+export type { VerifyLimits } from './evidence/verifyLimits.ts';
+export {
+  splitBodyLines,
+  extractMechanicalClaims,
+  extractStatements,
+  matchMechanicalClaims,
+  findVerbatimRuns,
+  countClaims,
+} from './evidence/verification.ts';
+export type {
+  VerificationReport,
+  VerificationClaim,
+  ClaimKind,
+  ClaimStatus,
+  EvidenceRef,
+  VerbatimMatch,
+  BodyLine,
+} from './evidence/verification.ts';
+export {
   loadTonePrompt,
   hashPromptText,
   resolveTonePromptsDir,
