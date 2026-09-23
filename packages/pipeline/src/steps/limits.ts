@@ -6,5 +6,7 @@ export const WRITING_LIMITS = {
   summaryChars: 12_000,
   /** 본문 출력 토큰 상한(벨로그 2,000~3,000자 + 코드 2~4개면 충분). */
   velogMaxOutputTokens: 8_192,
+  /** 링크드인 글 출력 토큰 상한(1,000~1,300자면 1,500 토큰 안팎 — 여유 포함). */
+  linkedinMaxOutputTokens: 2_048,
 } as const;
 export type WritingLimits = { readonly [K in keyof typeof WRITING_LIMITS]: number };

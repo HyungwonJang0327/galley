@@ -212,6 +212,12 @@ export {
 } from './steps/velogStep.ts';
 export type { VelogStepDeps, VelogInput } from './steps/velogStep.ts';
 export {
+  createLinkedinStepRunner,
+  buildLinkedinPrompt,
+  LINKEDIN_ARTIFACT,
+} from './steps/linkedinStep.ts';
+export type { LinkedinStepDeps, LinkedinInput } from './steps/linkedinStep.ts';
+export {
   loadTonePrompt,
   hashPromptText,
   resolveTonePromptsDir,
