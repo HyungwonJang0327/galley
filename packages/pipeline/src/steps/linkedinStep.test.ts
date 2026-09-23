@@ -77,6 +77,7 @@ describe('buildLinkedinPrompt', () => {
     expect(prompt).toContain('<!-- [확인 필요] 응답 시간 -->\n````\n');
     expect(prompt).not.toContain('근거 묶음');
     expect(prompt).not.toContain(dir);
+    expect(prompt).not.toContain(process.env['HOME'] ?? '/Users');
     const noInstruction = buildLinkedinPrompt({
       topic: { title: 't', slug: 's' },
       body: 'plain',
@@ -137,7 +138,17 @@ describe('createLinkedinStepRunner', () => {
     });
   });
 
-  test('실패는 StepFailure로 — 모델 없음·키 없음·어투 없음·본문 없음·본문 빈 것·잘림은 재시도 불가, 빈 출력은 재시도', async () => {
+  test('러너는 ctx.instruction(재실행 지시)을 프롬프트에 넣고, 없으면 절이 없다', async () => {
+    const a = adapters();
+    await createLinkedinStepRunner(deps({ adapters: a })).run(
+      ctx({ instruction: '삽질 문단을 늘려' }),
+    );
+    await createLinkedinStepRunner(deps({ adapters: a })).run(ctx());
+    expect(a.adapter.calls[0]!.prompt).toContain('# 수정 지시(재실행)\n삽질 문단을 늘려');
+    expect(a.adapter.calls[1]!.prompt).not.toContain('수정 지시');
+  });
+
+  test('실패는 StepFailure로 — 모델 없음·키 없음·어투 없음·본문 없음·못 읽음·빈 본문·잘림·401·저장 실패는 재시도 불가, 빈 출력·503은 재시도', async () => {
     const run = (
       over: Partial<Parameters<typeof createLinkedinStepRunner>[0]> = {},
       c: StepContext = ctx(),
@@ -185,6 +196,33 @@ describe('createLinkedinStepRunner', () => {
       code: 'LINKEDIN_MODEL_FAILED',
       retryable: true,
     });
+    const unauthorized = createScriptedAdapter(() => {
+      throw Object.assign(new Error('unauthorized'), { status: 401 });
+    });
+    await expect(run({ adapters: adapters(unauthorized) })).rejects.toMatchObject({
+      code: 'LINKEDIN_MODEL_FAILED',
+      retryable: false,
+    });
+    // 본문 자리가 디렉터리(EISDIR) → 읽기 실패는 MISSING이 아니라 UNREADABLE
+    await mkdir(artifacts.pathFor('무한-스크롤', 'run_dir', VELOG_ARTIFACT), { recursive: true });
+    await expect(run({}, ctx({ runId: 'run_dir' }))).rejects.toMatchObject({
+      code: 'LINKEDIN_BODY_UNREADABLE',
+      retryable: false,
+    });
+    // 저장 실패 — cause는 남기고 문구에는 경로가 없다
+    const writeFailure = await run({
+      artifacts: {
+        ...artifacts,
+        read: artifacts.read.bind(artifacts),
+        remove: artifacts.remove.bind(artifacts),
+        write: async () => {
+          throw new Error('EACCES: permission denied, open /abs/data/x');
+        },
+      },
+    }).catch((e: unknown) => e);
+    expect(writeFailure).toMatchObject({ code: 'LINKEDIN_STORE_WRITE_FAILED', retryable: false });
+    expect((writeFailure as Error).message).not.toContain('/abs/data');
+    expect((writeFailure as Error).cause).toBeInstanceOf(Error);
     const controller = new AbortController();
     controller.abort();
     await expect(run({}, ctx({ signal: controller.signal }))).rejects.toMatchObject({
