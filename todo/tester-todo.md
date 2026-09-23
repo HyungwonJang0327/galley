@@ -14,4 +14,4 @@
 - B1d — 모델 어댑터 토큰·비용 기록 테스트(어댑터 목) 🔒 대상
 - B3c — posts 산출물 5개 + evidence/verification 구조·파일명 테스트
 - BE3–BE5 — tmpdir 픽스처 git 리포 생성 헬퍼(커밋 여러 개·디렉터리 2–3개) → 포인터 실재·증분 재인덱싱 검증 (decisions/evidence-collection.md)
-- BE8·BE10 — snippet=commit 파일 내용 일치 테스트 · 픽스처 초안 supported 2/unsupported 1 테스트(Mock 어댑터)
+- BE8·BE10 — snippet=commit 파일 내용 일치 테스트 · 픽스처 초안 supported 2/unsupported 1 테스트(Mock 어댑터) — BE10 완료 2026-09-23(`verifyStep.test.ts` 완료조건 테스트)
