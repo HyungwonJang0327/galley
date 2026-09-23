@@ -221,9 +221,6 @@ export type { LinkedinStepDeps, LinkedinInput } from './steps/linkedinStep.ts';
 export {
   createZennStepRunner,
   buildZennPrompt,
-  renderZennArticle,
-  splitTitle,
-  stripFrontmatter,
   ZENN_ARTIFACT,
   ZENN_FRONTMATTER,
 } from './steps/zennStep.ts';

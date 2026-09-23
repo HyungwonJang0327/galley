@@ -81,7 +81,7 @@ export function fenceFor(text: string): string {
   return '`'.repeat(Math.max(3, longest + 1));
 }
 
-/** 모델이 전체를 하나의 코드 펜스로 감싼 경우 벗긴다(SYSTEM_PREFIX가 금지하지만 강제는 아니다). */
+/** 모델이 전체를 하나의 코드 펜스로 감싼 경우 벗긴다(각 단계의 SYSTEM 머리가 금지하지만 강제는 아니다). */
 export function unwrapFence(text: string): string {
   const m = /^(`{3,})(?:markdown|md)?\s*\n([\s\S]*?)\n\1\s*$/.exec(text);
   return m === null ? text : m[2]!;

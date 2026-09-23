@@ -85,17 +85,36 @@ export function buildZennPrompt(input: ZennInput): { system: string; prompt: str
   return { system: SYSTEM_PREFIX + input.tone.text, prompt: lines.join('\n') };
 }
 
-/** 모델 출력 맨 앞의 YAML frontmatter(`---` 블록)를 버린다 — published 값은 모델이 정할 수 없다. */
+/**
+ * 모델 출력 앞의 YAML frontmatter(`---` 블록)를 버린다 — published 값은 모델이 정할 수 없다. 변화가 없을 때까지 반복해
+ * 두 번 온 블록도 버리고, 빈 블록(`---\n---`)도 잡는다. 블록 안에 `key:` 꼴 줄이 하나도 없으면 frontmatter가 아니라
+ * 본문의 구분선으로 보고 그대로 둔다(첫 문단이 사라지지 않게).
+ */
 export function stripFrontmatter(text: string): string {
-  const m = /^---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/.exec(text);
-  return m === null ? text : text.slice(m[0].length);
+  let current = text;
+  for (;;) {
+    const m = /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/.exec(current);
+    if (m === null) return current;
+    const inner = m[1] ?? '';
+    const looksLikeYaml = inner.trim() === '' || /^[A-Za-z_][\w-]*[ \t]*:/m.test(inner);
+    if (!looksLikeYaml) return current;
+    current = current.slice(m[0].length).replace(/^(?:[ \t]*\r?\n)+/, '');
+  }
 }
 
-/** 첫 `# ` 줄을 제목으로 떼어 낸다. 없으면 본문은 그대로, 제목은 대비책(fallback). */
+/**
+ * 첫 `# ` 줄을 제목으로 떼어 낸다. 앞쪽 빈 줄·HTML 주석 줄(`<!-- [挿絵] -->` 등)은 건너뛰어 찾고 본문에는 남긴다.
+ * 닫는 ATX `#`는 뗀다. 제목 줄이 없으면 본문은 그대로, 제목은 대비책(fallback).
+ */
 export function splitTitle(text: string, fallback: string): { title: string; body: string } {
-  const m = /^#[ \t]+([^\r\n]*?)[ \t]*(?:\r?\n|$)/.exec(text);
-  if (m === null || m[1]!.trim() === '') return { title: fallback, body: text };
-  return { title: m[1]!.trim(), body: text.slice(m[0].length).replace(/^\s*\n/, '') };
+  const lead = /^(?:[ \t]*\r?\n|[ \t]*<!--[\s\S]*?-->[ \t]*(?:\r?\n|$))*/.exec(text)![0];
+  const rest = text.slice(lead.length);
+  const m = /^[ \t]*#[ \t]+([^\r\n]*?)[ \t]*(?:\r?\n|$)/.exec(rest);
+  if (m === null) return { title: fallback, body: text };
+  const title = m[1]!.replace(/[ \t]+#+$/, '').trim();
+  if (title === '') return { title: fallback, body: text };
+  const after = rest.slice(m[0].length).replace(/^(?:[ \t]*\r?\n)+/, '');
+  return { title, body: (lead + after).replace(/^(?:[ \t]*\r?\n)+/, '') };
 }
 
 /** frontmatter 직렬화 — 제목은 JSON 문자열(유효한 YAML 큰따옴표 문자열)로 따옴표·콜론·개행을 안전하게. */
@@ -185,12 +204,24 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
           'Zenn 기사가 출력 상한에서 잘렸습니다. 어투의 분량 규칙을 확인하거나 출력 상한을 올리세요.',
           false,
         );
-      const text = stripFrontmatter(unwrapFence(generated.text.trim()).trim()).trim();
+      // 줄바꿈은 LF로 통일(frontmatter와 본문이 섞이지 않게) → 전체 펜스 → 앞 frontmatter → 제목 → 제목 뒤 frontmatter.
+      const text = stripFrontmatter(
+        unwrapFence(generated.text.replace(/\r\n/g, '\n').trim()).trim(),
+      ).trim();
       if (text === '')
         throw new StepFailure('ZENN_OUTPUT_EMPTY', '모델이 빈 기사를 돌려줬습니다.', true);
-      const { title, body: article } = splitTitle(text, stripTopicHints(ctx.topic.title));
-      if (article.trim() === '')
+      const fallbackTitle = stripTopicHints(ctx.topic.title).trim();
+      const split = splitTitle(text, fallbackTitle);
+      if (split.title === '')
+        throw new StepFailure(
+          'ZENN_TITLE_MISSING',
+          '기사 제목을 찾지 못했습니다(첫 줄 # 제목이 없고 주제 제목도 비어 있음).',
+          true,
+        );
+      const article = stripFrontmatter(split.body).trim();
+      if (article === '')
         throw new StepFailure('ZENN_OUTPUT_EMPTY', '모델이 제목만 돌려줬습니다.', true);
+      const { title } = split;
       const rendered = renderZennArticle(title, article);
       try {
         await deps.artifacts.write(ctx.topic.slug, ctx.runId, ZENN_ARTIFACT, rendered);
