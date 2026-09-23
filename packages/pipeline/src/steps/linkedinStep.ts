@@ -9,14 +9,14 @@ import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { loadTonePrompt, type TonePrompt } from '../prompts/tonePrompts.ts';
 import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
+import { VELOG_ARTIFACT } from './velogStep.ts';
 import {
   abortable,
   classifyModelError,
   fenceFor,
   tonePromptFailure,
   unwrapFence,
-  VELOG_ARTIFACT,
-} from './velogStep.ts';
+} from './writing.ts';
 
 export interface LinkedinStepDeps {
   /** 산출물 저장소(DATA_DIR) — 벨로그 본문을 여기서 읽고 linkedin.md를 여기에 쓴다. */
