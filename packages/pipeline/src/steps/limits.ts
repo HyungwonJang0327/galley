@@ -8,5 +8,7 @@ export const WRITING_LIMITS = {
   velogMaxOutputTokens: 8_192,
   /** 링크드인 글 출력 토큰 상한. 한국어 1,300자는 최대 1,900 토큰 안팎이라 여유를 둔다(절단 상한이지 지출 상한이 아니다). 실모델 스모크(BS5 뒤)에서 확정. */
   linkedinMaxOutputTokens: 4_096,
+  /** Zenn 일본어판 출력 토큰 상한. 본문 2,500~4,000자(일본어는 글자당 1토큰 안팎) + 벨로그판 코드 그대로. 절단 상한이라 비용과 무관. */
+  zennMaxOutputTokens: 12_288,
 } as const;
 export type WritingLimits = { readonly [K in keyof typeof WRITING_LIMITS]: number };
