@@ -203,13 +203,14 @@ export { LocalFsArtifactStore } from './artifacts/ArtifactStore.ts';
 export type { ArtifactStore, ArtifactReadResult } from './artifacts/ArtifactStore.ts';
 export { WRITING_LIMITS } from './steps/limits.ts';
 export type { WritingLimits } from './steps/limits.ts';
+export { createVelogStepRunner, buildVelogPrompt, VELOG_ARTIFACT } from './steps/velogStep.ts';
 export {
-  createVelogStepRunner,
-  buildVelogPrompt,
+  abortable,
   classifyModelError,
+  fenceFor,
   tonePromptFailure,
-  VELOG_ARTIFACT,
-} from './steps/velogStep.ts';
+  unwrapFence,
+} from './steps/writing.ts';
 export type { VelogStepDeps, VelogInput } from './steps/velogStep.ts';
 export {
   createLinkedinStepRunner,
