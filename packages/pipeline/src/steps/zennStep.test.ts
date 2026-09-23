@@ -105,6 +105,10 @@ describe('frontmatter 조립', () => {
     expect(stripFrontmatter('---\r\ntitle: x\r\n---\r\n본문')).toBe('본문');
     expect(stripFrontmatter('# 제목\n---\n구분선\n---\n')).toBe('# 제목\n---\n구분선\n---\n'); // 본문 속 구분선은 그대로
     expect(stripFrontmatter('---\ntitle: x\n---')).toBe('');
+    // 두 번 온 블록·빈 블록은 전부 버리고, key: 줄이 없는 블록은 본문의 구분선이라 보존한다
+    expect(stripFrontmatter('---\ntitle: x\n---\n---\npublished: true\n---\n本文')).toBe('本文');
+    expect(stripFrontmatter('---\n---\n本文')).toBe('本文');
+    expect(stripFrontmatter('---\n本文の段落\n---\n続き')).toBe('---\n本文の段落\n---\n続き');
     expect(splitTitle('# 제목 — 부제\n\n본문', 'f')).toEqual({
       title: '제목 — 부제',
       body: '본문',
@@ -112,6 +116,16 @@ describe('frontmatter 조립', () => {
     expect(splitTitle('본문만', 'f')).toEqual({ title: 'f', body: '본문만' });
     expect(splitTitle('#   \n본문', 'f')).toEqual({ title: 'f', body: '#   \n본문' });
     expect(splitTitle('## 소제목\n본문', 'f')).toEqual({ title: 'f', body: '## 소제목\n본문' });
+    // 앞쪽 빈 줄·HTML 주석은 건너뛰어 찾고 본문에 남긴다, 닫는 #은 뗀다, CRLF도 같다
+    expect(splitTitle('\n<!-- [挿絵] a.png -->\n# 題 #\n\n本文', 'f')).toEqual({
+      title: '題',
+      body: '<!-- [挿絵] a.png -->\n本文',
+    });
+    expect(splitTitle('  # 들여쓴 제목\n본문', 'f')).toEqual({
+      title: '들여쓴 제목',
+      body: '본문',
+    });
+    expect(splitTitle('# 題\r\n\r\n本文\r\n', 'f')).toEqual({ title: '題', body: '本文\r\n' });
   });
 
   test('renderZennArticle — published: false 고정, 제목은 따옴표·콜론이 있어도 안전, topics 빈 배열', () => {
@@ -120,6 +134,7 @@ describe('frontmatter 조립', () => {
       '---\ntitle: "A: \\"B\\" — C"\nemoji: "📝"\ntype: "tech"\ntopics: []\npublished: false\n---\n\n本文\n',
     );
     expect(ZENN_FRONTMATTER.published).toBe(false);
+    expect(renderZennArticle('a\\b\nc # d', 'x')).toContain('title: "a\\\\b\\nc # d"\n');
   });
 });
 
@@ -172,12 +187,37 @@ describe('createZennStepRunner', () => {
     expect((r.artifacts[ZENN_ARTIFACT]!.match(/^---$/gm) ?? []).length).toBe(2);
   });
 
+  test('H1 뒤에 온 frontmatter도 버리고, 구분선으로 시작하는 본문은 보존하고, CRLF 출력은 LF로 통일한다', async () => {
+    const afterTitle = await run({
+      adapters: adapters(createScriptedAdapter(() => '# 題\n---\npublished: true\n---\n本文。')),
+    });
+    expect(afterTitle.artifacts[ZENN_ARTIFACT]).toBe(
+      `${EXPECTED_FM.replace('無限スクロールを付けた話', '題')}本文。\n`,
+    );
+    const divider = await run({
+      adapters: adapters(createScriptedAdapter(() => '# 題\n\n---\n第一段落\n---\n続き')),
+    });
+    expect(divider.artifacts[ZENN_ARTIFACT]).toContain('\n\n---\n第一段落\n---\n続き\n');
+    const crlf = await run({
+      adapters: adapters(createScriptedAdapter(() => '# 題\r\n\r\n一行目\r\n二行目\r\n')),
+    });
+    expect(crlf.artifacts[ZENN_ARTIFACT]).not.toContain('\r');
+    expect(crlf.artifacts[ZENN_ARTIFACT]).toContain('\n\n一行目\n二行目\n');
+  });
+
   test('첫 줄이 제목이 아니면 힌트 뗀 주제 제목을 대비책으로 쓴다', async () => {
     const r = await run({
       adapters: adapters(createScriptedAdapter(() => '## はじめに\n\n本文。')),
     });
     expect(r.artifacts[ZENN_ARTIFACT]).toContain('title: "무한 스크롤"\n');
     expect(r.artifacts[ZENN_ARTIFACT]).toContain('\n## はじめに\n');
+    // 대비책도 비어 있으면(제목이 괄호 힌트뿐) 재시도 실패
+    await expect(
+      run(
+        { adapters: adapters(createScriptedAdapter(() => '## はじめに\n\n本文。')) },
+        ctx({ topic: { id: 't1', title: '(spacehome)', slug: '無限-scroll' } }),
+      ),
+    ).rejects.toMatchObject({ code: 'ZENN_TITLE_MISSING', retryable: true });
   });
 
   test('carried 본문은 sources.velog의 Run 산출물을 읽고, 결과는 이 Run에 쓴다. 러너는 ctx.instruction을 넣는다', async () => {
@@ -273,6 +313,12 @@ describe('createZennStepRunner', () => {
       code: 'ZENN_MODEL_FAILED',
       retryable: false,
     });
+    const refusing = createScriptedAdapter(() => {
+      throw new Error('모델이 응답을 거부했습니다 (stop_reason refusal)');
+    });
+    const refusal = await run({ adapters: adapters(refusing) }).catch((e: unknown) => e);
+    expect(refusal).toMatchObject({ code: 'ZENN_MODEL_FAILED', retryable: false });
+    expect((refusal as Error).message).toContain('거부');
     const writeFailure = await run({
       artifacts: {
         ...artifacts,

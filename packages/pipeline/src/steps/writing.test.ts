@@ -70,6 +70,16 @@ describe('writing helpers', () => {
     expect(refusal.message).toContain('거부');
     expect(refusal.cause).toBeInstanceOf(Error);
     expect(classifyModelError(new Error('API 키 없음'), 'X').message).not.toContain('키 없음'); // 원문 대신 고정 문구
+    expect(
+      tonePromptFailure({ ok: false, code: 'PROMPT_UNREADABLE', step: 'linkedin' }),
+    ).toMatchObject({
+      code: 'PROMPT_UNREADABLE',
+      retryable: false,
+      message: expect.stringContaining('linkedin.md'),
+    });
+    expect(
+      tonePromptFailure({ ok: false, code: 'PROMPT_NOT_FOUND', step: 'velog' }).message,
+    ).toContain('velog.md');
     expect(tonePromptFailure({ ok: false, code: 'PROMPT_EMPTY', step: 'zenn' })).toMatchObject({
       code: 'PROMPT_EMPTY',
       retryable: false,
