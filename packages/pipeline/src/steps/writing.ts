@@ -3,6 +3,7 @@
 // decisions/evidence-collection.md 2026-09-23 BS3 리뷰 반영). 단계별 러너 골격은 각 단계 파일에 있다.
 import { StepFailure } from './StepRunner.ts';
 import type { TonePromptFailure } from '../prompts/tonePrompts.ts';
+import type { EvidenceItem } from '../evidence/bundle.ts';
 
 /** 어투 로더의 값 실패 → 단계 실패(재시도 불가). 벨로그·링크드인·Zenn 단계가 같은 헬퍼를 쓴다. 문구에 절대경로 없음(파일명만). */
 export function tonePromptFailure(failure: TonePromptFailure): StepFailure {
@@ -85,4 +86,35 @@ export function fenceFor(text: string): string {
 export function unwrapFence(text: string): string {
   const m = /^(`{3,})(?:markdown|md)?\s*\n([\s\S]*?)\n\1\s*$/.exec(text);
   return m === null ? text : m[2]!;
+}
+
+/**
+ * 근거 조각을 프롬프트 줄로 — 조각마다 머리(경로·라인·커밋·날짜·출처)·note·동적 펜스 안 본문. 총 글자 상한을 넘는 조각은
+ * 본문을 생략하고 포인터만 남긴다. 벨로그 본문(사실의 전부)과 근거 검증(대조 대상)이 같은 표현을 쓴다.
+ */
+export function renderEvidenceItems(
+  items: readonly EvidenceItem[],
+  evidenceChars: number,
+): string[] {
+  const lines: string[] = [];
+  let used = 0;
+  let omitted = 0;
+  items.forEach((item, i) => {
+    lines.push(
+      `## 조각 ${i + 1} — ${item.path} L${item.lineRange.start}-${item.lineRange.end} (${item.commit.slice(0, 7)}, ${item.date.slice(0, 10)}, ${item.source})`,
+    );
+    if (item.note !== undefined) lines.push(`note: ${item.note}`);
+    if (used + item.snippet.length <= evidenceChars) {
+      const fence = fenceFor(item.snippet);
+      lines.push(fence, item.snippet, fence);
+      used += item.snippet.length;
+    } else {
+      omitted += 1;
+      lines.push('(조각 본문은 입력 상한으로 생략 — 경로·라인만 참고)');
+    }
+    if (item.truncated) lines.push('(조각은 상한으로 잘렸다)');
+    lines.push('');
+  });
+  if (omitted > 0) lines.push(`(입력 상한으로 조각 본문 ${omitted}개 생략)`, '');
+  return lines;
 }
