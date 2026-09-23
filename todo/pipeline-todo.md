@@ -54,5 +54,5 @@
 - BS1 — 어투 프롬프트 로더 + `RunStep.promptHash` + `StepResult.promptHash`(워커는 기록만) — 완료 2026-09-22
 - BS2 — 벨로그 본문 단계(주제 + EvidenceBundle + 어투 + 지시 → 모델) — 완료 2026-09-23
 - BS3 — 링크드인 단계(본문 파생 + 어투) — 완료 2026-09-23
-- BS4 — Zenn 일본어판 단계(본문 파생 + 어투, `published: false` 고정)
+- BS4 — Zenn 일본어판 단계(본문 파생 + 어투, `published: false` 고정) — 완료 2026-09-23
 - BS5 — 단계명 → 구현 라우팅 StepRunner, `bin/worker.ts`가 Mock 대신 사용
