@@ -208,6 +208,7 @@ export {
   abortable,
   classifyModelError,
   fenceFor,
+  renderEvidenceItems,
   tonePromptFailure,
   unwrapFence,
 } from './steps/writing.ts';

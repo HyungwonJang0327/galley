@@ -14,7 +14,7 @@ import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 import {
   abortable,
   classifyModelError,
-  fenceFor,
+  renderEvidenceItems,
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
@@ -77,25 +77,10 @@ export function buildVelogPrompt(
     lines.push('');
   }
 
-  lines.push(`# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`);
-  let used = 0;
-  let omitted = 0;
-  bundle.items.forEach((item, i) => {
-    const head = `## 조각 ${i + 1} — ${item.path} L${item.lineRange.start}-${item.lineRange.end} (${item.commit.slice(0, 7)}, ${item.date.slice(0, 10)}, ${item.source})`;
-    lines.push(head);
-    if (item.note !== undefined) lines.push(`note: ${item.note}`);
-    if (used + item.snippet.length <= limits.evidenceChars) {
-      const fence = fenceFor(item.snippet);
-      lines.push(fence, item.snippet, fence);
-      used += item.snippet.length;
-    } else {
-      omitted += 1;
-      lines.push('(조각 본문은 입력 상한으로 생략 — 경로·라인만 참고)');
-    }
-    if (item.truncated) lines.push('(조각은 상한으로 잘렸다)');
-    lines.push('');
-  });
-  if (omitted > 0) lines.push(`(입력 상한으로 조각 본문 ${omitted}개 생략)`, '');
+  lines.push(
+    `# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`,
+    ...renderEvidenceItems(bundle.items, limits.evidenceChars),
+  );
   lines.push('# 요청', '위 어투 규칙과 근거로 벨로그 본문 초안을 마크다운으로 작성하세요.');
   return { system: SYSTEM_PREFIX + input.tone.text, prompt: lines.join('\n') };
 }
