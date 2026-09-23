@@ -334,7 +334,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
-Zenn push 실연동 · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
+Zenn push 실연동(push 전 검사: frontmatter `title` 70자 이내·`topics` 1~5개 — BS4 리뷰 L2, 下書き에도 CLI 검증이 걸리는지 확인) · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
 
 - [ ] **P2-SCHED** pl+fe — 자동 실행 스케줄(클로드 데스크톱 스케줄 대체, decisions/ondemand-execution.md 전환 시점): `Settings`에 요일·시각·TZ·`lastScheduledSlot` → 워커 틱(Run → IndexJob → 자동 연결 앞)이 지난 슬롯 중 Run을 안 만든 것이 있으면 대기 맨 위 주제로 `startRun`(잠들었다 깨어나도 따라잡음, launchd 예약 아님). 실행 뒤는 승인 대기에서 멈춤 — "자동 승인"은 사람 검수 전제와 부딪혀 별도 결정. 조건: E2E 초록 + 실모델 산출물 확인 뒤.
 
