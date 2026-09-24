@@ -5,6 +5,7 @@
 ## Phase 1-B
 
 - BW5 — docs/worker-setup.md + launchd plist 템플릿(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함 — decisions/run-location.md)
+- BX6 — 시리즈 대응 문서 반영(CLAUDE.md 한 줄·queue-sync-direction 정의 줄 보존·evidence-collection 태그 한 줄·README 표기 예시·마감 기록) (decisions/series.md, BX1~BX5 뒤)
 
 ## Phase 1 말
 
