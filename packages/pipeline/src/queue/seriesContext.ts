@@ -7,6 +7,7 @@ import type { Storage } from '../storage/Storage.ts';
 import { indexByTitle, takeMatch } from './importQueue.ts';
 import { normalizeTopicTitle, stripTopicHints, trailingUrl } from './normalizeTitle.ts';
 import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { isAlreadyPublished } from './topicHints.ts';
 
 export interface SeriesEpisode {
   /** QueueItem.id — 주제 키. 아직 적재되지 않은 새 줄이면 없다(대시보드가 다음 적재 때 만든다). */
@@ -15,11 +16,11 @@ export interface SeriesEpisode {
   /** 표시·프롬프트용 제목(괄호 힌트·URL 뗌). */
   title: string;
   status: QueueStatus;
-  /** 완료 줄 `(posts/<슬러그>)`(완료 편만). */
+  /** `(posts/<슬러그>)` 항(발행된 편만 — 완료 줄 또는 `(기존 글)` 편). */
   slug?: string;
-  /** 완료 줄 끝 벨로그 URL(완료 편만, 사람이 붙였을 때). */
+  /** 줄 끝 벨로그 URL(발행된 편만, 사람이 붙였을 때, `velog.io`만). */
   velogUrl?: string;
-  /** 태그 바로 뒤 `(기존 글)` — 이미 발행된 편. 실행 대상이 아니다. */
+  /** 태그 바로 뒤 `(기존 글)`(메모가 붙어도) — 이미 발행된 편. 실행 대상이 아니다. */
   alreadyPublished: boolean;
 }
 
@@ -47,9 +48,11 @@ export interface SeriesTopicRow {
 }
 
 const STATUS_ORDER: readonly QueueStatus[] = ['대기', '후보', '보류', '완료'];
-const ALREADY_PUBLISHED = /^\s*[(（]기존 글[)）]/;
-const POSTS_SLUG = /[(（][^)）]*?posts\/([^\s,，)）]+)/;
-const JA_TERM = /^ja:\s*(.+)$/i;
+/** 괄호 안의 `posts/<슬러그>` 항 — 괄호 시작이나 쉼표 바로 뒤만(`…/posts/x` 같은 URL 경로는 아니다). */
+const POSTS_SLUG = /[(（,，]\s*posts\/([^\s,，)）]+)/;
+/** 이전 편 링크로 쓰는 URL은 벨로그만 — 다른 링크면 자리표시자로 떨어진다. */
+const VELOG_URL = /^https?:\/\/(?:www\.)?velog\.io\//;
+const JA_TERM = /^ja[:：]\s*(.+)$/i;
 
 /** 정의 줄 메모에서 `ja:` 항(쉼표 구분). */
 export function seriesNameJa(note: string | undefined): string | undefined {
@@ -79,9 +82,12 @@ export function buildSeriesContext(
       // 매칭은 모든 줄에 대해 파일 순서로 소비해야 적재와 같은 짝이 나온다(같은 제목이 여러 줄일 때).
       const row = takeMatch(byTitle.get(normalizeTopicTitle(topic.title)), status);
       if (topic.series?.key !== key) continue;
-      const done = status === '완료';
-      const slug = done ? POSTS_SLUG.exec(topic.title)?.[1] : undefined;
-      const velogUrl = done ? trailingUrl(topic.title) : undefined;
+      // 발행된 편(완료 줄, 또는 어느 섹션이든 `(기존 글)` 편)만 슬러그·URL을 읽는다.
+      const alreadyPublished = isAlreadyPublished(topic.title);
+      const published = status === '완료' || alreadyPublished;
+      const slug = published ? POSTS_SLUG.exec(topic.title)?.[1] : undefined;
+      const url = published ? trailingUrl(topic.title) : undefined;
+      const velogUrl = url !== undefined && VELOG_URL.test(url) ? url : undefined;
       episodes.push({
         ...(row === undefined ? {} : { topicId: row.id }),
         episodeNo: topic.series.episode,
@@ -89,7 +95,7 @@ export function buildSeriesContext(
         status,
         ...(slug === undefined ? {} : { slug }),
         ...(velogUrl === undefined ? {} : { velogUrl }),
-        alreadyPublished: ALREADY_PUBLISHED.test(topic.title),
+        alreadyPublished,
       });
     }
   }

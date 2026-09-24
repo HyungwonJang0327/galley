@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import {
+  isAlreadyPublished,
   isPeriodHint,
   normalizePeriodHint,
   parseTopicHints,
@@ -143,5 +144,19 @@ describe('resolveTopicHints', () => {
       keywords: ['spacehome', 'nest'],
       period: null,
     });
+  });
+});
+
+describe('isAlreadyPublished', () => {
+  test('맨 앞 괄호의 첫 항이 기존 글이면 참(메모가 붙어도)', () => {
+    expect(isAlreadyPublished('(기존 글) 세션')).toBe(true);
+    expect(isAlreadyPublished('（기존  글, 2025） 세션')).toBe(true);
+  });
+
+  test('맨 앞이 아니거나 다른 항의 일부면 거짓', () => {
+    expect(isAlreadyPublished('세션 (기존 글)')).toBe(false);
+    expect(isAlreadyPublished('(2025, 기존 글) 세션')).toBe(false);
+    expect(isAlreadyPublished('(기존 글 리라이트) 세션')).toBe(false);
+    expect(isAlreadyPublished('세션')).toBe(false);
   });
 });

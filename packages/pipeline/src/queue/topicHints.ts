@@ -30,11 +30,22 @@ const PERIOD = new RegExp(
   `^((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?(?:\\s*[~\\-–]\\s*((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?)?$`,
 );
 
+/** 이미 발행된 시리즈 편 표시 메모(decisions/series.md). 힌트가 아니라 키워드로 세지 않는다. */
+export const ALREADY_PUBLISHED_NOTE = '기존 글';
+/** 힌트가 아닌 표시 메모. 비교는 공백 정리·NFC 뒤 원문 그대로. */
+const NON_HINT_TERMS: ReadonlySet<string> = new Set([ALREADY_PUBLISHED_NOTE]);
+const LEADING_GROUP = /^\s*[(（]([^)）]*)[)）]/;
+
 /**
- * 힌트가 아닌 표시 메모 — 키워드로 세지 않는다. `(기존 글)`은 이미 발행된 시리즈 편 표시다(decisions/series.md).
- * 비교는 공백 정리·NFC 뒤 원문 그대로.
+ * 이미 발행된 편인가 — 제목(태그 뗀 뒤) 맨 앞 괄호의 첫 항이 `기존 글`(`(기존 글)`·`(기존 글, 2025)`). 힌트 파서가
+ * 키워드에서 빼는 항과 같은 기준이다.
  */
-const NON_HINT_TERMS: ReadonlySet<string> = new Set(['기존 글']);
+export function isAlreadyPublished(title: string): boolean {
+  const group = LEADING_GROUP.exec(title.normalize('NFC'))?.[1];
+  if (group === undefined) return false;
+  const first = group.split(SEPARATORS)[0]?.replace(/\s+/g, ' ').trim();
+  return first === ALREADY_PUBLISHED_NOTE;
+}
 
 export const isPeriodHint = (term: string): boolean => PERIOD.test(term.trim());
 
