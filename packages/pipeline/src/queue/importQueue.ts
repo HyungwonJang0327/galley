@@ -22,6 +22,9 @@ export interface QueueItemRow {
   order: number;
   category: string | null;
   completedOn: string | null;
+  /** 편 줄 태그의 시리즈 키·편 번호(시리즈 편만). 정의 줄은 행이 아니다. */
+  seriesKey: string | null;
+  episodeNo: number | null;
   /** 괄호 힌트에서 뽑은 근거 힌트(JSON 배열 문자열 — src/index/schema.ts 헬퍼로만 읽고 쓴다). 재적재 시 재생성. */
   repoNames: string;
   keywords: string;
@@ -46,6 +49,8 @@ export function parsedQueueToRows(
         order,
         category: topic.category ?? null,
         completedOn: topic.completedOn ?? null,
+        seriesKey: topic.series?.key ?? null,
+        episodeNo: topic.series?.episode ?? null,
         repoNames: serializeStringArray(hints.repoNames),
         keywords: serializeStringArray(hints.keywords),
         period: hints.period,
@@ -71,6 +76,8 @@ interface ExistingItem {
   order: number;
   category: string | null;
   completedOn: string | null;
+  seriesKey: string | null;
+  episodeNo: number | null;
   repoNames: string;
   keywords: string;
   period: string | null;
@@ -92,6 +99,8 @@ export function isUnchanged(item: ExistingItem, row: QueueItemRow): boolean {
     item.order === row.order &&
     item.category === row.category &&
     item.completedOn === row.completedOn &&
+    item.seriesKey === row.seriesKey &&
+    item.episodeNo === row.episodeNo &&
     item.repoNames === row.repoNames &&
     item.keywords === row.keywords &&
     item.period === row.period &&
@@ -178,6 +187,8 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
       order: true,
       category: true,
       completedOn: true,
+      seriesKey: true,
+      episodeNo: true,
       repoNames: true,
       keywords: true,
       period: true,

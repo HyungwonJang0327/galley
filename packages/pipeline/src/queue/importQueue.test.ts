@@ -15,7 +15,13 @@ describe('parsedQueueToRows', () => {
       },
     };
 
-    const noHints = { repoNames: '[]', keywords: '[]', period: null };
+    const noHints = {
+      seriesKey: null,
+      episodeNo: null,
+      repoNames: '[]',
+      keywords: '[]',
+      period: null,
+    };
     expect(parsedQueueToRows(parsed)).toEqual([
       { title: 'A', status: '대기', order: 0, category: null, completedOn: null, ...noHints },
       { title: 'B', status: '대기', order: 1, category: null, completedOn: null, ...noHints },
