@@ -53,7 +53,7 @@ export function reorderTopic(
 
   return {
     ok: true,
-    queue: { preamble: queue.preamble, sections: { ...queue.sections, [status]: next } },
+    queue: { ...queue, sections: { ...queue.sections, [status]: next } },
   };
 }
 

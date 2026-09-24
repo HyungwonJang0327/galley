@@ -108,3 +108,63 @@ describe('moveTopic', () => {
     expect(result.queue.preamble).toBe('# 큐');
   });
 });
+
+const SERIES_SAMPLE = `## 대기
+
+- 대기 A
+
+## 후보
+
+- 무카테고리 후보
+
+### 시리즈
+
+시리즈 A. 앱 만들기
+- [A-1] 첫 편
+- [A-2] 둘째 편
+
+시리즈 B. 다른 앱
+- [B-1] 다른 첫 편
+
+## 보류
+
+## 완료
+`;
+
+describe('moveTopic — 시리즈', () => {
+  test('태그를 들고 가고, 정의 줄은 후보 제자리에 남는다', () => {
+    const q = parseQueue(SERIES_SAMPLE);
+    const result = moveTopic(q, { from: '후보', to: '대기', index: 1, title: '첫 편' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.queue.sections.대기.at(-1)).toEqual({
+      title: '첫 편',
+      series: { key: 'A', episode: 1 },
+    });
+    expect(serializeQueue(result.queue)).toBe(
+      SERIES_SAMPLE.replace('- [A-1] 첫 편\n', '').replace(
+        '- 대기 A\n',
+        '- 대기 A\n- [A-1] 첫 편\n',
+      ),
+    );
+  });
+
+  test('후보로 되돌려도 뒤쪽 정의 줄이 제 편 앞에 남는다', () => {
+    const q = parseQueue(SERIES_SAMPLE.replace('- 대기 A', '- [B-2] 둘째 다른 편'));
+    const result = moveTopic(q, { from: '대기', to: '후보', index: 0, title: '둘째 다른 편' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const reread = parseQueue(serializeQueue(result.queue));
+    expect(reread.sections.후보[1]).toEqual({
+      title: '둘째 다른 편',
+      series: { key: 'B', episode: 2 },
+    });
+    expect(reread.seriesDefs).toEqual(result.queue.seriesDefs);
+    expect(reread.seriesDefs.map((d) => [d.key, d.position])).toEqual([
+      ['A', 2],
+      ['B', 4],
+    ]);
+  });
+});

@@ -19,7 +19,7 @@ describe('주제_큐.md 라운드트립 (픽스처)', () => {
 
     // 사람이 UI에서 후보 → 대기로 옮기는 편집을 시뮬레이션(카테고리 벗음).
     const edited = {
-      preamble: q.preamble,
+      ...q,
       sections: {
         대기: [...q.sections.대기, { title: moved.title }],
         후보: restCandidates,

@@ -94,7 +94,7 @@ export async function restoreMissingTopicToHold(
 
   const parsed = parseQueue(await deps.storage.readQueueFile());
   const restored = {
-    preamble: parsed.preamble,
+    ...parsed,
     sections: { ...parsed.sections, 보류: [...parsed.sections.보류, { title: item.title }] },
   };
 
