@@ -9,7 +9,8 @@ const HINT_GROUPS = /[(（][^)）]*[)）]/g;
  */
 export const SERIES_TAG = /^\[([A-Z])-([1-9]\d?)\]\s+/;
 /** 완료 줄 끝의 벨로그 URL(괄호 밖, 사람이 발행 후 붙인다 — decisions/series.md 확정 사항 1). */
-const TRAILING_URL = /\s+(https?:\/\/\S+)\s*$/;
+// URL 문자에서 닫는 괄호를 뺀다 — 괄호 안에 쓴 URL이 줄 끝에 오면 `)`까지 삼켜 깨진 링크가 된다(BX2 리뷰 5).
+const TRAILING_URL = /\s+(https?:\/\/[^\s)）]+)\s*$/;
 
 /** 줄 끝 URL(괄호 밖) — 완료 줄의 벨로그 링크. 없으면 undefined. */
 export function trailingUrl(title: string): string | undefined {

@@ -84,5 +84,11 @@ describe('trailingUrl', () => {
     expect(trailingUrl('편 (posts/a) https://velog.io/@x/a\t ')).toBe('https://velog.io/@x/a');
     expect(trailingUrl('https://example.com 파싱하기')).toBeUndefined();
     expect(trailingUrl('편 (https://velog.io/@x/a)')).toBeUndefined();
+    expect(trailingUrl('편 (메모 https://velog.io/@x/a)')).toBeUndefined();
+    expect(trailingUrl('편 (posts/a, https://velog.io/@x/a）')).toBeUndefined();
+  });
+
+  it('괄호 안 URL은 괄호 힌트로 떼어진다(닫는 괄호가 남지 않는다)', () => {
+    expect(stripTopicHints('첫 편 (posts/first, https://velog.io/@x/first)')).toBe('첫 편');
   });
 });
