@@ -1,14 +1,16 @@
 // 시리즈 컨텍스트 — 글쓰기·발행정보 단계가 "○○ 시리즈 N편, 이전·다음 편"을 알 때 쓴다(decisions/series.md 데이터 흐름).
-// 이름·일본어 표기는 파일의 정의 줄, 편 목록은 DB(적재가 파일에서 재생성한 seriesKey·episodeNo), 슬러그·벨로그 URL은 완료 줄.
+// **읽기 전용**: 파일을 한 번 읽어 정의 줄(이름·ja:)과 편 줄(편 목록·슬러그·URL)을 얻고, DB는 편 줄 → QueueItem.id
+// 조회에만 쓴다. 적재하지 않는다 — 워커가 부르므로 대시보드 적재와 프로세스 사이에서 경쟁하면 같은 줄이 두 행이 된다
+// (importChain은 한 프로세스 안에서만 직렬화한다, BX2 리뷰 H1). 파일에서 사라진 행은 파일 줄이 없으니 저절로 빠진다.
 import type { PrismaClient } from '@prisma/client';
 import type { Storage } from '../storage/Storage.ts';
-import { HOLD_REASON_REMOVED, importQueueFromFile } from './importQueue.ts';
-import { stripTopicHints, trailingUrl } from './normalizeTitle.ts';
-import { parseQueue, type QueueStatus, type SeriesDef } from './queueFile.ts';
+import { indexByTitle, takeMatch } from './importQueue.ts';
+import { normalizeTopicTitle, stripTopicHints, trailingUrl } from './normalizeTitle.ts';
+import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
 
 export interface SeriesEpisode {
-  /** QueueItem.id — 주제 키. */
-  topicId: string;
+  /** QueueItem.id — 주제 키. 아직 적재되지 않은 새 줄이면 없다(대시보드가 다음 적재 때 만든다). */
+  topicId?: string;
   episodeNo: number;
   /** 표시·프롬프트용 제목(괄호 힌트·URL 뗌). */
   title: string;
@@ -37,15 +39,11 @@ export type SeriesContextFailure =
 export type SeriesContextResult =
   { ok: true; series: SeriesContext } | { ok: false; code: SeriesContextFailure };
 
-/** 적재된 행 중 컨텍스트가 읽는 것. */
-export interface SeriesEpisodeRow {
+/** 편 줄 → id 조회에 쓰는 DB 행. 생성 순으로 넘긴다(적재의 매칭 규칙과 같게). */
+export interface SeriesTopicRow {
   id: string;
   title: string;
   status: string;
-  order: number;
-  episodeNo: number | null;
-  missingSince: Date | null;
-  holdReason: string | null;
 }
 
 const STATUS_ORDER: readonly QueueStatus[] = ['대기', '후보', '보류', '완료'];
@@ -62,77 +60,58 @@ export function seriesNameJa(note: string | undefined): string | undefined {
   return undefined;
 }
 
-function isQueueStatus(value: string): value is QueueStatus {
-  return (STATUS_ORDER as readonly string[]).includes(value);
-}
-
-/** 정의 줄 + 적재된 행 → 컨텍스트(순수). 파일에서 사라진 행(확인 대기·자동 보류)은 편으로 세지 않는다. */
+/**
+ * 파싱한 큐 + DB 행 → 컨텍스트(순수). 편은 파일에 있는 그 시리즈 편 줄 전부(네 섹션 — 직접 보류한 편도 센다, 편 번호가
+ * 어긋나지 않게), 편 번호순·겹치면 파일 순서(섹션 → 줄). id는 적재와 같은 매칭(정규화 제목, 같은 섹션 우선).
+ */
 export function buildSeriesContext(
   key: string,
-  defs: readonly SeriesDef[],
-  rows: readonly SeriesEpisodeRow[],
+  queue: ParsedQueue,
+  rows: readonly SeriesTopicRow[],
 ): SeriesContextResult {
-  const def = defs.find((d) => d.key === key);
+  const def = queue.seriesDefs.find((d) => d.key === key);
   if (def === undefined) return { ok: false, code: 'SERIES_NOT_DEFINED' };
 
-  const found: { episode: SeriesEpisode; order: number }[] = [];
-  for (const row of rows) {
-    if (row.episodeNo === null || !isQueueStatus(row.status)) continue;
-    if (row.missingSince !== null || row.holdReason === HOLD_REASON_REMOVED) continue;
-    const done = row.status === '완료';
-    const slug = done ? POSTS_SLUG.exec(row.title)?.[1] : undefined;
-    const velogUrl = done ? trailingUrl(row.title) : undefined;
-    found.push({
-      episode: {
-        topicId: row.id,
-        episodeNo: row.episodeNo,
-        title: stripTopicHints(row.title),
-        status: row.status,
+  const byTitle = indexByTitle(rows);
+  const episodes: SeriesEpisode[] = [];
+  for (const status of STATUS_ORDER) {
+    for (const topic of queue.sections[status]) {
+      // 매칭은 모든 줄에 대해 파일 순서로 소비해야 적재와 같은 짝이 나온다(같은 제목이 여러 줄일 때).
+      const row = takeMatch(byTitle.get(normalizeTopicTitle(topic.title)), status);
+      if (topic.series?.key !== key) continue;
+      const done = status === '완료';
+      const slug = done ? POSTS_SLUG.exec(topic.title)?.[1] : undefined;
+      const velogUrl = done ? trailingUrl(topic.title) : undefined;
+      episodes.push({
+        ...(row === undefined ? {} : { topicId: row.id }),
+        episodeNo: topic.series.episode,
+        title: stripTopicHints(topic.title),
+        status,
         ...(slug === undefined ? {} : { slug }),
         ...(velogUrl === undefined ? {} : { velogUrl }),
-        alreadyPublished: ALREADY_PUBLISHED.test(row.title),
-      },
-      order: row.order,
-    });
+        alreadyPublished: ALREADY_PUBLISHED.test(topic.title),
+      });
+    }
   }
-  // 편 번호가 겹치면(사람 실수) 파일 순서(섹션 → 줄)로 — 결정적이게.
-  found.sort(
-    (a, b) =>
-      a.episode.episodeNo - b.episode.episodeNo ||
-      STATUS_ORDER.indexOf(a.episode.status) - STATUS_ORDER.indexOf(b.episode.status) ||
-      a.order - b.order,
-  );
+  // 안정 정렬 — 편 번호가 겹치면(사람 실수) 위에서 쌓은 파일 순서가 남는다.
+  episodes.sort((a, b) => a.episodeNo - b.episodeNo);
 
   const nameJa = seriesNameJa(def.note);
   return {
     ok: true,
-    series: {
-      key,
-      name: def.name,
-      ...(nameJa === undefined ? {} : { nameJa }),
-      episodes: found.map(({ episode }) => episode),
-    },
+    series: { key, name: def.name, ...(nameJa === undefined ? {} : { nameJa }), episodes },
   };
 }
 
-/** 파일을 다시 적재한 뒤(정의 줄과 행이 같은 시점) 그 시리즈의 컨텍스트를 만든다. */
+/** 파일을 한 번 읽어 그 시리즈의 컨텍스트를 만든다. 적재하지 않는다(위 머리 주석). */
 export async function getSeriesContext(
   deps: { storage: Storage; prisma: PrismaClient },
   seriesKey: string,
 ): Promise<SeriesContextResult> {
-  await importQueueFromFile(deps);
-  const parsed = parseQueue(await deps.storage.readQueueFile());
+  const queue = parseQueue(await deps.storage.readQueueFile());
   const rows = await deps.prisma.queueItem.findMany({
-    where: { seriesKey },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      order: true,
-      episodeNo: true,
-      missingSince: true,
-      holdReason: true,
-    },
+    select: { id: true, title: true, status: true },
+    orderBy: { createdAt: 'asc' },
   });
-  return buildSeriesContext(seriesKey, parsed.seriesDefs, rows);
+  return buildSeriesContext(seriesKey, queue, rows);
 }
