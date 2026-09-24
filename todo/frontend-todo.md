@@ -42,6 +42,7 @@
 - BW6 — TopBar 워커 생존 점
 - BE12 — 큐 행 ⋮ "근거 편집" Dialog + 실행 Dialog(BM6) 근거 목록·0건 경고 (decisions/evidence-collection.md, 선행 BE7·UM1)
 - BE13 — 실행 상세 타임라인 6줄: 근거 수집·근거 검증 줄 펼침 표시 + 좌 목록·홈 "지금 할 일" "근거 없음 n" (선행 B2c·BE10)
+- BX5 — 큐 행 시리즈 Badge+Tooltip(`A-1` · 시리즈명 N/M편), 후보 탭 정의 줄 그룹 헤더, `(기존 글)` 실행 비활성, 실행 상세 시리즈 편 정보 (decisions/series.md, 선행 BX2)
 - (Phase 2) /settings/repos — 리포 행(상태·분석 글 n·재인덱싱)·폴더 추가·진행률
 
 ## Phase P — galley-ui 0.1.0 npm 배포 (2026-09-15 추가 — 상세는 mvp-todo Phase P)
