@@ -116,9 +116,9 @@ export function disposeMissing(item: { runs: { status: string }[] }): MissingDis
   return item.runs.length > 0 ? 'await-confirm' : 'hold';
 }
 
-/** 정규화 제목 → 아직 매칭되지 않은 기존 항목들(먼저 만든 것부터). */
-function indexByTitle(items: readonly ExistingItem[]): Map<string, ExistingItem[]> {
-  const index = new Map<string, ExistingItem[]>();
+/** 정규화 제목 → 아직 매칭되지 않은 기존 항목들(넘긴 순서 그대로 — 호출자가 생성 순으로 넘긴다). */
+export function indexByTitle<T extends { title: string }>(items: readonly T[]): Map<string, T[]> {
+  const index = new Map<string, T[]>();
   for (const item of items) {
     const key = normalizeTopicTitle(item.title);
     const bucket = index.get(key);
@@ -133,10 +133,10 @@ function indexByTitle(items: readonly ExistingItem[]): Map<string, ExistingItem[
  * (파일에 실제로 그런 경우가 있다) **같은 섹션에 있던 항목을 먼저** 고른다 —
  * 생성 순서로만 고르면 대기/후보의 id가 서로 뒤바뀌어 실행 이력이 엉뚱한 줄에 붙는다.
  */
-function takeMatch(
-  bucket: ExistingItem[] | undefined,
+export function takeMatch<T extends { status: string }>(
+  bucket: T[] | undefined,
   status: QueueStatus,
-): ExistingItem | undefined {
+): T | undefined {
   if (bucket === undefined || bucket.length === 0) return undefined;
   const sameSection = bucket.findIndex((item) => item.status === status);
   const at = sameSection === -1 ? 0 : sameSection;
