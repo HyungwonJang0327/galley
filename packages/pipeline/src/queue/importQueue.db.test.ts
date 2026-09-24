@@ -314,6 +314,20 @@ describe('importQueueFromFile', () => {
     expect(after.get('B')).toBe(before.get('B'));
   });
 
+  test('태그 줄도 같으면 updatedAt이 그대로고, 편 번호만 바뀌면 갱신된다', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['[A-1] 첫 편', '[A-2] 둘째 편']), prisma });
+    const before = new Map(
+      (await prisma.queueItem.findMany()).map((i) => [i.title, i.updatedAt.getTime()] as const),
+    );
+    await new Promise((r) => setTimeout(r, 5));
+    await importQueueFromFile({ storage: WAITING_ONLY(['[A-1] 첫 편', '[A-3] 둘째 편']), prisma });
+    const after = new Map(
+      (await prisma.queueItem.findMany()).map((i) => [i.title, i.updatedAt.getTime()] as const),
+    );
+    expect(after.get('첫 편')).toBe(before.get('첫 편'));
+    expect(after.get('둘째 편')!).toBeGreaterThan(before.get('둘째 편')!);
+  });
+
   test('category·completedOn을 DB에 보존한다', async () => {
     const storage = fakeStorage(
       '## 대기\n\n## 후보\n\n### 카테고리1\n\n- 후보글\n\n## 보류\n\n## 완료\n\n- 2026-09-01 완료글\n',

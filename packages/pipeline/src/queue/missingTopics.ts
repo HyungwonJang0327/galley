@@ -49,7 +49,10 @@ export type MissingTopicFailure =
 
 export type MissingTopicResult = { ok: true } | { ok: false; code: MissingTopicFailure };
 
-/** 되살릴 줄 — 제목 원문에 시리즈 태그를 되붙인다(둘 다 있을 때만). */
+/**
+ * 되살릴 줄 — 제목 원문에 시리즈 태그를 되붙인다. 키·편 번호가 **둘 다 있을 때만**(적재는 늘 같이 채운다 — 하나만
+ * 있으면 손으로 고친 DB라 태그 없이 되살린다). 되붙인 편 번호가 이미 다른 줄에 쓰였어도 경고하지 않는다(알려진 한계).
+ */
 function restoredTopic(item: {
   title: string;
   seriesKey: string | null;
