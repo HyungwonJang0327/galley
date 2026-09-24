@@ -52,14 +52,24 @@ export function moveTopic(
   const sections = { ...queue.sections };
   sections[from] = source.filter((_, i) => i !== index);
   // 카테고리는 후보 섹션의 ### 소제목이라 섹션을 옮기면 유지할 수 없다(파일 형식).
-  const moved = { title: topic.title };
+  // 시리즈 태그는 줄이 들고 다닌다(decisions/series.md).
+  const moved = topic.series
+    ? { title: topic.title, series: topic.series }
+    : { title: topic.title };
   const target = [...sections[to]];
-  const at = to === '후보' ? target.findIndex((item) => item.category !== undefined) : -1;
-  if (at === -1) target.push(moved);
-  else target.splice(at, 0, moved);
+  const found = to === '후보' ? target.findIndex((item) => item.category !== undefined) : -1;
+  const at = found === -1 ? target.length : found;
+  target.splice(at, 0, moved);
   sections[to] = target;
 
-  return { ok: true, queue: { preamble: queue.preamble, sections } };
+  // 정의 줄은 후보 위치에 묶여 있다 — 후보에서 빠지거나 끼워진 만큼 뒤쪽 정의 줄의 위치를 민다.
+  const seriesDefs = queue.seriesDefs.map((def) => {
+    if (from === '후보' && def.position > index) return { ...def, position: def.position - 1 };
+    if (to === '후보' && def.position >= at) return { ...def, position: def.position + 1 };
+    return def;
+  });
+
+  return { ok: true, queue: { preamble: queue.preamble, sections, seriesDefs } };
 }
 
 /**

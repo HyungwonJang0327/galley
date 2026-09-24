@@ -111,6 +111,21 @@ describe('importQueueFromFile', () => {
     expect(items[0]?.title).toBe('무한 스크롤 (spacehome, react-router)');
   });
 
+  test('태그째 적재된 옛 행은 태그 뗀 새 줄에 매칭돼 id가 유지된다(제목만 갱신)', async () => {
+    // BX1 전에는 파서가 태그를 떼지 않아 제목 컬럼에 `[A-1] …`이 들어가 있다.
+    const legacy = await prisma.queueItem.create({
+      data: { title: '[A-1] 첫 편 (메모)', status: '대기', order: 0 },
+    });
+    await addRun(legacy.id, RUN_STATUS.pendingApproval);
+
+    await importQueueFromFile({ storage: WAITING_ONLY(['[A-1] 첫 편 (메모)']), prisma });
+    const items = await prisma.queueItem.findMany();
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.id).toBe(legacy.id);
+    expect(items[0]?.title).toBe('첫 편 (메모)');
+  });
+
   test('같은 제목이 두 섹션에 있어도 각자 자기 섹션 항목과 짝지어진다', async () => {
     // 파일에 실제로 있는 경우다(대기와 후보에 같은 주제). 생성 순서로만 고르면 id가 뒤바뀐다.
     const both = fakeStorage(

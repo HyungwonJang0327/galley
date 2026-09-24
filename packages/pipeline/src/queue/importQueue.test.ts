@@ -6,6 +6,7 @@ describe('parsedQueueToRows', () => {
   test('섹션별 status와 0기반 order를 매기고 category·completedOn을 보존한다', () => {
     const parsed: ParsedQueue = {
       preamble: '',
+      seriesDefs: [],
       sections: {
         대기: [{ title: 'A' }, { title: 'B' }],
         후보: [{ title: 'C', category: '카테고리1' }],
@@ -40,6 +41,7 @@ describe('parsedQueueToRows', () => {
   test('괄호 힌트를 리포·키워드·기간 컬럼으로 뽑되 제목은 원문 그대로 둔다', () => {
     const parsed: ParsedQueue = {
       preamble: '',
+      seriesDefs: [],
       sections: {
         대기: [{ title: '벤더 정산 (Vendor Manager, react-query, 2024.03)' }],
         후보: [],
@@ -65,6 +67,7 @@ describe('parsedQueueToRows', () => {
   test('빈 큐는 빈 배열을 낸다', () => {
     const parsed: ParsedQueue = {
       preamble: '',
+      seriesDefs: [],
       sections: { 대기: [], 후보: [], 보류: [], 완료: [] },
     };
     expect(parsedQueueToRows(parsed)).toEqual([]);
