@@ -7,6 +7,18 @@ import {
 } from './topicHints.ts';
 
 describe('parseTopicHints', () => {
+  test('(기존 글) 메모는 키워드로 세지 않는다(이미 발행된 시리즈 편 표시)', () => {
+    expect(parseTopicHints('(기존 글) DB 세션 다시 보기 (linklet)')).toEqual({
+      terms: ['linklet'],
+      period: null,
+    });
+    expect(parseTopicHints('세션 (기존  글, 2025.11)')).toEqual({ terms: [], period: '2025-11' });
+  });
+
+  test('기존 글이 다른 항의 일부면 그대로 둔다', () => {
+    expect(parseTopicHints('정리 (기존 글 리라이트)').terms).toEqual(['기존 글 리라이트']);
+  });
+
   test('결정의 네 형식', () => {
     expect(parseTopicHints('무한 스크롤 (spacehome, react-router)')).toEqual({
       terms: ['spacehome', 'react-router'],

@@ -30,6 +30,12 @@ const PERIOD = new RegExp(
   `^((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?(?:\\s*[~\\-–]\\s*((?:19|20)\\d{2})(?:[.\\-](0?[1-9]|1[0-2]))?)?$`,
 );
 
+/**
+ * 힌트가 아닌 표시 메모 — 키워드로 세지 않는다. `(기존 글)`은 이미 발행된 시리즈 편 표시다(decisions/series.md).
+ * 비교는 공백 정리·NFC 뒤 원문 그대로.
+ */
+const NON_HINT_TERMS: ReadonlySet<string> = new Set(['기존 글']);
+
 export const isPeriodHint = (term: string): boolean => PERIOD.test(term.trim());
 
 /**
@@ -52,7 +58,7 @@ export function parseTopicHints(title: string): RawTopicHints {
   for (const m of title.normalize('NFC').matchAll(GROUPS)) {
     for (const raw of (m[1] ?? '').split(SEPARATORS)) {
       const term = raw.replace(/\s+/g, ' ').trim();
-      if (term === '') continue;
+      if (term === '' || NON_HINT_TERMS.has(term)) continue;
       const normalized = normalizePeriodHint(term);
       if (normalized !== undefined) {
         if (period === null) period = normalized;
