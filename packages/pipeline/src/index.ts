@@ -2,7 +2,13 @@
 // 골격만. 구현은 Phase 1-B (핵심 모듈 a·b는 사용자 직접 작성 — decisions/core-modules.md).
 export { prisma } from './db.ts';
 export { parseQueue, serializeQueue } from './queue/queueFile.ts';
-export type { QueueStatus, QueueTopic, ParsedQueue } from './queue/queueFile.ts';
+export type {
+  QueueStatus,
+  QueueTopic,
+  ParsedQueue,
+  SeriesTag,
+  SeriesDef,
+} from './queue/queueFile.ts';
 export {
   parsedQueueToRows,
   importQueueFromFile,
@@ -10,7 +16,15 @@ export {
   HOLD_REASON_REMOVED,
 } from './queue/importQueue.ts';
 export type { QueueItemRow, MissingDisposition } from './queue/importQueue.ts';
-export { normalizeTopicTitle, stripTopicHints } from './queue/normalizeTitle.ts';
+export { normalizeTopicTitle, stripTopicHints, trailingUrl } from './queue/normalizeTitle.ts';
+export { getSeriesContext, buildSeriesContext, seriesNameJa } from './queue/seriesContext.ts';
+export type {
+  SeriesContext,
+  SeriesEpisode,
+  SeriesEpisodeRow,
+  SeriesContextFailure,
+  SeriesContextResult,
+} from './queue/seriesContext.ts';
 export {
   parseTopicHints,
   resolveTopicHints,

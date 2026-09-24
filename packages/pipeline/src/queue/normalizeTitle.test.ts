@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeTopicTitle, stripTopicHints } from './normalizeTitle.ts';
+import { normalizeTopicTitle, stripTopicHints, trailingUrl } from './normalizeTitle.ts';
 
 describe('normalizeTopicTitle', () => {
   it('괄호 힌트를 뺀 제목 본문만 남긴다', () => {
@@ -75,5 +75,14 @@ describe('stripTopicHints', () => {
   it('시리즈 태그와 줄 끝 URL도 뗀다', () => {
     expect(stripTopicHints('[A-1] 스냅과 아티클 (후보의 항목을 1편으로)')).toBe('스냅과 아티클');
     expect(stripTopicHints('[B-6] (기존 글) DB 세션 https://velog.io/@x/y')).toBe('DB 세션');
+  });
+});
+
+describe('trailingUrl', () => {
+  it('괄호 밖 줄 끝 URL만 읽는다', () => {
+    expect(trailingUrl('편 (posts/a) https://velog.io/@x/a')).toBe('https://velog.io/@x/a');
+    expect(trailingUrl('편 (posts/a) https://velog.io/@x/a\t ')).toBe('https://velog.io/@x/a');
+    expect(trailingUrl('https://example.com 파싱하기')).toBeUndefined();
+    expect(trailingUrl('편 (https://velog.io/@x/a)')).toBeUndefined();
   });
 });
