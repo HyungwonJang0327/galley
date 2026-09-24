@@ -111,6 +111,25 @@ describe('listMissingTopics', () => {
 });
 
 describe('restoreMissingTopicToHold', () => {
+  test('되살려도 후보의 시리즈 정의 줄은 남는다', async () => {
+    const withSeries = (waiting: string[]) =>
+      `## 대기\n\n${waiting.map((t) => `- ${t}`).join('\n')}\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-1] 첫 편\n\n## 보류\n\n## 완료\n`;
+    const storage = memoryStorage(withSeries(['지울 주제']));
+    await importQueueFromFile({ storage, prisma });
+    const item = await prisma.queueItem.findFirstOrThrow({ where: { title: '지울 주제' } });
+    await prisma.run.create({
+      data: { topicId: item.id, topicSlug: 'slug', topicTitle: item.title, modelId: 'mock' },
+    });
+    storage.content = withSeries([]);
+    await importQueueFromFile({ storage, prisma });
+
+    expect(await restoreMissingTopicToHold({ storage, prisma }, item.id)).toEqual({ ok: true });
+    expect(storage.content).toContain(
+      '### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-1] 첫 편',
+    );
+    expect(storage.content).toContain('## 보류\n\n- 지울 주제');
+  });
+
   test('줄 원문 그대로 보류 섹션 끝에 되살린다', async () => {
     const { storage, id } = await makePending('무한 스크롤 (spacehome, react-router)');
 
