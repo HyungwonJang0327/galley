@@ -328,23 +328,39 @@ describe('importQueueFromFile', () => {
 });
 
 describe('getSeriesContext', () => {
-  test('파일을 다시 적재한 뒤 정의 줄 이름과 DB 편을 합친다', async () => {
+  const SERIES_FILE =
+    '## 대기\n\n- [A-2] 둘째 편\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-3] 셋째 편\n\n## 보류\n\n## 완료\n\n- 2026-09-20 [A-1] 첫 편 (posts/first) https://velog.io/@x/first\n';
+
+  test('적재하지 않고 파일 편 줄에 DB id를 붙인다', async () => {
+    await importQueueFromFile({ storage: fakeStorage(SERIES_FILE), prisma });
+    const before = await prisma.queueItem.findMany({ orderBy: { id: 'asc' } });
+    // 적재 뒤 파일에 편이 하나 늘었다 — 컨텍스트는 파일을 따르되 DB는 건드리지 않는다.
     const storage = fakeStorage(
-      '## 대기\n\n- [A-2] 둘째 편\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-3] 셋째 편\n\n## 보류\n\n## 완료\n\n- 2026-09-20 [A-1] 첫 편 (posts/first) https://velog.io/@x/first\n',
+      SERIES_FILE.replace('- [A-3] 셋째 편', '- [A-3] 셋째 편\n- [A-4] 새 편'),
     );
 
     const result = await getSeriesContext({ storage, prisma }, 'A');
 
+    expect(await prisma.queueItem.findMany({ orderBy: { id: 'asc' } })).toEqual(before);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.series.name).toBe('앱 만들기');
-    expect(result.series.nameJa).toBe('アプリ');
+    expect(result.series).toMatchObject({ name: '앱 만들기', nameJa: 'アプリ' });
     expect(result.series.episodes.map((e) => [e.episodeNo, e.status, e.slug, e.velogUrl])).toEqual([
       [1, '완료', 'first', 'https://velog.io/@x/first'],
       [2, '대기', undefined, undefined],
       [3, '후보', undefined, undefined],
+      [4, '후보', undefined, undefined],
     ]);
-    const first = await prisma.queueItem.findFirstOrThrow({ where: { episodeNo: 1 } });
-    expect(result.series.episodes[0]?.topicId).toBe(first.id);
+    const first = before.find((i) => i.episodeNo === 1);
+    expect(result.series.episodes[0]?.topicId).toBe(first?.id);
+    expect(result.series.episodes[3]?.topicId).toBeUndefined();
+  });
+
+  test('태그는 있는데 정의 줄이 없으면 SERIES_NOT_DEFINED', async () => {
+    const result = await getSeriesContext(
+      { storage: WAITING_ONLY(['[C-1] 정의 없는 편']), prisma },
+      'C',
+    );
+    expect(result).toEqual({ ok: false, code: 'SERIES_NOT_DEFINED' });
   });
 });

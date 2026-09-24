@@ -21,7 +21,7 @@ export { getSeriesContext, buildSeriesContext, seriesNameJa } from './queue/seri
 export type {
   SeriesContext,
   SeriesEpisode,
-  SeriesEpisodeRow,
+  SeriesTopicRow,
   SeriesContextFailure,
   SeriesContextResult,
 } from './queue/seriesContext.ts';
