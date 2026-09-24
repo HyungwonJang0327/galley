@@ -2,6 +2,7 @@
 // **본문은 바꾸지 않고, unsupported가 있어도 단계는 성공**한다(표시 조건 — decisions/evidence-collection.md "근거 검증").
 // 숫자·경로·식별자는 정규식+문자열 대조(비용 0), "~다." 서술은 모델이 번들만 보고 판정한다(서술이 없으면 모델을 부르지 않는다).
 // 판정 출력이 깨지거나 잘려도 실패가 아니다 — 서술을 전부 uncertain으로 두고 보고서 `judge`에 남긴다.
+// 모델 사유(`note`)는 근거 조각 인용을 걸러낸 뒤에만 보고서에 싣는다(보고서는 posts로 복사된다).
 // 본문은 ArtifactStore(`sources.velog ?? runId`), 번들은 EvidenceStore(`sources.evidence ?? runId`)에서 읽는다.
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
@@ -17,7 +18,9 @@ import {
   type ClaimStatus,
   type VerificationClaim,
   type VerificationReport,
+  significant,
 } from '../evidence/verification.ts';
+import type { Clock } from '../worker/WorkerDeps.ts';
 import { VERIFY_LIMITS, type VerifyLimits } from '../evidence/verifyLimits.ts';
 import { extractJson, isRecord } from '../index/analysisText.ts';
 import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
@@ -33,6 +36,8 @@ export interface VerifyStepDeps {
   limits?: VerifyLimits;
   /** 판정 프롬프트의 근거 조각 총 글자 상한(본문 단계와 같은 값). */
   writingLimits?: WritingLimits;
+  /** `verifiedAt`의 시계 — 워커가 주입(근거 수집과 같은 관행). 없으면 시스템 시계. */
+  clock?: Clock;
 }
 
 /** 산출물 이름 — posts/<슬러그>/verification.json(B3a). */
@@ -44,8 +49,41 @@ const JUDGE_SYSTEM = `당신은 기술 블로그 초안의 문장이 "근거 묶
   - supported: 문장의 사실(수치·시점·동작·결정·이유·사건)이 근거에 있다. 이름이 일반 이름으로 바뀐 것(예: 경로·식별자·회사명 토큰)은 사실이 같으면 supported로 봅니다.
   - unsupported: 근거와 어긋나거나, 구체적 사실(수치·시점·사건·이유)을 주장하는데 근거에 그 사실이 없다.
   - uncertain: 의견·소감·일반론이거나, 근거만으로는 참·거짓을 가릴 수 없다.
+- reason은 한 줄 사유입니다. **근거 조각의 코드·경로·note를 인용하지 말고** "조각 2에 있음"처럼 조각 번호로 가리킵니다(사유는 공개 파일에 실립니다).
 - 출력은 JSON 객체 하나뿐입니다: {"judgments":[{"id":1,"status":"supported","reason":"한 줄 사유"}, ...]}. 모든 id를 빠짐없이 포함하고, 앞뒤에 설명을 붙이지 않습니다.
 `;
+
+/** 사유 최대 길이 — 코드 한 줄이 통째로 들어갈 여지를 줄인다. */
+const NOTE_MAX_CHARS = 120;
+
+/**
+ * 모델 사유 검열 — 보고서는 posts로 복사되므로 근거 조각 텍스트가 실리면 안 된다(CLAUDE.md §5). 백틱 스팬을 떼고 길이를 자른 뒤,
+ * 조각의 유의미한 줄(공백 제외 `min`자 이상)이나 note가 그대로 들어 있으면 사유 전체를 버린다(undefined). 프롬프트는 강제가 아니라 코드가 막는다.
+ */
+export function sanitizeNote(
+  note: string,
+  bundle: EvidenceBundle,
+  minLineChars: number,
+): string | undefined {
+  const cleaned = note
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, NOTE_MAX_CHARS);
+  if (cleaned === '') return undefined;
+  const flat = cleaned.replace(/\s/g, '');
+  for (const item of bundle.items) {
+    const candidates = [
+      ...item.snippet.split(/\r?\n/),
+      ...(item.note === undefined ? [] : [item.note]),
+    ];
+    for (const raw of candidates) {
+      const line = significant(raw, minLineChars);
+      if (line !== undefined && flat.includes(line.replace(/\s/g, ''))) return undefined;
+    }
+  }
+  return cleaned;
+}
 
 /** 판정 프롬프트 — 테스트·미리보기용으로 공개. 근거 묶음(조각·요약) + 번호 붙은 서술 문장. */
 export function buildJudgePrompt(
@@ -72,23 +110,24 @@ export function buildJudgePrompt(
 
 const STATUSES: readonly ClaimStatus[] = ['supported', 'unsupported', 'uncertain'];
 
-/** 모델 출력 → id별 판정. 형식이 어긋나면 undefined(호출자가 전부 uncertain으로 둔다). */
+/** 모델 출력 → id별 판정(같은 id가 두 번 오면 첫 것). 형식이 어긋나면 undefined(호출자가 전부 uncertain으로 둔다). */
 export function parseJudgments(
   text: string,
-): Map<number, { status: ClaimStatus; reason?: string }> | undefined {
+): Map<number, { status: ClaimStatus; note?: string }> | undefined {
   const json = extractJson(text);
   if (!isRecord(json) || !Array.isArray(json['judgments'])) return undefined;
-  const out = new Map<number, { status: ClaimStatus; reason?: string }>();
+  const out = new Map<number, { status: ClaimStatus; note?: string }>();
   for (const j of json['judgments']) {
     if (!isRecord(j)) continue;
     const id = j['id'];
     const status = j['status'];
     if (!Number.isInteger(id) || typeof status !== 'string') continue;
     if (!(STATUSES as readonly string[]).includes(status)) continue;
-    const reason = typeof j['reason'] === 'string' ? j['reason'].trim().slice(0, 200) : undefined;
+    if (out.has(id as number)) continue;
+    const note = typeof j['reason'] === 'string' ? j['reason'].trim() : undefined;
     out.set(id as number, {
       status: status as ClaimStatus,
-      ...(reason !== undefined && reason !== '' ? { reason } : {}),
+      ...(note !== undefined && note !== '' ? { note } : {}),
     });
   }
   return out;
@@ -97,6 +136,7 @@ export function parseJudgments(
 export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
   const limits = deps.limits ?? VERIFY_LIMITS;
   const evidenceChars = (deps.writingLimits ?? WRITING_LIMITS).evidenceChars;
+  const clock = deps.clock ?? { now: () => new Date() };
   return {
     async run(ctx: StepContext): Promise<StepResult> {
       if (ctx.step !== 'verify')
@@ -136,17 +176,23 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
         );
       const read = await deps.store.read(ctx.topic.slug, evidenceRun);
       if (!read.ok)
-        throw new StepFailure(
-          read.code === 'EVIDENCE_BUNDLE_MISSING'
-            ? 'VERIFY_EVIDENCE_MISSING'
-            : 'VERIFY_EVIDENCE_INVALID',
-          read.code === 'EVIDENCE_BUNDLE_MISSING'
-            ? '근거 묶음이 없습니다. 근거 수집 단계부터 다시 실행하세요.'
-            : read.code === 'EVIDENCE_BUNDLE_UNREADABLE'
-              ? '근거 묶음을 읽지 못했습니다(DATA_DIR 권한을 확인하세요).'
-              : '근거 묶음 형식이 깨졌습니다. 근거 수집 단계부터 다시 실행하세요.',
-          false,
-        );
+        throw read.code === 'EVIDENCE_BUNDLE_MISSING'
+          ? new StepFailure(
+              'VERIFY_EVIDENCE_MISSING',
+              '근거 묶음이 없습니다. 근거 수집 단계부터 다시 실행하세요.',
+              false,
+            )
+          : read.code === 'EVIDENCE_BUNDLE_UNREADABLE'
+            ? new StepFailure(
+                'VERIFY_EVIDENCE_UNREADABLE',
+                '근거 묶음을 읽지 못했습니다(DATA_DIR 권한을 확인하세요).',
+                false,
+              )
+            : new StepFailure(
+                'VERIFY_EVIDENCE_INVALID',
+                '근거 묶음 형식이 깨졌습니다. 근거 수집 단계부터 다시 실행하세요.',
+                false,
+              );
       const bundle = read.bundle;
 
       const lines = splitBodyLines(body.text);
@@ -181,15 +227,25 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
           model: adapter.id,
           statements: head.length,
         };
+        const failedReason = judge.status === 'truncated' ? 'judge-truncated' : 'judge-unparsed';
         judged = statements.map((s, i) => {
           if (i >= head.length) return { ...s, reason: 'not-judged' };
           const v = verdicts?.get(i + 1);
           if (v === undefined)
-            return { ...s, status: 'uncertain', reason: `not-judged (${judge.status})` };
+            return {
+              ...s,
+              status: 'uncertain',
+              reason: verdicts === undefined ? failedReason : 'judge-missing',
+            };
+          const note =
+            v.note === undefined
+              ? undefined
+              : sanitizeNote(v.note, bundle, limits.cleanRoomMinLineChars);
           return {
             ...s,
             status: v.status,
-            ...(v.reason !== undefined ? { reason: v.reason } : {}),
+            reason: 'judged',
+            ...(note !== undefined ? { note } : {}),
           };
         });
       }
@@ -199,7 +255,7 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
         version: 1,
         runId: ctx.runId,
         topicSlug: ctx.topic.slug,
-        verifiedAt: new Date().toISOString(),
+        verifiedAt: clock.now().toISOString(),
         sources: { velog: velogRun, evidence: evidenceRun },
         claims,
         counts: countClaims(claims),

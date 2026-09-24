@@ -1,12 +1,13 @@
 // 모델은 스크립트 어댑터(JSON 판정), 본문은 ArtifactStore, 번들은 EvidenceStore — 둘 다 임시 DATA_DIR. DB 없음.
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   buildJudgePrompt,
   createVerifyStepRunner,
   parseJudgments,
+  sanitizeNote,
   VERIFICATION_ARTIFACT,
 } from './verifyStep.ts';
 import { VELOG_ARTIFACT } from './velogStep.ts';
@@ -86,10 +87,12 @@ const adapters = (adapter = createScriptedAdapter(() => JUDGE_JSON)) => ({
   adapter,
   get: (id: string) => (id === adapter.id ? adapter : undefined),
 });
+const FIXED_NOW = new Date('2026-09-24T01:02:03.000Z');
 const deps = (over: Partial<Parameters<typeof createVerifyStepRunner>[0]> = {}) => ({
   store,
   artifacts,
   adapters: adapters(),
+  clock: { now: () => FIXED_NOW },
   ...over,
 });
 const run = (
@@ -114,7 +117,13 @@ describe('buildJudgePrompt · parseJudgments', () => {
     const parsed = parseJudgments(
       '설명\n```json\n{"judgments":[{"id":1,"status":"supported","reason":" r "},{"id":2,"status":"maybe"},{"id":"3","status":"uncertain"},{"status":"supported"}]}\n```',
     );
-    expect([...parsed!.entries()]).toEqual([[1, { status: 'supported', reason: 'r' }]]);
+    expect([...parsed!.entries()]).toEqual([[1, { status: 'supported', note: 'r' }]]);
+    // 같은 id가 두 번 오면 첫 것, id 1.0은 정수
+    expect([
+      ...parseJudgments(
+        '{"judgments":[{"id":1.0,"status":"supported"},{"id":1,"status":"unsupported"}]}',
+      )!.entries(),
+    ]).toEqual([[1, { status: 'supported' }]]);
     expect(parseJudgments('{"nope":1}')).toBeUndefined();
     expect(parseJudgments('not json')).toBeUndefined();
   });
@@ -138,12 +147,13 @@ describe('createVerifyStepRunner', () => {
       lineRange: { start: 1, end: 3 },
     });
     const statements = report.claims.filter((c) => c.kind === 'statement');
-    expect(statements.map((c) => [c.text, c.status, c.reason])).toEqual([
-      ['스토어 50개에서 목록이 멈췄다.', 'supported', 'note에 50개'],
-      ['페이지 크기는 20으로 두었다.', 'supported', 'PAGE_SIZE 20'],
-      ['실패율은 12%였다.', 'unsupported', '실패율 근거 없음'],
-      ['빠른 결정이었다고 생각한다.', 'uncertain', '소감'],
+    expect(statements.map((c) => [c.text, c.status, c.reason, c.note])).toEqual([
+      ['스토어 50개에서 목록이 멈췄다.', 'supported', 'judged', 'note에 50개'],
+      ['페이지 크기는 20으로 두었다.', 'supported', 'judged', 'PAGE_SIZE 20'],
+      ['실패율은 12%였다.', 'unsupported', 'judged', '실패율 근거 없음'],
+      ['빠른 결정이었다고 생각한다.', 'uncertain', 'judged', '소감'],
     ]);
+    expect(report.verifiedAt).toBe('2026-09-24T01:02:03.000Z'); // 주입한 시계
     expect(report.claims.map((c) => c.line)).toEqual(
       [...report.claims.map((c) => c.line)].sort((x, y) => x - y),
     );
@@ -193,7 +203,9 @@ describe('createVerifyStepRunner', () => {
     expect(
       b.claims
         .filter((c) => c.kind === 'statement')
-        .every((c) => c.status === 'uncertain' && c.reason === 'not-judged (unparsed)'),
+        .every(
+          (c) => c.status === 'uncertain' && c.reason === 'judge-unparsed' && c.note === undefined,
+        ),
     ).toBe(true);
     expect(b.counts.unsupported).toBe(1); // 숫자 12%만
     const truncating = {
@@ -210,7 +222,10 @@ describe('createVerifyStepRunner', () => {
       await run({ adapters: { get: () => truncating } }, ctx({ modelId: truncating.id })),
     );
     expect(t.judge).toMatchObject({ status: 'truncated' });
-    // 일부 id만 돌아오면 나머지는 uncertain(not-judged (judged))
+    expect(
+      t.claims.filter((c) => c.kind === 'statement').every((c) => c.reason === 'judge-truncated'),
+    ).toBe(true);
+    // 일부 id만 돌아오면 나머지는 uncertain(judge-missing)
     const partial = reportOf(
       await run({
         adapters: adapters(
@@ -220,7 +235,7 @@ describe('createVerifyStepRunner', () => {
     );
     const st = partial.claims.filter((c) => c.kind === 'statement');
     expect(st[2]).toMatchObject({ status: 'unsupported' });
-    expect(st[0]).toMatchObject({ status: 'uncertain', reason: 'not-judged (judged)' });
+    expect(st[0]).toMatchObject({ status: 'uncertain', reason: 'judge-missing' });
   });
 
   test('maxStatements를 넘는 문장은 모델에 보내지 않고 uncertain(not-judged)', async () => {
@@ -274,6 +289,28 @@ describe('createVerifyStepRunner', () => {
     ]);
   });
 
+  test('H1: 모델 사유가 근거 조각 줄·note를 인용하면 사유를 버리고, 백틱 스팬은 떼고 120자로 자른다', async () => {
+    const quoting = createScriptedAdapter(
+      () =>
+        '{"judgments":[' +
+        '{"id":1,"status":"supported","reason":"코드에 const io = new IntersectionObserver(loadNextPage); 있음"},' +
+        '{"id":2,"status":"supported","reason":"`export const PAGE_SIZE = 20;` 참고"},' +
+        '{"id":3,"status":"unsupported","reason":"note는 스토어 50개 기준 뿐"},' +
+        `{"id":4,"status":"uncertain","reason":"${'긴 사유 '.repeat(60)}"}]}`,
+    );
+    const r = await run({ adapters: adapters(quoting) });
+    const st = reportOf(r).claims.filter((c) => c.kind === 'statement');
+    expect(st[0]!.note).toBeUndefined(); // 조각 줄 그대로 → 폐기
+    expect(st[1]!.note).toBe('참고'); // 백틱 스팬 제거 후 남은 것
+    expect(st[2]!.note).toBeUndefined(); // note 인용 → 폐기
+    expect(st[3]!.note!.length).toBeLessThanOrEqual(120);
+    expect(st.map((c) => c.status)).toEqual(['supported', 'supported', 'unsupported', 'uncertain']); // 판정은 유지
+    expect(r.artifacts[VERIFICATION_ARTIFACT]).not.toContain('IntersectionObserver');
+    expect(r.artifacts[VERIFICATION_ARTIFACT]).not.toContain('PAGE_SIZE = 20');
+    expect(sanitizeNote('  `x`  ', BUNDLE, 8)).toBeUndefined();
+    expect(sanitizeNote('조각 1에 있음', BUNDLE, 8)).toBe('조각 1에 있음');
+  });
+
   test('실패는 StepFailure로 — 모델 없음·키 없음·본문 없음/못 읽음/빈 것·번들 없음/깨짐·저장 실패는 재시도 불가, 판정 호출 503은 재시도', async () => {
     await expect(run({}, ctx({ modelId: 'nope' }))).rejects.toMatchObject({
       code: 'VERIFY_MODEL_UNKNOWN',
@@ -284,6 +321,7 @@ describe('createVerifyStepRunner', () => {
       run({ adapters: { get: () => unavailable } }, ctx({ modelId: unavailable.id })),
     ).rejects.toMatchObject({
       code: 'VERIFY_MODEL_UNAVAILABLE',
+      retryable: false,
     });
     await expect(run({}, ctx({ runId: 'run_missing' }))).rejects.toMatchObject({
       code: 'VERIFY_BODY_MISSING',
@@ -295,6 +333,7 @@ describe('createVerifyStepRunner', () => {
     });
     await expect(run({}, ctx({ runId: 'run_empty' }))).rejects.toMatchObject({
       code: 'VERIFY_BODY_EMPTY',
+      retryable: false,
     });
     await artifacts.write(SLUG, 'run_nobundle', VELOG_ARTIFACT, BODY);
     await expect(run({}, ctx({ runId: 'run_nobundle' }))).rejects.toMatchObject({
@@ -302,11 +341,17 @@ describe('createVerifyStepRunner', () => {
       retryable: false,
     });
     await artifacts.write(SLUG, 'run_broken', VELOG_ARTIFACT, BODY);
-    await (
-      await import('node:fs/promises')
-    ).writeFile(store.pathFor(SLUG, 'run_broken'), '{ not json', 'utf8');
+    await writeFile(store.pathFor(SLUG, 'run_broken'), '{ not json', 'utf8');
     await expect(run({}, ctx({ runId: 'run_broken' }))).rejects.toMatchObject({
       code: 'VERIFY_EVIDENCE_INVALID',
+      retryable: false,
+    });
+    // 번들 자리가 디렉터리(EISDIR) → UNREADABLE
+    await artifacts.write(SLUG, 'run_bdir', VELOG_ARTIFACT, BODY);
+    await mkdir(store.pathFor(SLUG, 'run_bdir'), { recursive: true });
+    await expect(run({}, ctx({ runId: 'run_bdir' }))).rejects.toMatchObject({
+      code: 'VERIFY_EVIDENCE_UNREADABLE',
+      retryable: false,
     });
     const failing = createScriptedAdapter(() => {
       throw Object.assign(new Error('boom'), { status: 503 });
