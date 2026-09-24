@@ -9,7 +9,12 @@ const HINT_GROUPS = /[(（][^)）]*[)）]/g;
  */
 export const SERIES_TAG = /^\[([A-Z])-([1-9]\d?)\]\s+/;
 /** 완료 줄 끝의 벨로그 URL(괄호 밖, 사람이 발행 후 붙인다 — decisions/series.md 확정 사항 1). */
-const TRAILING_URL = /\s+https?:\/\/\S+\s*$/;
+const TRAILING_URL = /\s+(https?:\/\/\S+)\s*$/;
+
+/** 줄 끝 URL(괄호 밖) — 완료 줄의 벨로그 링크. 없으면 undefined. */
+export function trailingUrl(title: string): string | undefined {
+  return TRAILING_URL.exec(title.normalize('NFC'))?.[1];
+}
 
 /**
  * 표시·프롬프트용 제목: 시리즈 태그·줄 끝 URL·괄호 힌트를 뗀 원문(대소문자 유지). 힌트에는 리포 별칭이 들어가므로

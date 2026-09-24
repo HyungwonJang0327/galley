@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { HOLD_REASON_REMOVED, disposeMissing, importQueueFromFile } from './importQueue.ts';
+import { getSeriesContext } from './seriesContext.ts';
 import { RUN_STATUS } from '../run/stateMachine.ts';
 import { serializeStringArray } from '../index/schema.ts';
 import type { Storage } from '../storage/Storage.ts';
@@ -323,5 +324,27 @@ describe('importQueueFromFile', () => {
     const 완료 = await prisma.queueItem.findFirst({ where: { status: '완료' } });
     expect(후보).toMatchObject({ title: '후보글', category: '카테고리1', completedOn: null });
     expect(완료).toMatchObject({ title: '완료글', category: null, completedOn: '2026-09-01' });
+  });
+});
+
+describe('getSeriesContext', () => {
+  test('파일을 다시 적재한 뒤 정의 줄 이름과 DB 편을 합친다', async () => {
+    const storage = fakeStorage(
+      '## 대기\n\n- [A-2] 둘째 편\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-3] 셋째 편\n\n## 보류\n\n## 완료\n\n- 2026-09-20 [A-1] 첫 편 (posts/first) https://velog.io/@x/first\n',
+    );
+
+    const result = await getSeriesContext({ storage, prisma }, 'A');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.series.name).toBe('앱 만들기');
+    expect(result.series.nameJa).toBe('アプリ');
+    expect(result.series.episodes.map((e) => [e.episodeNo, e.status, e.slug, e.velogUrl])).toEqual([
+      [1, '완료', 'first', 'https://velog.io/@x/first'],
+      [2, '대기', undefined, undefined],
+      [3, '후보', undefined, undefined],
+    ]);
+    const first = await prisma.queueItem.findFirstOrThrow({ where: { episodeNo: 1 } });
+    expect(result.series.episodes[0]?.topicId).toBe(first.id);
   });
 });
