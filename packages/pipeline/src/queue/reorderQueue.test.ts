@@ -105,3 +105,33 @@ describe('reorderTopic', () => {
     });
   });
 });
+
+describe('reorderTopic — 시리즈', () => {
+  test('후보의 정의 줄을 그대로 넘긴다', () => {
+    const md = `## 대기
+
+- [A-2] 둘째 편
+- 대기 B
+
+## 후보
+
+### 시리즈
+
+시리즈 A. 앱 만들기 (메모)
+- [A-1] 첫 편
+
+## 보류
+
+## 완료
+`;
+    const q = parseQueue(md);
+    const result = reorderTopic(q, { status: '대기', from: 0, to: 1, title: '둘째 편' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.queue.seriesDefs).toEqual(q.seriesDefs);
+    expect(serializeQueue(result.queue)).toBe(
+      md.replace('- [A-2] 둘째 편\n- 대기 B', '- 대기 B\n- [A-2] 둘째 편'),
+    );
+  });
+});

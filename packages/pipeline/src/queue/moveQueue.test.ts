@@ -168,3 +168,38 @@ describe('moveTopic — 시리즈', () => {
     ]);
   });
 });
+
+describe('moveTopic — 시리즈 정의 줄 경계', () => {
+  const move = (md: string, input: Parameters<typeof moveTopic>[1]) => {
+    const result = moveTopic(parseQueue(md), input);
+    if (!result.ok) throw new Error(result.code);
+    return serializeQueue(result.queue);
+  };
+
+  test('편 없이 정의 줄만 있는 후보에 넣으면 소제목 앞에 들어간다', () => {
+    const md =
+      '## 대기\n\n- 대기 A\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱\n\n## 보류\n\n## 완료\n';
+    expect(move(md, { from: '대기', to: '후보', index: 0, title: '대기 A' })).toBe(
+      '## 대기\n\n## 후보\n\n- 대기 A\n\n### 시리즈\n\n시리즈 A. 앱\n\n## 보류\n\n## 완료\n',
+    );
+  });
+
+  test('첫 카테고리 항목이 정의 줄 뒤 다른 소제목에 있어도 정의 줄은 제 소제목에 남는다', () => {
+    const md =
+      '## 대기\n\n- 대기 A\n\n## 후보\n\n- 무카테고리\n\n### 시리즈\n\n시리즈 A. 앱\n\n### 개인\n\n- 개인 주제\n\n## 보류\n\n## 완료\n';
+    expect(move(md, { from: '대기', to: '후보', index: 0, title: '대기 A' })).toBe(
+      md
+        .replace('- 대기 A\n\n## 후보', '## 후보')
+        .replace('- 무카테고리\n', '- 무카테고리\n- 대기 A\n'),
+    );
+  });
+
+  test('후보 마지막 편을 빼도 그 정의 줄은 후보 끝에 남는다', () => {
+    const out = move(SERIES_SAMPLE, { from: '후보', to: '대기', index: 3, title: '다른 첫 편' });
+    expect(out).toContain('- [A-2] 둘째 편\n\n시리즈 B. 다른 앱\n\n## 보류');
+    expect(parseQueue(out).seriesDefs.map((d) => [d.key, d.position])).toEqual([
+      ['A', 1],
+      ['B', 3],
+    ]);
+  });
+});

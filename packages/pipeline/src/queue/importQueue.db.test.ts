@@ -126,6 +126,22 @@ describe('importQueueFromFile', () => {
     expect(items[0]?.title).toBe('첫 편 (메모)');
   });
 
+  test('완료 줄에 벨로그 URL을 나중에 붙여도 같은 항목이다', async () => {
+    const done = (tail: string) =>
+      fakeStorage(
+        `## 대기\n\n## 후보\n\n## 보류\n\n## 완료\n\n- 2026-09-23 [B-6] 끝난 편 (posts/done)${tail}\n`,
+      );
+    await importQueueFromFile({ storage: done(''), prisma });
+    const [before] = await prisma.queueItem.findMany();
+
+    await importQueueFromFile({ storage: done(' https://velog.io/@someone/done'), prisma });
+    const items = await prisma.queueItem.findMany();
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.id).toBe(before?.id);
+    expect(items[0]?.title).toBe('끝난 편 (posts/done) https://velog.io/@someone/done');
+  });
+
   test('같은 제목이 두 섹션에 있어도 각자 자기 섹션 항목과 짝지어진다', async () => {
     // 파일에 실제로 있는 경우다(대기와 후보에 같은 주제). 생성 순서로만 고르면 id가 뒤바뀐다.
     const both = fakeStorage(
