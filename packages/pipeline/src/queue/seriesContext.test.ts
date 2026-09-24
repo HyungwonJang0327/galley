@@ -35,6 +35,7 @@ describe('seriesNameJa', () => {
   test('쉼표로 나뉜 메모에서 ja: 항을 읽는다', () => {
     expect(seriesNameJa('예정, ja: デザインシステム')).toBe('デザインシステム');
     expect(seriesNameJa('JA:アプリ，2026.09')).toBe('アプリ');
+    expect(seriesNameJa('예정, ja：デザイン')).toBe('デザイン');
   });
 
   test('없거나 비었으면 undefined', () => {
@@ -131,5 +132,35 @@ describe('buildSeriesContext', () => {
     expect(
       buildSeriesContext('D', parseQueue('## 후보\n\n### 시리즈\n\n시리즈 D. 패키지\n'), []),
     ).toEqual({ ok: true, series: { key: 'D', name: '패키지', episodes: [] } });
+  });
+
+  test('발행된 편 경계 — 후보의 (기존 글) 편 URL, 메모 붙은 (기존 글), velog만, posts/ 항만', () => {
+    const q = parseQueue(`## 후보
+
+### 시리즈
+
+시리즈 A. 앱
+- [A-1] (기존 글, 2025) 옛 편 (posts/old) https://velog.io/@x/old
+- [A-2] (기존 글) 깃허브 링크 편 https://github.com/x/y
+- [A-3] 새 편 (메모) https://velog.io/@x/not-published
+
+## 완료
+
+- 2026-09-20 [A-4] 경로 편 (https://example.com/posts/abc, drafts/posts/x)
+`);
+    const result = buildSeriesContext('A', q, []);
+    expect(result.ok && result.series.episodes).toEqual([
+      {
+        episodeNo: 1,
+        title: '옛 편',
+        status: '후보',
+        slug: 'old',
+        velogUrl: 'https://velog.io/@x/old',
+        alreadyPublished: true,
+      },
+      { episodeNo: 2, title: '깃허브 링크 편', status: '후보', alreadyPublished: true },
+      { episodeNo: 3, title: '새 편', status: '후보', alreadyPublished: false },
+      { episodeNo: 4, title: '경로 편', status: '완료', alreadyPublished: false },
+    ]);
   });
 });
