@@ -142,6 +142,40 @@ describe('importQueueFromFile', () => {
     expect(items[0]?.title).toBe('끝난 편 (posts/done) https://velog.io/@someone/done');
   });
 
+  test('편 줄 태그를 seriesKey·episodeNo로 채우고, 편 번호를 바꾸면 같은 항목에서 갱신한다', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['[A-1] 첫 편', '일반 주제']), prisma });
+    const first = await prisma.queueItem.findFirstOrThrow({ where: { title: '첫 편' } });
+    expect(first).toMatchObject({ seriesKey: 'A', episodeNo: 1 });
+    expect(
+      await prisma.queueItem.findFirstOrThrow({ where: { title: '일반 주제' } }),
+    ).toMatchObject({ seriesKey: null, episodeNo: null });
+
+    await importQueueFromFile({ storage: WAITING_ONLY(['[A-2] 첫 편', '일반 주제']), prisma });
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: first.id } })).toMatchObject({
+      title: '첫 편',
+      seriesKey: 'A',
+      episodeNo: 2,
+    });
+
+    await importQueueFromFile({ storage: WAITING_ONLY(['첫 편', '일반 주제']), prisma });
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: first.id } })).toMatchObject({
+      seriesKey: null,
+      episodeNo: null,
+    });
+  });
+
+  test('파일에서 사라져 보류로 내린 편도 seriesKey·episodeNo는 남는다(복원 때 태그를 되붙인다)', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['[B-3] 셋째 편']), prisma });
+    await importQueueFromFile({ storage: WAITING_ONLY([]), prisma });
+
+    expect(await prisma.queueItem.findFirstOrThrow()).toMatchObject({
+      status: '보류',
+      holdReason: HOLD_REASON_REMOVED,
+      seriesKey: 'B',
+      episodeNo: 3,
+    });
+  });
+
   test('같은 제목이 두 섹션에 있어도 각자 자기 섹션 항목과 짝지어진다', async () => {
     // 파일에 실제로 있는 경우다(대기와 후보에 같은 주제). 생성 순서로만 고르면 id가 뒤바뀐다.
     const both = fakeStorage(

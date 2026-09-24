@@ -53,11 +53,16 @@ model QueueItem {
   category    String?
   // 완료 항목의 날짜 접두 YYYY-MM-DD(완료 항목만). 파서 QueueTopic.completedOn 보존.
   completedOn String?
+  // 편 줄 태그 `[A-1]`의 시리즈 키·편 번호(시리즈 편만). 파서 QueueTopic.series 보존 — 파일에서 재생성되는 캐시다.
+  // 시리즈명·정의 줄은 DB에 두지 않는다(decisions/series.md). 파일에서 사라진 행도 지우지 않아 복원 때 태그를 되붙인다.
+  seriesKey   String?
+  episodeNo   Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // 섹션(status)별 정렬 조회 편의를 위한 최소 인덱스.
   @@index([status, order])
+  @@index([seriesKey, episodeNo])
 }
 
 // 주제 하나에 대한 한 번의 실행. 주제는 QueueItem.id가 아니라 제목 파생 슬러그로 가리킨다
