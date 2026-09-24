@@ -4,7 +4,7 @@
 // (decisions/queue-sync-direction.md "사라진 줄 처리")
 import type { PrismaClient } from '@prisma/client';
 import { importQueueFromFile } from './importQueue.ts';
-import { parseQueue, serializeQueue } from './queueFile.ts';
+import { parseQueue, serializeQueue, type QueueTopic } from './queueFile.ts';
 import { RUN_STATUS } from '../run/stateMachine.ts';
 import type { Storage } from '../storage/Storage.ts';
 
@@ -49,12 +49,24 @@ export type MissingTopicFailure =
 
 export type MissingTopicResult = { ok: true } | { ok: false; code: MissingTopicFailure };
 
+/** 되살릴 줄 — 제목 원문에 시리즈 태그를 되붙인다(둘 다 있을 때만). */
+function restoredTopic(item: {
+  title: string;
+  seriesKey: string | null;
+  episodeNo: number | null;
+}): QueueTopic {
+  if (item.seriesKey === null || item.episodeNo === null) return { title: item.title };
+  return { title: item.title, series: { key: item.seriesKey, episode: item.episodeNo } };
+}
+
 async function findPending(prisma: PrismaClient, topicId: string) {
   const item = await prisma.queueItem.findUnique({
     where: { id: topicId },
     select: {
       id: true,
       title: true,
+      seriesKey: true,
+      episodeNo: true,
       missingSince: true,
       missingAck: true,
       runs: { select: { status: true } },
@@ -70,8 +82,8 @@ async function findPending(prisma: PrismaClient, topicId: string) {
 /**
  * "보류로 옮기기" — `주제_큐.md`의 `## 보류` 끝에 **사라지기 직전 줄 원문 그대로** 덧붙이고
  * 재적재한다. 제목에서 줄을 다시 만들지 않는다(괄호 힌트가 사라진다).
- * 단 시리즈 태그 `[A-1]`은 제목에 없으므로(파서가 뗀다) **되살리지 못한다** — `seriesKey`·`episodeNo`가 DB에
- * 들어오는 BX2에서 태그를 다시 붙인다(decisions/series.md, BX1 리뷰 M3).
+ * 시리즈 태그 `[A-1]`은 제목에 없으므로(파서가 뗀다) `seriesKey`·`episodeNo`로 다시 붙인다(decisions/series.md,
+ * BX1 리뷰 M3).
  *
  * 파일에 되살리는 이유: 쓰지 않으면 보류가 두 종류가 된다 — 사용자가 직접 옮긴 보류는 파일에,
  * 대시보드가 옮긴 보류는 DB에만. **큐 파일은 대시보드 없이도 그 자체로 읽혀야 한다.**
@@ -97,7 +109,7 @@ export async function restoreMissingTopicToHold(
   const parsed = parseQueue(await deps.storage.readQueueFile());
   const restored = {
     ...parsed,
-    sections: { ...parsed.sections, 보류: [...parsed.sections.보류, { title: item.title }] },
+    sections: { ...parsed.sections, 보류: [...parsed.sections.보류, restoredTopic(item)] },
   };
 
   await deps.storage.writeQueueFile(serializeQueue(restored));
