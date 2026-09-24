@@ -111,6 +111,19 @@ describe('listMissingTopics', () => {
 });
 
 describe('restoreMissingTopicToHold', () => {
+  test('시리즈 편은 태그를 되붙여 되살린다', async () => {
+    const { storage, id } = await makePending('[A-2] 둘째 편 (메모)');
+
+    expect(await restoreMissingTopicToHold({ storage, prisma }, id)).toEqual({ ok: true });
+    expect(storage.content).toContain('## 보류\n\n- [A-2] 둘째 편 (메모)');
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: '보류',
+      seriesKey: 'A',
+      episodeNo: 2,
+      missingSince: null,
+    });
+  });
+
   test('되살려도 후보의 시리즈 정의 줄은 남는다', async () => {
     const withSeries = (waiting: string[]) =>
       `## 대기\n\n${waiting.map((t) => `- ${t}`).join('\n')}\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱 만들기 (ja: アプリ)\n- [A-1] 첫 편\n\n## 보류\n\n## 완료\n`;
