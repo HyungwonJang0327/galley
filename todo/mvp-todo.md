@@ -186,7 +186,7 @@
   - 완료조건: **EvidenceBundle의 모든 snippet이 pointers가 가리키는 commit의 파일 내용과 일치**(테스트). posts 쪽 `evidence.json`에 `snippet` 키가 없다(테스트).
 - [ ] **BE9** pl — 근거 수집 단계 2: discovered 추가 탐색(키워드 겹침 + 기간 가중 점수, 모델 없음) + 상한 8. 커밋: `feat(run): 근거 수집에 추가 탐색 추가`
   - 완료조건: 연결에 없던 분석 글이 discovered로 들어오고 상한을 넘지 않는다.
-- [x] **BE10** (2026-09-23 렌더 추출 `144be05`·상한 `1987d66`·순수 함수 `3ef043f`·단계 `37b5c10`·배럴 `d93af0a`·decisions `f1a8316`, feat/verify-step — 경로·식별자 미발견은 uncertain, 판정 JSON 실패는 단계 실패 아님, flags는 파일이 진실) pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
+- [x] **BE10** (2026-09-23 렌더 추출 `0c2e4c6`·상한 `5712bf4`·순수 함수 `70ad500`·단계 `92232dc`·배럴 `516f01b`·decisions `b62f367`, feat/verify-step — 경로·식별자 미발견은 uncertain, 판정 JSON 실패는 단계 실패 아님, flags는 파일이 진실) pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
   - BS2 리뷰에서 넘어온 것(decisions 2026-09-23 BS2 ⑬): 일반화된 식별자·경로는 unsupported가 아니라 uncertain · 본문이 근거 조각을 N줄 이상 그대로 담으면 flag(클린룸 기계 검사) · 본문은 `ArtifactStore`에서, 번들은 `EvidenceStore`에서(`sources.*`).
   - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
 - [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
