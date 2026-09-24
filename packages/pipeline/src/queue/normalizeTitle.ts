@@ -3,8 +3,11 @@
 
 /** 괄호 힌트 묶음(반각·전각) — 매칭 키와 프롬프트용 제목이 같은 범위를 뗀다. */
 const HINT_GROUPS = /[(（][^)）]*[)）]/g;
-/** 편 줄 맨 앞의 시리즈 태그 `[A-1]` — 제목 맨 앞에만 인정(decisions/series.md). */
-export const SERIES_TAG = /^\[([A-Z])-(\d{1,2})\]\s+/;
+/**
+ * 편 줄 맨 앞의 시리즈 태그 `[A-1]` — 제목 맨 앞에만 인정(decisions/series.md). 편 번호는 1~99, 앞자리 0은 태그가
+ * 아니다(`[A-01]`을 받으면 되쓰기에서 `[A-1]`로 바뀐다).
+ */
+export const SERIES_TAG = /^\[([A-Z])-([1-9]\d?)\]\s+/;
 /** 완료 줄 끝의 벨로그 URL(괄호 밖, 사람이 발행 후 붙인다 — decisions/series.md 확정 사항 1). */
 const TRAILING_URL = /\s+https?:\/\/\S+\s*$/;
 

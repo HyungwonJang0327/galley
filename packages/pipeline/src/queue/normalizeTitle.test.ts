@@ -41,6 +41,8 @@ describe('normalizeTopicTitle', () => {
     expect(normalizeTopicTitle('[a-1] 소문자')).toBe('[a-1] 소문자');
     expect(normalizeTopicTitle('[A-100] 세 자리')).toBe('[a-100] 세 자리');
     expect(normalizeTopicTitle('[A-1]붙여쓰기')).toBe('[a-1]붙여쓰기');
+    expect(normalizeTopicTitle('[A-0] 영 편')).toBe('[a-0] 영 편');
+    expect(normalizeTopicTitle('[A-01] 앞자리 영')).toBe('[a-01] 앞자리 영');
   });
 
   it('완료 줄 끝의 URL을 뗀다 — 발행 뒤 URL을 붙여도 같은 항목이다', () => {

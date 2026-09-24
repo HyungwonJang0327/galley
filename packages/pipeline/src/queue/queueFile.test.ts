@@ -139,8 +139,15 @@ describe('시리즈 표기', () => {
   });
 
   test('맨 앞이 아닌 태그 모양은 제목의 일부다', () => {
-    const q = parseQueue('## 대기\n\n- 정리 [A-1] 메모\n- [a-1] 소문자\n');
-    expect(q.sections.대기).toEqual([{ title: '정리 [A-1] 메모' }, { title: '[a-1] 소문자' }]);
+    const md = '## 대기\n\n- 정리 [A-1] 메모\n- [a-1] 소문자\n- [A-0] 영 편\n- [A-01] 앞자리 영\n';
+    const q = parseQueue(md);
+    expect(q.sections.대기.every((t) => t.series === undefined)).toBe(true);
+    expect(q.sections.대기.map((t) => t.title)).toEqual([
+      '정리 [A-1] 메모',
+      '[a-1] 소문자',
+      '[A-0] 영 편',
+      '[A-01] 앞자리 영',
+    ]);
   });
 
   test('시리즈 소제목이 아닌 곳의 정의 줄 모양은 무시한다(현행 동작)', () => {
