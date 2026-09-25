@@ -43,6 +43,8 @@ export type {
   MissingTopicResult,
 } from './queue/missingTopics.ts';
 export { moveTopic, moveQueueTopic, MOVABLE_STATUSES } from './queue/moveQueue.ts';
+export { completeTopic, completedTitle } from './queue/completeQueue.ts';
+export type { CompleteTopicInput, CompleteTopicFailure } from './queue/completeQueue.ts';
 export { reorderTopic, reorderQueueTopic } from './queue/reorderQueue.ts';
 export type {
   ReorderQueueTopicInput,
