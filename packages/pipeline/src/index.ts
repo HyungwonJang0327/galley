@@ -253,6 +253,8 @@ export {
   ZENN_FRONTMATTER,
 } from './steps/zennStep.ts';
 export type { ZennStepDeps, ZennInput } from './steps/zennStep.ts';
+export { createStepRunner, routeStepRunner } from './steps/createStepRunner.ts';
+export type { StepRunnerDeps } from './steps/createStepRunner.ts';
 export {
   createVerifyStepRunner,
   buildJudgePrompt,
