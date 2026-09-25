@@ -27,6 +27,44 @@ afterAll(async () => {
   await rm(dbDir, { recursive: true, force: true });
 });
 
+/** 워커를 띄우고 stdout·stderr·종료 코드를 모은다. `ready`가 보이면 SIGTERM을 보낸다(기동 실패 케이스는 그냥 끝난다). */
+function spawnWorker(env: Record<string, string | undefined>, ready?: string) {
+  const merged: Record<string, string | undefined> = {
+    ...process.env,
+    DATABASE_URL: databaseUrl,
+    ...env,
+  };
+  // 실모드 케이스는 NODE_ENV를 지운다 — 테스트 러너의 값(test)이 상속되면 Mock 모드가 된다.
+  for (const key of Object.keys(env)) if (env[key] === undefined) delete merged[key];
+  const child = spawn(process.execPath, ['bin/worker.ts'], {
+    cwd: packageRoot,
+    env: merged,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stdout = '';
+  let stderr = '';
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr += chunk.toString();
+  });
+  let signalled = false;
+  child.stdout.on('data', (chunk: Buffer) => {
+    stdout += chunk.toString();
+    // 기동 로그를 본 뒤 한 번만 보낸다 — 그 전에 보내면 핸들러가 없고, 거듭 보내면 종료 경로가 아니라 신호 처리를 시험하게 된다.
+    if (!signalled && ready !== undefined && stdout.includes(ready)) {
+      signalled = true;
+      child.kill('SIGTERM');
+    }
+  });
+  return new Promise<{
+    exitCode: number | null;
+    signal: NodeJS.Signals | null;
+    stdout: string;
+    stderr: string;
+  }>((resolve) =>
+    child.on('exit', (exitCode, signal) => resolve({ exitCode, signal, stdout, stderr })),
+  );
+}
+
 describe('워커 프로세스', () => {
   test('SIGTERM을 받으면 종료 코드 0으로 끝나고 "워커 종료"를 남긴다', async () => {
     const child = spawn(process.execPath, ['bin/worker.ts'], {
@@ -82,5 +120,44 @@ describe('워커 프로세스', () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain('식별 정보 필터 설정이 깨져');
     expect(stdout).not.toContain('워커 시작');
+  });
+
+  test('실모드(NODE_ENV 없음)에서 DATA_DIR이 없으면 기동하지 않고 종료 코드 1', async () => {
+    const { exitCode, stdout, stderr } = await spawnWorker({ NODE_ENV: undefined, DATA_DIR: '' });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('DATA_DIR이 규칙에 맞지 않아');
+    expect(stderr).toContain('DATA_DIR_MISSING');
+    expect(stdout).not.toContain('워커 시작');
+  });
+
+  test('실모드에서 DATA_DIR이 BLOG_DIR 안이면 기동하지 않는다', async () => {
+    const { exitCode, stderr } = await spawnWorker({
+      NODE_ENV: undefined,
+      BLOG_DIR: dbDir,
+      DATA_DIR: join(dbDir, 'data'),
+    });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('DATA_DIR_INSIDE_BLOG_DIR');
+  });
+
+  test('실모드에서 DATA_DIR·PROMPTS_DIR이 맞으면 실제 러너로 기동하고 SIGTERM에 0으로 끝난다', async () => {
+    const { exitCode, signal, stdout, stderr } = await spawnWorker(
+      {
+        NODE_ENV: undefined,
+        BLOG_DIR: join(dbDir, 'blog'),
+        DATA_DIR: join(dbDir, 'data'),
+        PROMPTS_DIR: join(dbDir, 'prompts'),
+      },
+      '워커 시작',
+    );
+    expect(exitCode, `signal=${signal}\nstdout=${stdout}\nstderr=${stderr}`).toBe(0);
+    expect(stdout).toContain('단계 러너: 실제');
+    expect(stdout).toContain('워커 종료');
+  });
+
+  test('Mock 모드(NODE_ENV=test)는 DATA_DIR 없이도 Mock 러너로 기동한다', async () => {
+    const { exitCode, stdout } = await spawnWorker({ NODE_ENV: 'test', DATA_DIR: '' }, '워커 시작');
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('단계 러너: Mock');
   });
 });
