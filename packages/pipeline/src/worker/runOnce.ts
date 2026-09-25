@@ -30,6 +30,13 @@ export const STEP_TIMEOUT_MS = 10 * 60_000;
 /** 재시도 가능한 실패를 한 단계에서 몇 번까지 다시 해보는가. 정책은 워커가 정한다. */
 export const MAX_STEP_ATTEMPTS = 3;
 
+/**
+ * 재시도 사이 대기(시도 n 뒤 n번째 값, 넘치면 마지막 값). 즉시 다시 부르면 429·5xx가 그대로 다시 나고 SDK 재시도까지
+ * 곱해져 짧은 시간에 몰린다(BS2 리뷰 ⑭) — 10s·20s면 heartbeat 공백(30s) 안이라 대기 중에도 살아 있는 것으로 보인다.
+ * 대기 중 종료 신호가 오면 바로 깨어나 단계를 반환한다. 2026-09-26 사용자 결정(BS5).
+ */
+export const RETRY_DELAYS_MS: readonly number[] = [10_000, 20_000];
+
 export type TickOutcome =
   /** 할 일이 없었다 — 껍데기는 잠시 쉰다. */
   | 'idle'
@@ -152,6 +159,9 @@ async function attemptStep(
   for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
     // 재시도 사이에 종료 신호가 왔으면 새 시도를 시작하지 않고 반환한다.
     if (signal?.aborted) return releaseStep(deps, run, step);
+    // 재시도면 먼저 기다린다(첫 시도는 아님). 대기는 try 밖에서 — 타임아웃 타이머는 시도에만 걸린다.
+    if (attempt > 1) await waitBeforeRetry(deps, retryDelayMs(attempt - 1), signal);
+    if (signal?.aborted) return releaseStep(deps, run, step);
 
     const startedAt = deps.clock.now();
     await deps.repo.beat(run.id, startedAt);
@@ -252,6 +262,31 @@ async function attemptStep(
 
   // MAX_STEP_ATTEMPTS가 0 이하가 아니면 닿지 않는다.
   return { outcome: 'failed', stepRef };
+}
+
+/** n번째 실패 뒤 대기(ms). 표보다 뒤면 마지막 값. */
+export function retryDelayMs(failedAttempts: number): number {
+  const index = Math.min(Math.max(failedAttempts, 1), RETRY_DELAYS_MS.length) - 1;
+  return RETRY_DELAYS_MS[index] ?? 0;
+}
+
+/** `ms` 뒤에 풀리거나, 종료 신호가 먼저 오면 그때 풀린다(호출부가 signal.aborted를 다시 본다). */
+function waitBeforeRetry(deps: WorkerDeps, ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    const onAbort = () => {
+      cancel();
+      resolve();
+    };
+    const cancel = deps.timers.after(ms, () => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    });
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /**
