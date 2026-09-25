@@ -10,7 +10,13 @@ vi.mock('@galley/pipeline', () => ({ prisma: {}, countPendingApproval, countTopi
 
 import { getNavCounts } from './nav-counts';
 
-const topic = (title: string) => ({ title, category: null, completedOn: null });
+const topic = (title: string) => ({
+  id: `id-${title}`,
+  title,
+  category: null,
+  completedOn: null,
+  series: null,
+});
 
 beforeEach(() => {
   countPendingApproval.mockResolvedValue(0);

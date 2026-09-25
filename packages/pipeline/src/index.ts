@@ -111,6 +111,7 @@ export {
   VELOG_LINK_PLACEHOLDER,
 } from './steps/series.ts';
 export type { SeriesStepInfo } from './steps/series.ts';
+export { createSeriesSource, readTopicSeriesInfo } from './steps/seriesSource.ts';
 export { seriesChecklist } from './steps/publishChecklist.ts';
 export type { PublishChecklistId, PublishChecklistItem } from './steps/publishChecklist.ts';
 export {
@@ -150,7 +151,9 @@ export type {
 export type { StartRerunInput, StartRerunFailure, StartRerunResult } from './run/startRerun.ts';
 export { loadQueueSections } from './queue/loadQueue.ts';
 export { countTopicsByStatus } from './queue/queueCounts.ts';
-export type { QueueEntry, QueueSections } from './queue/loadQueue.ts';
+export type { QueueEntry, QueueEntrySeries, QueueSections } from './queue/loadQueue.ts';
+export { loadQueueSeries, summarizeQueueSeries } from './queue/queueSeries.ts';
+export type { QueueSeriesSummary } from './queue/queueSeries.ts';
 export type { Storage } from './storage/Storage.ts';
 export { LocalFsStorage } from './storage/LocalFsStorage.ts';
 export type {

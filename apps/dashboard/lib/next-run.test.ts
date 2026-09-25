@@ -3,9 +3,11 @@ import type { QueueSections } from '@galley/pipeline';
 import { buildNextRunView } from './next-run';
 
 const entry = (title: string, category: string | null = null) => ({
+  id: `id-${title}`,
   title,
   category,
   completedOn: null,
+  series: null,
 });
 
 const sections = (waiting: ReturnType<typeof entry>[]): QueueSections => ({

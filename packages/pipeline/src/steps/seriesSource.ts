@@ -2,7 +2,7 @@
 // 적재하지 않는다(getSeriesContext 머리 주석). 조회 실패는 단계 실패로 기록되게 StepFailure로 바꾼다 — 설정·파일 문제는 재시도
 // 불가, DB 일시 오류(SQLITE_BUSY 등)는 재시도 가능.
 import type { PrismaClient } from '@prisma/client';
-import { buildSeriesContext } from '../queue/seriesContext.ts';
+import { buildSeriesContext, getSeriesContext } from '../queue/seriesContext.ts';
 import { parseQueue } from '../queue/queueFile.ts';
 import type { Storage } from '../storage/Storage.ts';
 import { toSeriesStepInfo, type SeriesStepInfo } from './series.ts';
@@ -82,4 +82,23 @@ export function createSeriesSource(deps: { storage?: Storage; prisma: PrismaClie
       return info;
     },
   };
+}
+
+/**
+ * 화면(실행 상세)용 조회 — 워커와 달리 값으로 끝난다. 시리즈가 아니거나 정의 줄·편 짝이 없으면 undefined(화면은 시리즈
+ * 표시를 생략할 뿐, 실행을 막는 판정은 워커 몫). DB·파일 오류는 그대로 던진다 — 어댑터가 감싼다.
+ */
+export async function readTopicSeriesInfo(
+  deps: { storage: Storage; prisma: PrismaClient },
+  topicId: string,
+): Promise<SeriesStepInfo | undefined> {
+  const item = await deps.prisma.queueItem.findUnique({
+    where: { id: topicId },
+    select: { seriesKey: true },
+  });
+  const key = item?.seriesKey ?? null;
+  if (key === null) return undefined;
+  const result = await getSeriesContext(deps, key);
+  if (!result.ok) return undefined;
+  return toSeriesStepInfo(result.series, topicId);
 }
