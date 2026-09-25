@@ -13,6 +13,8 @@ import { createModelRegistryFromEnv } from '../src/model/ModelRegistry.ts';
 import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
 import { runOnce } from '../src/worker/runOnce.ts';
 import { createMockStepRunner } from '../src/steps/MockStepRunner.ts';
+import { createSeriesSource } from '../src/steps/seriesSource.ts';
+import { LocalFsStorage } from '../src/storage/LocalFsStorage.ts';
 import type { WorkerDeps } from '../src/worker/WorkerDeps.ts';
 
 /** 할 일이 없을 때 쉬는 간격. 진행했으면 쉬지 않고 바로 다음 틱(decisions/run-location.md 폴링 2s). */
@@ -42,7 +44,13 @@ const deps: WorkerDeps = {
   repo: createPrismaWorkerRepo(prisma),
   // TODO(BE8~BE11): 단계별 실제 StepRunner로 교체. 그때까지는 결정적 Mock이 돈다.
   stepRunner: createMockStepRunner(),
+  // 시리즈 편 정보(글쓰기·발행정보 단계) — 큐 파일(BLOG_DIR)을 읽기만 한다. BLOG_DIR이 없으면 아래에서 경고하고 빠진다.
+  ...(process.env.BLOG_DIR
+    ? { series: createSeriesSource({ storage: new LocalFsStorage(process.env.BLOG_DIR), prisma }) }
+    : {}),
 };
+if (deps.series === undefined)
+  deps.logger.error('BLOG_DIR이 없어 시리즈 편 정보 없이 돈다(시리즈 안내 줄이 붙지 않는다)');
 
 /**
  * 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 모델은 레지스트리(id → 어댑터)만, 식별 정보 필터는

@@ -19,6 +19,9 @@ export const HEARTBEAT_TIMEOUT_MS = 30_000;
  */
 export const HEARTBEAT_INTERVAL_MS = 5_000;
 
+/** 시리즈 편 정보가 필요한 단계 — 안내 줄을 붙이거나 떼는 글쓰기 3단계와 발행정보(decisions/series.md). */
+const SERIES_STEPS: ReadonlySet<StepName> = new Set(['velog', 'linkedin', 'zenn', 'publishInfo']);
+
 /**
  * 단계 하나의 최대 실행 시간. **heartbeat와 별개다** — heartbeat는 "프로세스가 살아 있다"만
  * 증명하고 단계가 실제로 진척 중인지는 모른다. 멈춘 모델 호출을 잡는 건 이 타임아웃이다.
@@ -169,12 +172,18 @@ async function attemptStep(
       const sources: Partial<Record<StepName, string>> = {};
       for (const s of run.steps)
         if (s.origin === 'carried' && s.sourceRunId !== undefined) sources[s.name] = s.sourceRunId;
+      // 시리즈 편 정보 — 글쓰기·발행정보 단계만(시도마다 다시 읽는다: 그새 사람이 이전 편 URL을 붙였을 수 있다).
+      const series =
+        deps.series !== undefined && SERIES_STEPS.has(step)
+          ? await deps.series.forTopic(run.topicId)
+          : undefined;
       const result = await deps.stepRunner.run({
         runId: run.id,
         step,
         topic: { id: run.topicId, title: run.topicTitle, slug: run.topicSlug },
         modelId: run.modelId,
         sources,
+        ...(series === undefined ? {} : { series }),
         instruction: run.instruction,
         signal: controller.signal,
       });

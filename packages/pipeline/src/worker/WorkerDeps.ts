@@ -4,6 +4,7 @@
 import type { IndexTickResult } from '../index/runIndexTick.ts';
 import type { AutoLinkTickResult } from '../link/autoLink.ts';
 import type { StepName, StepStatus } from '../run/stateMachine.ts';
+import type { SeriesStepInfo } from '../steps/series.ts';
 import type { StepRunner } from '../steps/StepRunner.ts';
 
 export interface Clock {
@@ -105,6 +106,11 @@ export interface WorkerDeps {
   logger: Logger;
   repo: WorkerRepo;
   stepRunner: StepRunner;
+  /**
+   * 시리즈 편 정보 조회 — 글쓰기·발행정보 단계를 돌기 직전에 부른다(`StepContext.series`). 시리즈가 아닌 주제면 undefined.
+   * 조회 실패(정의 줄 없음·큐 파일 못 읽음)는 StepFailure로 던져 그 단계의 실패로 기록된다. 없으면 시리즈 정보 없이 돈다.
+   */
+  series?: { forTopic(topicId: string): Promise<SeriesStepInfo | undefined> };
   /**
    * 리포 인덱싱(IndexJob) 틱. **Run이 없을 때만** 불린다 — Run 우선(decisions/run-location.md). 없으면 워커는 Run만 돈다.
    * 인덱싱 중 Run이 오면 현재 배치를 끝내고(틱 하나) 다음 틱이 Run을 잡는다.
