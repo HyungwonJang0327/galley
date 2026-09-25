@@ -18,6 +18,7 @@ import {
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
+import { applyVelogSeries, renderSeriesSystemLine, type SeriesStepInfo } from './series.ts';
 
 export interface VelogStepDeps {
   store: EvidenceStore;
@@ -37,6 +38,8 @@ export interface VelogInput {
   bundle: EvidenceBundle;
   tone: TonePrompt;
   instruction?: string;
+  /** 시리즈 편이면 SYSTEM 머리에 서술 지시 한 줄(편 번호·이전 편 제목). 안내 줄 자체는 코드가 붙인다. */
+  series?: SeriesStepInfo;
 }
 
 /** 워커에 돌려주는 산출물 이름 — posts/<슬러그>/velog.md(B3a). */
@@ -82,7 +85,9 @@ export function buildVelogPrompt(
     ...renderEvidenceItems(bundle.items, limits.evidenceChars),
   );
   lines.push('# 요청', '위 어투 규칙과 근거로 벨로그 본문 초안을 마크다운으로 작성하세요.');
-  return { system: SYSTEM_PREFIX + input.tone.text, prompt: lines.join('\n') };
+  const seriesLine =
+    input.series === undefined ? '' : `${renderSeriesSystemLine(input.series)}\n\n`;
+  return { system: SYSTEM_PREFIX + seriesLine + input.tone.text, prompt: lines.join('\n') };
 }
 
 export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
@@ -92,6 +97,13 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
       if (ctx.step !== 'velog')
         throw new Error(`velog 단계 러너에 ${ctx.step} 단계가 들어왔다 — 라우팅(BS5) 오류`);
       ctx.signal.throwIfAborted();
+      // `(기존 글)` 편은 이미 발행된 글 — 다시 쓰지 않는다(decisions/series.md). 모델을 부르기 전에 멈춘다.
+      if (ctx.series?.alreadyPublished === true)
+        throw new StepFailure(
+          'SERIES_EPISODE_ALREADY_PUBLISHED',
+          '이미 발행된 시리즈 편((기존 글))이라 본문을 쓰지 않습니다.',
+          false,
+        );
 
       const adapter = deps.adapters.get(ctx.modelId);
       if (adapter === undefined)
@@ -136,6 +148,7 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
           bundle: read.bundle,
           tone: tone.value,
           ...(ctx.instruction !== undefined ? { instruction: ctx.instruction } : {}),
+          ...(ctx.series !== undefined ? { series: ctx.series } : {}),
         },
         limits,
       );
@@ -159,7 +172,8 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
       const text = unwrapFence(generated.text.trim()).trim();
       if (text === '')
         throw new StepFailure('VELOG_OUTPUT_EMPTY', '모델이 빈 본문을 돌려줬습니다.', true);
-      const body = `${text}\n`;
+      // 시리즈 편이면 제목 끝 `| 시리즈명 N편`·인용 줄·다음 편 줄을 코드가 붙인다(모델 출력 뒤 후처리).
+      const body = ctx.series === undefined ? `${text}\n` : applyVelogSeries(text, ctx.series);
       try {
         await deps.artifacts.write(ctx.topic.slug, ctx.runId, VELOG_ARTIFACT, body);
       } catch (error) {
