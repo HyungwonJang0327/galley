@@ -120,6 +120,8 @@ export {
   HEARTBEAT_INTERVAL_MS,
   STEP_TIMEOUT_MS,
   MAX_STEP_ATTEMPTS,
+  RETRY_DELAYS_MS,
+  retryDelayMs,
 } from './worker/runOnce.ts';
 export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo.ts';
 export type { TickResult, TickOutcome } from './worker/runOnce.ts';

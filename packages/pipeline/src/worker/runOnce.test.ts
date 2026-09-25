@@ -6,6 +6,8 @@ import {
   HEARTBEAT_TIMEOUT_MS,
   MAX_STEP_ATTEMPTS,
   STEP_TIMEOUT_MS,
+  RETRY_DELAYS_MS,
+  retryDelayMs,
   runOnce,
 } from './runOnce.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
@@ -68,6 +70,34 @@ function fakeTimers() {
  * 않는 StepRunner — 단계 도중의 시간을 만든다. 마이크로태스크 개수를 세지 않고 "구현이 불렸다"는
  * 순간을 기다리므로 runOnce 내부 await 개수가 바뀌어도 테스트가 흔들리지 않는다.
  */
+/** 마이크로태스크·I/O 콜백을 비운다 — 가짜 타이머 발화 뒤 워커가 다음 대기를 등록할 때까지. */
+async function flush(): Promise<void> {
+  for (let i = 0; i < 4; i += 1) await new Promise((resolve) => setImmediate(resolve));
+}
+
+/**
+ * 재시도 대기를 손으로 넘기며 틱을 끝까지 돌린다 — 실패 뒤 워커는 `timers.after`로 기다리므로(RETRY_DELAYS_MS) 발화가
+ * 없으면 틱이 끝나지 않는다. Mock 러너는 즉시 끝나 타임아웃 타이머가 살아 있지 않으니 발화는 대기만 깨운다.
+ */
+async function drive<T>(tick: Promise<T>, d: { timersRef: ReturnType<typeof fakeTimers> }) {
+  let settled = false;
+  const watched = tick.then(
+    (value) => {
+      settled = true;
+      return value;
+    },
+    (error: unknown) => {
+      settled = true;
+      throw error;
+    },
+  );
+  while (!settled) {
+    await flush();
+    if (!settled) d.timersRef.fireAfter();
+  }
+  return watched;
+}
+
 function blockingRunner(options: { onAbort?: 'reason' | 'ownAbortError' } = {}) {
   const calls: StepContext[] = [];
   let resolveCurrent: ((r: StepResult) => void) | null = null;
@@ -328,7 +358,7 @@ describe('runOnce — 실패', () => {
     });
     await runOnce(d); // 잡는 틱
 
-    const result = await runOnce(d);
+    const result = await drive(runOnce(d), d);
 
     expect(result.outcome).toBe('completed');
     expect(state.outcomes[0]?.outcome).toMatchObject({
@@ -350,7 +380,7 @@ describe('runOnce — 실패', () => {
     });
     await runOnce(d); // 잡는 틱
 
-    const result = await runOnce(d);
+    const result = await drive(runOnce(d), d);
 
     expect(result).toEqual({ outcome: 'failed', stepRef: { runId: 'run_1', step: 'evidence' } });
     expect(state.outcomes).toHaveLength(1);
@@ -423,7 +453,7 @@ describe('runOnce — heartbeat', () => {
     });
     await runOnce(d); // 잡는 틱
 
-    await runOnce(d);
+    await drive(runOnce(d), d);
 
     expect(state.beats).toHaveLength(MAX_STEP_ATTEMPTS + 1);
   });
@@ -474,6 +504,8 @@ describe('runOnce — 단계 타임아웃', () => {
 
     const second = blocking.nextCall();
     d.timersRef.fireAfter(); // 첫 시도 타임아웃
+    await flush();
+    d.timersRef.fireAfter(); // 재시도 대기
     await second; // 두 번째 시도가 시작됐다
     blocking.release();
 
@@ -499,7 +531,9 @@ describe('runOnce — 단계 타임아웃', () => {
     for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
       await started;
       started = blocking.nextCall();
-      d.timersRef.fireAfter();
+      d.timersRef.fireAfter(); // 타임아웃
+      await flush();
+      d.timersRef.fireAfter(); // 재시도 대기(마지막 시도 뒤엔 없다)
     }
 
     expect((await tick).outcome).toBe('failed');
@@ -670,7 +704,7 @@ describe('runOnce — 시리즈 편 정보', () => {
       },
     };
     const d = deps({ stepRunner: capturing, series: { forTopic } });
-    for (let i = 0; i < STEP_ORDER.length + 1; i += 1) await runOnce(d);
+    for (let i = 0; i < STEP_ORDER.length + 1; i += 1) await drive(runOnce(d), d);
 
     expect(seen.map((s) => s.step)).toEqual([
       'evidence',
@@ -697,8 +731,8 @@ describe('runOnce — 시리즈 편 정보', () => {
     };
     const forTopic = vi.fn(async () => ({ ...info, alreadyPublished: true }));
     const d = deps({ repo, stepRunner: capturing, series: { forTopic } });
-    await runOnce(d);
-    await runOnce(d);
+    await drive(runOnce(d), d);
+    await drive(runOnce(d), d);
 
     expect(ran).toEqual([]);
     expect(state.outcomes[0]).toMatchObject({
@@ -721,8 +755,8 @@ describe('runOnce — 시리즈 편 정보', () => {
       },
     };
     const d = deps({ stepRunner: capturing, series: { forTopic } });
-    await runOnce(d);
-    await runOnce(d);
+    await drive(runOnce(d), d);
+    await drive(runOnce(d), d);
     expect(forTopic).toHaveBeenCalledTimes(2);
     expect(seen).toEqual([info]);
   });
@@ -821,5 +855,75 @@ describe('runOnce — 자동 연결 틱 위임', () => {
     });
     expect((await runOnce(d)).outcome).toBe('indexed');
     expect(link).not.toHaveBeenCalled();
+  });
+});
+
+describe('runOnce — 재시도 대기', () => {
+  it('실패 뒤 다음 시도 전에 timers.after로 기다린다(10s → 20s), 대기 전엔 새 시도가 없다', async () => {
+    const { repo, state } = fakeRepo();
+    let calls = 0;
+    const mock = createMockStepRunner({
+      failAt: { step: 'evidence', code: 'RATE_LIMITED', retryable: true },
+      failTimes: 2,
+    });
+    const runner: StepRunner = {
+      async run(ctx) {
+        calls += 1;
+        return mock.run(ctx);
+      },
+    };
+    const d = deps({ repo, stepRunner: runner });
+    await runOnce(d);
+
+    const tick = runOnce(d);
+    await flush();
+    expect(calls).toBe(1);
+    // 살아 있는 일회 타이머는 재시도 대기뿐(타임아웃 타이머는 시도가 끝나며 취소됐다).
+    const alive = () => d.timersRef.afters.filter((a) => !a.cancelled).map((a) => a.ms);
+    expect(alive()).toEqual([RETRY_DELAYS_MS[0]]);
+
+    d.timersRef.fireAfter();
+    await flush();
+    expect(calls).toBe(2);
+    expect(alive()).toEqual([RETRY_DELAYS_MS[1]]);
+
+    d.timersRef.fireAfter();
+    expect((await tick).outcome).toBe('completed');
+    expect(calls).toBe(3);
+    expect(state.outcomes[0]?.outcome).toMatchObject({ attemptCount: 3 });
+  });
+
+  it('대기 중 종료 신호가 오면 바로 깨어나 단계를 반환한다(새 시도 없음)', async () => {
+    const { repo, state } = fakeRepo();
+    const controller = new AbortController();
+    let calls = 0;
+    const runner: StepRunner = {
+      async run(ctx) {
+        calls += 1;
+        return createMockStepRunner({
+          failAt: { step: ctx.step, code: 'RATE_LIMITED', retryable: true },
+        }).run(ctx);
+      },
+    };
+    const d = deps({ repo, stepRunner: runner });
+    await runOnce(d, controller.signal);
+
+    const tick = runOnce(d, controller.signal);
+    await flush();
+    expect(calls).toBe(1);
+    controller.abort(new Error('SIGTERM'));
+
+    expect((await tick).outcome).toBe('released');
+    expect(calls).toBe(1);
+    expect(state.outcomes).toHaveLength(0);
+    // 대기 타이머는 취소됐다.
+    expect(d.timersRef.afters.every((a) => a.cancelled)).toBe(true);
+  });
+
+  it('retryDelayMs — n번째 실패 뒤 대기, 표보다 뒤면 마지막 값', () => {
+    expect(retryDelayMs(1)).toBe(10_000);
+    expect(retryDelayMs(2)).toBe(20_000);
+    expect(retryDelayMs(9)).toBe(20_000);
+    expect(retryDelayMs(0)).toBe(10_000);
   });
 });

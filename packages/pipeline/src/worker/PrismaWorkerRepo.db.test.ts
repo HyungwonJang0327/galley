@@ -73,7 +73,19 @@ function makeDeps(overrides: Partial<WorkerDeps> = {}) {
     clock: { now: () => current },
     ids: { next: () => `id_${(n += 1)}` },
     // 단계가 즉시 끝나는 Mock이라 발화할 일이 없다 — 타이머는 등록만 받는다.
-    timers: { every: () => () => {}, after: () => () => {} },
+    timers: {
+      every: () => () => {},
+      // 일회 타이머는 다음 I/O 턴에 바로 발화(재시도 대기를 실제로 기다리지 않는다). 취소되면 안 부른다.
+      after: (_ms, fn) => {
+        let cancelled = false;
+        setImmediate(() => {
+          if (!cancelled) fn();
+        });
+        return () => {
+          cancelled = true;
+        };
+      },
+    },
     logger: { info: vi.fn(), error: vi.fn() },
     repo: createPrismaWorkerRepo(prisma),
     stepRunner: createMockStepRunner(),
