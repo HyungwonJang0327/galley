@@ -66,7 +66,10 @@ describe('getRunSeries', () => {
     vi.stubEnv('BLOG_DIR', 'blog-dir');
     readTopicSeriesInfo.mockResolvedValue(undefined);
     expect(await getRunSeries('topic_1')).toBeUndefined();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     readTopicSeriesInfo.mockRejectedValue(new Error('SQLITE_BUSY'));
     expect(await getRunSeries('topic_1')).toBeUndefined();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('[run-series]'), expect.any(Error));
+    log.mockRestore();
   });
 });

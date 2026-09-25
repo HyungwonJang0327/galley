@@ -76,6 +76,10 @@ describe('getQueueSeries', () => {
 
     vi.stubEnv('BLOG_DIR', 'blog-dir');
     loadQueueSeries.mockRejectedValue(new Error('ENOENT'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(await getQueueSeries()).toEqual([]);
+    // 조용히 빠지지 않는다 — 원인은 서버 로그에.
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('[queue-series]'), expect.any(Error));
+    log.mockRestore();
   });
 });

@@ -44,7 +44,9 @@ export async function getQueueSeries(): Promise<QueueSeriesSummary[]> {
   if (!blogDir) return [];
   try {
     return await loadQueueSeries({ storage: new LocalFsStorage(blogDir) });
-  } catch {
+  } catch (error) {
+    // 값은 비우되 원인은 서버 로그에(decisions/error-handling.md) — "시리즈인데 툴팁·헤더가 없다"를 진단할 단서.
+    console.error('[queue-series] 시리즈 요약을 읽지 못했습니다:', error);
     return [];
   }
 }
