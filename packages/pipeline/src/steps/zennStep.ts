@@ -175,7 +175,9 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
               false,
             );
       // 벨로그의 시리즈 표기는 떼고 넘긴다 — Zenn은 제 형식(제목 第N回·はじめに 문장)으로 코드가 다시 붙인다.
-      const body = stripSeriesLines(read.text).trim();
+      const body = (
+        ctx.series === undefined ? read.text : stripSeriesLines(read.text, ctx.series)
+      ).trim();
       if (body === '')
         throw new StepFailure(
           'ZENN_BODY_EMPTY',

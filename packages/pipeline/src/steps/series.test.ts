@@ -162,15 +162,60 @@ describe('applyVelogSeries', () => {
 });
 
 describe('stripSeriesLines', () => {
-  test('벨로그 시리즈 표기를 떼면 원래 본문으로 돌아간다', () => {
-    expect(stripSeriesLines(applyVelogSeries(VELOG, info('t2')))).toBe(VELOG);
-    expect(stripSeriesLines(applyVelogSeries(VELOG, info('t1')))).toBe(VELOG);
+  test('벨로그 시리즈 표기를 떼면 원래 본문으로 돌아가고, 두 번 붙여도 한 번 붙인 것과 같다', () => {
+    for (const id of ['t1', 't2']) {
+      const once = applyVelogSeries(VELOG, info(id));
+      expect(stripSeriesLines(once, info(id))).toBe(VELOG);
+      expect(applyVelogSeries(once, info(id))).toBe(once);
+    }
   });
 
-  test('펜스 안과 시리즈가 아닌 본문은 건드리지 않는다', () => {
-    const fenced = '# 제목\n\n```\n다음 편: 코드 안\n> 앱 시리즈 1편.\n```\n';
-    expect(stripSeriesLines(fenced)).toBe(fenced);
-    expect(stripSeriesLines(VELOG)).toBe(VELOG);
+  test('모델이 스스로 쓴 시리즈 표기(다른 편 번호)도 한 번만 남는다', () => {
+    const selfWritten =
+      '# 인증 붙이기 | 앱 만들기 9편\n\n> 앱 만들기 시리즈 9편.\n\n도입 문단.\n\n## 결과\n\n결과 문단.\n\n다음 편: 엉뚱한 편\n';
+    expect(applyVelogSeries(selfWritten, info('t1'))).toBe(
+      '# 인증 붙이기 | 앱 만들기 1편\n\n> 앱 만들기 시리즈 1편.\n\n도입 문단.\n\n## 결과\n\n결과 문단.\n\n다음 편: 둘째 편\n',
+    );
+  });
+
+  test('다른 이름·다른 위치의 비슷한 줄과 펜스 안은 건드리지 않는다', () => {
+    const other =
+      '# React | Vue 비교 2편\n\n> 이 글은 React 시리즈 3편.\n\n다음 편: 캐시를 다룬다는 문장.\n\n## 본론\n\n```\n다음 편: 코드 안\n> 앱 만들기 시리즈 1편.\n```\n';
+    expect(stripSeriesLines(other, info('t1'))).toBe(other);
+  });
+
+  test('제목에 이미 | 가 있거나 시리즈명에 특수문자가 있어도 접미사만 뗀다', () => {
+    const odd = { ...info('t1'), name: 'A|B (v2).*' };
+    const applied = applyVelogSeries('# 앞 | 뒤\n\n본문.\n', odd);
+    expect(applied.split('\n')[0]).toBe('# 앞 | 뒤 | A|B (v2).* 1편');
+    expect(stripSeriesLines(applied, odd)).toBe('# 앞 | 뒤\n\n본문.\n');
+  });
+
+  test('펜스 안 연속 빈 줄은 보존하고, 네 개 펜스 안의 ``` 줄은 펜스를 닫지 않는다', () => {
+    const code =
+      '# 제목\n\n````md\n```\n# 안쪽 제목\n```\n\n\ndef a():\n    pass\n````\n\n## 결과\n\n끝.\n';
+    const applied = applyVelogSeries(code, info('t1'));
+    expect(applied).toContain('```\n\n\ndef a():');
+    expect(applied.split('\n')[0]).toBe('# 제목 | 앱 만들기 1편');
+    expect(applied).toContain('# 안쪽 제목');
+    expect(stripSeriesLines(applied, info('t1'))).toBe(code);
+  });
+});
+
+describe('applyVelogSeries — 결과 절·링크 텍스트', () => {
+  test('번호 붙은 결과 절도 찾는다', () => {
+    expect(
+      applyVelogSeries('# t\n\n## 5. 결과\n\n끝.\n\n## 회고\n\n회고.\n', info('t1')),
+    ).toContain('끝.\n\n다음 편: 둘째 편\n\n## 회고');
+  });
+
+  test('이전 편 제목의 대괄호는 이스케이프한다', () => {
+    expect(
+      renderSeriesHeader({
+        ...info('t2'),
+        previous: { title: '[A] 첫 편', url: 'https://velog.io/@x/a' },
+      }),
+    ).toBe('> 앱 만들기 시리즈 2편. [이전 편: \\[A\\] 첫 편](https://velog.io/@x/a)');
   });
 });
 

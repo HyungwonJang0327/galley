@@ -62,7 +62,9 @@ export function renderSeriesHeader(info: SeriesStepInfo): string {
   const head = `> ${info.name} 시리즈 ${info.episodeNo}편.`;
   if (info.previous === undefined) return head;
   const url = info.previous.url ?? VELOG_LINK_PLACEHOLDER;
-  return `${head} [이전 편: ${info.previous.title}](${url})`;
+  // 링크 텍스트의 대괄호는 이스케이프 — 제목에 `]`가 있으면 링크가 깨진다.
+  const title = info.previous.title.replace(/[[\]]/g, '\\$&');
+  return `${head} [이전 편: ${title}](${url})`;
 }
 
 /** `## 결과` 절 끝 줄 — 마지막 편은 없음. */
@@ -81,20 +83,26 @@ export function renderSeriesSystemLine(info: SeriesStepInfo): string {
   return `- 이 글은 "${info.name}" 시리즈 ${info.episodeNo}편입니다${prev}. 이전 편 내용은 한두 문장으로만 요약하고 시리즈 소개·목차는 넣지 않습니다. 시리즈 안내 줄·다음 편 안내는 시스템이 붙이므로 쓰지 않습니다.`;
 }
 
-const FENCE = /^[ \t]*(`{3,}|~{3,})/;
+const FENCE_OPEN = /^[ ]{0,3}(`{3,}|~{3,})/;
+const FENCE_CLOSE = /^[ ]{0,3}(`{3,}|~{3,})[ \t]*$/;
 
-/** 코드 펜스 밖 줄의 번호들 — 펜스 안의 `# 주석`·`다음 편:`을 건드리지 않게. */
+/**
+ * 줄마다 코드 펜스 밖인지 — 펜스 안의 `# 주석`·`다음 편:`을 건드리지 않게. CommonMark 규칙: 닫는 펜스는 여는 것과 같은
+ * 문자, 같거나 긴 길이, 뒤에 정보 문자열 없음(```` 블록 안의 ``` 줄은 닫지 않는다).
+ */
 function outsideFences(lines: readonly string[]): boolean[] {
   const outside: boolean[] = [];
   let open: string | undefined;
   for (const line of lines) {
-    const fence = FENCE.exec(line)?.[1];
     if (open === undefined) {
+      const fence = FENCE_OPEN.exec(line)?.[1];
       outside.push(fence === undefined);
-      if (fence !== undefined) open = fence[0];
+      if (fence !== undefined) open = fence;
     } else {
       outside.push(false);
-      if (fence !== undefined && fence[0] === open) open = undefined;
+      const fence = FENCE_CLOSE.exec(line)?.[1];
+      if (fence !== undefined && fence[0] === open[0] && fence.length >= open.length)
+        open = undefined;
     }
   }
   return outside;
@@ -102,6 +110,8 @@ function outsideFences(lines: readonly string[]): boolean[] {
 
 const H1 = /^#[ \t]+(.*?)[ \t]*$/;
 const H2 = /^##[ \t]+(.*?)[ \t]*$/;
+/** 결과 절 — `## 결과`·`## 5. 결과`·`## 결과와 회고`. */
+const RESULT_H2 = /^(?:\d+[.)][ \t]*)?결과/;
 
 function findLine(
   lines: readonly string[],
@@ -113,29 +123,91 @@ function findLine(
   return -1;
 }
 
+/** 줄을 합친다 — 펜스 **밖**의 연속 빈 줄만 하나로 접는다(코드 블록 안 빈 줄은 코드다). 앞뒤 빈 줄은 뗀다. */
 function joinLines(lines: readonly string[]): string {
-  return `${lines
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()}\n`;
+  const outside = outsideFences(lines);
+  const kept: string[] = [];
+  lines.forEach((line, i) => {
+    const blank = line.trim() === '';
+    if (blank && outside[i] && (kept.length === 0 || kept[kept.length - 1]!.trim() === '')) return;
+    kept.push(line);
+  });
+  while (kept.length > 0 && kept[kept.length - 1]!.trim() === '') kept.pop();
+  return `${kept.join('\n')}\n`;
+}
+
+/** `## 결과` 절의 끝(다음 H2 줄 번호, 없으면 줄 수). 결과 절이 없으면 -1. */
+function resultSectionEnd(lines: readonly string[], outside: readonly boolean[]): number {
+  const result = findLine(lines, outside, (l) => RESULT_H2.test(H2.exec(l)?.[1] ?? ''));
+  if (result === -1) return -1;
+  const end = findLine(lines, outside, (l) => H2.test(l), result + 1);
+  return end === -1 ? lines.length : end;
+}
+
+/** 마지막 비지 않은 줄의 번호(`end` 앞에서). */
+function lastContent(lines: readonly string[], end: number): number {
+  let at = end - 1;
+  while (at >= 0 && lines[at]!.trim() === '') at -= 1;
+  return at;
+}
+
+/** H1 줄 끝의 ` | <시리즈명> N편`을 뗀다 — 이 시리즈 이름일 때만(편 번호는 달라도). 이름을 정규식에 넣지 않는다. */
+function stripTitleSuffix(line: string, info: SeriesStepInfo): string {
+  const trimmed = line.trimEnd();
+  const marker = ` | ${info.name} `;
+  const at = trimmed.lastIndexOf(marker);
+  if (at === -1 || !/^\d+편$/.test(trimmed.slice(at + marker.length))) return line;
+  return trimmed.slice(0, at);
+}
+
+/** 이 시리즈의 인용 줄인가 — `> <시리즈명> 시리즈 N편.` 뒤에 이전 편 링크가 붙을 수 있다. */
+function isSeriesHeader(line: string, info: SeriesStepInfo): boolean {
+  const head = `> ${info.name} 시리즈 `;
+  return (
+    line.startsWith(head) &&
+    /^\d+편\.(?: \[이전 편: .*\]\(.*\))?[ \t]*$/.test(line.slice(head.length))
+  );
+}
+
+/**
+ * 벨로그 본문에서 **이 시리즈의** 표기를 뗀다 — 첫 H1 끝 `| 시리즈명 N편`, 첫 H2 앞의 인용 줄, 결과 절 끝(또는 본문 끝)의
+ * `다음 편:` 줄. 이 위치·이 이름이 아니면 건드리지 않는다(시리즈 아닌 글의 `> … 시리즈 3편.` 인용·`다음 편:` 문장 보존).
+ * 파생 단계는 입력에서 떼고, 벨로그 단계는 붙이기 전에 떼서 모델이 스스로 쓴 표기가 겹치지 않게 한다.
+ */
+export function stripSeriesLines(body: string, info: SeriesStepInfo): string {
+  const lines = body.replace(/\r\n/g, '\n').split('\n');
+  const outside = outsideFences(lines);
+  const drop = new Set<number>();
+
+  const firstH2 = findLine(lines, outside, (l) => H2.test(l));
+  const leadEnd = firstH2 === -1 ? lines.length : firstH2;
+  for (let i = 0; i < leadEnd; i += 1)
+    if (outside[i] && isSeriesHeader(lines[i]!, info)) drop.add(i);
+
+  for (const end of [resultSectionEnd(lines, outside), lines.length]) {
+    if (end === -1) continue;
+    const at = lastContent(lines, end);
+    if (at >= 0 && outside[at] && lines[at]!.startsWith('다음 편: ')) drop.add(at);
+  }
+
+  const h1 = findLine(lines, outside, (l) => H1.test(l));
+  if (h1 !== -1) lines[h1] = stripTitleSuffix(lines[h1]!, info);
+  return joinLines(lines.filter((_, i) => !drop.has(i)));
 }
 
 /**
  * 벨로그 본문에 시리즈 표기를 붙인다: 첫 H1 끝에 `| 시리즈명 N편`, 그 아래 인용 줄, `## 결과` 절 끝(다음 H2 또는 끝 앞)에
- * `다음 편:`. H1이 없으면 인용 줄을 맨 앞에, `## 결과`가 없으면 다음 편 줄을 맨 끝에.
+ * `다음 편:`. H1이 없으면 인용 줄을 맨 앞에, 결과 절이 없으면 다음 편 줄을 맨 끝에. 먼저 떼고 붙이므로 여러 번 적용해도 같다.
  */
 export function applyVelogSeries(body: string, info: SeriesStepInfo): string {
-  const lines = body.replace(/\r\n/g, '\n').trimEnd().split('\n');
+  const lines = stripSeriesLines(body, info).trimEnd().split('\n');
   let outside = outsideFences(lines);
 
   const next = renderNextEpisode(info);
   if (next !== undefined) {
-    const result = findLine(lines, outside, (l) => H2.exec(l)?.[1] === '결과');
-    let end = result === -1 ? -1 : findLine(lines, outside, (l) => H2.test(l), result + 1);
+    let end = resultSectionEnd(lines, outside);
     if (end === -1) end = lines.length;
-    // 절 끝의 빈 줄 앞에 넣는다.
-    while (end > 0 && lines[end - 1]!.trim() === '') end -= 1;
-    lines.splice(end, 0, '', next, '');
+    lines.splice(lastContent(lines, end) + 1, 0, '', next, '');
     outside = outsideFences(lines);
   }
 
@@ -148,35 +220,6 @@ export function applyVelogSeries(body: string, info: SeriesStepInfo): string {
     lines.splice(h1, 1, `# ${seriesVelogTitle(title, info)}`, '', header, '');
   }
   return joinLines(lines);
-}
-
-const HEADER_LINE = /^> .+ 시리즈 \d+편\.(?: \[이전 편: .*\]\(.*\))?[ \t]*$/;
-const NEXT_LINE = /^다음 편: .+$/;
-const TITLE_SUFFIX = /^(#[ \t]+.*?) \| .+ \d+편[ \t]*$/;
-
-/**
- * 파생 단계 입력에서 벨로그의 시리즈 표기를 뗀다 — 링크드인은 시리즈를 언급하지 않고, Zenn은 제 형식으로 다시 붙인다.
- * 시리즈 편이 아니어도 적용해 둔다(carried 본문이 시리즈 표기를 달고 있을 수 있다). 코드 펜스 안은 건드리지 않는다.
- */
-export function stripSeriesLines(body: string): string {
-  const lines = body.replace(/\r\n/g, '\n').split('\n');
-  const outside = outsideFences(lines);
-  let titleSeen = false;
-  const kept: string[] = [];
-  lines.forEach((line, i) => {
-    if (!outside[i]) {
-      kept.push(line);
-      return;
-    }
-    if (HEADER_LINE.test(line) || NEXT_LINE.test(line)) return;
-    if (!titleSeen && H1.test(line)) {
-      titleSeen = true;
-      kept.push(line.replace(TITLE_SUFFIX, '$1'));
-      return;
-    }
-    kept.push(line);
-  });
-  return joinLines(kept);
 }
 
 const HAJIMENI = /^##[ \t]+はじめに[ \t]*$/;
