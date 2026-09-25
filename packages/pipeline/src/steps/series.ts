@@ -54,7 +54,9 @@ export function seriesVelogTitle(title: string, info: SeriesStepInfo): string {
 
 /** Zenn 제목 — `<제목> (第N回)`(2026-09-24 사용자 결정). */
 export function seriesZennTitle(title: string, info: SeriesStepInfo): string {
-  return `${title} (第${info.episodeNo}回)`;
+  // 모델이 이미 붙인 `(第N回)`·`（第N回）`는 떼고 한 번만(L5).
+  const bare = title.replace(/[ \t]*[(（][ \t]*第\d+回[ \t]*[)）][ \t]*$/, '');
+  return `${bare} (第${info.episodeNo}回)`;
 }
 
 /** 본문 첫 H1 바로 아래 인용 줄 — 1편(이전 편 없음)은 링크 없이. */
@@ -240,8 +242,15 @@ export function applyZennSeries(body: string, info: SeriesStepInfo): string {
   while (first < lines.length && lines[first]!.trim() === '') first += 1;
   if (first === lines.length) first = -1;
   const text = first === -1 ? undefined : lines[first]!;
+  // 확실한 문단일 때만 문장 앞에 붙인다 — Zenn 블록(:::message·링크 카드 URL·@[card]·$$·HTML·이미지)·목록·코드·
+  // 4칸 들여쓰기 코드에 붙이면 렌더가 깨진다. 그 밖은 소제목 바로 아래 새 문단으로(M4).
   const isParagraph =
-    text !== undefined && !/^[ \t]*(?:#|<!--|[-*+>]|\d+\.|\||`{3}|~{3})/.test(text);
+    text !== undefined &&
+    !/^(?: {4}|\t)/.test(text) &&
+    !/^[ ]{0,3}(?:#|<|[-*+>][ \t]|\d+[.)][ \t]|\||`{3}|~{3}|:::|@\[|https?:\/\/|\$\$|!\[)/.test(
+      text,
+    ) &&
+    /^[ ]{0,3}[\p{L}\p{N}「『（(“"]/u.test(text);
   if (isParagraph) lines[first] = `${sentence}${text.trimStart()}`;
   else lines.splice(heading + 1, 0, '', sentence);
   return joinLines(lines);

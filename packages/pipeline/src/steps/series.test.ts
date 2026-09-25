@@ -4,6 +4,7 @@ import {
   applyZennSeries,
   renderSeriesHeader,
   renderSeriesSystemLine,
+  seriesZennTitle,
   stripSeriesLines,
   toSeriesStepInfo,
   VELOG_LINK_PLACEHOLDER,
@@ -238,4 +239,27 @@ describe('applyZennSeries', () => {
       'アプリをつくるシリーズの第1回です。\n\n本文。\n',
     );
   });
+});
+
+describe('applyZennSeries — Zenn 블록 경계', () => {
+  test.each([
+    [':::message\n注意\n:::'],
+    ['https://zenn.dev/x'],
+    ['@[card](https://zenn.dev/x)'],
+    ['$$\na+b\n$$'],
+    ['<details><summary>x</summary></details>'],
+    ['![図](/img.png)'],
+    ['1) 手順'],
+    ['    indented code'],
+  ])('절 첫 내용이 %j면 소제목 아래 새 문단으로', (first) => {
+    expect(applyZennSeries(`## はじめに\n\n${first}\n`, info('t1'))).toBe(
+      `## はじめに\n\nアプリをつくるシリーズの第1回です。\n\n${first}\n`,
+    );
+  });
+});
+
+test('seriesZennTitle은 모델이 이미 붙인 (第N回)를 한 번만 남긴다', () => {
+  expect(seriesZennTitle('話', info('t2'))).toBe('話 (第2回)');
+  expect(seriesZennTitle('話 (第9回)', info('t2'))).toBe('話 (第2回)');
+  expect(seriesZennTitle('話（第2回）', info('t2'))).toBe('話 (第2回)');
 });
