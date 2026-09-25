@@ -9,7 +9,13 @@ import {
   runOnce,
 } from './runOnce.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
-import type { StepContext, StepResult, StepRunner } from '../steps/StepRunner.ts';
+import {
+  StepFailure,
+  type StepContext,
+  type StepResult,
+  type StepRunner,
+} from '../steps/StepRunner.ts';
+import type { SeriesStepInfo } from '../steps/series.ts';
 import { STEP_ORDER, STEP_STATUS, type StepName } from '../run/stateMachine.ts';
 import type { ClaimedRun, StepOutcome, Timers, WorkerDeps, WorkerRepo } from './WorkerDeps.ts';
 import type { IndexTickResult } from '../index/runIndexTick.ts';
@@ -643,6 +649,56 @@ describe('runOnce — StepContext', () => {
     await runOnce(d); // 잡는 틱
     await runOnce(d); // velog(evidence는 carried+succeeded라 건너뛴다)
     expect(seen[0]).toEqual({ step: 'velog', modelId: 'mock', sources: { evidence: 'run_0' } });
+  });
+});
+
+describe('runOnce — 시리즈 편 정보', () => {
+  const info: SeriesStepInfo = { name: '앱', episodeNo: 2, total: 3, alreadyPublished: false };
+
+  it('글쓰기·발행정보 단계에만 series를 채운다', async () => {
+    const forTopic = vi.fn(async () => info);
+    const seen: { step: StepName; series: SeriesStepInfo | undefined }[] = [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        seen.push({ step: ctx.step, series: ctx.series });
+        return { artifacts: {} };
+      },
+    };
+    const d = deps({ stepRunner: capturing, series: { forTopic } });
+    for (let i = 0; i < STEP_ORDER.length + 1; i += 1) await runOnce(d);
+
+    expect(seen.map((s) => [s.step, s.series !== undefined])).toEqual([
+      ['evidence', false],
+      ['velog', true],
+      ['verify', false],
+      ['linkedin', true],
+      ['zenn', true],
+      ['publishInfo', true],
+    ]);
+    expect(forTopic).toHaveBeenCalledWith('t1');
+  });
+
+  it('조회가 영구 실패로 던지면 단계를 돌리지 않고 실패로 기록한다', async () => {
+    const { repo, state } = fakeRepo();
+    const ran: StepName[] = [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        ran.push(ctx.step);
+        return { artifacts: {} };
+      },
+    };
+    const forTopic = vi.fn(async () => {
+      throw new StepFailure('SERIES_NOT_DEFINED', '정의 줄 없음', false);
+    });
+    const d = deps({ repo, stepRunner: capturing, series: { forTopic } });
+    for (let i = 0; i < 3; i += 1) await runOnce(d);
+
+    expect(ran).toEqual(['evidence']);
+    expect(state.outcomes.at(-1)).toMatchObject({
+      step: 'velog',
+      outcome: { status: STEP_STATUS.failed, errorCode: 'SERIES_NOT_DEFINED' },
+    });
+    expect(state.failed).toBe(true);
   });
 });
 
