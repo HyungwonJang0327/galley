@@ -238,9 +238,11 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
   - 완료조건: completeTopic 라운드트립 테스트(태그·날짜·슬러그 힌트), 기존 완료 줄 형식 불변, 체크리스트 순수 함수 테스트.
   - 구현 요약: 완료 줄은 `(<메모>, posts/<슬러그>)`(메모 선택), 체크리스트는 `steps/publishChecklist.ts`(params는 id별 판별 유니온). 입력 검증 — 개행·메모 괄호·제목 맨 앞 태그/(기존 글) 거부.
   - B3a로 이월(리뷰): 완료 줄 제목이 큐 제목과 다르면 매칭 키가 갈라짐 → 호출부가 파일 쓰기 전 QueueItem 갱신(M2) · 같은 슬러그 완료 줄 중복 검사(L6) · 날짜 유효성은 형식만(L2). 유령 행 정리 보류 이슈와 맞닿음.
-- [ ] **BX5** fe — 큐 화면: 행 제목 앞 Badge(`A-1`, 중립 톤) + Tooltip(시리즈명 · N/M편), 태그는 제목 텍스트에 안 섞음(정렬·검색은 제목). 후보 탭 `### 시리즈` 아래 정의 줄을 그룹 헤더로(편이 대기로 옮겨져 비면 "편 없음 · 대기 N편"). `(기존 글)` 편은 실행 버튼 비활성 + "이미 발행된 글". 실행 상세 상단 "○○ 시리즈 N/M편" + 이전·다음 편 제목. 새 ui 컴포넌트 금지(Badge·Tooltip로, 부족하면 보고). 서버 컴포넌트가 판정, 클라에는 props만(server-only 경계). 브랜치 `feat/queue-series-ui`. 커밋: `feat(dashboard): 큐 목록에 시리즈 배지·그룹 헤더` / `feat(dashboard): 실행 상세에 시리즈 편 정보`
+- [x] **BX5** (2026-09-26 `f278a98`·`c1672ef`·`43aa4c5`·`c8cd4fa` + 리뷰 `3218758`·`b1ed321`·`e35955f`·`10ba2ad`, feat/queue-series-ui, 해시는 브랜치 기준 — 머지 후 정정) fe — 큐 화면: 행 제목 앞 Badge(`A-1`, 중립 톤) + Tooltip(시리즈명 · N/M편), 태그는 제목 텍스트에 안 섞음(정렬·검색은 제목). 후보 탭 `### 시리즈` 아래 정의 줄을 그룹 헤더로(편이 대기로 옮겨져 비면 "편 없음 · 대기 N편"). `(기존 글)` 편은 실행 버튼 비활성 + "이미 발행된 글". 실행 상세 상단 "○○ 시리즈 N/M편" + 이전·다음 편 제목. 새 ui 컴포넌트 금지(Badge·Tooltip로, 부족하면 보고). 서버 컴포넌트가 판정, 클라에는 props만(server-only 경계). 브랜치 `feat/queue-series-ui`. 커밋: `feat(dashboard): 큐 목록에 시리즈 배지·그룹 헤더` / `feat(dashboard): 실행 상세에 시리즈 편 정보`
   - BX1 이월(리뷰 L7): BX1부터 DB 제목에 태그가 없어 BX5 전까지 화면에 시리즈 표시가 전혀 없다.
   - 완료조건: 컴포넌트 테스트, `verify:layout` 통과(행 레이아웃 변경 시), reviewer 통과.
+  - 구현 요약: pipeline `QueueEntry.id`·`series`, `queueSeries.ts`(요약), `readTopicSeriesInfo`; dashboard `QueueRowTitle`·`QueueGroupHeader`(앱 마크업 — 사용자 결정), `lib/queue-view.items`, `lib/run-series`. `(기존 글)`은 ⋮ "지금 실행" 사유(실행 버튼은 BS5 뒤, 같은 판정 사용). `verify:layout`은 갤러리 대상이라 안 돌림(ui 레이아웃 컴포넌트 변경 없음).
+  - 이월(리뷰 기록만): L1 `### 시리즈`가 마지막 소제목이 아니면 편 없는 정의 헤더가 다음 소제목 첫 행 위에 낌 · L4 적재와 요약이 파일을 따로 읽음(1회 읽기 리팩토링은 `loadQueueSections` 반환 타입 변경 필요).
 - [ ] **BX6** doc — CLAUDE.md "파이프라인 단계" 아래 시리즈 한 줄, decisions/queue-sync-direction.md "정의 줄 보존" 항목, decisions/evidence-collection.md 파서 확장 절에 태그 한 줄, README 사용법에 시리즈 표기 예시 4줄, worklog·todo·PR 마감. 브랜치 `docs/series`. 커밋: `docs: 시리즈 대응 문서 반영`
   - 완료조건: 문서 간 표기(태그 문법·정의 줄 문법·산출물 형식)가 decisions/series.md와 일치.
 
