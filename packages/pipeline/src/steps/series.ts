@@ -79,6 +79,15 @@ export function renderZennSeriesSentence(info: SeriesStepInfo): string {
   return `${info.nameJa ?? info.name}シリーズの第${info.episodeNo}回です。`;
 }
 
+/**
+ * 발행정보(`publish.md`)의 `## 벨로그 시리즈` 절 — `시리즈명 · N/M편`(M = 파일에 있는 그 시리즈 편 수). 시리즈가 아니면 빈 문자열
+ * (절 없음). B3a가 발행정보를 조립할 때 붙인다(decisions/series.md 산출물 형식).
+ */
+export function renderSeriesPublishSection(info: SeriesStepInfo | undefined): string {
+  if (info === undefined) return '';
+  return `## 벨로그 시리즈\n\n${info.name} · ${info.episodeNo}/${info.total}편\n`;
+}
+
 /** 벨로그 단계 SYSTEM 머리에 더하는 서술 지시 한 줄 — 안내 줄은 코드가 붙이므로 모델이 쓰지 않게. */
 export function renderSeriesSystemLine(info: SeriesStepInfo): string {
   const prev = info.previous === undefined ? '' : ` (이전 편: ${info.previous.title})`;

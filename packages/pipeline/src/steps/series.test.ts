@@ -3,6 +3,7 @@ import {
   applyVelogSeries,
   applyZennSeries,
   renderSeriesHeader,
+  renderSeriesPublishSection,
   renderSeriesSystemLine,
   seriesZennTitle,
   stripSeriesLines,
@@ -262,4 +263,9 @@ test('seriesZennTitle은 모델이 이미 붙인 (第N回)를 한 번만 남긴�
   expect(seriesZennTitle('話', info('t2'))).toBe('話 (第2回)');
   expect(seriesZennTitle('話 (第9回)', info('t2'))).toBe('話 (第2回)');
   expect(seriesZennTitle('話（第2回）', info('t2'))).toBe('話 (第2回)');
+});
+
+test('renderSeriesPublishSection은 시리즈명 · N/M편, 시리즈가 아니면 절 없음', () => {
+  expect(renderSeriesPublishSection(info('t2'))).toBe('## 벨로그 시리즈\n\n앱 만들기 · 2/3편\n');
+  expect(renderSeriesPublishSection(undefined)).toBe('');
 });
