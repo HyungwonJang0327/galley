@@ -16,7 +16,7 @@ export interface QueueSeriesSummary {
   byStatus: Record<QueueStatus, number>;
 }
 
-/** 파싱한 큐 → 정의 줄 순서대로 요약(순수). */
+/** 파싱한 큐 → 정의 줄 순서대로 요약(순수). 같은 키 정의 줄이 둘이면(사람 실수) 첫 것만 — 편 툴팁 이름과 헤더가 같은 정의를 본다. */
 export function summarizeQueueSeries(queue: ParsedQueue): QueueSeriesSummary[] {
   const counts = new Map<string, Record<QueueStatus, number>>();
   for (const status of ['대기', '후보', '보류', '완료'] as const)
@@ -30,7 +30,11 @@ export function summarizeQueueSeries(queue: ParsedQueue): QueueSeriesSummary[] {
       record[status] += 1;
     }
 
-  return queue.seriesDefs.map((def) => {
+  const seen = new Set<string>();
+  const defs = queue.seriesDefs.filter(
+    (def) => !seen.has(def.key) && seen.add(def.key) !== undefined,
+  );
+  return defs.map((def) => {
     const byStatus = counts.get(def.key) ?? { 대기: 0, 후보: 0, 보류: 0, 완료: 0 };
     return {
       key: def.key,
