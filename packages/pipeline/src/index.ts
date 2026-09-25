@@ -106,6 +106,14 @@ export type { StepRunner, StepContext, StepResult } from './steps/StepRunner.ts'
 export { createMockStepRunner } from './steps/MockStepRunner.ts';
 export type { MockStepRunnerOptions } from './steps/MockStepRunner.ts';
 export {
+  toSeriesStepInfo,
+  renderSeriesPublishSection,
+  VELOG_LINK_PLACEHOLDER,
+} from './steps/series.ts';
+export type { SeriesStepInfo } from './steps/series.ts';
+export { seriesChecklist } from './steps/publishChecklist.ts';
+export type { PublishChecklistId, PublishChecklistItem } from './steps/publishChecklist.ts';
+export {
   runOnce,
   HEARTBEAT_TIMEOUT_MS,
   HEARTBEAT_INTERVAL_MS,
