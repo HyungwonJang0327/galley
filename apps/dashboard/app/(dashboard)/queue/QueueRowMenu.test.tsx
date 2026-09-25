@@ -33,6 +33,16 @@ describe('QueueRowMenu', () => {
     );
   });
 
+  it('(기존 글) 편이면 "지금 실행" 사유가 이미 발행된 글(title 속성)', async () => {
+    render(<QueueRowMenu {...props} alreadyPublished move={vi.fn()} />);
+    openMenu();
+
+    await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
+    const runNow = screen.getByRole('menuitem', { name: '지금 실행' });
+    expect(runNow.getAttribute('aria-disabled')).toBe('true');
+    expect(runNow.getAttribute('title')).toBe('이미 발행된 글입니다.');
+  });
+
   it('이동 항목을 고르면 지금 섹션·위치·제목과 함께 move를 부른다', async () => {
     const move = vi.fn().mockResolvedValue({ ok: true });
     render(<QueueRowMenu {...props} move={move} />);

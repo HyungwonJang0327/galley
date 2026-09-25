@@ -151,7 +151,15 @@ function DraggableRow({
       title={<QueueRowTitle title={row.title} series={row.series} />}
       meta={row.meta}
       trailing={<Badge tone={badgeTone}>{status}</Badge>}
-      actions={<QueueRowMenu title={row.title} status={status} index={row.index} move={move} />}
+      actions={
+        <QueueRowMenu
+          title={row.title}
+          status={status}
+          index={row.index}
+          alreadyPublished={row.series?.alreadyPublished ?? false}
+          move={move}
+        />
+      }
     />
   );
 }

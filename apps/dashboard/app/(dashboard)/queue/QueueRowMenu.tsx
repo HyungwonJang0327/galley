@@ -11,12 +11,15 @@ export function QueueRowMenu({
   title,
   status,
   index,
+  alreadyPublished = false,
   move,
 }: {
   title: string;
   status: QueueStatus;
   /** 섹션 안에서의 0기반 위치(카테고리 필터 전 기준). */
   index: number;
+  /** 시리즈 `(기존 글)` 편 — "지금 실행" 사유가 "이미 발행된 글"이 된다(판정은 서버, lib/queue-view). */
+  alreadyPublished?: boolean;
   move: (input: MoveQueueTopicInput) => Promise<QueueMoveResult>;
 }) {
   const [pending, startTransition] = useTransition();
@@ -35,7 +38,7 @@ export function QueueRowMenu({
             ⋮
           </Button>
         }
-        items={queueRowMenuEntries(status)}
+        items={queueRowMenuEntries(status, { alreadyPublished })}
         onSelect={(id) => {
           const to = parseMoveTarget(id);
           if (to === null) return;
