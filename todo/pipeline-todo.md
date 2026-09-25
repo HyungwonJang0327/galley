@@ -57,6 +57,6 @@
 - BS4 — Zenn 일본어판 단계(본문 파생 + 어투, `published: false` 고정) — 완료 2026-09-23
 - BX1 — 큐 파서 시리즈 태그(`[A-1]`)·정의 줄(`시리즈 A.`) 라운드트립 + 매칭 키에서 태그 제외 (decisions/series.md) — 완료 2026-09-24
 - BX2 — `QueueItem.seriesKey·episodeNo`(마이그레이션) + `getSeriesContext` 헬퍼(읽기 전용 — 이름·편은 파일, id만 DB) — 완료 2026-09-24
-- BX3 — 글쓰기 3단계 시리즈 안내 줄(velog 헤더·다음 편, linkedin/zenn strip, zenn はじめに 문장) + `StepContext.series`
+- BX3 — 글쓰기 3단계 시리즈 안내 줄(velog 헤더·다음 편, linkedin/zenn strip, zenn はじめに 문장) + `StepContext.series` — 완료 2026-09-25
 - BX4 — 발행정보 `## 벨로그 시리즈` 절 렌더 + `completeTopic`(완료 줄 태그 유지) + 발행 체크리스트 타입
 - BS5 — 단계명 → 구현 라우팅 StepRunner, `bin/worker.ts`가 Mock 대신 사용
