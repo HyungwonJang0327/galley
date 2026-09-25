@@ -243,7 +243,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
   - 완료조건: 컴포넌트 테스트, `verify:layout` 통과(행 레이아웃 변경 시), reviewer 통과.
   - 구현 요약: pipeline `QueueEntry.id`·`series`, `queueSeries.ts`(요약), `readTopicSeriesInfo`; dashboard `QueueRowTitle`·`QueueGroupHeader`(앱 마크업 — 사용자 결정), `lib/queue-view.items`, `lib/run-series`. `(기존 글)`은 ⋮ "지금 실행" 사유(실행 버튼은 BS5 뒤, 같은 판정 사용). `verify:layout`은 갤러리 대상이라 안 돌림(ui 레이아웃 컴포넌트 변경 없음).
   - 이월(리뷰 기록만): L1 `### 시리즈`가 마지막 소제목이 아니면 편 없는 정의 헤더가 다음 소제목 첫 행 위에 낌 · L4 적재와 요약이 파일을 따로 읽음(1회 읽기 리팩토링은 `loadQueueSections` 반환 타입 변경 필요).
-- [x] **BX6** (2026-09-26 `424a765`, docs/series, 해시는 브랜치 기준 — 머지 후 정정) doc — CLAUDE.md "파이프라인 단계" 아래 시리즈 한 줄, decisions/queue-sync-direction.md "정의 줄 보존" 항목, decisions/evidence-collection.md 파서 확장 절에 태그 한 줄, README 사용법에 시리즈 표기 예시 4줄, worklog·todo·PR 마감. 브랜치 `docs/series`. 커밋: `docs: 시리즈 대응 문서 반영`
+- [x] **BX6** (2026-09-26 `a21c5fe`, docs/series, PR #137) doc — CLAUDE.md "파이프라인 단계" 아래 시리즈 한 줄, decisions/queue-sync-direction.md "정의 줄 보존" 항목, decisions/evidence-collection.md 파서 확장 절에 태그 한 줄, README 사용법에 시리즈 표기 예시 4줄, worklog·todo·PR 마감. 브랜치 `docs/series`. 커밋: `docs: 시리즈 대응 문서 반영`
   - 완료조건: 문서 간 표기(태그 문법·정의 줄 문법·산출물 형식)가 decisions/series.md와 일치.
 
 - [ ] **BS5** pl — 단계 라우팅: `createStepRunner({ registry, prompts, storage… })`가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · B3a publishInfo)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV=development`·테스트만). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
