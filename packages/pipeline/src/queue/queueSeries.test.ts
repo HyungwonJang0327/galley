@@ -63,6 +63,15 @@ describe('summarizeQueueSeries', () => {
     ]);
   });
 
+  test('같은 키 정의 줄이 둘이면 첫 것만(사람 실수 — 툴팁 이름과 헤더가 어긋나지 않게)', () => {
+    const q = parseQueue(QUEUE.replace('시리즈 E. 편 없는 시리즈', '시리즈 A. 중복 정의'));
+    const summary = summarizeQueueSeries(q);
+    expect(summary.map((s) => [s.key, s.name])).toEqual([
+      ['A', '앱 만들기'],
+      ['D', '정의만 남은 시리즈'],
+    ]);
+  });
+
   test('정의 줄 없는 태그 편은 요약에 나오지 않는다(이름을 지어내지 않음)', () => {
     const q = parseQueue('## 대기\n\n- [Z-1] 정의 없는 편\n\n## 후보\n\n## 보류\n\n## 완료\n');
     expect(summarizeQueueSeries(q)).toEqual([]);
