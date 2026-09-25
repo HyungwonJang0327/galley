@@ -88,11 +88,15 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             move={moveQueueRowAction}
             reorder={reorderQueueRowAction}
           />
-        ) : view.rows.length > 0 ? (
+        ) : view.items.length > 0 ? (
+          // 편이 전부 대기로 가고 정의 줄만 남아도 헤더("편 없음 · 대기 N편")는 보인다(BX5 리뷰 L2).
           <ListRows>
             {view.items.map((item) =>
               item.kind === 'group' ? (
-                <QueueGroupHeader key={`group-${item.group.key}`} group={item.group} />
+                <QueueGroupHeader
+                  key={`group-${item.group.key}-${item.group.position}`}
+                  group={item.group}
+                />
               ) : (
                 <ListRow
                   key={`${item.row.index}-${item.row.title}`}

@@ -10,6 +10,11 @@
   font-size: var(--ui-text-sm);
 }
 
+/* 편 없는 정의가 목록 맨 끝이면 카드 하단과 밑줄이 겹친다 — 행(.row:last-child)과 같은 규칙. */
+.header:last-child {
+  border-bottom: 0;
+}
+
 .name {
   color: var(--ui-color-text);
   font-weight: var(--ui-weight-medium);
