@@ -28,12 +28,26 @@ const RUN_NOW: QueueRowMenuItem = {
   disabledReason: '실행 화면은 아직 준비 중입니다.',
 };
 
-export function queueRowMenuEntries(status: QueueStatus): QueueRowMenuEntry[] {
+/** `(기존 글)` 편 — 이미 발행돼 실행 대상이 아니다(decisions/series.md). 실행 버튼이 생겨도 같은 판정을 쓴다. */
+export const ALREADY_PUBLISHED_REASON = '이미 발행된 글입니다.';
+
+export interface QueueRowMenuOptions {
+  /** 시리즈 `(기존 글)` 편 — 준비 중 사유보다 앞선다(준비가 끝나도 실행 불가). */
+  alreadyPublished?: boolean;
+}
+
+export function queueRowMenuEntries(
+  status: QueueStatus,
+  options: QueueRowMenuOptions = {},
+): QueueRowMenuEntry[] {
   const moves = MOVE_TARGETS.filter((target) => target.status !== status).map((target) => ({
     id: `${MOVE_PREFIX}${target.status}`,
     label: target.label,
   }));
-  return [...moves, { type: 'separator' }, RUN_NOW];
+  const runNow = options.alreadyPublished
+    ? { ...RUN_NOW, disabledReason: ALREADY_PUBLISHED_REASON }
+    : RUN_NOW;
+  return [...moves, { type: 'separator' }, runNow];
 }
 
 /** 메뉴 id → 옮길 섹션. 이동 항목이 아니면 null. */
