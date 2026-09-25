@@ -122,6 +122,22 @@ describe('createLinkedinStepRunner', () => {
     expect(call.maxOutputTokens).toBe(WRITING_LIMITS.linkedinMaxOutputTokens);
   });
 
+  test('벨로그의 시리즈 표기(제목 N편·인용 줄·다음 편)는 떼고 모델에 넘긴다', async () => {
+    await artifacts.write(
+      '무한-스크롤',
+      'run_series',
+      VELOG_ARTIFACT,
+      '# 무한 스크롤 붙이기 | 앱 만들기 2편\n\n> 앱 만들기 시리즈 2편. [이전 편: 첫 편]([벨로그 링크])\n\n스토어 50개에서 목록이 멈췄다.\n\n다음 편: 셋째 편\n',
+    );
+    const a = adapters();
+    await createLinkedinStepRunner(deps({ adapters: a })).run(ctx({ runId: 'run_series' }));
+    const { prompt } = a.adapter.calls[0]!;
+    expect(prompt).toContain('# 무한 스크롤 붙이기\n');
+    expect(prompt).toContain('스토어 50개에서 목록이 멈췄다.');
+    expect(prompt).not.toContain('앱 만들기');
+    expect(prompt).not.toContain('다음 편');
+  });
+
   test('carried 본문은 sources.velog의 Run 산출물을 읽고, 결과는 이 Run에 쓴다', async () => {
     const a = adapters();
     const r = await createLinkedinStepRunner(deps({ adapters: a })).run(

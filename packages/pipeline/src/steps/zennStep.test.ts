@@ -173,6 +173,37 @@ describe('createZennStepRunner', () => {
     expect(call.maxOutputTokens).toBe(WRITING_LIMITS.zennMaxOutputTokens);
   });
 
+  test('시리즈 편이면 입력에서 벨로그 표기를 떼고, 제목 (第N回)·はじめに 첫 문장 앞 시리즈 문장을 코드가 붙인다', async () => {
+    await artifacts.write(
+      '無限-scroll',
+      'run_series',
+      VELOG_ARTIFACT,
+      '# 무한 스크롤 붙이기 | 앱 만들기 2편\n\n> 앱 만들기 시리즈 2편. [이전 편: 첫 편]([벨로그 링크])\n\n스토어 50개에서 목록이 멈췄다.\n\n다음 편: 셋째 편\n',
+    );
+    const a = adapters();
+    const r = await createZennStepRunner(deps({ adapters: a })).run(
+      ctx({
+        runId: 'run_series',
+        series: {
+          name: '앱 만들기',
+          nameJa: 'アプリをつくる',
+          episodeNo: 2,
+          total: 3,
+          alreadyPublished: false,
+        },
+      }),
+    );
+    const { prompt } = a.adapter.calls[0]!;
+    expect(prompt).not.toContain('앱 만들기');
+    expect(prompt).not.toContain('다음 편');
+    const out = r.artifacts[ZENN_ARTIFACT]!;
+    expect(out).toContain('title: "無限スクロールを付けた話 (第2回)"');
+    expect(out).toContain(
+      '## はじめに\n\nアプリをつくるシリーズの第2回です。ストア50件で一覧が止まりました。',
+    );
+    expect(out).toContain('\npublished: false\n');
+  });
+
   test('모델이 frontmatter(published: true)나 전체 펜스를 내도 버리고 published: false로 덮어쓴다', async () => {
     const sneaky = createScriptedAdapter(
       () =>
