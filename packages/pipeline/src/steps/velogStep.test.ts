@@ -10,6 +10,7 @@ import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import { createScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
+import type { SeriesStepInfo } from './series.ts';
 import { hashPromptText } from '../prompts/tonePrompts.ts';
 import type { StepContext } from './StepRunner.ts';
 
@@ -157,6 +158,39 @@ describe('createVelogStepRunner', () => {
     expect(call.prompt).not.toContain('spacehome');
     expect(call.prompt).toContain('io.observe(sentinel);');
     expect(call.maxOutputTokens).toBe(WRITING_LIMITS.velogMaxOutputTokens);
+  });
+
+  test('시리즈 편이면 SYSTEM에 서술 지시 한 줄, 출력에 제목 N편·인용 줄·다음 편을 코드가 붙인다', async () => {
+    const a = adapters(
+      createScriptedAdapter(
+        () => '# 무한 스크롤 붙이기\n\n도입.\n\n## 결과\n\n결과.\n\n## 회고\n\n끝.\n',
+      ),
+    );
+    const series: SeriesStepInfo = {
+      name: '앱 만들기',
+      episodeNo: 2,
+      total: 3,
+      previous: { title: '첫 편' },
+      next: { title: '셋째 편' },
+      alreadyPublished: false,
+    };
+    const r = await createVelogStepRunner({ store, artifacts, promptsDir, adapters: a }).run(
+      ctx({ runId: 'run_series', sources: { evidence: 'run_0' }, series }),
+    );
+    expect(a.adapter.calls[0]!.system).toContain('"앱 만들기" 시리즈 2편입니다 (이전 편: 첫 편)');
+    expect(a.adapter.calls[0]!.system?.endsWith(TONE)).toBe(true);
+    expect(r.artifacts[VELOG_ARTIFACT]).toBe(
+      '# 무한 스크롤 붙이기 | 앱 만들기 2편\n\n> 앱 만들기 시리즈 2편. [이전 편: 첫 편]([벨로그 링크])\n\n도입.\n\n## 결과\n\n결과.\n\n다음 편: 셋째 편\n\n## 회고\n\n끝.\n',
+    );
+  });
+
+  test('(기존 글) 편은 모델을 부르지 않고 SERIES_EPISODE_ALREADY_PUBLISHED(재시도 불가)', async () => {
+    const a = adapters();
+    const error = await createVelogStepRunner({ store, artifacts, promptsDir, adapters: a })
+      .run(ctx({ series: { name: '앱', episodeNo: 6, total: 6, alreadyPublished: true } }))
+      .catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'SERIES_EPISODE_ALREADY_PUBLISHED', retryable: false });
+    expect(a.adapter.calls).toHaveLength(0);
   });
 
   test('carried 근거는 sources.evidence의 Run 번들을 읽는다', async () => {
