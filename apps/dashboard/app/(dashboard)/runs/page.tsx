@@ -14,6 +14,7 @@ import {
 } from '../../../lib/run-labels';
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
+import { getRunSeries } from '../../../lib/run-series';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
 import { RunPoller } from './RunPoller';
@@ -46,6 +47,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const pane = resolveRunPane(preselected ?? (activeId ? await getRunDetail(activeId) : undefined));
   const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
+  // 시리즈 편이면 헤더 아래 한 줄(○○ 시리즈 N/M편 · 이전·다음 편). 못 읽으면 줄만 빠진다.
+  const series = selected ? await getRunSeries(selected.topicId) : undefined;
   return (
     <>
       <PageHeader title="실행" />
@@ -88,12 +91,25 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           header={
             selected &&
             headerBadge && (
-              <div className={styles.detailHeader}>
-                <h2 className={styles.topicTitle}>{selected.topicTitle}</h2>
-                <span className={styles.attempt}>{selected.attempt}차</span>
-                <Badge tone={headerBadge.tone} pulse={headerBadge.pulse}>
-                  {headerBadge.label}
-                </Badge>
+              <div>
+                <div className={styles.detailHeader}>
+                  <h2 className={styles.topicTitle}>{selected.topicTitle}</h2>
+                  <span className={styles.attempt}>{selected.attempt}차</span>
+                  <Badge tone={headerBadge.tone} pulse={headerBadge.pulse}>
+                    {headerBadge.label}
+                  </Badge>
+                </div>
+                {series ? (
+                  <p className={styles.series} aria-label="시리즈 편 정보">
+                    <span className={styles.seriesSummary}>{series.summary}</span>
+                    {series.previousTitle === undefined ? null : (
+                      <span className={styles.seriesNeighbor}>이전 편: {series.previousTitle}</span>
+                    )}
+                    {series.nextTitle === undefined ? null : (
+                      <span className={styles.seriesNeighbor}>다음 편: {series.nextTitle}</span>
+                    )}
+                  </p>
+                ) : null}
               </div>
             )
           }

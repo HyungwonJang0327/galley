@@ -20,6 +20,29 @@
   color: var(--ui-color-text-muted);
 }
 
+/* 헤더 아래 시리즈 한 줄 — 헤더와 같은 가로 여백, 위 여백은 없이 붙인다. 긴 편 제목은 한 줄 말줄임. */
+.series {
+  display: flex;
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0 var(--ui-space-4) var(--ui-space-3);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+}
+
+.seriesSummary {
+  flex-shrink: 0;
+  color: var(--ui-color-text);
+}
+
+.seriesNeighbor {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .note {
   margin: 0;
   padding-block: var(--ui-space-5);
