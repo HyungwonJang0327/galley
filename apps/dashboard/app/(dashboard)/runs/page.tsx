@@ -100,7 +100,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   </Badge>
                 </div>
                 {series ? (
-                  <p className={styles.series} aria-label="시리즈 편 정보">
+                  <p className={styles.series}>
                     <span className={styles.seriesSummary}>{series.summary}</span>
                     {series.previousTitle === undefined ? null : (
                       <span className={styles.seriesNeighbor}>이전 편: {series.previousTitle}</span>
