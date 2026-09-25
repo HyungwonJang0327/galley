@@ -124,6 +124,8 @@ export {
   retryDelayMs,
 } from './worker/runOnce.ts';
 export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo.ts';
+export { resolveDataDir } from './worker/resolveDataDir.ts';
+export type { DataDirResult } from './worker/resolveDataDir.ts';
 export type { TickResult, TickOutcome } from './worker/runOnce.ts';
 export type {
   WorkerDeps,

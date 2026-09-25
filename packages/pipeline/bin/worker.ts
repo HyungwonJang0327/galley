@@ -4,17 +4,29 @@
 // 대시보드와는 DB로만 이야기한다(decisions/run-location.md). 신호를 주고받지 않는다.
 // Node 24의 타입 스트리핑으로 그대로 돈다(빌드·런처 없음). **상대 import에 확장자가 필수**다
 // — decisions/node-runtime.md, CLAUDE.md 함정 절.
+//
+// 조립 루트(bin)만 레지스트리·스토어를 만든다 — runOnce·runIndexTick·단계 러너는 인터페이스만 받는다.
 import { randomUUID } from 'node:crypto';
+import { LocalFsArtifactStore } from '../src/artifacts/ArtifactStore.ts';
 import { prisma } from '../src/db.ts';
-import { defaultRedactConfigPath, loadRedactConfig } from '../src/evidence/redact.ts';
+import { LocalFsEvidenceStore } from '../src/evidence/EvidenceStore.ts';
+import {
+  defaultRedactConfigPath,
+  loadRedactConfig,
+  type RedactConfig,
+} from '../src/evidence/redact.ts';
 import { runIndexTick } from '../src/index/runIndexTick.ts';
 import { runAutoLinkTick } from '../src/link/autoLink.ts';
-import { createModelRegistryFromEnv } from '../src/model/ModelRegistry.ts';
-import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
-import { runOnce } from '../src/worker/runOnce.ts';
+import { createModelRegistryFromEnv, type ModelRegistry } from '../src/model/ModelRegistry.ts';
+import { resolveTonePromptsDir } from '../src/prompts/tonePrompts.ts';
+import { createStepRunner } from '../src/steps/createStepRunner.ts';
 import { createMockStepRunner } from '../src/steps/MockStepRunner.ts';
 import { createSeriesSource } from '../src/steps/seriesSource.ts';
+import type { StepRunner } from '../src/steps/StepRunner.ts';
 import { LocalFsStorage } from '../src/storage/LocalFsStorage.ts';
+import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
+import { resolveDataDir } from '../src/worker/resolveDataDir.ts';
+import { runOnce } from '../src/worker/runOnce.ts';
 import type { WorkerDeps } from '../src/worker/WorkerDeps.ts';
 
 /** 할 일이 없을 때 쉬는 간격. 진행했으면 쉬지 않고 바로 다음 틱(decisions/run-location.md 폴링 2s). */
@@ -42,7 +54,7 @@ const deps: WorkerDeps = {
     error: (message, data) => console.error(JSON.stringify({ level: 'error', message, ...data })),
   },
   repo: createPrismaWorkerRepo(prisma),
-  // TODO(BE8~BE11): 단계별 실제 StepRunner로 교체. 그때까지는 결정적 Mock이 돈다.
+  // 기동 검증 뒤 main이 바꿔 끼운다(아래 createStepRunnerForEnv). 그 전엔 돌지 않는다.
   stepRunner: createMockStepRunner(),
   // 시리즈 편 정보(모든 단계 시작에 한 번) — 큐 파일(BLOG_DIR)을 읽기만 한다. BLOG_DIR이 없으면 시리즈 편만 실패한다.
   series: createSeriesSource({
@@ -52,23 +64,82 @@ const deps: WorkerDeps = {
 };
 
 /**
- * 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 모델은 레지스트리(id → 어댑터)만, 식별 정보 필터는
- * 기동 시 한 번 읽는다. **없으면(MISSING)** null로 기동(readOnly 리포 작업은 인덱서가 REDACT_CONFIG_REQUIRED로 실패시킨다),
- * **깨졌으면(INVALID·UNREADABLE)** 기동하지 않는다 — BE2 결정 "깨진 설정이면 무조건 거부"(decisions/evidence-collection.md).
- * 조립 루트(bin)만 레지스트리를 import한다 — runOnce·runIndexTick은 어댑터 조회 인터페이스만 받는다.
+ * 단계 러너를 Mock으로 돌리는 환경 — `NODE_ENV`가 `test`(스모크·CI) 또는 `development`(모델 없이 화면 확인). 실모델로
+ * 돌릴 때는 `NODE_ENV` 없이(`pnpm worker`). Mock 어댑터가 development에만 있는 것과 같은 축이다
+ * (decisions/model-selection.md, 2026-09-26 사용자 결정 BS5).
  */
-async function createIndexer(): Promise<NonNullable<WorkerDeps['indexer']> | null> {
-  const registry = createModelRegistryFromEnv(process.env);
-  const redactPath = defaultRedactConfigPath(process.env);
-  const loaded = await loadRedactConfig(redactPath);
-  if (!loaded.ok && loaded.code !== 'REDACT_CONFIG_MISSING') {
+function usesMockSteps(env: NodeJS.ProcessEnv): boolean {
+  return env.NODE_ENV === 'test' || env.NODE_ENV === 'development';
+}
+
+/**
+ * 식별 정보 필터는 기동 시 한 번 읽어 인덱서·근거 수집이 같이 쓴다. **없으면(MISSING)** null로 기동(readOnly 리포 작업은
+ * REDACT_CONFIG_REQUIRED로 실패한다), **깨졌으면(INVALID·UNREADABLE)** 기동하지 않는다 — BE2 결정 "깨진 설정이면
+ * 무조건 거부"(decisions/evidence-collection.md).
+ */
+async function loadRedact(): Promise<{ ok: true; config: RedactConfig | null } | { ok: false }> {
+  const loaded = await loadRedactConfig(defaultRedactConfigPath(process.env));
+  if (loaded.ok) return { ok: true, config: loaded.config };
+  if (loaded.code !== 'REDACT_CONFIG_MISSING') {
     deps.logger.error('식별 정보 필터 설정이 깨져 기동하지 않는다', { code: loaded.code });
+    return { ok: false };
+  }
+  deps.logger.info('식별 정보 필터 설정 없이 기동한다(readOnly 리포 인덱싱·근거 수집은 거부된다)', {
+    code: loaded.code,
+  });
+  return { ok: true, config: null };
+}
+
+/**
+ * 실제 단계 러너 조립. DATA_DIR(코드 조각·산출물)·PROMPTS_DIR(어투)이 규칙에 맞지 않으면 기동하지 않는다 — 어디에 쓰는지
+ * 모르는 채 돌지 않는다(BE8 ⑩·BS1 리뷰 3). 발행정보는 B3a 전까지 Mock(createStepRunner 기본).
+ */
+function createStepRunnerForEnv(
+  registry: ModelRegistry,
+  redactConfig: RedactConfig | null,
+): StepRunner | null {
+  if (usesMockSteps(process.env)) {
+    deps.logger.info('단계 러너: Mock', { NODE_ENV: process.env.NODE_ENV });
+    return createMockStepRunner();
+  }
+  const dataDir = resolveDataDir(process.env);
+  if (!dataDir.ok) {
+    deps.logger.error('DATA_DIR이 규칙에 맞지 않아 기동하지 않는다', {
+      code: dataDir.code,
+      value: dataDir.value,
+      hint: '루트 .env에 DATA_DIR을 절대경로로, BLOG_DIR 밖에 둔다(예: ~/.galley/data)',
+    });
     return null;
   }
-  if (!loaded.ok)
-    deps.logger.info('식별 정보 필터 설정 없이 기동한다(readOnly 리포 인덱싱은 거부된다)', {
-      code: loaded.code,
+  const prompts = resolveTonePromptsDir(process.env);
+  if (!prompts.ok) {
+    deps.logger.error('PROMPTS_DIR이 절대경로가 아니라 기동하지 않는다', {
+      code: prompts.code,
+      value: prompts.value,
     });
+    return null;
+  }
+  deps.logger.info('단계 러너: 실제(발행정보는 B3a 전까지 Mock)', {
+    dataDir: dataDir.dir,
+    promptsDir: prompts.dir,
+    redact: redactConfig !== null,
+  });
+  return createStepRunner({
+    prisma,
+    evidenceStore: new LocalFsEvidenceStore(dataDir.dir),
+    artifactStore: new LocalFsArtifactStore(dataDir.dir),
+    promptsDir: prompts.dir,
+    adapters: registry,
+    redactConfig,
+    clock: deps.clock,
+  });
+}
+
+/** 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 레지스트리·필터는 main이 만든 것을 같이 쓴다. */
+function createIndexer(
+  registry: ModelRegistry,
+  redactConfig: RedactConfig | null,
+): NonNullable<WorkerDeps['indexer']> {
   const tickDeps = {
     prisma,
     workerId: deps.workerId,
@@ -76,7 +147,7 @@ async function createIndexer(): Promise<NonNullable<WorkerDeps['indexer']> | nul
     timers: deps.timers,
     logger: deps.logger,
     adapters: registry,
-    redactConfig: loaded.ok ? loaded.config : null,
+    redactConfig,
   };
   return { tick: (signal) => runIndexTick(tickDeps, signal) };
 }
@@ -113,13 +184,16 @@ const sleep = (ms: number) =>
   });
 
 async function main(): Promise<void> {
-  const indexer = await createIndexer();
-  if (indexer === null) {
+  const registry = createModelRegistryFromEnv(process.env);
+  const redact = await loadRedact();
+  const stepRunner = redact.ok ? createStepRunnerForEnv(registry, redact.config) : null;
+  if (!redact.ok || stepRunner === null) {
     await prisma.$disconnect();
     process.exitCode = 1;
     return;
   }
-  deps.indexer = indexer;
+  deps.stepRunner = stepRunner;
+  deps.indexer = createIndexer(registry, redact.config);
   // 주제 ↔ 분석 글 자동 연결 — Run·IndexJob이 없을 때 runOnce가 부른다(모델 없음, DB만).
   const linkDeps = { prisma, clock: deps.clock, logger: deps.logger };
   deps.linker = { tick: (signal) => runAutoLinkTick(linkDeps, signal) };
