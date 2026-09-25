@@ -655,27 +655,76 @@ describe('runOnce — StepContext', () => {
 describe('runOnce — 시리즈 편 정보', () => {
   const info: SeriesStepInfo = { name: '앱', episodeNo: 2, total: 3, alreadyPublished: false };
 
-  it('글쓰기·발행정보 단계에만 series를 채운다', async () => {
+  it('모든 단계에 series를 채우고, 단계마다 한 번만 조회한다(재시도는 같은 값)', async () => {
     const forTopic = vi.fn(async () => info);
     const seen: { step: StepName; series: SeriesStepInfo | undefined }[] = [];
+    let failedOnce = false;
     const capturing: StepRunner = {
       async run(ctx) {
         seen.push({ step: ctx.step, series: ctx.series });
+        if (ctx.step === 'velog' && !failedOnce) {
+          failedOnce = true;
+          throw new StepFailure('VELOG_MODEL_FAILED', '일시 실패', true);
+        }
         return { artifacts: {} };
       },
     };
     const d = deps({ stepRunner: capturing, series: { forTopic } });
     for (let i = 0; i < STEP_ORDER.length + 1; i += 1) await runOnce(d);
 
-    expect(seen.map((s) => [s.step, s.series !== undefined])).toEqual([
-      ['evidence', false],
-      ['velog', true],
-      ['verify', false],
-      ['linkedin', true],
-      ['zenn', true],
-      ['publishInfo', true],
+    expect(seen.map((s) => s.step)).toEqual([
+      'evidence',
+      'velog',
+      'velog',
+      'verify',
+      'linkedin',
+      'zenn',
+      'publishInfo',
     ]);
+    expect(seen.every((s) => s.series === info)).toBe(true);
+    expect(forTopic).toHaveBeenCalledTimes(STEP_ORDER.length);
     expect(forTopic).toHaveBeenCalledWith('t1');
+  });
+
+  it('(기존 글) 편은 첫 단계부터 돌리지 않고 SERIES_EPISODE_ALREADY_PUBLISHED로 실패한다', async () => {
+    const { repo, state } = fakeRepo();
+    const ran: StepName[] = [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        ran.push(ctx.step);
+        return { artifacts: {} };
+      },
+    };
+    const forTopic = vi.fn(async () => ({ ...info, alreadyPublished: true }));
+    const d = deps({ repo, stepRunner: capturing, series: { forTopic } });
+    await runOnce(d);
+    await runOnce(d);
+
+    expect(ran).toEqual([]);
+    expect(state.outcomes[0]).toMatchObject({
+      step: 'evidence',
+      outcome: { status: STEP_STATUS.failed, errorCode: 'SERIES_EPISODE_ALREADY_PUBLISHED' },
+    });
+    expect(state.failed).toBe(true);
+  });
+
+  it('재시도 가능한 조회 실패는 다음 시도가 다시 읽는다', async () => {
+    const forTopic = vi
+      .fn<(topicId: string) => Promise<SeriesStepInfo | undefined>>()
+      .mockRejectedValueOnce(new StepFailure('SERIES_LOOKUP_FAILED', 'DB 잠김', true))
+      .mockResolvedValue(info);
+    const seen: (SeriesStepInfo | undefined)[] = [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        seen.push(ctx.series);
+        return { artifacts: {} };
+      },
+    };
+    const d = deps({ stepRunner: capturing, series: { forTopic } });
+    await runOnce(d);
+    await runOnce(d);
+    expect(forTopic).toHaveBeenCalledTimes(2);
+    expect(seen).toEqual([info]);
   });
 
   it('조회가 영구 실패로 던지면 단계를 돌리지 않고 실패로 기록한다', async () => {
@@ -693,9 +742,9 @@ describe('runOnce — 시리즈 편 정보', () => {
     const d = deps({ repo, stepRunner: capturing, series: { forTopic } });
     for (let i = 0; i < 3; i += 1) await runOnce(d);
 
-    expect(ran).toEqual(['evidence']);
+    expect(ran).toEqual([]);
     expect(state.outcomes.at(-1)).toMatchObject({
-      step: 'velog',
+      step: 'evidence',
       outcome: { status: STEP_STATUS.failed, errorCode: 'SERIES_NOT_DEFINED' },
     });
     expect(state.failed).toBe(true);

@@ -4,6 +4,7 @@
 import type { IndexTickResult } from '../index/runIndexTick.ts';
 import type { AutoLinkTickResult } from '../link/autoLink.ts';
 import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
+import type { SeriesStepInfo } from '../steps/series.ts';
 import { StepFailure, toStepFailure } from '../steps/StepRunner.ts';
 import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
 
@@ -18,9 +19,6 @@ export const HEARTBEAT_TIMEOUT_MS = 30_000;
  * 그 단계는 조용히 회수된다(decisions/run-location.md 함정).
  */
 export const HEARTBEAT_INTERVAL_MS = 5_000;
-
-/** 시리즈 편 정보가 필요한 단계 — 안내 줄을 붙이거나 떼는 글쓰기 3단계와 발행정보(decisions/series.md). */
-const SERIES_STEPS: ReadonlySet<StepName> = new Set(['velog', 'linkedin', 'zenn', 'publishInfo']);
 
 /**
  * 단계 하나의 최대 실행 시간. **heartbeat와 별개다** — heartbeat는 "프로세스가 살아 있다"만
@@ -147,6 +145,9 @@ async function attemptStep(
   signal?: AbortSignal,
 ): Promise<TickResult> {
   const stepRef = { runId: run.id, step };
+  // 시리즈 편 정보는 단계 시작에 한 번만 읽는다 — 재시도끼리는 같은 값(일시 실패로 못 읽었으면 다음 시도가 다시 읽는다).
+  let series: SeriesStepInfo | undefined;
+  let seriesLoaded = deps.series === undefined;
 
   for (let attempt = 1; attempt <= MAX_STEP_ATTEMPTS; attempt += 1) {
     // 재시도 사이에 종료 신호가 왔으면 새 시도를 시작하지 않고 반환한다.
@@ -172,11 +173,17 @@ async function attemptStep(
       const sources: Partial<Record<StepName, string>> = {};
       for (const s of run.steps)
         if (s.origin === 'carried' && s.sourceRunId !== undefined) sources[s.name] = s.sourceRunId;
-      // 시리즈 편 정보 — 글쓰기·발행정보 단계만(시도마다 다시 읽는다: 그새 사람이 이전 편 URL을 붙였을 수 있다).
-      const series =
-        deps.series !== undefined && SERIES_STEPS.has(step)
-          ? await deps.series.forTopic(run.topicId)
-          : undefined;
+      if (!seriesLoaded && deps.series !== undefined) {
+        series = await deps.series.forTopic(run.topicId);
+        seriesLoaded = true;
+      }
+      // `(기존 글)` 편은 이미 발행된 글 — 어느 단계든 모델을 부르기 전에 멈춘다(재실행이 뒤 단계부터여도, decisions/series.md).
+      if (series?.alreadyPublished === true)
+        throw new StepFailure(
+          'SERIES_EPISODE_ALREADY_PUBLISHED',
+          '이미 발행된 시리즈 편((기존 글))이라 이 실행을 진행하지 않습니다.',
+          false,
+        );
       const result = await deps.stepRunner.run({
         runId: run.id,
         step,

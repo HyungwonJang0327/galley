@@ -107,8 +107,8 @@ export interface WorkerDeps {
   repo: WorkerRepo;
   stepRunner: StepRunner;
   /**
-   * 시리즈 편 정보 조회 — 글쓰기·발행정보 단계를 돌기 직전에 부른다(`StepContext.series`). 시리즈가 아닌 주제면 undefined.
-   * 조회 실패(정의 줄 없음·큐 파일 못 읽음)는 StepFailure로 던져 그 단계의 실패로 기록된다. 없으면 시리즈 정보 없이 돈다.
+   * 시리즈 편 정보 조회 — 모든 단계의 시작에 한 번 부른다(`StepContext.series`, `(기존 글)` 편 차단). 시리즈가 아닌 주제면
+   * undefined. 조회 실패는 StepFailure로 던져 그 단계의 실패로 기록된다(재시도 가능 여부는 구현이 알린다).
    */
   series?: { forTopic(topicId: string): Promise<SeriesStepInfo | undefined> };
   /**
