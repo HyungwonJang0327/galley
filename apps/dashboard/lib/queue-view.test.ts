@@ -7,9 +7,11 @@ const entry = (
   category: string | null = null,
   completedOn: string | null = null,
 ) => ({
+  id: `id-${title}`,
   title,
   category,
   completedOn,
+  series: null,
 });
 
 const sections: QueueSections = {

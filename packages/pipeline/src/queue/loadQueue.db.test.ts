@@ -24,13 +24,18 @@ const QUEUE_FILE = [
   '## 대기',
   '',
   '- 대기1',
-  '- 대기2',
+  '- [A-2] 대기2',
   '',
   '## 후보',
   '',
   '### 프론트',
   '',
   '- 후보1',
+  '',
+  '### 시리즈',
+  '',
+  '시리즈 A. 앱 만들기',
+  '- [A-3] (기존 글) 후보 편',
   '',
   '## 보류',
   '',
@@ -65,15 +70,34 @@ describe('loadQueueSections', () => {
   test('섹션별로 파일 순서대로, 표시 필드와 함께 돌려준다', async () => {
     const sections = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
 
+    const id = expect.any(String) as unknown as string;
     expect(sections).toEqual({
       대기: [
-        { title: '대기1', category: null, completedOn: null },
-        { title: '대기2', category: null, completedOn: null },
+        { id, title: '대기1', category: null, completedOn: null, series: null },
+        {
+          id,
+          title: '대기2',
+          category: null,
+          completedOn: null,
+          series: { key: 'A', episode: 2, alreadyPublished: false },
+        },
       ],
-      후보: [{ title: '후보1', category: '프론트', completedOn: null }],
-      보류: [{ title: '보류1', category: null, completedOn: null }],
-      완료: [{ title: '완료1', category: null, completedOn: '2026-09-01' }],
+      후보: [
+        { id, title: '후보1', category: '프론트', completedOn: null, series: null },
+        {
+          id,
+          title: '(기존 글) 후보 편',
+          category: '시리즈',
+          completedOn: null,
+          series: { key: 'A', episode: 3, alreadyPublished: true },
+        },
+      ],
+      보류: [{ id, title: '보류1', category: null, completedOn: null, series: null }],
+      완료: [{ id, title: '완료1', category: null, completedOn: '2026-09-01', series: null }],
     });
+    // id는 QueueItem.id — 실행 시작·상세 연결 키. 적재된 행과 같아야 한다.
+    const row = await prisma.queueItem.findFirstOrThrow({ where: { title: '대기1' } });
+    expect(sections.대기[0]?.id).toBe(row.id);
   });
 
   test('로드할 때마다 파일을 다시 읽는다(파일이 진실)', async () => {
@@ -95,7 +119,7 @@ describe('countTopicsByStatus', () => {
 
     // 파일이 바뀌어도 다시 적재하기 전까지는 마지막 적재 기준이다.
     expect(await countTopicsByStatus(prisma, '대기')).toBe(2);
-    expect(await countTopicsByStatus(prisma, '후보')).toBe(1);
+    expect(await countTopicsByStatus(prisma, '후보')).toBe(2);
     expect(await countTopicsByStatus(prisma, '완료')).toBe(1);
   });
 });

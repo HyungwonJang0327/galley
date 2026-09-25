@@ -8,7 +8,13 @@ vi.mock('./queue-data', () => ({ getQueueSections }));
 
 import { queueReloadSummary, reloadQueue } from './queue-reload';
 
-const topic = (title: string) => ({ title, category: null, completedOn: null });
+const topic = (title: string) => ({
+  id: `id-${title}`,
+  title,
+  category: null,
+  completedOn: null,
+  series: null,
+});
 
 const SECTIONS: QueueSections = {
   대기: [topic('가'), topic('나')],
