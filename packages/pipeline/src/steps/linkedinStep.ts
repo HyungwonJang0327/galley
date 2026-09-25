@@ -116,7 +116,9 @@ export function createLinkedinStepRunner(deps: LinkedinStepDeps): StepRunner {
               false,
             );
       // 벨로그의 시리즈 표기(제목 N편·인용 줄·다음 편)는 떼고 넘긴다 — 링크드인은 시리즈를 언급하지 않는다(decisions/series.md).
-      const body = stripSeriesLines(read.text).trim();
+      const body = (
+        ctx.series === undefined ? read.text : stripSeriesLines(read.text, ctx.series)
+      ).trim();
       if (body === '')
         throw new StepFailure(
           'LINKEDIN_BODY_EMPTY',

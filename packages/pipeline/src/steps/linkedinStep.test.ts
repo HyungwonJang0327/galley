@@ -130,7 +130,12 @@ describe('createLinkedinStepRunner', () => {
       '# 무한 스크롤 붙이기 | 앱 만들기 2편\n\n> 앱 만들기 시리즈 2편. [이전 편: 첫 편]([벨로그 링크])\n\n스토어 50개에서 목록이 멈췄다.\n\n다음 편: 셋째 편\n',
     );
     const a = adapters();
-    await createLinkedinStepRunner(deps({ adapters: a })).run(ctx({ runId: 'run_series' }));
+    await createLinkedinStepRunner(deps({ adapters: a })).run(
+      ctx({
+        runId: 'run_series',
+        series: { name: '앱 만들기', episodeNo: 2, total: 3, alreadyPublished: false },
+      }),
+    );
     const { prompt } = a.adapter.calls[0]!;
     expect(prompt).toContain('# 무한 스크롤 붙이기\n');
     expect(prompt).toContain('스토어 50개에서 목록이 멈췄다.');
