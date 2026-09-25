@@ -7,6 +7,7 @@
 //
 // 구현은 BE8~BE11이 단계별로 채운다. 지금은 Mock 하나뿐이다.
 import type { StepName } from '../run/stateMachine.ts';
+import type { SeriesStepInfo } from './series.ts';
 
 export interface StepContext {
   runId: string;
@@ -20,6 +21,11 @@ export interface StepContext {
    * 본문 단계는 `sources.evidence ?? runId`로 근거 번들(EvidenceStore)을 찾는다(BE11).
    */
   sources: Partial<Record<StepName, string>>;
+  /**
+   * 시리즈 편이면 이 편 기준 정보(편 번호·시리즈명·이전·다음 편). 워커가 `WorkerDeps.series`로 채운다 — 글쓰기·발행정보
+   * 단계만. 없으면 시리즈가 아닌 글(decisions/series.md).
+   */
+  series?: SeriesStepInfo;
   /** 재실행이면 그때의 수정 지시. 첫 실행에는 없다. */
   instruction?: string;
   /** 워커가 소유하는 취소·타임아웃. 구현은 오래 걸리는 일 사이사이에 확인한다. */
