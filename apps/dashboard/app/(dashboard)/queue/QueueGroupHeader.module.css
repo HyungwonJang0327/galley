@@ -1,0 +1,21 @@
+/* 그룹 헤더: 행보다 낮고 연한 줄 — 제목은 보통 굵기, 안내는 흐리게. 여백·색은 토큰만. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2) var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-color-border);
+  background-color: var(--ui-color-bg);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
+
+.name {
+  color: var(--ui-color-text);
+  font-weight: var(--ui-weight-medium);
+}
+
+.hint::before {
+  content: '·';
+  margin-inline-end: var(--ui-space-2);
+}

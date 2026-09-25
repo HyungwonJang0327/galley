@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
-import { getQueueSections } from '../../../lib/queue-data';
+import { getQueueSections, getQueueSeries } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
 import { queueStatusBadgeTone } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
@@ -15,7 +15,9 @@ import {
 import { MissingTopicsNotice } from './MissingTopicsNotice';
 import { CategoryFilter } from './CategoryFilter';
 import { DraggableQueueRows } from './DraggableQueueRows';
+import { QueueGroupHeader } from './QueueGroupHeader';
 import { QueueRowMenu } from './QueueRowMenu';
+import { QueueRowTitle } from './QueueRowTitle';
 import { ReloadQueueButton } from './ReloadQueueButton';
 import styles from './page.module.css';
 
@@ -42,7 +44,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     );
   }
 
-  const view = buildQueueView(result.data, { tab: params.tab, category: params.category });
+  // 시리즈 요약(배지 툴팁·후보 그룹 헤더)은 적재가 끝난 뒤 같은 파일에서 — 실패하면 빈 배열(장식).
+  const series = await getQueueSeries();
+  const view = buildQueueView(result.data, { tab: params.tab, category: params.category }, series);
   const badgeTone = queueStatusBadgeTone(view.active.status);
 
   return (
@@ -86,25 +90,29 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           />
         ) : view.rows.length > 0 ? (
           <ListRows>
-            {view.rows.map((row) => (
-              <ListRow
-                key={`${row.index}-${row.title}`}
-                title={row.title}
-                meta={row.meta}
-                trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
-                // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
-                actions={
-                  view.active.status === '완료' ? undefined : (
-                    <QueueRowMenu
-                      title={row.title}
-                      status={view.active.status}
-                      index={row.index}
-                      move={moveQueueRowAction}
-                    />
-                  )
-                }
-              />
-            ))}
+            {view.items.map((item) =>
+              item.kind === 'group' ? (
+                <QueueGroupHeader key={`group-${item.group.key}`} group={item.group} />
+              ) : (
+                <ListRow
+                  key={`${item.row.index}-${item.row.title}`}
+                  title={<QueueRowTitle title={item.row.title} series={item.row.series} />}
+                  meta={item.row.meta}
+                  trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
+                  // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
+                  actions={
+                    view.active.status === '완료' ? undefined : (
+                      <QueueRowMenu
+                        title={item.row.title}
+                        status={view.active.status}
+                        index={item.row.index}
+                        move={moveQueueRowAction}
+                      />
+                    )
+                  }
+                />
+              ),
+            )}
           </ListRows>
         ) : (
           <p className={styles.note}>{view.active.status} 섹션에 주제가 없습니다.</p>

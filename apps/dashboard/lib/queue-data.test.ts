@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const { loadQueueSections, FakeStorage } = vi.hoisted(() => ({
+const { loadQueueSections, loadQueueSeries, FakeStorage } = vi.hoisted(() => ({
   loadQueueSections: vi.fn(),
+  loadQueueSeries: vi.fn(),
   FakeStorage: class {
     constructor(readonly blogDir: string) {}
   },
@@ -12,15 +13,17 @@ vi.mock('@galley/pipeline', () => ({
   prisma: {},
   LocalFsStorage: FakeStorage,
   loadQueueSections,
+  loadQueueSeries,
 }));
 
-import { getQueueSections } from './queue-data';
+import { getQueueSections, getQueueSeries } from './queue-data';
 
 const EMPTY = { 대기: [], 후보: [], 보류: [], 완료: [] };
 
 afterEach(() => {
   vi.unstubAllEnvs();
   loadQueueSections.mockReset();
+  loadQueueSeries.mockReset();
 });
 
 describe('getQueueSections', () => {
@@ -53,5 +56,26 @@ describe('getQueueSections', () => {
       ok: false,
       error: { code: 'QUEUE_LOAD_FAILED', message: expect.stringContaining('ENOENT') },
     });
+  });
+});
+
+describe('getQueueSeries', () => {
+  it('BLOG_DIR 폴더의 Storage로 시리즈 요약을 읽는다', async () => {
+    vi.stubEnv('BLOG_DIR', 'blog-dir');
+    const summary = [{ key: 'A', name: '앱', category: '시리즈', position: 0, episodeCount: 0 }];
+    loadQueueSeries.mockResolvedValue(summary);
+
+    expect(await getQueueSeries()).toBe(summary);
+    expect(loadQueueSeries.mock.calls[0]?.[0].storage).toMatchObject({ blogDir: 'blog-dir' });
+  });
+
+  it('BLOG_DIR이 없거나 읽기가 실패하면 빈 배열(장식이라 목록을 막지 않는다)', async () => {
+    vi.stubEnv('BLOG_DIR', '');
+    expect(await getQueueSeries()).toEqual([]);
+    expect(loadQueueSeries).not.toHaveBeenCalled();
+
+    vi.stubEnv('BLOG_DIR', 'blog-dir');
+    loadQueueSeries.mockRejectedValue(new Error('ENOENT'));
+    expect(await getQueueSeries()).toEqual([]);
   });
 });
