@@ -1,0 +1,5 @@
+/* 배지는 제목 줄 안에서 글자 앞에 — ListRow 제목의 한 줄 말줄임을 깨지 않게 inline. */
+.tag {
+  vertical-align: middle;
+  margin-inline-end: var(--ui-space-2);
+}

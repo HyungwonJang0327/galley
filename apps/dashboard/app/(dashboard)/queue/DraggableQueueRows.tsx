@@ -13,6 +13,7 @@ import type { QueueMoveResult } from '../../../lib/queue-move';
 import type { QueueReorderResult } from '../../../lib/queue-reorder';
 import type { QueueRowView } from '../../../lib/queue-view';
 import { QueueRowMenu } from './QueueRowMenu';
+import { QueueRowTitle } from './QueueRowTitle';
 import styles from './DraggableQueueRows.module.css';
 
 // 대기 탭 행 목록(드래그로 순서 변경 — decisions/dnd-library.md: 로직은 앱, ListRow는 표현만).
@@ -147,7 +148,7 @@ function DraggableRow({
           <GripVertical size={16} aria-hidden="true" />
         </span>
       }
-      title={row.title}
+      title={<QueueRowTitle title={row.title} series={row.series} />}
       meta={row.meta}
       trailing={<Badge tone={badgeTone}>{status}</Badge>}
       actions={<QueueRowMenu title={row.title} status={status} index={row.index} move={move} />}
