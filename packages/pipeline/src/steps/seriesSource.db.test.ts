@@ -106,4 +106,38 @@ describe('createSeriesSource', () => {
     expect(error).toBeInstanceOf(StepFailure);
     expect(error).toMatchObject({ code: 'SERIES_QUEUE_UNREADABLE', retryable: false });
   });
+
+  test('파일 편 줄과 짝이 안 맞으면 SERIES_EPISODE_NOT_MATCHED(재시도 불가)', async () => {
+    const id = await idOf('둘째 편');
+    const renamed = createSeriesSource({
+      storage: storageOf(QUEUE.replace('- [A-2] 둘째 편', '- [A-2] 이름 바꾼 둘째 편')),
+      prisma,
+    });
+    await expect(renamed.forTopic(id)).rejects.toMatchObject({
+      code: 'SERIES_EPISODE_NOT_MATCHED',
+      retryable: false,
+    });
+  });
+
+  test('BLOG_DIR이 없으면 시리즈 편만 SERIES_SOURCE_UNCONFIGURED, 시리즈 아닌 주제는 그대로', async () => {
+    const source = createSeriesSource({ prisma });
+    expect(await source.forTopic(await idOf('일반 주제'))).toBeUndefined();
+    await expect(source.forTopic(await idOf('둘째 편'))).rejects.toMatchObject({
+      code: 'SERIES_SOURCE_UNCONFIGURED',
+      retryable: false,
+    });
+  });
+
+  test('DB 조회 실패는 SERIES_LOOKUP_FAILED(재시도 가능)', async () => {
+    const failing = {
+      queueItem: {
+        findUnique: async () => {
+          throw new Error('SQLITE_BUSY');
+        },
+      },
+    } as unknown as PrismaClient;
+    await expect(
+      createSeriesSource({ storage: storageOf(QUEUE), prisma: failing }).forTopic('x'),
+    ).rejects.toMatchObject({ code: 'SERIES_LOOKUP_FAILED', retryable: true });
+  });
 });

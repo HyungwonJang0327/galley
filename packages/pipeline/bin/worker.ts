@@ -44,13 +44,12 @@ const deps: WorkerDeps = {
   repo: createPrismaWorkerRepo(prisma),
   // TODO(BE8~BE11): 단계별 실제 StepRunner로 교체. 그때까지는 결정적 Mock이 돈다.
   stepRunner: createMockStepRunner(),
-  // 시리즈 편 정보(글쓰기·발행정보 단계) — 큐 파일(BLOG_DIR)을 읽기만 한다. BLOG_DIR이 없으면 아래에서 경고하고 빠진다.
-  ...(process.env.BLOG_DIR
-    ? { series: createSeriesSource({ storage: new LocalFsStorage(process.env.BLOG_DIR), prisma }) }
-    : {}),
+  // 시리즈 편 정보(모든 단계 시작에 한 번) — 큐 파일(BLOG_DIR)을 읽기만 한다. BLOG_DIR이 없으면 시리즈 편만 실패한다.
+  series: createSeriesSource({
+    ...(process.env.BLOG_DIR ? { storage: new LocalFsStorage(process.env.BLOG_DIR) } : {}),
+    prisma,
+  }),
 };
-if (deps.series === undefined)
-  deps.logger.error('BLOG_DIR이 없어 시리즈 편 정보 없이 돈다(시리즈 안내 줄이 붙지 않는다)');
 
 /**
  * 리포 인덱싱(IndexJob) — Run이 없을 때 runOnce가 이 틱을 부른다. 모델은 레지스트리(id → 어댑터)만, 식별 정보 필터는
