@@ -1,6 +1,11 @@
 // 주제를 완료로 옮기는 순수 함수 — 완료 줄은 `- YYYY-MM-DD [A-1] <글 제목> (<메모>, posts/<슬러그>)`(스케줄 실행 결과와 같은 형식,
 // decisions/series.md). 시리즈 태그는 줄이 들고 간다. 파일 쓰기·DB 재적재는 호출하는 쪽(B3a·Phase 2)이 moveQueueTopic과 같은 순서로.
+// 주의(BX4 리뷰 M2): 완료 줄 제목이 큐 제목과 다르면 매칭 키(normalizeTopicTitle)가 달라져, 그대로 재적재하면 완료 줄이 새 행이
+// 되고 원래 행은 "사라진 줄"로 남는다(Run 이력·seriesKey가 새 행에 안 붙음). 호출부가 파일을 쓰기 전에 그 QueueItem 행의
+// title·status·completedOn을 먼저 맞춰야 한다 — 처리 방식은 B3a 설계에서 정한다.
 import type { ParsedQueue, QueueStatus } from './queueFile.ts';
+import { SERIES_TAG } from './normalizeTitle.ts';
+import { isAlreadyPublished } from './topicHints.ts';
 
 export interface CompleteTopicInput {
   /** 지금 섹션(완료 제외). */
@@ -11,23 +16,45 @@ export interface CompleteTopicInput {
   title: string;
   /** 완료일 `YYYY-MM-DD`. */
   completedOn: string;
-  /** 발행한 글 제목(큐 제목과 다를 수 있다). 시리즈 표기(`| 시리즈명 N편`)는 붙이지 않은 것. */
+  /**
+   * 발행한 글 제목(큐 제목과 다를 수 있다). 시리즈 표기(`| 시리즈명 N편`)는 붙이지 않은 것. 한 줄이어야 하고, 맨 앞이
+   * 시리즈 태그(`[A-1]`)나 `(기존 글)`이면 다시 읽을 때 뜻이 바뀌므로 거부한다. 제목 안 괄호는 파일 형식상 힌트로
+   * 읽혀 표시 제목에서 빠진다(`Clerk 붙이기 (v2)` → `Clerk 붙이기`, `v2`는 키워드 힌트).
+   */
   articleTitle: string;
   /** 산출물 폴더 슬러그 — `posts/<슬러그>`. */
   slug: string;
-  /** 괄호 메모(예: `2023 글 리라이트`). posts 항 앞에 쉼표로. */
+  /** 괄호 메모(예: `2023 글 리라이트`). posts 항 앞에 쉼표로. 한 줄, 괄호 없이. */
   note?: string;
 }
 
 export type CompleteTopicFailure =
   /** index·title이 파일과 다름(그새 파일이 바뀜) */
   | 'TOPIC_MISMATCH'
-  /** 날짜·슬러그·글 제목 형식이 틀림 */
+  /** 날짜·슬러그·글 제목·메모 형식이 틀림 */
   | 'INVALID_COMPLETION';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** 슬러그는 topicSlug 산출물 모양 — 공백·괄호·쉼표가 들어가면 완료 줄 괄호가 깨진다. */
 const SLUG = /^[^\s(),，（）/]+$/;
+/** 제목·메모에 개행이 들어가면 줄이 쪼개져 섹션 구조가 깨진다(BX4 리뷰 H1). */
+const LINE_BREAK = /[\r\n]/;
+/** 메모의 괄호는 완료 줄 괄호를 깨고 힌트 파서가 어긋난다(BX4 리뷰 M1) — 슬러그와 같은 규칙. */
+const NOTE_PAREN = /[()（）]/;
+
+function isValidArticleTitle(title: string): boolean {
+  const trimmed = title.trim();
+  return (
+    trimmed !== '' &&
+    !LINE_BREAK.test(trimmed) &&
+    !SERIES_TAG.test(trimmed) &&
+    !isAlreadyPublished(trimmed)
+  );
+}
+
+function isValidNote(note: string | undefined): boolean {
+  return note === undefined || (!LINE_BREAK.test(note) && !NOTE_PAREN.test(note));
+}
 
 /** 완료 줄 제목 부분 — `<글 제목> (<메모>, posts/<슬러그>)`. */
 export function completedTitle(
@@ -49,7 +76,12 @@ export function completeTopic(
   const source = queue.sections[from];
   const topic = source[index];
   if (!topic || topic.title !== title) return { ok: false, code: 'TOPIC_MISMATCH' };
-  if (!DATE.test(input.completedOn) || !SLUG.test(input.slug) || input.articleTitle.trim() === '')
+  if (
+    !DATE.test(input.completedOn) ||
+    !SLUG.test(input.slug) ||
+    !isValidArticleTitle(input.articleTitle) ||
+    !isValidNote(input.note)
+  )
     return { ok: false, code: 'INVALID_COMPLETION' };
 
   const done = {
