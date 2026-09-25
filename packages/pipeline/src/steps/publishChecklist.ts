@@ -2,17 +2,17 @@
 // 값은 영어 id와 표시에 끼울 값만 — 한국어 문구는 대시보드 라벨 매핑이 붙인다(decisions/db-value-language.md). 화면은 Phase 2.
 import type { SeriesStepInfo } from './series.ts';
 
-export type PublishChecklistId =
+/**
+ * id별로 문구에 끼울 값이 묶인 판별 유니온 — 대시보드 라벨 매핑이 `params.seriesName` 같은 키를 잘못 쓰면 typecheck가
+ * 잡는다(BX4 리뷰 L3). id를 더하면 여기에 항을 더한다.
+ */
+export type PublishChecklistItem =
   /** 벨로그에서 이 글을 시리즈에 추가한다. */
-  | 'velog-series-add'
+  | { id: 'velog-series-add'; params: { seriesName: string } }
   /** 본문 인용 줄의 이전 편 링크 자리표시자([벨로그 링크])를 실제 URL로 채운다. */
-  | 'velog-previous-link';
+  | { id: 'velog-previous-link'; params: { previousTitle: string } };
 
-export interface PublishChecklistItem {
-  id: PublishChecklistId;
-  /** 문구에 끼울 값(시리즈명·이전 편 제목). */
-  params: Record<string, string>;
-}
+export type PublishChecklistId = PublishChecklistItem['id'];
 
 /**
  * 시리즈 편의 체크리스트 — 시리즈가 아니면 빈 배열. 이전 편 링크 항목은 자리표시자가 실제로 들어갔을 때만(이전 편이 있고
