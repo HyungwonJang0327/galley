@@ -17,6 +17,7 @@ import {
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
+import { stripSeriesLines } from './series.ts';
 
 export interface LinkedinStepDeps {
   /** 산출물 저장소(DATA_DIR) — 벨로그 본문을 여기서 읽고 linkedin.md를 여기에 쓴다. */
@@ -114,7 +115,8 @@ export function createLinkedinStepRunner(deps: LinkedinStepDeps): StepRunner {
               '벨로그 본문을 읽지 못했습니다(DATA_DIR 권한을 확인하세요).',
               false,
             );
-      const body = read.text.trim();
+      // 벨로그의 시리즈 표기(제목 N편·인용 줄·다음 편)는 떼고 넘긴다 — 링크드인은 시리즈를 언급하지 않는다(decisions/series.md).
+      const body = stripSeriesLines(read.text).trim();
       if (body === '')
         throw new StepFailure(
           'LINKEDIN_BODY_EMPTY',

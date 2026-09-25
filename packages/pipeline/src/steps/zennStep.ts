@@ -18,6 +18,7 @@ import {
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
+import { applyZennSeries, seriesZennTitle, stripSeriesLines } from './series.ts';
 
 export interface ZennStepDeps {
   /** 산출물 저장소(DATA_DIR) — 벨로그 본문을 여기서 읽고 zenn.md를 여기에 쓴다. */
@@ -173,7 +174,8 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
               '벨로그 본문을 읽지 못했습니다(DATA_DIR 권한을 확인하세요).',
               false,
             );
-      const body = read.text.trim();
+      // 벨로그의 시리즈 표기는 떼고 넘긴다 — Zenn은 제 형식(제목 第N回·はじめに 문장)으로 코드가 다시 붙인다.
+      const body = stripSeriesLines(read.text).trim();
       if (body === '')
         throw new StepFailure(
           'ZENN_BODY_EMPTY',
@@ -218,10 +220,12 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
           '기사 제목을 찾지 못했습니다(첫 줄 # 제목이 없고 주제 제목도 비어 있음).',
           true,
         );
-      const article = stripFrontmatter(split.body).trim();
-      if (article === '')
+      const stripped = stripFrontmatter(split.body).trim();
+      if (stripped === '')
         throw new StepFailure('ZENN_OUTPUT_EMPTY', '모델이 제목만 돌려줬습니다.', true);
-      const { title } = split;
+      const { series } = ctx;
+      const title = series === undefined ? split.title : seriesZennTitle(split.title, series);
+      const article = series === undefined ? stripped : applyZennSeries(stripped, series).trim();
       const rendered = renderZennArticle(title, article);
       try {
         await deps.artifacts.write(ctx.topic.slug, ctx.runId, ZENN_ARTIFACT, rendered);
