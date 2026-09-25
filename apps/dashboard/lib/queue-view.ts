@@ -45,6 +45,8 @@ export interface QueueGroupView {
   name: string;
   /** 후보에 편이 없을 때 안내(`편 없음 · 대기 N편`). 편이 있으면 없음. */
   hint: string | undefined;
+  /** 정의 줄 자리(후보 섹션 인덱스) — 같은 키 정의가 둘이어도 React key가 겹치지 않게. */
+  position: number;
 }
 
 export type QueueListItem =
@@ -157,5 +159,5 @@ function groupView(def: QueueSeriesSummary): QueueGroupView {
   const waiting = def.byStatus.대기;
   const hint =
     def.byStatus.후보 > 0 ? undefined : waiting > 0 ? `편 없음 · 대기 ${waiting}편` : '편 없음';
-  return { key: def.key, name: def.name, hint };
+  return { key: def.key, name: def.name, hint, position: def.position };
 }

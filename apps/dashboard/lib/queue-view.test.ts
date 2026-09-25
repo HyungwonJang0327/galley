@@ -145,14 +145,16 @@ describe('buildQueueView — 시리즈', () => {
     const view = buildQueueView(withSeries, { tab: 'candidates' }, defs);
     expect(
       view.items.map((item) =>
-        item.kind === 'row' ? item.row.title : [item.group.key, item.group.name, item.group.hint],
+        item.kind === 'row'
+          ? item.row.title
+          : [item.group.key, item.group.name, item.group.hint, item.group.position],
       ),
     ).toEqual([
       '후보1',
-      ['A', '앱 만들기', undefined],
+      ['A', '앱 만들기', undefined, 1],
       '셋째 편',
-      ['D', '정의만 남음', '편 없음 · 대기 1편'],
-      ['E', '기존 글 시리즈', undefined],
+      ['D', '정의만 남음', '편 없음 · 대기 1편', 2],
+      ['E', '기존 글 시리즈', undefined, 2],
       '(기존 글) 옛 글',
     ]);
     expect(view.rows[2]?.series?.alreadyPublished).toBe(true);
@@ -166,6 +168,19 @@ describe('buildQueueView — 시리즈', () => {
     );
     expect(view.items.map((item) => item.kind)).toEqual(['row', 'group']);
     expect(view.items[1]).toMatchObject({ group: { key: 'G', hint: '편 없음' } });
+  });
+
+  it('후보에 항목이 하나도 없고 정의 줄만 남아도 헤더는 items에 남는다(화면이 안내를 보인다)', () => {
+    const view = buildQueueView({ ...withSeries, 후보: [] }, { tab: 'candidates' }, [
+      summary('D', '정의만 남음', 0, { 대기: 3 }),
+    ]);
+    expect(view.rows).toEqual([]);
+    expect(view.items).toEqual([
+      {
+        kind: 'group',
+        group: { key: 'D', name: '정의만 남음', hint: '편 없음 · 대기 3편', position: 0 },
+      },
+    ]);
   });
 
   it('카테고리 필터가 있으면 그 소제목의 정의 줄만, 다른 탭에는 헤더가 없다', () => {
