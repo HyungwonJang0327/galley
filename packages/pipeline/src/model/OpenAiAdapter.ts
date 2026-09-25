@@ -19,6 +19,8 @@ export interface OpenAiAdapterOptions {
   /** `.env` OPENAI_API_KEY. 없으면 `available:false`. */
   apiKey: string | undefined;
   client?: OpenAiResponsesClient;
+  /** SDK 자체 재시도 횟수(기본 2). 재시도 정책의 주인은 워커라 레지스트리가 낮춰 넘긴다(BS5). */
+  maxRetries?: number;
 }
 
 /** 비스트리밍 요청 기본 상한(Claude 어댑터와 동일). */
@@ -49,7 +51,10 @@ export function createOpenAiAdapter(options: OpenAiAdapterOptions): ModelAdapter
       if (!available) {
         throw new Error(`API 키 없음 (.env OPENAI_API_KEY) — ${label}`);
       }
-      client ??= new OpenAI({ apiKey });
+      client ??= new OpenAI({
+        apiKey,
+        ...(options.maxRetries === undefined ? {} : { maxRetries: options.maxRetries }),
+      });
 
       const startedAt = performance.now();
       const response = await client.responses.create({

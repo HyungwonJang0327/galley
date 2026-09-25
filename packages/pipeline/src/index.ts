@@ -171,6 +171,7 @@ export {
   createModelRegistryFromEnv,
   DEFAULT_MODEL_ID,
   INDEXING_DEFAULT_MODEL_ID,
+  ADAPTER_MAX_RETRIES,
 } from './model/ModelRegistry.ts';
 export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry.ts';
 export {

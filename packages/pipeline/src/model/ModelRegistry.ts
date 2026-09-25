@@ -98,15 +98,27 @@ const OPENAI_MODELS: readonly ModelSpec[] = [
 ];
 
 /**
+ * SDK 자체 재시도 횟수. 워커가 단계를 3번까지 다시 돌리며(MAX_STEP_ATTEMPTS) 사이에 기다리므로 SDK 몫은 1로 —
+ * 429가 최악 2×3=6회(기본 2면 9회). retry-after 헤더 처리는 SDK에 남긴다(2026-09-26 사용자 결정, BS2 리뷰 ⑭).
+ */
+export const ADAPTER_MAX_RETRIES = 1;
+
+/**
  * 프로덕션 레지스트리. provider 추가 = 어댑터 파일 하나 + 여기 등록.
  * Mock은 `NODE_ENV=development`에서만 노출(테스트·데모용).
  */
 export function createModelRegistryFromEnv(env: ModelEnv): ModelRegistry {
   const adapters: ModelAdapter[] = [
     ...ANTHROPIC_MODELS.map((spec) =>
-      createAnthropicAdapter({ ...spec, apiKey: env.ANTHROPIC_API_KEY }),
+      createAnthropicAdapter({
+        ...spec,
+        apiKey: env.ANTHROPIC_API_KEY,
+        maxRetries: ADAPTER_MAX_RETRIES,
+      }),
     ),
-    ...OPENAI_MODELS.map((spec) => createOpenAiAdapter({ ...spec, apiKey: env.OPENAI_API_KEY })),
+    ...OPENAI_MODELS.map((spec) =>
+      createOpenAiAdapter({ ...spec, apiKey: env.OPENAI_API_KEY, maxRetries: ADAPTER_MAX_RETRIES }),
+    ),
   ];
   if (env.NODE_ENV === 'development') {
     adapters.push(createMockAdapter());
