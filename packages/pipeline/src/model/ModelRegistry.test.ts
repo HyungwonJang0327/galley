@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import {
+  ADAPTER_MAX_RETRIES,
   createModelRegistry,
   createModelRegistryFromEnv,
   DEFAULT_MODEL_ID,
@@ -162,4 +163,8 @@ describe('createModelRegistryFromEnv — provider 어댑터 7개', () => {
 
     expect(dev.list().map((a) => a.id)).toEqual([...EXPECTED.map((m) => m.id), 'mock']);
   });
+});
+
+test('SDK 자체 재시도는 1 — 워커 재시도 3회와 곱해 429 최악 6회(BS5 결정)', () => {
+  expect(ADAPTER_MAX_RETRIES).toBe(1);
 });

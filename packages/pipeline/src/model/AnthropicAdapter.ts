@@ -17,6 +17,8 @@ export interface AnthropicAdapterOptions {
   /** `.env` ANTHROPIC_API_KEY. 없으면 `available:false`. */
   apiKey: string | undefined;
   client?: AnthropicMessagesClient;
+  /** SDK 자체 재시도 횟수(기본 2). 재시도 정책의 주인은 워커라 레지스트리가 낮춰 넘긴다(BS5). */
+  maxRetries?: number;
 }
 
 /** 비스트리밍 요청 기본 상한(스트리밍은 Phase 1에 없음 — decisions/model-selection.md). */
@@ -37,7 +39,10 @@ export function createAnthropicAdapter(options: AnthropicAdapterOptions): ModelA
       if (!available) {
         throw new Error(`API 키 없음 (.env ANTHROPIC_API_KEY) — ${label}`);
       }
-      client ??= new Anthropic({ apiKey });
+      client ??= new Anthropic({
+        apiKey,
+        ...(options.maxRetries === undefined ? {} : { maxRetries: options.maxRetries }),
+      });
 
       const startedAt = performance.now();
       const response = await client.messages.create({
