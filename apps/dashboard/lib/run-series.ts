@@ -28,7 +28,9 @@ export async function getRunSeries(topicId: string): Promise<RunSeriesView | und
       topicId,
     );
     return info === undefined ? undefined : runSeriesView(info);
-  } catch {
+  } catch (error) {
+    // 값은 비우되 원인은 서버 로그에(decisions/error-handling.md).
+    console.error('[run-series] 시리즈 편 정보를 읽지 못했습니다:', error);
     return undefined;
   }
 }
