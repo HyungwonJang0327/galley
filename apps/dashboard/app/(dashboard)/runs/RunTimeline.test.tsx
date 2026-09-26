@@ -240,7 +240,7 @@ describe('RunTimeline', () => {
       expect(document.body.textContent).not.toContain('보기');
     });
 
-    it('산출물이 있는 줄은 제목이 토글 버튼, 펼치면 마크다운이 렌더된다', () => {
+    it('산출물이 있는 줄은 제목이 토글 버튼(이름에 "보기"), 펼치면 마크다운이 렌더된다', () => {
       render(
         <RunTimeline
           steps={[velog]}
@@ -248,9 +248,9 @@ describe('RunTimeline', () => {
         />,
       );
 
-      const button = screen.getByRole('button', { name: /벨로그 본문/ });
+      // "보기" 힌트는 버튼 안(meta 끝)에 — 클릭되고 스크린리더 이름에도 들어간다.
+      const button = screen.getByRole('button', { name: '벨로그 본문 1초 · 보기' });
       expect(button.getAttribute('aria-expanded')).toBe('false');
-      expect(rows()[1]!.textContent).toContain('보기');
       // 내용은 처음부터 DOM에 있고(hidden) 펼치면 보인다 — 서버가 렌더한 마크다운.
       const heading = screen.getByRole('heading', { level: 1, hidden: true });
       expect(heading.textContent).toBe('본문 제목');
@@ -278,9 +278,11 @@ describe('RunTimeline', () => {
       expect(img.getAttribute('src')).toBe('/api/runs/run_1/thumbnail');
       expect(img.getAttribute('width')).toBe('1200');
       expect(img.getAttribute('height')).toBe('630');
+      // 접힌(hidden) 동안 요청하지 않도록 lazy.
+      expect(img.getAttribute('loading')).toBe('lazy');
     });
 
-    it('파일이 없으면(Mock·옛 실행) 안내 한 줄, 못 읽으면 alert 문구', () => {
+    it('파일이 없으면(Mock·옛 실행) 힌트 "산출물 없음"+안내, 못 읽으면 "산출물 읽기 실패"+문구(alert 아님)', () => {
       render(
         <RunTimeline
           steps={[velog, step({ name: 'zenn', order: 5, status: 'succeeded' })]}
@@ -291,11 +293,13 @@ describe('RunTimeline', () => {
         />,
       );
 
+      expect(screen.getByRole('button', { name: '벨로그 본문 1초 · 산출물 없음' })).toBeTruthy();
       expect(rows()[1]!.textContent).toContain('산출물 파일이 DATA_DIR에 없습니다');
-      expect(screen.getByRole('alert', { hidden: true }).textContent).toBe(
-        '산출물(zenn.md)을 읽지 못했습니다.',
-      );
-      expect(screen.getAllByRole('button')).toHaveLength(2);
+      expect(screen.getByRole('button', { name: 'Zenn 산출물 읽기 실패' })).toBeTruthy();
+      expect(rows()[4]!.textContent).toContain('산출물(zenn.md)을 읽지 못했습니다.');
+      // hidden 패널 안의 라이브 리전은 읽히지 않으므로 두지 않는다.
+      expect(screen.queryByRole('alert', { hidden: true })).toBeNull();
+      expect(document.body.textContent).not.toContain('보기');
     });
   });
 });
