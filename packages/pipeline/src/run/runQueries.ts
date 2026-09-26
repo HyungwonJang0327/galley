@@ -91,6 +91,8 @@ export interface RunListStep {
   name: string;
   status: string;
   origin: string;
+  /** carried면 그 결과를 만든 Run — 목록 행의 "근거 없음 n"이 출처 Run의 verification.json을 읽는다(BE13). */
+  sourceRunId: string | null;
 }
 
 /** 목록 한 줄. 단계 6개의 상태·출처를 같이 준다 — 원형 진행 인디케이터·마지막 단계 미리보기용. */
@@ -130,7 +132,10 @@ export async function listRuns(
     take: filter.limit,
     select: {
       ...RUN_SUMMARY_SELECT,
-      steps: { orderBy: { order: 'asc' }, select: { name: true, status: true, origin: true } },
+      steps: {
+        orderBy: { order: 'asc' },
+        select: { name: true, status: true, origin: true, sourceRunId: true },
+      },
     },
   });
   return rows;

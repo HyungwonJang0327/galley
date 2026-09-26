@@ -153,6 +153,33 @@ describe('listRuns — 실행 목록', () => {
     expect(rows.map((r) => r.topicSlug)).toEqual(['new', 'old']);
   });
 
+  test('행의 단계에는 이름·상태·출처·sourceRunId가 온다(목록의 "근거 없음 n"이 출처 파일을 찾는다)', async () => {
+    const first = await createRun({ status: RUN_STATUS.revised, finishedAt: new Date() });
+    const second = await createRun({ attempt: 2, startStep: 'velog' });
+    await seedSteps(second.id, {
+      evidence: {
+        status: STEP_STATUS.succeeded,
+        origin: STEP_ORIGIN.carried,
+        sourceRunId: first.id,
+      },
+    });
+
+    const rows = await listRuns(prisma, { tab: 'active' });
+
+    expect(rows[0]?.steps[0]).toEqual({
+      name: 'evidence',
+      status: 'succeeded',
+      origin: 'carried',
+      sourceRunId: first.id,
+    });
+    expect(rows[0]?.steps[1]).toEqual({
+      name: 'velog',
+      status: 'pending',
+      origin: 'fresh',
+      sourceRunId: null,
+    });
+  });
+
   test('done 탭은 종결된 실행만(승인·실패·수정 지시 전부), 종결 시각 최신순', async () => {
     await createRun({ topicSlug: 'running' });
     await createRun({
