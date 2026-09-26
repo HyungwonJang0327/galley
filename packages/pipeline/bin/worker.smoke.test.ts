@@ -137,9 +137,18 @@ describe('워커 프로세스', () => {
     expect(stdout).toContain('워커 종료');
   });
 
-  test('Mock 모드(NODE_ENV=test)는 DATA_DIR 없이도 Mock 러너로 기동한다', async () => {
+  test('Mock 모드(NODE_ENV=test)는 DATA_DIR 없이도 Mock 러너로 기동한다(산출물은 안 쓴다)', async () => {
     const { exitCode, stdout } = await spawnWorker({ NODE_ENV: 'test', DATA_DIR: '' }, '워커 시작');
     expect(exitCode).toBe(0);
-    expect(stdout).toContain('단계 러너: Mock');
+    expect(stdout).toContain('단계 러너: Mock(DATA_DIR 없음');
+  });
+
+  test('Mock 모드에 DATA_DIR이 있으면 산출물을 쓰는 Mock 러너로 기동한다', async () => {
+    const { exitCode, stdout } = await spawnWorker(
+      { NODE_ENV: 'test', DATA_DIR: dbDir, BLOG_DIR: '' },
+      '워커 시작',
+    );
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('단계 러너: Mock(DATA_DIR에 산출물 쓰기)');
   });
 });

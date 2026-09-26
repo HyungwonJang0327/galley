@@ -125,7 +125,26 @@ async function createStepRunnerForEnv(
   thumbnailConfig: ThumbnailConfig | null,
 ): Promise<StepRunner | null> {
   if (usesMockSteps(process.env)) {
-    deps.logger.info('단계 러너: Mock', { NODE_ENV: process.env.NODE_ENV });
+    // DATA_DIR이 규칙에 맞으면 Mock도 실제 형식의 산출물을 쓴다(승인·타임라인 미리보기 확인용, B3a M4). 없으면 예전처럼
+    // 내용만 — 기동 조건은 아니다(스모크·CI는 DATA_DIR 없이 돈다).
+    const mockDataDir = resolveDataDir(process.env);
+    if (mockDataDir.ok) {
+      deps.logger.info('단계 러너: Mock(DATA_DIR에 산출물 쓰기)', {
+        NODE_ENV: process.env.NODE_ENV,
+        dataDir: mockDataDir.dir,
+      });
+      return createMockStepRunner({
+        stores: {
+          artifacts: new LocalFsArtifactStore(mockDataDir.dir),
+          evidence: new LocalFsEvidenceStore(mockDataDir.dir),
+        },
+        clock: deps.clock,
+      });
+    }
+    deps.logger.info('단계 러너: Mock(DATA_DIR 없음 — 산출물을 쓰지 않아 승인·미리보기 불가)', {
+      NODE_ENV: process.env.NODE_ENV,
+      code: mockDataDir.code,
+    });
     return createMockStepRunner();
   }
   const dataDir = resolveDataDir(process.env);
