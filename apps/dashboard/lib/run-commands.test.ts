@@ -1,19 +1,35 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
-const { approveRun, reviseRun, previewRerun, createModelRegistryFromEnv } = vi.hoisted(() => ({
-  approveRun: vi.fn(),
-  reviseRun: vi.fn(),
-  previewRerun: vi.fn(),
-  createModelRegistryFromEnv: vi.fn(() => ({ registry: true })),
-}));
+const { approveAndPublishRun, reviseRun, previewRerun, createModelRegistryFromEnv } = vi.hoisted(
+  () => ({
+    approveAndPublishRun: vi.fn(),
+    reviseRun: vi.fn(),
+    previewRerun: vi.fn(),
+    createModelRegistryFromEnv: vi.fn(() => ({ registry: true })),
+  }),
+);
 
-// 실제 SQLite는 pipeline 테스트가 본다. 여기서는 코드→문구, 날짜 직렬화, 예외 봉투만.
+// 실제 SQLite·파일은 pipeline 테스트가 본다. 여기서는 코드→문구, 날짜 직렬화, 예외 봉투, 스토어 조립만.
 vi.mock('@galley/pipeline', () => ({
   prisma: {},
-  approveRun,
+  approveAndPublishRun,
   reviseRun,
   previewRerun,
   createModelRegistryFromEnv,
+  resolveDataDir: (env: { DATA_DIR?: string }) =>
+    env.DATA_DIR ? { ok: true, dir: env.DATA_DIR } : { ok: false, code: 'DATA_DIR_MISSING' },
+  LocalFsArtifactStore: class {
+    constructor(public dir: string) {}
+  },
+  LocalFsEvidenceStore: class {
+    constructor(public dir: string) {}
+  },
+  LocalFsPostsWriter: class {
+    constructor(public dir: string) {}
+  },
+  LocalFsStorage: class {
+    constructor(public dir: string) {}
+  },
 }));
 
 import { approveRunById, planRerunById, reviseRunById } from './run-commands';
@@ -39,14 +55,25 @@ const PREVIOUS = {
 const PLAN = { startStep: 'velog', fresh: ['velog', 'verify'], carried: ['evidence'] };
 
 afterEach(() => {
-  approveRun.mockReset();
+  approveAndPublishRun.mockReset();
   reviseRun.mockReset();
   previewRerun.mockReset();
+  vi.unstubAllEnvs();
 });
 
 describe('approveRunById', () => {
-  it('종결 시각을 문자열로 돌려준다', async () => {
-    approveRun.mockResolvedValue({ ok: true, run: { ...PREVIOUS, status: 'done' } });
+  beforeEach(() => {
+    vi.stubEnv('BLOG_DIR', '/blog');
+    vi.stubEnv('DATA_DIR', '/data');
+  });
+
+  it('BLOG_DIR·DATA_DIR로 스토어를 조립해 넘기고, 종결 시각·posts 폴더를 돌려준다', async () => {
+    approveAndPublishRun.mockResolvedValue({
+      ok: true,
+      run: { ...PREVIOUS, status: 'done' },
+      postsDir: '/blog/posts/무한-스크롤',
+      files: ['a.md'],
+    });
 
     const result = await approveRunById('run_1');
 
@@ -57,13 +84,38 @@ describe('approveRunById', () => {
         status: 'done',
         startedAt: '2026-09-13T03:00:00.000Z',
         finishedAt: '2026-09-13T03:00:00.000Z',
+        postsDir: '/blog/posts/무한-스크롤',
       }),
     });
-    expect(approveRun).toHaveBeenCalledWith({}, 'run_1');
+    expect(approveAndPublishRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prisma: {},
+        artifacts: expect.objectContaining({ dir: '/data' }),
+        evidence: expect.objectContaining({ dir: '/data' }),
+        posts: expect.objectContaining({ dir: '/blog' }),
+        storage: expect.objectContaining({ dir: '/blog' }),
+      }),
+      'run_1',
+    );
+  });
+
+  it('BLOG_DIR이 없으면 부르지 않고 BLOG_DIR_MISSING, DATA_DIR이 규칙에 어긋나면 DATA_DIR_MISSING', async () => {
+    vi.stubEnv('BLOG_DIR', '');
+    expect(await approveRunById('run_1')).toMatchObject({
+      ok: false,
+      error: { code: 'BLOG_DIR_MISSING' },
+    });
+    vi.stubEnv('BLOG_DIR', '/blog');
+    vi.stubEnv('DATA_DIR', '');
+    expect(await approveRunById('run_1')).toMatchObject({
+      ok: false,
+      error: { code: 'DATA_DIR_MISSING', message: expect.stringContaining('DATA_DIR_MISSING') },
+    });
+    expect(approveAndPublishRun).not.toHaveBeenCalled();
   });
 
   it('승인 대기가 아니면 한국어 문구를 붙인다', async () => {
-    approveRun.mockResolvedValue({ ok: false, code: 'NOT_PENDING_APPROVAL' });
+    approveAndPublishRun.mockResolvedValue({ ok: false, code: 'NOT_PENDING_APPROVAL' });
 
     expect(await approveRunById('run_1')).toEqual({
       ok: false,
@@ -71,8 +123,38 @@ describe('approveRunById', () => {
     });
   });
 
+  it('발행 준비 실패 코드는 detail을 문구에 끼운다', async () => {
+    approveAndPublishRun.mockResolvedValue({
+      ok: false,
+      code: 'ARTIFACT_MISSING',
+      detail: 'zenn.md',
+    });
+    expect(await approveRunById('run_1')).toEqual({
+      ok: false,
+      error: { code: 'ARTIFACT_MISSING', message: expect.stringContaining('zenn.md') },
+    });
+
+    approveAndPublishRun.mockResolvedValue({
+      ok: false,
+      code: 'POSTS_DIR_EXISTS',
+      detail: '/blog/posts/x',
+    });
+    expect(await approveRunById('run_1')).toMatchObject({
+      error: { code: 'POSTS_DIR_EXISTS', message: expect.stringContaining('/blog/posts/x') },
+    });
+
+    approveAndPublishRun.mockResolvedValue({
+      ok: false,
+      code: 'TOPIC_NOT_IN_QUEUE',
+      detail: '완료',
+    });
+    expect(await approveRunById('run_1')).toMatchObject({
+      error: { message: expect.stringContaining('이미 완료') },
+    });
+  });
+
   it('던져지면 RUN_APPROVE_FAILED로 감싼다', async () => {
-    approveRun.mockRejectedValue(new Error('SQLITE_BUSY'));
+    approveAndPublishRun.mockRejectedValue(new Error('SQLITE_BUSY'));
 
     expect(await approveRunById('run_1')).toEqual({
       ok: false,
