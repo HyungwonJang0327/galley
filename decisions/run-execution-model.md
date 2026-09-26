@@ -48,6 +48,16 @@ StepResult  { artifacts, tokens, cost, model? }
 - 실패는 **재시도 가능 여부를 에러 타입으로** StepRunner가 알리고, **재시도 정책은 워커**가 정한다. 근거 검증의 `unsupported`는 실패가 아니라 표시 조건이므로 **실패 경로로 보내지 않는다.**
 - **경계 강제**: 워커 쪽 코드는 모델 레지스트리·SDK를 **import하지 않는다**(타입과 의존성으로 막는다). `StepRunner` 구현은 워커가 아니라 `packages/pipeline`의 단계 모듈 쪽에 두고 BE8~BE11이 하나씩 채운다.
 - Mock `StepRunner`는 단계마다 **결정적인 픽스처 산출물**을 돌려준다.
+- **라우팅은 `createStepRunner(deps)` 하나**(2026-09-26 BS5): 단계명 → evidence·velog·verify·linkedin·zenn·publishInfo 구현으로 분기하고 모르는 단계명은 프로그래머 오류(throw). 조립 루트(`bin/worker.ts`)만 스토어(DATA_DIR)·레지스트리·어투 폴더를 만들어 넘긴다. **발행정보는 B3a 전까지 Mock 위임**(`deps.publishInfo` 자리, 사용자 결정).
+- **Mock 러너 조건은 `NODE_ENV`**(2026-09-26 사용자 결정): `test`(스모크·CI)·`development`(모델 없이 화면 확인)면 Mock, 값이 없으면 실제. Mock 어댑터가 development에만 노출되는 것(model-selection)과 같은 축이다. 조합:
+
+  | 대시보드 (`pnpm dev` = development) | 워커 `NODE_ENV`     | 결과                                                                               |
+  | ----------------------------------- | ------------------- | ---------------------------------------------------------------------------------- |
+  | development                         | 없음(`pnpm worker`) | 화면은 Mock 어댑터가 목록에 보이지만 실행은 **실제 모델**. 로컬 실사용 조합.       |
+  | development                         | development         | 워커도 Mock 러너 — 토큰 없이 화면 흐름 확인. `mock` 모델을 골라도 실제로는 픽스처. |
+  | any                                 | test                | 워커 스모크·CI 전용.                                                               |
+
+- **기동 검증**(2026-09-26 BS5): 실모드 워커는 `DATA_DIR`이 비었거나·상대경로거나·`BLOG_DIR` 안이면(BE8 ⑩), `PROMPTS_DIR`이 상대경로면(BS1 ⑦) 기동하지 않는다. **`~`는 확장하지 않는다** — Node `--env-file`은 셸이 아니라 `~/x`가 리포 안 `~` 폴더가 되므로 안내에 절대경로만 적는다(사용자 결정, PROMPTS_DIR과 같은 규칙). 기동 로그에 `availableModels`(키 있는 어댑터 id)를 남겨 키가 빠진 채 띄운 것을 실행 실패 전에 알 수 있게 한다.
 
 **BW2 완료 조건**: 큐 적재 → 실행 → 승인 대기 → 승인까지가 **토큰 없이 CI에서 한 번에** 돈다.
 
@@ -62,6 +72,8 @@ StepResult  { artifacts, tokens, cost, model? }
 - **껍데기의 책임은 타이머·시그널·종료뿐**. `SIGTERM`을 받으면 진행 중 tick의 `AbortSignal`을 끊고 **클레임한 RunStep을 반환한 뒤** 종료한다.
 - **반환(`released`)은 실패가 아니다**(2026-09-13, BW3, 사용자 결정). 종료 신호로 끊긴 단계는 `StepRunner.discard`로 쓰다 만 산출물을 버리고 `pending`으로 되돌린다 — **시도 횟수에 세지 않는다**(finishStep을 부르지 않는다). 실행은 `interrupted`·`workerId` 없음으로 돌아가 다음 기동이 30초 heartbeat 공백을 기다리지 않고 바로 잡는다. 구현이 `signal.reason` 대신 자기 에러를 던져도 종료 중이면 반환이다. 종료 중이면 새 시도·새 클레임을 시작하지 않는다. (전에는 취소가 `ABORTED`/`STEP_FAILED`로 흘러 3번 재시도 뒤 실행이 `failed`가 됐다.)
 - **타이머도 deps**(`timers.every`·`timers.after`, 2026-09-13). 단계 도중 heartbeat(5s)와 단계 타임아웃(10분)이 여기서 나온다 — 테스트는 손으로 발화시키는 가짜 타이머로 실제 시간 없이 검증한다. 상세는 decisions/run-location.md "중단·재개".
+- **재시도 사이에 기다린다**(2026-09-26 BS5, 사용자 결정): `RETRY_DELAYS_MS = [10s, 20s]`(n번째 실패 뒤 n번째 값, 넘치면 마지막). 즉시 재호출하면 429·5xx가 어댑터 SDK 재시도(`maxRetries` 1, model-selection)까지 곱해져 몰린다(BS2 리뷰 ⑭). 대기는 `timers.after`이고 종료 신호에 바로 깨어나 단계를 반환한다. 대기 중에도 runStep의 heartbeat 타이머가 돌므로 대기 길이는 30초 공백과 무관하다(테스트로 단언). 테스트 `drive()`는 가짜 일회 타이머를 손으로 넘겨 틱을 끝까지 돌리며, 시도가 열린 blockingRunner와는 같이 쓰지 않는다(단계 타임아웃까지 발화).
+- **실모델 스모크 1개**(`src/steps/liveModel.smoke.test.ts`, 2026-09-26): `GALLEY_LIVE_SMOKE=1`일 때만 실제 레지스트리 + 합성 번들로 벨로그 단계를 한 번 돌려 토큰·비용을 출력한다. 기본 모델은 가장 싼 Haiku(배선 확인이 목적, 사용자 결정), 상위 모델은 `GALLEY_LIVE_MODEL`. CI는 켜지 않는다.
 
 **테스트**: tick을 직접 여러 번 불러 상태 변화를 본다. 최소 4가지 — ⑴ 대기 주제 1건 → claim → 완료 → 다음 단계 claim 순서 ⑵ 승인 대기에서는 여러 번 불러도 아무것도 claim하지 않음 ⑶ heartbeat 만료된 claim을 다음 tick이 회수(**clock을 앞으로 돌려** 검증) ⑷ 재시도 가능 에러는 재시도, 영구 실패는 실패로 기록하고 멈춤.
 **프로세스 스모크 1개**는 남긴다 — 실제 프로세스를 띄워 `SIGTERM`에 깨끗이 종료되는지만. **CI 기본 스위트가 아니라 별도 잡**으로 분리하고 타이밍 의존 단언은 넣지 않는다. (2026-09-13 구현: `bin/worker.smoke.test.ts` · `pnpm --filter @galley/pipeline test:smoke` · CI `smoke` 잡. **required check로 두되 한 번이라도 흔들리면 즉시 informational로 내린다** — 종료 코드와 로그 한 줄만 단언하는 테스트는 결정적이어야 정상이고, 흔들리면 테스트가 아니라 워커 종료 경로에 버그가 있는 것이다. 사용자 결정.)
@@ -74,6 +86,7 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-26 BS5: §2에 라우팅 `createStepRunner`·Mock 러너 조건(NODE_ENV)·대시보드/워커 조합표·기동 검증(DATA_DIR·PROMPTS_DIR 절대경로, `~` 불가, availableModels 로그), §3에 재시도 대기 10s·20s·실모델 스모크. 사용자 결정 5건(발행정보 Mock 위임·NODE_ENV 조건·maxRetries 1+대기·`~` 확장 안 함·스모크 기본 Haiku).
 - 2026-09-13 BW3: §3에 반환(`released`)은 실패가 아님 · 타이머 deps · 스모크 잡 운영 규칙(required, 흔들리면 informational).
 - 2026-09-13 BW4: `revised` 상태 · 최신 시도에서만 재실행 · 승인/수정 지시 두 경로 + POST 미리보기. §1 "따라오는 것"에 추가.
 - 2026-09-13 BE14c: carried 행 생성 시점 = `startRerun`(재실행 Run 생성 시, 한 트랜잭션) + `Run.instruction`·`startStep` 컬럼. §1 "따라오는 것"에 추가.
