@@ -5,14 +5,17 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-export type ArtifactReadResult =
-  | { ok: true; text: string }
-  | { ok: false; code: 'ARTIFACT_MISSING' }
-  | { ok: false; code: 'ARTIFACT_UNREADABLE' };
+export type ArtifactReadFailure =
+  { ok: false; code: 'ARTIFACT_MISSING' } | { ok: false; code: 'ARTIFACT_UNREADABLE' };
+export type ArtifactReadResult = { ok: true; text: string } | ArtifactReadFailure;
+export type ArtifactBytesResult = { ok: true; bytes: Uint8Array } | ArtifactReadFailure;
 
 export interface ArtifactStore {
   write(topicSlug: string, runId: string, name: string, text: string): Promise<void>;
   read(topicSlug: string, runId: string, name: string): Promise<ArtifactReadResult>;
+  /** 이진 산출물(썸네일 PNG) — 텍스트와 같은 경로 규칙. */
+  writeBytes(topicSlug: string, runId: string, name: string, bytes: Uint8Array): Promise<void>;
+  readBytes(topicSlug: string, runId: string, name: string): Promise<ArtifactBytesResult>;
   /** 단계 반환(discard) 때 그 Run의 산출물 하나를 지운다. 없어도 조용히. */
   remove(topicSlug: string, runId: string, name: string): Promise<void>;
 }
@@ -40,11 +43,34 @@ export class LocalFsArtifactStore implements ArtifactStore {
 
   /** 임시 파일에 쓴 뒤 rename(원자적) — 미리보기가 쓰다 만 파일을 읽지 않게. */
   async write(topicSlug: string, runId: string, name: string, text: string): Promise<void> {
-    const path = this.pathFor(topicSlug, runId, name);
+    await this.writeAtomic(this.pathFor(topicSlug, runId, name), text);
+  }
+
+  async writeBytes(
+    topicSlug: string,
+    runId: string,
+    name: string,
+    bytes: Uint8Array,
+  ): Promise<void> {
+    await this.writeAtomic(this.pathFor(topicSlug, runId, name), bytes);
+  }
+
+  private async writeAtomic(path: string, data: string | Uint8Array): Promise<void> {
     await mkdir(dirname(path), { recursive: true });
     const temp = `${path}.${process.pid}.tmp`;
-    await writeFile(temp, text, 'utf8');
+    await writeFile(temp, data);
     await rename(temp, path);
+  }
+
+  async readBytes(topicSlug: string, runId: string, name: string): Promise<ArtifactBytesResult> {
+    try {
+      const buffer = await readFile(this.pathFor(topicSlug, runId, name));
+      return { ok: true, bytes: new Uint8Array(buffer) };
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+      return { ok: false, code: code === 'ENOENT' ? 'ARTIFACT_MISSING' : 'ARTIFACT_UNREADABLE' };
+    }
   }
 
   async read(topicSlug: string, runId: string, name: string): Promise<ArtifactReadResult> {

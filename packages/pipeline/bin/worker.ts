@@ -18,6 +18,13 @@ import {
 import { runIndexTick } from '../src/index/runIndexTick.ts';
 import { runAutoLinkTick } from '../src/link/autoLink.ts';
 import { createModelRegistryFromEnv, type ModelRegistry } from '../src/model/ModelRegistry.ts';
+import {
+  ChromeThumbnailRenderer,
+  defaultThumbnailConfigPath,
+  findChrome,
+  loadThumbnailConfig,
+  type ThumbnailConfig,
+} from '../src/publish/thumbnail.ts';
 import { resolveTonePromptsDir } from '../src/prompts/tonePrompts.ts';
 import { createStepRunner } from '../src/steps/createStepRunner.ts';
 import { createMockStepRunner } from '../src/steps/MockStepRunner.ts';
@@ -94,9 +101,28 @@ async function loadRedact(): Promise<{ ok: true; config: RedactConfig | null } |
  * 실제 단계 러너 조립. DATA_DIR(코드 조각·산출물)·PROMPTS_DIR(어투)이 규칙에 맞지 않으면 기동하지 않는다 — 어디에 쓰는지
  * 모르는 채 돌지 않는다(BE8 ⑩·BS1 리뷰 3).
  */
+/**
+ * 썸네일 템플릿 설정 — **없으면** 기본(빈 푸터)으로 기동, **깨졌으면** 기동하지 않는다(redact와 같은 규칙). Chrome은 기동 조건이
+ * 아니다 — 없으면 발행정보 단계가 THUMBNAIL_CHROME_NOT_FOUND로 실패하고 로그에 미리 알린다.
+ */
+async function loadThumbnail(): Promise<
+  { ok: true; config: ThumbnailConfig | null } | { ok: false }
+> {
+  const loaded = await loadThumbnailConfig(defaultThumbnailConfigPath(process.env));
+  if (loaded.ok) return { ok: true, config: loaded.config };
+  if (loaded.code !== 'THUMBNAIL_CONFIG_MISSING') {
+    deps.logger.error('썸네일 설정(.galley/thumbnail.json)이 깨져 기동하지 않는다', {
+      code: loaded.code,
+    });
+    return { ok: false };
+  }
+  return { ok: true, config: null };
+}
+
 function createStepRunnerForEnv(
   registry: ModelRegistry,
   redactConfig: RedactConfig | null,
+  thumbnailConfig: ThumbnailConfig | null,
 ): StepRunner | null {
   if (usesMockSteps(process.env)) {
     deps.logger.info('단계 러너: Mock', { NODE_ENV: process.env.NODE_ENV });
@@ -124,11 +150,19 @@ function createStepRunnerForEnv(
     .list()
     .filter((adapter) => adapter.available)
     .map((adapter) => adapter.id);
+  const chrome = findChrome(process.env);
+  if (chrome === undefined)
+    deps.logger.error(
+      'Chrome을 찾지 못했다 — 발행정보 단계(썸네일)가 실패한다. .env GALLEY_CHROME에 경로를 적는다',
+      {},
+    );
   deps.logger.info('단계 러너: 실제', {
     dataDir: dataDir.dir,
     promptsDir: prompts.dir,
     redact: redactConfig !== null,
     availableModels,
+    chrome: chrome ?? null,
+    thumbnailConfig: thumbnailConfig !== null,
   });
   return createStepRunner({
     prisma,
@@ -138,6 +172,8 @@ function createStepRunnerForEnv(
     adapters: registry,
     redactConfig,
     clock: deps.clock,
+    thumbnails: new ChromeThumbnailRenderer({ env: process.env }),
+    ...(thumbnailConfig === null ? {} : { thumbnailConfig }),
   });
 }
 
@@ -192,8 +228,12 @@ const sleep = (ms: number) =>
 async function main(): Promise<void> {
   const registry = createModelRegistryFromEnv(process.env);
   const redact = await loadRedact();
-  const stepRunner = redact.ok ? createStepRunnerForEnv(registry, redact.config) : null;
-  if (!redact.ok || stepRunner === null) {
+  const thumbnail = await loadThumbnail();
+  const stepRunner =
+    redact.ok && thumbnail.ok
+      ? createStepRunnerForEnv(registry, redact.config, thumbnail.config)
+      : null;
+  if (!redact.ok || !thumbnail.ok || stepRunner === null) {
     await prisma.$disconnect();
     process.exitCode = 1;
     return;

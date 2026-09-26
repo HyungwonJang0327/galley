@@ -3,6 +3,7 @@
 // decisions/evidence-collection.md BE11)·시리즈 절(decisions/series.md)·발행 체크리스트를 더한다. 모델이 쓰는 것은 소개·태그뿐이고
 // 나머지는 코드가 조립한다(decisions/run-execution-model.md "발행정보는 상당 부분 EvidenceBundle 조립").
 import type { EvidencePointerItem, EvidencePointers } from '../evidence/bundle.ts';
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../publish/thumbnail.ts';
 import { seriesChecklist, type PublishChecklistItem } from './publishChecklist.ts';
 import { renderSeriesPublishSection, type SeriesStepInfo } from './series.ts';
 
@@ -22,7 +23,7 @@ export interface PublishInfoInput {
   zenn: { title: string; emoji: string; type: string; topics: readonly string[] };
   /** 근거 포인터(조각 없음). `## 근거` 목록의 출처. */
   evidence: EvidencePointers;
-  /** 썸네일 파일명 — 썸네일 단계(B3b) 전까지는 이름만 적고 "미생성". */
+  /** 썸네일 파일명(postFileNames.thumbnail) — 같은 단계가 만든 PNG를 승인 시 이 이름으로 복사한다. */
   thumbnailFile: string;
   series?: SeriesStepInfo;
 }
@@ -102,7 +103,7 @@ export function renderPublishInfo(input: PublishInfoInput): string {
     `${TITLE_PREFIX}${input.title}\n`,
     `## 포스트 소개 (${PUBLISH_INTRO_MAX_CHARS}자 이내)\n\n${intro}\n`,
     `## URL 슬러그\n\n${input.slug}\n`,
-    `## 썸네일\n\n${input.thumbnailFile} (미생성 — 썸네일 단계 전)\n`,
+    `## 썸네일\n\n${input.thumbnailFile} (${THUMBNAIL_WIDTH}×${THUMBNAIL_HEIGHT}, 텍스트 전용)\n`,
     `## 태그\n\n${tags}\n`,
     renderSeriesPublishSection(input.series),
     renderZennSection(input.zenn),

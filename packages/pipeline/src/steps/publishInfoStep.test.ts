@@ -14,9 +14,11 @@ import {
   parsePublishInfoOutput,
   parseZennFrontmatter,
   PUBLISH_ARTIFACT,
+  THUMBNAIL_ARTIFACT,
 } from './publishInfoStep.ts';
 import type { SeriesStepInfo } from './series.ts';
 import type { StepContext } from './StepRunner.ts';
+import type { ThumbnailInput, ThumbnailRenderer } from '../publish/thumbnail.ts';
 import { VELOG_ARTIFACT } from './velogStep.ts';
 import { renderZennArticle, ZENN_ARTIFACT } from './zennStep.ts';
 
@@ -54,7 +56,23 @@ const ZENN = renderZennArticle('無限スクロールの先読み', '## はじ�
 const GOOD_OUTPUT = JSON.stringify({
   intro: '피드 끝에 닿기 전에 다음 페이지를 불러온 이야기.',
   tags: ['React', ' 무한스크롤 ', 'react', ''],
+  subtitle: '끝에 닿기 전에 다음 페이지를',
+  tag: 'TROUBLESHOOTING',
 });
+const PNG = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
+
+/** 렌더 입력을 기록하는 가짜 렌더러(Chrome 없음). */
+function fakeThumbnails(result?: Awaited<ReturnType<ThumbnailRenderer['render']>>) {
+  const calls: ThumbnailInput[] = [];
+  const renderer: ThumbnailRenderer & { calls: ThumbnailInput[] } = {
+    calls,
+    async render(input) {
+      calls.push(input);
+      return result ?? { ok: true, png: PNG };
+    },
+  };
+  return renderer;
+}
 
 function ctx(overrides: Partial<StepContext> = {}): StepContext {
   return {
@@ -68,6 +86,11 @@ function ctx(overrides: Partial<StepContext> = {}): StepContext {
   };
 }
 
+type Deps = Parameters<typeof createPublishInfoStepRunner>[0];
+/** 가짜 렌더러를 기본으로 끼운다 — 썸네일이 주제인 테스트만 바꿔 끼운다. */
+const runnerWith = (deps: Omit<Deps, 'thumbnails'> & Partial<Pick<Deps, 'thumbnails'>>) =>
+  createPublishInfoStepRunner({ thumbnails: fakeThumbnails(), ...deps });
+
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), 'galley-publish-info-'));
   store = new LocalFsEvidenceStore(join(dir, 'data'));
@@ -80,6 +103,9 @@ beforeEach(async () => {
   await store.write(BUNDLE);
   await artifacts.write('infinite-scroll', 'run_1', VELOG_ARTIFACT, VELOG);
   await artifacts.write('infinite-scroll', 'run_1', ZENN_ARTIFACT, ZENN);
+  // 앞 테스트가 만든 산출물이 남지 않게 — "쓰지 않는다" 단언이 진짜가 되도록.
+  await artifacts.remove('infinite-scroll', 'run_1', PUBLISH_ARTIFACT);
+  await artifacts.remove('infinite-scroll', 'run_1', THUMBNAIL_ARTIFACT);
 });
 
 describe('parsePublishInfoOutput', () => {
@@ -87,6 +113,8 @@ describe('parsePublishInfoOutput', () => {
     expect(parsePublishInfoOutput(GOOD_OUTPUT)).toEqual({
       intro: '피드 끝에 닿기 전에 다음 페이지를 불러온 이야기.',
       tags: ['React', '무한스크롤'],
+      subtitle: '끝에 닿기 전에 다음 페이지를',
+      tag: 'TROUBLESHOOTING',
     });
   });
 
@@ -94,7 +122,25 @@ describe('parsePublishInfoOutput', () => {
     expect(parsePublishInfoOutput('```json\n{"intro":"소개","tags":["a"]}\n```')).toEqual({
       intro: '소개',
       tags: ['a'],
+      subtitle: '소개',
+      tag: '',
     });
+  });
+
+  test('부제는 40자에서 자르고 없으면 소개 앞부분, 라벨은 대문자 한 단어가 아니면 빈 값', () => {
+    const out = parsePublishInfoOutput(
+      JSON.stringify({
+        intro: '소개',
+        tags: [],
+        subtitle: '가'.repeat(50),
+        tag: 'trouble shooting',
+      }),
+    );
+    expect(out?.subtitle).toBe('가'.repeat(40));
+    expect(out?.tag).toBe('');
+    expect(
+      parsePublishInfoOutput(JSON.stringify({ intro: '소개', tags: [], tag: 'RETRO-2' }))?.tag,
+    ).toBe('RETRO-2');
   });
 
   test('소개는 150자에서 자르고 태그는 10개까지', () => {
@@ -160,13 +206,32 @@ describe('buildPublishInfoPrompt', () => {
 describe('createPublishInfoStepRunner', () => {
   test('본문 제목·Zenn frontmatter·근거 포인터로 publish.md를 조립하고 DATA_DIR에 쓴다', async () => {
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const thumbnails = fakeThumbnails();
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: (id) => (id === adapter.id ? adapter : undefined) },
+      thumbnails,
+      thumbnailConfig: { footerLeft: 'Blog', footerRight: 'velog.io/@h', defaultTag: 'X' },
     });
 
     const result = await runner.run(ctx());
+
+    // 썸네일: 모델 부제·라벨 + 설정 푸터로 한 번 찍어 DATA_DIR에 PNG로.
+    expect(thumbnails.calls).toEqual([
+      {
+        title: '무한 스크롤 미리 불러오기',
+        subtitle: '끝에 닿기 전에 다음 페이지를',
+        tag: 'TROUBLESHOOTING',
+        footerLeft: 'Blog',
+        footerRight: 'velog.io/@h',
+      },
+    ]);
+    expect(await artifacts.readBytes('infinite-scroll', 'run_1', THUMBNAIL_ARTIFACT)).toEqual({
+      ok: true,
+      bytes: PNG,
+    });
+    expect(Object.keys(result.artifacts)).toEqual([PUBLISH_ARTIFACT]);
 
     const text = result.artifacts[PUBLISH_ARTIFACT]!;
     expect(text.startsWith('# 발행 정보 — 무한 스크롤 미리 불러오기\n')).toBe(true);
@@ -174,7 +239,7 @@ describe('createPublishInfoStepRunner', () => {
     expect(text).toContain('## 태그\n\nReact\n무한스크롤\n');
     expect(text).toContain('タイトル: 無限スクロールの先読み');
     expect(text).toContain('- abcdef1 src/scroll.ts:L10-12 (2024-03-05) — 다음 페이지 미리 읽기');
-    expect(text).toContain('무한_스크롤_미리_불러오기_썸네일.png (미생성');
+    expect(text).toContain('무한_스크롤_미리_불러오기_썸네일.png (1200×630, 텍스트 전용)');
     // 조각은 파일에도 프롬프트에도 없다.
     expect(text).not.toContain('SECRET_SNIPPET');
     expect(adapter.calls[0]!.prompt).not.toContain('SECRET_SNIPPET');
@@ -203,7 +268,7 @@ describe('createPublishInfoStepRunner', () => {
       '# 무한 스크롤 | 결제 전환 2편\n\n> 결제 전환 시리즈 2편. [이전 편: 1편]([벨로그 링크])\n\n본문\n',
     );
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -222,7 +287,7 @@ describe('createPublishInfoStepRunner', () => {
     await artifacts.write('infinite-scroll', 'run_0', ZENN_ARTIFACT, ZENN);
     await store.write({ ...BUNDLE, runId: 'run_0', items: [] });
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -238,7 +303,7 @@ describe('createPublishInfoStepRunner', () => {
 
   test('모델이 JSON을 안 주면 재시도 가능 실패, 다음 시도에 성공', async () => {
     const adapter = createScriptedAdapter((_input, i) => (i === 0 ? '소개는요…' : GOOD_OUTPUT));
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -257,7 +322,7 @@ describe('createPublishInfoStepRunner', () => {
   ])('%s 산출물이 없으면 그 단계부터 다시(재시도 불가)', async (_label, name, code) => {
     await artifacts.remove('infinite-scroll', 'run_1', name);
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -270,7 +335,7 @@ describe('createPublishInfoStepRunner', () => {
   test('근거 묶음이 없으면 PUBLISH_INFO_EVIDENCE_MISSING', async () => {
     await store.remove('infinite-scroll', 'run_1');
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -283,7 +348,7 @@ describe('createPublishInfoStepRunner', () => {
 
   test('Zenn frontmatter가 깨졌으면 PUBLISH_INFO_ZENN_INVALID', async () => {
     await artifacts.write('infinite-scroll', 'run_1', ZENN_ARTIFACT, '# 제목만\n');
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => createScriptedAdapter(() => GOOD_OUTPUT) },
@@ -292,14 +357,14 @@ describe('createPublishInfoStepRunner', () => {
   });
 
   test('모델이 없거나 키가 없으면 그 코드로', async () => {
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => undefined },
     });
     await expect(runner.run(ctx())).rejects.toMatchObject({ code: 'PUBLISH_INFO_MODEL_UNKNOWN' });
     const noKey = { ...createScriptedAdapter(() => GOOD_OUTPUT), available: false };
-    const runner2 = createPublishInfoStepRunner({
+    const runner2 = runnerWith({
       store,
       artifacts,
       adapters: { get: () => noKey },
@@ -311,7 +376,7 @@ describe('createPublishInfoStepRunner', () => {
 
   test('(기존 글) 편은 모델을 부르기 전에 멈춘다', async () => {
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -323,9 +388,49 @@ describe('createPublishInfoStepRunner', () => {
     expect(adapter.calls).toHaveLength(0);
   });
 
-  test('discard는 이 Run의 publish.md를 지운다', async () => {
+  test('라벨이 비면 설정의 기본 태그, 설정이 없으면 빈 푸터', async () => {
+    const adapter = createScriptedAdapter(() =>
+      JSON.stringify({ intro: '소개', tags: ['a'], subtitle: '부제', tag: '' }),
+    );
+    const thumbnails = fakeThumbnails();
+    await runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails }).run(ctx());
+    expect(thumbnails.calls[0]).toMatchObject({
+      tag: 'TROUBLESHOOTING',
+      footerLeft: '',
+      footerRight: '',
+    });
+  });
+
+  test.each([
+    ['THUMBNAIL_CHROME_NOT_FOUND', false],
+    ['THUMBNAIL_RENDER_TIMEOUT', true],
+    ['THUMBNAIL_RENDER_FAILED', false],
+  ] as const)(
+    '썸네일 실패 %s는 단계 실패(retryable %s) — 발행정보도 쓰지 않는다',
+    async (code, retryable) => {
+      const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
+      const failing =
+        code === 'THUMBNAIL_CHROME_NOT_FOUND'
+          ? fakeThumbnails({ ok: false, code })
+          : fakeThumbnails({ ok: false, code, detail: 'x' });
+      const runner = runnerWith({
+        store,
+        artifacts,
+        adapters: { get: () => adapter },
+        thumbnails: failing,
+      });
+
+      await expect(runner.run(ctx())).rejects.toMatchObject({ code, retryable });
+      expect(await artifacts.read('infinite-scroll', 'run_1', PUBLISH_ARTIFACT)).toEqual({
+        ok: false,
+        code: 'ARTIFACT_MISSING',
+      });
+    },
+  );
+
+  test('discard는 이 Run의 publish.md·thumbnail.png를 지운다', async () => {
     const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
-    const runner = createPublishInfoStepRunner({
+    const runner = runnerWith({
       store,
       artifacts,
       adapters: { get: () => adapter },
@@ -333,6 +438,10 @@ describe('createPublishInfoStepRunner', () => {
     await runner.run(ctx());
     await runner.discard!(ctx());
     expect(await artifacts.read('infinite-scroll', 'run_1', PUBLISH_ARTIFACT)).toEqual({
+      ok: false,
+      code: 'ARTIFACT_MISSING',
+    });
+    expect(await artifacts.readBytes('infinite-scroll', 'run_1', THUMBNAIL_ARTIFACT)).toEqual({
       ok: false,
       code: 'ARTIFACT_MISSING',
     });
