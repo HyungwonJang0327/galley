@@ -5,11 +5,10 @@
   font-size: var(--ui-text-sm);
 }
 
-/* 발행정보 펼침 맨 위의 썸네일 — 본문 폭에 맞춰 줄이고 카드처럼 테두리. */
+/* 발행정보 펼침 맨 위의 썸네일 — 패널 폭 100%(사용자 결정: 제목·부제 글자가 읽히는 크기), 카드처럼 테두리. */
 .thumbnail {
   display: block;
   width: 100%;
-  max-width: var(--ui-popover-max-width);
   height: auto;
   margin-bottom: var(--ui-space-3);
   border: 1px solid var(--ui-color-border);

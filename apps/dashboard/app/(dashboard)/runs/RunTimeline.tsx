@@ -25,6 +25,13 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
   return [seconds(step.durationMs), tokens(step)].filter(Boolean).join(' · ');
 }
 
+/** 펼침 힌트 — 토글 버튼(제목+meta) 안에 있어야 클릭되고 읽힌다(decisions/layout.md `보기`). 볼 본문이 없으면 그 사실을. */
+const HINT: Record<StepArtifactView['kind'], string> = {
+  markdown: '보기',
+  missing: '산출물 없음',
+  unavailable: '산출물 읽기 실패',
+};
+
 /** 펼침 내용 — 산출물이 있으면 마크다운, 없거나 못 읽으면 한 줄 안내(검수자가 왜 비었는지 알아야 한다). */
 function artifactPanel(view: StepArtifactView) {
   switch (view.kind) {
@@ -32,13 +39,15 @@ function artifactPanel(view: StepArtifactView) {
       return (
         <>
           {view.thumbnailUrl === undefined ? null : (
-            // 1200×630 원본을 폭에 맞춰 줄인다. 캐시하지 않는 GET이라 재실행 뒤에도 최신 그림.
+            // 1200×630 원본을 패널 폭에 맞춰 줄인다(글자 검수 가능한 크기). lazy — 접힌(hidden) 동안은 요청하지 않는다.
+            // 캐시하지 않는 GET이라 재실행 뒤에도 최신 그림.
             <img
               className={styles.thumbnail}
               src={view.thumbnailUrl}
               alt="썸네일 미리보기"
               width={1200}
               height={630}
+              loading="lazy"
             />
           )}
           <ArtifactMarkdown text={view.text} />
@@ -51,16 +60,13 @@ function artifactPanel(view: StepArtifactView) {
         </p>
       );
     case 'unavailable':
-      return (
-        <p className={styles.note} role="alert">
-          {view.message}
-        </p>
-      );
+      // role="alert"를 두지 않는다 — 항상 DOM에 있고 hidden만 바뀌는 패널이라 라이브 리전이 읽어 주지 않는다.
+      return <p className={styles.note}>{view.message}</p>;
   }
 }
 
 /**
- * 단계 6줄. `artifacts`에 있는 단계는 펼쳐서 산출물을 읽을 수 있다(제목이 토글, 우측 "보기" 힌트) —
+ * 단계 6줄. `artifacts`에 있는 단계는 펼쳐서 산출물을 읽을 수 있다(제목+meta가 토글, meta 끝에 "보기" 힌트) —
  * 읽기는 서버(page)가 하고 여기는 결과만 받는다(decisions/layout.md 타임라인 한 줄).
  */
 export function RunTimeline({
@@ -83,8 +89,7 @@ export function RunTimeline({
             status={line.status}
             statusLabel={line.statusLabel}
             title={label}
-            meta={metaOf(step, line.carried)}
-            trailing={view === undefined ? undefined : <span>보기</span>}
+            meta={[metaOf(step, line.carried), view && HINT[view.kind]].filter(Boolean).join(' · ')}
             isLast={idx === STEP_OPTIONS.length - 1}
           >
             {view === undefined ? undefined : artifactPanel(view)}
