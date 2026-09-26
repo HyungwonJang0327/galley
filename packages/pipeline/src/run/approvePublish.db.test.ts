@@ -13,6 +13,7 @@ import { LocalFsPostsWriter } from '../publish/PostsWriter.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
 import { LocalFsStorage } from '../storage/LocalFsStorage.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
+import { createMockStepRunner } from '../steps/MockStepRunner.ts';
 import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from '../steps/publishInfoStep.ts';
 import { VELOG_ARTIFACT } from '../steps/velogStep.ts';
 import { VERIFICATION_ARTIFACT } from '../steps/verifyStep.ts';
@@ -163,6 +164,46 @@ async function writeArtifacts(runId: string, title: string) {
 }
 
 describe('approveAndPublishRun', () => {
+  test('Mock 러너가 DATA_DIR에 쓴 산출물로 승인까지 된다(development 조합, B3a M4) — 완료 줄·파일명에 힌트 없음', async () => {
+    const run = await finishedRun({ withArtifacts: false });
+    const runner = createMockStepRunner({
+      stores: { artifacts, evidence },
+      clock: { now: () => NOW },
+    });
+    for (const step of STEP_ORDER)
+      await runner.run({
+        runId: run.id,
+        step,
+        topic: { id: topicId, title: '무한 스크롤 (spacehome)', slug: SLUG },
+        modelId: 'mock:default',
+        sources: {},
+        signal: new AbortController().signal,
+      });
+
+    const result = await approveAndPublishRun(deps, run.id);
+
+    expect(result).toMatchObject({ ok: true, run: { status: RUN_STATUS.done } });
+    const files = (await readdir(join(blogDir, 'posts', SLUG))).sort();
+    expect(files).toEqual(
+      [
+        '무한_스크롤.md',
+        '무한_스크롤_링크드인.md',
+        '무한_스크롤_zenn.md',
+        '무한_스크롤_발행정보.md',
+        '무한_스크롤_썸네일.png',
+        'evidence.json',
+        'verification.json',
+      ].sort(),
+    );
+    const queue = await readFile(join(blogDir, '주제_큐.md'), 'utf8');
+    expect(queue).toContain(`- ${TODAY} 무한 스크롤 (posts/${SLUG})`);
+    expect(queue).not.toContain('spacehome (posts');
+    // posts의 evidence.json은 포인터만 — Mock 조각도 나가지 않는다.
+    expect(await readFile(join(blogDir, 'posts', SLUG, 'evidence.json'), 'utf8')).not.toContain(
+      'snippet',
+    );
+  });
+
   test('posts에 7개 파일, 큐 파일 완료 줄, QueueItem 완료(같은 행), Run done', async () => {
     const run = await finishedRun();
 

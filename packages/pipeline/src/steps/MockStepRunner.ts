@@ -10,22 +10,29 @@ import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { VerificationClaim, VerificationReport } from '../evidence/verification.ts';
 import { VERIFY_LIMITS } from '../evidence/verifyLimits.ts';
 import { postFileNames } from '../publish/postFiles.ts';
+import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import { STEP_ORDER, type StepName } from '../run/stateMachine.ts';
 import { hashPromptText, isTonePromptStep } from '../prompts/tonePrompts.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
+import { LINKEDIN_ARTIFACT } from './linkedinStep.ts';
 import { renderPublishInfo } from './publishInfo.ts';
-import { THUMBNAIL_ARTIFACT } from './publishInfoStep.ts';
+import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from './publishInfoStep.ts';
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
-import { renderZennArticle } from './zennStep.ts';
+import { VELOG_ARTIFACT } from './velogStep.ts';
+import { VERIFICATION_ARTIFACT } from './verifyStep.ts';
+import { renderZennArticle, splitTitle, ZENN_ARTIFACT } from './zennStep.ts';
 
-/** 단계별 산출물 파일 이름 — 실제 단계와 같은 이름(승인·미리보기가 이 이름으로 읽는다). */
-const ARTIFACT_NAME: Record<StepName, string> = {
+/**
+ * 단계별 산출물 파일 이름 — 실제 단계의 상수(승인·미리보기가 이 이름으로 읽는다). 근거 수집만 리터럴 — evidenceStep.ts는
+ * git 읽기(child_process)를 끌고 와서 상수만 가져올 수 없다(테스트가 EVIDENCE_ARTIFACT와 같음을 고정한다).
+ */
+export const MOCK_ARTIFACT_NAME: Record<StepName, string> = {
   evidence: 'evidence.json',
-  velog: 'velog.md',
-  verify: 'verification.json',
-  linkedin: 'linkedin.md',
-  zenn: 'zenn.md',
-  publishInfo: 'publish.md',
+  velog: VELOG_ARTIFACT,
+  verify: VERIFICATION_ARTIFACT,
+  linkedin: LINKEDIN_ARTIFACT,
+  zenn: ZENN_ARTIFACT,
+  publishInfo: PUBLISH_ARTIFACT,
 };
 
 /** 1×1 투명 PNG — 썸네일 자리(승인은 바이트를 복사만 한다, 미리보기는 <img>로 보인다). */
@@ -95,7 +102,7 @@ function mockBundle(ctx: StepContext, collectedAt: string): EvidenceBundle {
   };
 }
 
-/** 검증 리포트 픽스처 — flags 수만큼 근거 없음·불확실 주장, 나머지는 근거 있음 하나. */
+/** 검증 리포트 픽스처 — flags 수만큼 근거 없음·불확실 주장, 나머지는 근거 있음 하나. 줄 번호는 Mock 본문에 실제로 있는 줄. */
 function mockReport(
   ctx: StepContext,
   verifiedAt: string,
@@ -107,22 +114,20 @@ function mockReport(
     path: bundle.items[0]!.path,
     lineRange: bundle.items[0]!.lineRange,
   };
+  // 조각 히트면 ref만, reason 없음(verification.ts matchMechanicalClaims와 같은 모양).
+  const line =
+    mockBody(ctx)
+      .split('\n')
+      .findIndex((l) => l.includes('20')) + 1;
   const claims: VerificationClaim[] = [
-    {
-      text: '20',
-      kind: 'number',
-      status: 'supported',
-      line: 3,
-      evidenceRef: ref,
-      reason: 'in-analysis-summary',
-    },
+    { text: '20', kind: 'number', status: 'supported', line, evidenceRef: ref },
   ];
   for (let i = 0; i < flags.unsupported; i += 1)
     claims.push({
       text: `근거 없는 수치 ${i + 1}`,
       kind: 'number',
       status: 'unsupported',
-      line: 10 + i,
+      line,
       reason: 'not-in-evidence',
     });
   for (let i = 0; i < flags.uncertain; i += 1)
@@ -130,7 +135,7 @@ function mockReport(
       text: `불확실한 서술 ${i + 1}`,
       kind: 'statement',
       status: 'uncertain',
-      line: 30 + i,
+      line,
       reason: 'not-judged',
     });
   return {
@@ -146,10 +151,13 @@ function mockReport(
   };
 }
 
+/** 표시·파일용 제목 — 실제 단계처럼 괄호 힌트(리포 별칭 등)를 뗀다. 승인 시 완료 줄·posts 파일명이 이 제목이 된다. */
+const titleOf = (ctx: StepContext) => stripTopicHints(ctx.topic.title);
+
 /** 본문 픽스처 — 첫 줄 `# 제목`(벨로그·Zenn 단계 규칙), 수정 지시가 있으면 본문에 남긴다(재실행 diff). */
 function mockBody(ctx: StepContext): string {
   return [
-    `# ${ctx.topic.title}`,
+    `# ${titleOf(ctx)}`,
     '',
     `단계: ${ctx.step}`,
     ctx.instruction !== undefined ? `수정 지시: ${ctx.instruction}` : null,
@@ -166,30 +174,34 @@ function mockArtifacts(
   at: string,
   flags: { unsupported: number; uncertain: number },
 ): Record<string, string> {
+  const title = titleOf(ctx);
   switch (ctx.step) {
     case 'evidence':
       return {
-        [ARTIFACT_NAME.evidence]: JSON.stringify(stripSnippets(mockBundle(ctx, at)), null, 2),
+        [MOCK_ARTIFACT_NAME.evidence]: JSON.stringify(stripSnippets(mockBundle(ctx, at)), null, 2),
       };
     case 'verify':
-      return { [ARTIFACT_NAME.verify]: JSON.stringify(mockReport(ctx, at, flags), null, 2) };
+      return { [MOCK_ARTIFACT_NAME.verify]: JSON.stringify(mockReport(ctx, at, flags), null, 2) };
     case 'zenn':
-      return { [ARTIFACT_NAME.zenn]: renderZennArticle(ctx.topic.title, mockBody(ctx)) };
+      // 실제 Zenn 단계처럼 H1은 frontmatter title로 옮기고 본문에서 뗀다.
+      return {
+        [MOCK_ARTIFACT_NAME.zenn]: renderZennArticle(title, splitTitle(mockBody(ctx), title).body),
+      };
     case 'publishInfo':
       return {
-        [ARTIFACT_NAME.publishInfo]: renderPublishInfo({
-          title: ctx.topic.title,
+        [MOCK_ARTIFACT_NAME.publishInfo]: renderPublishInfo({
+          title,
           slug: ctx.topic.slug,
           intro: 'Mock 소개 — 실제 모델이 쓴 소개가 아닙니다.',
           tags: ['mock'],
-          zenn: { title: ctx.topic.title, emoji: '📝', type: 'tech', topics: [] },
+          zenn: { title, emoji: '📝', type: 'tech', topics: [] },
           evidence: stripSnippets(mockBundle(ctx, at)),
-          thumbnailFile: postFileNames(ctx.topic.title).thumbnail,
+          thumbnailFile: postFileNames(title).thumbnail,
           ...(ctx.series === undefined ? {} : { series: ctx.series }),
         }),
       };
     default:
-      return { [ARTIFACT_NAME[ctx.step]]: mockBody(ctx) };
+      return { [MOCK_ARTIFACT_NAME[ctx.step]]: mockBody(ctx) };
   }
 }
 
@@ -219,6 +231,14 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
         }
       }
 
+      // `(기존 글)` 편은 실제 단계(본문·발행정보)처럼 글을 만들지 않는다(decisions/series.md).
+      if (ctx.series?.alreadyPublished === true && ctx.step !== 'evidence' && ctx.step !== 'verify')
+        throw new StepFailure(
+          'SERIES_EPISODE_ALREADY_PUBLISHED',
+          '이미 발행된 시리즈 편((기존 글))이라 본문을 쓰지 않습니다.',
+          false,
+        );
+
       const at = now();
       const artifacts = mockArtifacts(ctx, at, flags);
       const result: StepResult = { artifacts };
@@ -226,12 +246,22 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
       if (options.stores !== undefined) {
         const { artifacts: files, evidence } = options.stores;
         const slug = ctx.topic.slug;
-        if (ctx.step === 'evidence') await evidence.write(mockBundle(ctx, at));
-        else
-          for (const [name, text] of Object.entries(artifacts))
-            await files.write(slug, ctx.runId, name, text);
-        if (ctx.step === 'publishInfo')
-          await files.writeBytes(slug, ctx.runId, THUMBNAIL_ARTIFACT, MOCK_THUMBNAIL_PNG);
+        try {
+          if (ctx.step === 'evidence') await evidence.write(mockBundle(ctx, at));
+          else
+            for (const [name, text] of Object.entries(artifacts))
+              await files.write(slug, ctx.runId, name, text);
+          if (ctx.step === 'publishInfo')
+            await files.writeBytes(slug, ctx.runId, THUMBNAIL_ARTIFACT, MOCK_THUMBNAIL_PNG);
+        } catch (error) {
+          // 실제 단계와 같은 취급 — fs 메시지(DATA_DIR 절대경로)는 cause에만, 행에는 코드와 한 줄.
+          throw new StepFailure(
+            'MOCK_STORE_WRITE_FAILED',
+            'Mock 산출물을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
+            false,
+            { cause: error },
+          );
+        }
       }
 
       // 썸네일이 없는 대신 publishInfo를 모델 없는 단계로 둔다 — 모델 없는 경로도 워커가 겪게.
@@ -253,7 +283,7 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
       if (options.stores === undefined) return;
       const { artifacts: files, evidence } = options.stores;
       if (ctx.step === 'evidence') await evidence.remove(ctx.topic.slug, ctx.runId);
-      else await files.remove(ctx.topic.slug, ctx.runId, ARTIFACT_NAME[ctx.step]);
+      else await files.remove(ctx.topic.slug, ctx.runId, MOCK_ARTIFACT_NAME[ctx.step]);
       if (ctx.step === 'publishInfo')
         await files.remove(ctx.topic.slug, ctx.runId, THUMBNAIL_ARTIFACT);
     },
