@@ -1,7 +1,9 @@
 // 실모델 스모크(수동) — 실제 레지스트리 + 합성 근거 번들(tmp DATA_DIR) + 실제 어투 폴더로 벨로그 단계를 한 번 돌려
 // 결과 길이·토큰·비용을 출력한다(BS2 리뷰 ⑭, BS5). 토큰이 들므로 **환경 변수로 켤 때만** 돈다:
-//   GALLEY_LIVE_SMOKE=1 [GALLEY_LIVE_MODEL=anthropic:claude-haiku-4-5-20251001] pnpm --filter @galley/pipeline test:smoke
+//   GALLEY_LIVE_SMOKE=1 [GALLEY_LIVE_MODEL=anthropic:claude-opus-5] pnpm --filter @galley/pipeline test:smoke
 // 키(.env)는 `--env-file`이 아니라 셸 환경으로 넘긴다(vitest는 .env를 읽지 않는다). CI는 켜지 않으므로 건너뛴다.
+// 기본 모델은 가장 싼 Haiku(인덱싱 기본과 같다) — 배선 확인이 목적이라 상위 모델은 GALLEY_LIVE_MODEL로 골라 쓴다
+// (BS5 리뷰 L8, 사용자 결정).
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -9,12 +11,12 @@ import { join } from 'node:path';
 import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
-import { createModelRegistryFromEnv, DEFAULT_MODEL_ID } from '../model/ModelRegistry.ts';
+import { createModelRegistryFromEnv, INDEXING_DEFAULT_MODEL_ID } from '../model/ModelRegistry.ts';
 import { resolveTonePromptsDir } from '../prompts/tonePrompts.ts';
 import { createVelogStepRunner, VELOG_ARTIFACT } from './velogStep.ts';
 
 const enabled = process.env.GALLEY_LIVE_SMOKE === '1';
-const modelId = process.env.GALLEY_LIVE_MODEL ?? DEFAULT_MODEL_ID;
+const modelId = process.env.GALLEY_LIVE_MODEL ?? INDEXING_DEFAULT_MODEL_ID;
 
 /** 합성 번들 — 회사 코드가 아닌 지어낸 조각. 실모델 출력이 어투·근거 지시를 따르는지 눈으로 볼 정도의 크기. */
 const BUNDLE: EvidenceBundle = {
