@@ -10,5 +10,9 @@ export const WRITING_LIMITS = {
   linkedinMaxOutputTokens: 4_096,
   /** Zenn 일본어판 출력 토큰 상한. 본문 2,500~4,000자(일본어는 글자당 1토큰 안팎) + 벨로그판 코드 그대로. 절단 상한이라 비용과 무관. */
   zennMaxOutputTokens: 12_288,
+  /** 발행정보 소개·태그 JSON 출력 상한(소개 150자 + 태그 10개면 수백 토큰). */
+  publishInfoMaxOutputTokens: 1_024,
+  /** 발행정보 프롬프트에 넣는 벨로그 본문 글자 수 상한 — 소개·태그는 앞부분으로 충분하다. */
+  publishInfoBodyChars: 24_000,
 } as const;
 export type WritingLimits = { readonly [K in keyof typeof WRITING_LIMITS]: number };

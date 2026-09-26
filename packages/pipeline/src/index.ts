@@ -259,6 +259,20 @@ export {
 } from './steps/zennStep.ts';
 export type { ZennStepDeps, ZennInput } from './steps/zennStep.ts';
 export { createStepRunner, routeStepRunner } from './steps/createStepRunner.ts';
+export {
+  createPublishInfoStepRunner,
+  parseZennFrontmatter,
+  PUBLISH_ARTIFACT,
+} from './steps/publishInfoStep.ts';
+export {
+  renderPublishInfo,
+  renderEvidenceSection,
+  parsePublishTitle,
+  PUBLISH_INTRO_MAX_CHARS,
+} from './steps/publishInfo.ts';
+export type { PublishInfoInput } from './steps/publishInfo.ts';
+export { postFileNames, toFileStem } from './publish/postFiles.ts';
+export type { PostFileNames } from './publish/postFiles.ts';
 export type { StepRunnerDeps } from './steps/createStepRunner.ts';
 export {
   createVerifyStepRunner,
