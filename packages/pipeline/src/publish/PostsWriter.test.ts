@@ -108,6 +108,25 @@ describe('LocalFsPostsWriter', () => {
     });
   });
 
+  test('쓰다 실패하면 임시 파일을 남기지 않는다', async () => {
+    await withTempDir(async (blogDir) => {
+      const writer = new LocalFsPostsWriter(blogDir);
+      const dir = join(blogDir, 'posts', 's');
+      // 두 번째 파일 이름 자리에 폴더를 두면 rename이 실패한다.
+      await mkdir(join(dir, '제목_링크드인.md'), { recursive: true });
+
+      const result = await writer.write({
+        slug: 's',
+        articleTitle: '제목',
+        files: FILES,
+        overwrite: true,
+      });
+
+      expect(result).toMatchObject({ ok: false, code: 'POSTS_WRITE_FAILED' });
+      expect((await readdir(dir)).filter((f) => f.endsWith('.tmp'))).toEqual([]);
+    });
+  });
+
   test('슬러그에 구분자·..이 있으면 프로그래머 오류로 던진다', async () => {
     await withTempDir(async (blogDir) => {
       const writer = new LocalFsPostsWriter(blogDir);

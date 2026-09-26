@@ -2,7 +2,7 @@
 // (approvePublish)가 DATA_DIR에서 읽어 넘긴다. 회사 코드 조각은 여기로 오지 않는다(evidence는 포인터 사본 — CLAUDE.md §5).
 // 폴더가 이미 있으면 `overwrite`일 때만 쓴다 — Galley가 만든 폴더(DB에 이 주제의 승인된 Run)만 덮어쓰고 사람이 만든 같은
 // 슬러그 폴더는 거부한다(2026-09-26 사용자 결정). 파일마다 임시 파일 + rename(원자적, 에디터로 열어 둔 파일이 잘리지 않게).
-import { access, mkdir, rename, writeFile } from 'node:fs/promises';
+import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { postFileNames } from './postFiles.ts';
 
@@ -72,15 +72,19 @@ export class LocalFsPostsWriter implements PostsWriter {
     }
     if (exists && !input.overwrite) return { ok: false, code: 'POSTS_DIR_EXISTS', dir };
 
+    // 파일 단위로만 원자적이다 — 중간에 실패하면 앞 파일은 새것, 뒤는 옛것이 섞일 수 있다(리뷰 L1, 기록). 임시 파일은 남기지 않는다.
+    let temp: string | undefined;
     try {
       await mkdir(dir, { recursive: true });
       for (const [name, text] of plan) {
         const path = join(dir, name);
-        const temp = `${path}.${process.pid}.tmp`;
+        temp = `${path}.${process.pid}.tmp`;
         await writeFile(temp, text, 'utf8');
         await rename(temp, path);
+        temp = undefined;
       }
     } catch (error) {
+      if (temp !== undefined) await rm(temp, { force: true });
       return {
         ok: false,
         code: 'POSTS_WRITE_FAILED',
