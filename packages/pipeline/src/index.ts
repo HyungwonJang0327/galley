@@ -141,6 +141,12 @@ export { startRun } from './run/startRun.ts';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun.ts';
 export { startRerun } from './run/startRerun.ts';
 export { approveRun, reviseRun, previewRerun } from './run/runCommands.ts';
+export { approveAndPublishRun, localDate } from './run/approvePublish.ts';
+export type {
+  ApprovePublishDeps,
+  ApprovePublishFailure,
+  ApprovePublishResult,
+} from './run/approvePublish.ts';
 export type {
   ApproveRunFailure,
   ApproveRunResult,
