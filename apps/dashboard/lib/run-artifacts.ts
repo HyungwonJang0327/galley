@@ -284,11 +284,35 @@ export function toVerificationView(report: VerificationReport): VerificationView
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+const oneOf =
+  <T extends string>(values: readonly T[]) =>
+  (v: unknown): v is T =>
+    typeof v === 'string' && (values as readonly string[]).includes(v);
+
+const isStatus = oneOf<ClaimStatus>(['supported', 'unsupported', 'uncertain']);
+const isKind = oneOf<ClaimKind>(['number', 'path', 'identifier', 'statement']);
+const isReason = oneOf<ClaimReason>([
+  'not-in-evidence',
+  'generalizable',
+  'in-analysis-summary',
+  'judged',
+  'not-judged',
+  'judge-missing',
+  'judge-unparsed',
+  'judge-truncated',
+]);
+const isJudgeStatus = oneOf<VerificationReport['judge']['status']>([
+  'skipped',
+  'judged',
+  'unparsed',
+  'truncated',
+]);
 const STATUSES: readonly ClaimStatus[] = ['supported', 'unsupported', 'uncertain'];
 
 /**
- * verification.json → 리포트. 단계가 쓴 파일이지만 사람이 손댈 수 있어 형식만 본다(version 1·counts 셋·claims 배열·
- * cleanRoom.matches 배열·judge.status). 맞지 않으면 undefined — 화면은 "형식이 맞지 않음"으로.
+ * verification.json → 리포트. 단계가 쓴 파일이지만 사람이 손댈 수 있어 화면이 쓰는 필드의 형식을 본다(version 1·counts 셋·
+ * claims의 text/kind/status/line/evidenceRef/reason/note·cleanRoom.matches 배열·judge.status). 맞지 않으면 undefined —
+ * 화면은 "형식이 맞지 않음"으로. 검사한 필드만 쓰므로 뒤의 캐스팅이 거짓이 되지 않는다.
  */
 export function parseVerificationReport(text: string): VerificationReport | undefined {
   let json: unknown;
@@ -302,18 +326,29 @@ export function parseVerificationReport(text: string): VerificationReport | unde
   if (!isRecord(counts) || !STATUSES.every((s) => isCount(counts[s]))) return undefined;
   if (!Array.isArray(claims) || !claims.every(isClaim)) return undefined;
   if (!isRecord(cleanRoom) || !Array.isArray(cleanRoom['matches'])) return undefined;
-  if (!isRecord(judge) || typeof judge['status'] !== 'string') return undefined;
+  if (!isRecord(judge) || !isJudgeStatus(judge['status'])) return undefined;
   return json as unknown as VerificationReport;
 }
+
+const isLineRange = (v: unknown): v is { start: number; end: number } =>
+  isRecord(v) && isCount(v['start']) && isCount(v['end']);
+
+const isEvidenceRef = (v: unknown): v is EvidenceRef =>
+  isRecord(v) &&
+  typeof v['commit'] === 'string' &&
+  typeof v['path'] === 'string' &&
+  isLineRange(v['lineRange']);
 
 function isClaim(v: unknown): v is VerificationClaim {
   return (
     isRecord(v) &&
     typeof v['text'] === 'string' &&
-    typeof v['kind'] === 'string' &&
-    typeof v['status'] === 'string' &&
-    STATUSES.includes(v['status'] as ClaimStatus) &&
-    typeof v['line'] === 'number'
+    isKind(v['kind']) &&
+    isStatus(v['status']) &&
+    typeof v['line'] === 'number' &&
+    (v['evidenceRef'] === undefined || isEvidenceRef(v['evidenceRef'])) &&
+    (v['reason'] === undefined || isReason(v['reason'])) &&
+    (v['note'] === undefined || typeof v['note'] === 'string')
   );
 }
 
