@@ -192,6 +192,7 @@
 - [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
   - BE8 리뷰에서 넘어온 것(decisions 2026-09-22 BE8 ⑨): 번들에 `analyses: { id, kind, title, summary }[]` 옵션 필드(version 1 유지) · `StepContext.evidence`에 `EvidenceBundle` 타입 · 0건 번들로 본문을 쓸지(`EVIDENCE_EMPTY`) 결정 · 삭제 파일 포인터의 `date`는 부모 커밋(표기 규칙).
   - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
+  - 상태(2026-09-26): 입력 제한은 BS2(`VelogInput`)에서, `## 근거` 목록은 B3a(`renderEvidenceSection`)에서 이행됐다. 남은 것은 `StepContext.evidence` 자리 정리와 이 항목 마감 확인뿐.
 - [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
   - BE7 리뷰에서 넘어온 것(decisions 2026-09-22 BE7 ⑪): auto 연결 "제거" = `source=dismissed`(계산 결과에 있어도 안 붙임, 목록엔 안 보임, `LINK_SOURCE`에 값 추가·마이그레이션 없음) · "추가"가 이미 auto면 create가 아니라 source 갱신(승격) · 연결 이유는 `matchTopic` 재계산으로 표시(재인덱싱 뒤 어긋날 수 있음, 필요하면 `reason` 컬럼) · 큐 행 "근거 n건"은 `_count`.
   - 완료조건: 편집 결과가 `TopicAnalysisLink(manual)`로 저장, 큐 행 "근거 n건" 갱신.
@@ -266,10 +267,11 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
 
-- [ ] **B3a** pl — `posts/<슬러그>/` 5개 파일 쓰기(벨로그·링크드인·Zenn·발행정보·썸네일 자리) + `evidence.json`·`verification.json` via Storage. 새 슬러그 폴더에만. 발행정보에 `## 근거` 섹션(BE11). 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
-  - BS5에서 이월: `createStepRunner`의 `publishInfo` Mock을 실제 구현으로 교체(`StepRunnerDeps.publishInfo`) · **B3a 전에 승인된 Run은 posts 폴더가 없고 completeTopic도 안 돈다**(리뷰 L10 — 그 Run들은 재실행으로 채우거나 무시, 결정 필요) · BX4 M2(완료 줄 제목이 큐 제목과 다르면 매칭 키 갈라짐 → 파일 쓰기 전 QueueItem 갱신).
-- [ ] **B3b** pl — ThumbnailRenderer 인터페이스 + make_thumb.py 호출 구현. 커밋: `feat(publish): 썸네일 렌더러(make_thumb.py 호출) 추가`
-- [ ] **B3c** ts — 산출물 5개 + evidence/verification 2개 구조·파일명 픽스처 테스트. 커밋: `test(publish): posts 산출물 구조 테스트`
+- [x] **B3a** (2026-09-26 `e0259f1`·`6cc2b82`·`529ec84`·`044b0bc`·`6f1dbcd` + 리뷰 `90de4ae`·`99166d4`·`fa69d01`, feat/publish-posts) pl — **승인 시** `posts/<슬러그>/`에 6개 파일(썸네일은 B3b): 기존 관례 이름 `<제목>.md`·`_링크드인.md`·`_zenn.md`·`_발행정보.md` + `evidence.json`(포인터만, analyses 제외)·`verification.json`. 발행정보 단계 실제 러너(`createPublishInfoStepRunner` — `## 근거`·시리즈·Zenn·체크리스트 조립, 모델 1회로 소개·태그). `approveAndPublishRun`(읽기·검증 → posts 쓰기 → QueueItem 선갱신 + Run done + 큐 파일 완료 줄 한 트랜잭션 → 재적재), 대시보드 승인 배선(BLOG_DIR·DATA_DIR). 사용자 결정 4건 + 리뷰 4건은 decisions/run-execution-model.md §1. 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
+  - 처리한 이월: publishInfo Mock 교체 ✓ · BX4 M2(QueueItem 선갱신) ✓ · B3a 전 승인된 Run은 posts 없음 → 재실행으로(그 Run의 publish.md는 Mock 형식이라 승인 시 `PUBLISH_TITLE_MISSING`으로 안내).
+  - 이월(리뷰, 기록만): **M3** 승인 뒤 큐 제목 `<글 제목> (posts/<슬러그>)` → 되돌려 재실행하면 `topicSlug`가 다른 슬러그(새 폴더) — 재승인 절차·슬러그 파생 규칙은 별도 결정 · **M4** Mock 러너가 DATA_DIR에 안 써 development 조합에서 승인 불가 → Mock 산출물·번들 쓰기(후속) · L2 재승인 시 제목 바뀌면 옛 이름 파일 잔존 · L3 섹션을 DB 상태로 고름 · L5 `approveRun` 호출처 없음 · L6 소개·태그 redact(TD8) · L7 근거 줄 리포 구분 없음 · L8 localDate TZ(대시보드 프로세스 TZ 확인) · 실행 상세에서 `postsDir` 안내(발행 화면).
+- [ ] **B3b** pl — ThumbnailRenderer 인터페이스 + make_thumb.py 호출 구현. 파일 이름은 `postFileNames(title).thumbnail`(발행정보 썸네일 절이 이미 적는다), PostsWriter에 썸네일 항 추가. 커밋: `feat(publish): 썸네일 렌더러(make_thumb.py 호출) 추가`
+- [x] **B3c** (2026-09-26 `529ec84`, B3a에 포함) ts — `PostsWriter.test.ts`·`postFiles.test.ts`: 6개 파일 이름·내용·임시 파일 잔여·덮어쓰기·거부. 커밋: `test(publish): posts 산출물 구조 테스트`
 
 ---
 

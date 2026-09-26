@@ -15,7 +15,8 @@ BW2(워커 루프) 착수 전에 정한 세 가지. 셋 다 "층을 늘리지 �
 
 - **목록 묶기**: Run에 **`topicId`**(QueueItem id)와 **`attempt` 번호**를 둔다. 실행 이력·좌측 목록은 **주제 단위로 묶고 최신 Run을 대표로** 보여주며, 펼치면 시도들이 나온다. 레이아웃 스펙 §4-B 좌측 목록 구조를 그대로 쓴다.
 - **`applyCommand` 확장**: 재실행 지시를 받으면 상태 전이만이 아니라 **"새 Run 생성" 지시와 `RerunPlan`을 함께** 돌려준다.
-- **산출물 충돌**: 사람이 읽는 5개 파일(벨로그 본문·링크드인·Zenn·발행정보·썸네일)은 `posts/<슬러그>/` 루트에 **최신본만** 둔다(경로가 안정적이어야 하고 열어야 할 파일이 늘면 안 된다). **Run별 부산물**(`evidence.json`·`verification.json`·단계 로그)은 `posts/<슬러그>/runs/<runId>/`에 남기고 **덮어쓰지 않는다.**
+- **산출물 충돌**: 사람이 읽는 5개 파일(벨로그 본문·링크드인·Zenn·발행정보·썸네일)은 `posts/<슬러그>/` 루트에 **최신본만** 둔다(경로가 안정적이어야 하고 열어야 할 파일이 늘면 안 된다). ~~**Run별 부산물**(`evidence.json`·`verification.json`·단계 로그)은 `posts/<슬러그>/runs/<runId>/`에 남기고 **덮어쓰지 않는다.**~~ **⚠️ 결정 변경(2026-09-26 B3a, 사용자)**: `evidence.json`(포인터만)·`verification.json`도 **루트에 최신본**(폴더당 7개, INTENT·evidence-collection과 일치). Run별 이력은 posts가 아니라 **DATA_DIR**(`artifacts/<슬러그>/<runId>/`·`evidence/<슬러그>/<runId>.json`)이 맡는다 — blog 폴더에 Run 폴더를 늘리지 않는다.
+- **posts는 승인 시 쓴다**(2026-09-26 B3a, 사용자 결정): 단계는 DATA_DIR에만 쓰고, 승인(`approveAndPublishRun`)이 그 Run의 산출물(carried면 출처 Run의 것)을 `posts/<슬러그>/`로 복사하면서 큐 파일 완료 이동·QueueItem 갱신·Run done을 한 번에 한다. posts에는 **승인본만** 남는다. 파일 이름은 blog 폴더의 기존 관례(`<제목>.md`·`<제목>_링크드인.md`·`<제목>_zenn.md`·`<제목>_발행정보.md`·`<제목>_썸네일.png`, 공백→`_`) + `evidence.json`·`verification.json`. 순서는 읽기·검증(부작용 없음) → posts 쓰기 → DB 트랜잭션(QueueItem을 완료 줄과 같은 제목·상태로 먼저, Run done, **그 안에서 마지막에** 큐 파일 쓰기 — 파일 쓰기 실패·롤백이면 DB가 되돌아간다) → 재적재(실패해도 승인은 성공). **덮어쓰기는 Galley가 쓴 폴더만** — DB에 이 주제의 승인된(done) Run이 같은 슬러그에 있을 때. 없는데 폴더가 있으면 `POSTS_DIR_EXISTS`(사람이 만든 폴더거나 앞선 승인이 posts를 쓴 뒤 실패한 잔여 — 문구가 옮기거나 지우라고 안내, 마커 파일을 두지 않는 대가). 알려진 한계: 승인 뒤 큐 제목이 `<글 제목> (posts/<슬러그>)`가 되어 줄을 대기로 되돌려 재실행하면 `topicSlug`가 힌트까지 포함해 다른 슬러그를 만든다(리뷰 M3 — 슬러그 파생 규칙은 별도 결정) · 재승인 시 글 제목이 바뀌면 옛 이름 파일이 남는다(L2).
 - BE14a의 `origin`/`sourceRunId`와 BE14c는 이 결정과 맞는다 — 되돌릴 것 없다.
 - **carried 행은 재실행 Run을 만드는 시점에 함께 만든다**(2026-09-13, BE14c). `startRerun({ previousRunId, plan, instruction, modelId? })`가 새 Run과 단계 행 6개를 **한 트랜잭션**에서 만든다 — 앞은 `carried`+`succeeded`+`sourceRunId`(`resolveCarriedSources`를 같은 트랜잭션에서 불러 승계 사슬이 일관), 시작 단계부터는 `pending`+`fresh`. **워커는 첫 실행과 똑같이 pending만 잡고 "재실행"이라는 개념을 모른다** — §2 "워커는 오케스트레이션만"을 지키는 가장 큰 이유다. 확인 UI가 보여준 `planRerun` 결과와 실제 행이 같은 계산에서 나온다(두 번 계산하지 않는다). 가드: 직전 Run이 실행 중이면 거부(안 끝난 단계를 "이전 결과"로 가져오게 된다) — 재실행은 승인 대기·실패·완료에서만. 이어받을 단계가 직전 Run에서 성공하지 않았어도 거부(실패한 Run은 실패 단계부터만). 직전 Run의 검수 상태는 건드리지 않는다 — 종결은 승인 게이트 배선(BW4)의 몫. **기각**: _워커가 잡을 때 채우기_ — 워커가 재실행을 인지해야 하고 계획을 UI와 워커가 두 번 계산한다.
 - **수정 지시를 받은 Run의 종결 상태 = `revised`**(2026-09-13, BW4, 사용자 결정). `RUN_STATUS`에 다섯 번째 값. 승인(`done`)과 구분해야 "몇 번 만에 승인됐는가"가 남고, 종결이라 `finishedAt`을 채운다. `applyCommand`의 `status`는 **명령을 받은 그 Run**의 다음 상태(revise → `revised`)이고 `rerun`이 새 Run 생성 지시다. `revised`에는 다시 명령이 통하지 않는다. **재실행은 그 주제의 최신 시도에서만** 갈라진다(`NOT_LATEST_ATTEMPT`) — 사슬이 두 갈래가 되지 않게. 이 가드 덕에 "같은 주제의 다른 Run이 실행 중"(`RUN_ALREADY_ACTIVE`)은 재실행에서 도달 불가라 뺐다(첫 실행 `startRun`에는 남아 있다). **기각**: _`pendingApproval` 유지 + `finishedAt`만_ — 카운트·필터가 finishedAt까지 봐야 한다 / _`done`_ — 승인과 구분이 안 된다.
@@ -51,11 +52,11 @@ StepResult  { artifacts, tokens, cost, model? }
 - **라우팅은 `createStepRunner(deps)` 하나**(2026-09-26 BS5): 단계명 → evidence·velog·verify·linkedin·zenn·publishInfo 구현으로 분기하고 모르는 단계명은 프로그래머 오류(throw). 조립 루트(`bin/worker.ts`)만 스토어(DATA_DIR)·레지스트리·어투 폴더를 만들어 넘긴다. **발행정보는 B3a 전까지 Mock 위임**(`deps.publishInfo` 자리, 사용자 결정).
 - **Mock 러너 조건은 `NODE_ENV`**(2026-09-26 사용자 결정): `test`(스모크·CI)·`development`(모델 없이 화면 확인)면 Mock, 값이 없으면 실제. Mock 어댑터가 development에만 노출되는 것(model-selection)과 같은 축이다. 조합:
 
-  | 대시보드 (`pnpm dev` = development) | 워커 `NODE_ENV`     | 결과                                                                               |
-  | ----------------------------------- | ------------------- | ---------------------------------------------------------------------------------- |
-  | development                         | 없음(`pnpm worker`) | 화면은 Mock 어댑터가 목록에 보이지만 실행은 **실제 모델**. 로컬 실사용 조합.       |
-  | development                         | development         | 워커도 Mock 러너 — 토큰 없이 화면 흐름 확인. `mock` 모델을 골라도 실제로는 픽스처. |
-  | any                                 | test                | 워커 스모크·CI 전용.                                                               |
+  | 대시보드 (`pnpm dev` = development) | 워커 `NODE_ENV`     | 결과                                                                                                                                                                                                                               |
+  | ----------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | development                         | 없음(`pnpm worker`) | 화면은 Mock 어댑터가 목록에 보이지만 실행은 **실제 모델**. 로컬 실사용 조합.                                                                                                                                                       |
+  | development                         | development         | 워커도 Mock 러너 — 토큰 없이 **승인 전까지** 화면 흐름 확인. `mock` 모델을 골라도 실제로는 픽스처. Mock은 DATA_DIR에 쓰지 않으므로 승인은 `ARTIFACT_MISSING`으로 거절된다(B3a 리뷰 M4 — Mock이 산출물·번들을 쓰게 하는 것은 후속). |
+  | any                                 | test                | 워커 스모크·CI 전용.                                                                                                                                                                                                               |
 
 - **기동 검증**(2026-09-26 BS5): 실모드 워커는 `DATA_DIR`이 비었거나·상대경로거나·`BLOG_DIR` 안이면(BE8 ⑩), `PROMPTS_DIR`이 상대경로면(BS1 ⑦) 기동하지 않는다. **`~`는 확장하지 않는다** — Node `--env-file`은 셸이 아니라 `~/x`가 리포 안 `~` 폴더가 되므로 안내에 절대경로만 적는다(사용자 결정, PROMPTS_DIR과 같은 규칙). 기동 로그에 `availableModels`(키 있는 어댑터 id)를 남겨 키가 빠진 채 띄운 것을 실행 실패 전에 알 수 있게 한다.
 
@@ -86,6 +87,7 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-26 B3a: §1 **결정 변경** — `evidence.json`·`verification.json`도 posts 루트(폴더당 7개), Run별 이력은 DATA_DIR. posts는 승인 시 쓴다(절차·덮어쓰기 규칙·알려진 한계). §2 조합표에 Mock 모드 승인 불가. 사용자 결정 4건(승인 시 복사·기존 관례 파일명+루트 7개·Galley 폴더만 덮어씀·소개/태그 모델 1회) + 리뷰 4건(M1 파일 쓰기 트랜잭션 안·M2 analyses 제외·M3 기록·M4 문서).
 - 2026-09-26 BS5: §2에 라우팅 `createStepRunner`·Mock 러너 조건(NODE_ENV)·대시보드/워커 조합표·기동 검증(DATA_DIR·PROMPTS_DIR 절대경로, `~` 불가, availableModels 로그), §3에 재시도 대기 10s·20s·실모델 스모크. 사용자 결정 5건(발행정보 Mock 위임·NODE_ENV 조건·maxRetries 1+대기·`~` 확장 안 함·스모크 기본 Haiku).
 - 2026-09-13 BW3: §3에 반환(`released`)은 실패가 아님 · 타이머 deps · 스모크 잡 운영 규칙(required, 흔들리면 informational).
 - 2026-09-13 BW4: `revised` 상태 · 최신 시도에서만 재실행 · 승인/수정 지시 두 경로 + POST 미리보기. §1 "따라오는 것"에 추가.
