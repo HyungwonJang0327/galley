@@ -263,7 +263,8 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **B2d-2** fe·pl — 실패 실행의 재실행 진입(상태 머신 `applyCommand`가 승인 대기만 허용 — 실패에서 "처음부터/실패 단계부터"를 열려면 pipeline 결정 선행). B2d에서 쪼갬(2026-09-14).
 - [x] **B2d-3** (2026-09-14 `0a50521`, feat/dashboard-approve-dialog, PR #95) fe — 승인 확인 Dialog("승인할까요?" — 검수 완료로 종결, 공개 발행 아님). 확인해야 approve API. 커밋: `feat(dashboard): 승인 전 확인 Dialog 추가`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
-- [ ] **B2e** fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown**(apps/dashboard). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
+- [x] **B2e** (2026-09-26 `b723afe`·`578381c`·`d618b30`·`687e95a`·`9330ee1` + 리뷰 `e276c2f`·`e45c007`·`85ecf59`, feat/run-artifact-preview) fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown + remark-gfm**(apps/dashboard, 서버 컴포넌트). 마크다운 4줄(벨로그·링크드인·Zenn·발행정보)만 — 근거 수집·검증 줄은 BE13. 발행정보 펼침에 썸네일(`GET /api/runs/[id]/thumbnail`). 링크 새 탭·이미지 차단·힌트는 meta 끝(사용자 결정). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
+  - 이월(리뷰, 기록만): L4 `reason(error)` 문구 노출(TD5와 함께) · L5 실행 중 폴링마다 본문 재직렬화 · L6 `--ui-font-mono` 토큰(P7m) · L10 data-dir 실패 형태 · `ArtifactStore.exists` 없음(썸네일 존재 확인이 PNG를 읽음) · DATA_DIR 미설정 안내 4줄 중복 · `diff`(재실행 후) 표기는 미구현.
 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
 
@@ -271,7 +272,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
   - 처리한 이월: publishInfo Mock 교체 ✓ · BX4 M2(QueueItem 선갱신) ✓ · B3a 전 승인된 Run은 posts 없음 → 재실행으로(그 Run의 publish.md는 Mock 형식이라 승인 시 `PUBLISH_TITLE_MISSING`으로 안내).
   - 이월(리뷰, 기록만): **M3** 승인 뒤 큐 제목 `<글 제목> (posts/<슬러그>)` → 되돌려 재실행하면 `topicSlug`가 다른 슬러그(새 폴더) — 재승인 절차·슬러그 파생 규칙은 별도 결정 · **M4** Mock 러너가 DATA_DIR에 안 써 development 조합에서 승인 불가 → Mock 산출물·번들 쓰기(후속) · L2 재승인 시 제목 바뀌면 옛 이름 파일 잔존 · L3 섹션을 DB 상태로 고름 · L5 `approveRun` 호출처 없음 · L6 소개·태그 redact(TD8) · L7 근거 줄 리포 구분 없음 · L8 localDate TZ(대시보드 프로세스 TZ 확인) · 실행 상세에서 `postsDir` 안내(발행 화면).
 - [x] **B3b** (2026-09-26 `55f2540`·`17a2559`·`5d2843d` + 리뷰 `c4a48af`·`c188705`·`dfafdcd`, feat/thumbnail) pl — `ThumbnailRenderer`(check·render, 값) + `ChromeThumbnailRenderer`(설치된 Chrome headless `--screenshot`, make_thumb.py 템플릿 이식, PNG IEND 폴링 후 SIGKILL — 사용자 결정, deploy-readiness 결정 변경). 발행정보 단계가 같은 모델 호출의 부제·라벨 + `.galley/thumbnail.json` 푸터로 `thumbnail.png`를 DATA_DIR에 쓰고(실패 = 단계 실패, 모델 호출 전 check()), 승인이 `<제목>_썸네일.png`로 복사 — posts 7개 완성. `ArtifactStore.writeBytes/readBytes`. 커밋: `feat(publish): ThumbnailRenderer 인터페이스 + headless Chrome 구현`
-  - 이월(리뷰, 기록만): L3 제목 75자+면 5줄로 부제·푸터 밀림(제목 길이 상한 없음) · L6 순수 렌더러가 상수 때문에 thumbnail.ts(child_process) import · L11 B3b 전 Run은 승인 시 ARTIFACT_MISSING(thumbnail.png) — 문구에 "발행정보 단계부터" 안내 없음 · L13 Docker root면 `--no-sandbox`, CI 러너는 CJK 글꼴 없음(tofu) · 타임아웃 재시도 때 모델 재호출 · 썸네일은 대시보드 미리보기에 안 보임(artifacts 맵 밖).
+  - 이월(리뷰, 기록만): L3 제목 75자+면 5줄로 부제·푸터 밀림(제목 길이 상한 없음) · L6 순수 렌더러가 상수 때문에 thumbnail.ts(child_process) import · L11 B3b 전 Run은 승인 시 ARTIFACT_MISSING(thumbnail.png) — 문구에 "발행정보 단계부터" 안내 없음 · L13 Docker root면 `--no-sandbox`, CI 러너는 CJK 글꼴 없음(tofu) · 타임아웃 재시도 때 모델 재호출 · ~~썸네일은 대시보드 미리보기에 안 보임~~ → B2e에서 해소(GET 라우트).
 - [x] **B3c** (2026-09-26 `e75d214`, B3a에 포함) ts — `PostsWriter.test.ts`·`postFiles.test.ts`: 6개 파일 이름·내용·임시 파일 잔여·덮어쓰기·거부. 커밋: `test(publish): posts 산출물 구조 테스트`
 
 ---
@@ -361,6 +362,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **P7j** ui — InlineAlert 낭독 세기 탈출구(`live?: 'assertive' | 'polite' | 'off'` 등). 지금은 tone이 role을 정해 앱이 끌 수 없다 — warning이 상시 표시 문구로 쓰여 다시 마운트될 때마다 끼어들어 읽히는 실제 수요가 생기면. P4-6 리뷰 L4(2026-09-17).
 - [ ] **P7l** ui — 라이브러리 고도화 로드맵 **논의 초안(2026-09-21, 보류 — 사용자 결정으로 본체 복귀)**: Q1 기반(P7c Storybook→Pages · P7b CI publish · P7k 중 싼 것) → Q2 데이터 컴포넌트(Table[직접 vs TanStack 헤드리스 결정 필요]·Pagination·Breadcrumb·Avatar·DescriptionList·Drawer·Progress/Stepper) → Q3 패턴(FilterBar/DataToolbar·KPI 그리드·Command palette·DateRangePicker·Combobox·NumberField) → Q4 성숙도(P7g·P7h·P7i·밀도 모드·accent 테마 API·기본 라벨 i18n) → 1.0(API 동결). 각 항목은 Galley 화면의 실제 자리가 있을 때만.
 - [ ] **P7k** ui — RF1에서 보류한 것(2026-09-21, worklog 09-21 RF 절): RF-15 비동기 onClick 패턴 통일(type-aware lint 도입 결정 필요) · RF-21 Input/Select/Textarea 필드 스타일 3벌 공유(`composes`) · RF-23 아이콘 size·sideOffset 내부 상수 · RF-26 disabled 표현 통일 · RF-31 스토리·테스트 샘플의 도메인 단어(Storybook 공개 전) · RF-11 `isActive`·`isLast` 접두(현행 유지 결정, 1.0 때 재검토) · RF-22b Button md 36 vs 폼 컨트롤 32 높이 통일(ActionBar 실측) · RF-33 d.ts JSDoc 영어화(L) · RF-10 rest props 스프레드 코드 정리 · Tabs 방향키 이동 Chrome 실측(happy-dom 미재현). 기각(다시 올리지 않음): RF-06 ConfirmTone 어휘 · RF-25 토글·라디오 invalid 표현.
+- [ ] **P7m** ui — `--ui-font-mono` 토큰(고정폭 글꼴). 지금 대시보드 산출물 미리보기(`ArtifactMarkdown.module.css`)가 시스템 고정폭 스택을 하드코딩 — 토큰이 생기면 교체. B2e 리뷰 L6(2026-09-26).
 
 범위 밖(하지 않는다): 대시보드 기능 진행 · 리팩토링 · preserveModules 재검토 · Storybook 실행 환경 · CI publish 자동화 · Combobox·DatePicker·Table · 기존 컴포넌트 API 변경(호환 깨는 수정 — 리뷰에서 발견되면 todo에 적고 넘어간다).
 

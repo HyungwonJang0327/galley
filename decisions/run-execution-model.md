@@ -87,6 +87,7 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-26 B2e: 대시보드 산출물 미리보기는 DATA_DIR `artifacts/<슬러그>/<runId>/`를 **서버 컴포넌트가 직접 읽는다**(GET API 없음, carried는 `sourceRunId` — 승인과 같은 규칙). 이진(썸네일)만 `GET /api/runs/[id]/thumbnail`. Mock 모드는 DATA_DIR에 안 쓰므로 미리보기가 "산출물 없음"(§2 조합표와 일관). decisions/navigation.md 갱신 이력.
 - 2026-09-26 B3b: §1 썸네일(같은 모델 호출의 부제·라벨, thumbnail.json 푸터, 실패=단계 실패, check() 사전 점검, IEND 폴링), §2 썸네일은 Chrome 스크린샷. 사용자 결정 4건(Node headless Chrome·JSON 합침·실패=단계 실패·사전 점검).
 - 2026-09-26 B3a: §1 **결정 변경** — `evidence.json`·`verification.json`도 posts 루트(폴더당 7개), Run별 이력은 DATA_DIR. posts는 승인 시 쓴다(절차·덮어쓰기 규칙·알려진 한계). §2 조합표에 Mock 모드 승인 불가. 사용자 결정 4건(승인 시 복사·기존 관례 파일명+루트 7개·Galley 폴더만 덮어씀·소개/태그 모델 1회) + 리뷰 4건(M1 파일 쓰기 트랜잭션 안·M2 analyses 제외·M3 기록·M4 문서).
 - 2026-09-26 BS5: §2에 라우팅 `createStepRunner`·Mock 러너 조건(NODE_ENV)·대시보드/워커 조합표·기동 검증(DATA_DIR·PROMPTS_DIR 절대경로, `~` 불가, availableModels 로그), §3에 재시도 대기 10s·20s·실모델 스모크. 사용자 결정 5건(발행정보 Mock 위임·NODE_ENV 조건·maxRetries 1+대기·`~` 확장 안 함·스모크 기본 Haiku).
