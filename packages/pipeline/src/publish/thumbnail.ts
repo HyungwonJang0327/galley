@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const THUMBNAIL_WIDTH = 1200;
 export const THUMBNAIL_HEIGHT = 630;
@@ -32,7 +32,11 @@ export type ThumbnailRenderResult =
   /** 종료 코드·출력 파일 없음·파일 I/O 실패(재시도 불가). */
   | { ok: false; code: 'THUMBNAIL_RENDER_FAILED'; detail: string };
 
+export type ThumbnailCheckResult = { ok: true } | { ok: false; code: 'THUMBNAIL_CHROME_NOT_FOUND' };
+
 export interface ThumbnailRenderer {
+  /** 찍을 수 있는 상태인지(실행 파일 존재) — 단계가 **모델을 부르기 전에** 물어 토큰을 아낀다(리뷰 M4, 사용자 결정). */
+  check(): Promise<ThumbnailCheckResult>;
   render(input: ThumbnailInput, signal?: AbortSignal): Promise<ThumbnailRenderResult>;
 }
 
@@ -134,8 +138,23 @@ export class ChromeThumbnailRenderer implements ThumbnailRenderer {
     this.options = options;
   }
 
-  async render(input: ThumbnailInput, signal?: AbortSignal): Promise<ThumbnailRenderResult> {
+  /** 실행 파일 — 옵션 → GALLEY_CHROME/후보. 지정된 경로가 없는 파일이면(오타) 못 찾은 것으로 본다(리뷰 M3). */
+  private resolveChrome(): string | undefined {
     const chrome = this.options.chromePath ?? findChrome(this.options.env);
+    if (chrome === undefined) return undefined;
+    // 절대경로인데 없으면 오타 — PATH 이름(linux 후보)은 spawn이 판정한다.
+    if (isAbsolute(chrome) && !existsSync(chrome)) return undefined;
+    return chrome;
+  }
+
+  async check(): Promise<ThumbnailCheckResult> {
+    return this.resolveChrome() === undefined
+      ? { ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' }
+      : { ok: true };
+  }
+
+  async render(input: ThumbnailInput, signal?: AbortSignal): Promise<ThumbnailRenderResult> {
+    const chrome = this.resolveChrome();
     if (chrome === undefined) return { ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' };
     const timeoutMs = this.options.timeoutMs ?? THUMBNAIL_TIMEOUT_MS;
 
@@ -156,7 +175,7 @@ export class ChromeThumbnailRenderer implements ThumbnailRenderer {
           '--no-default-browser-check',
           '--disable-gpu',
           `--user-data-dir=${join(dir, 'profile')}`,
-          `file://${html}`,
+          pathToFileURL(html).href,
         ],
         out,
         timeoutMs,
@@ -169,13 +188,15 @@ export class ChromeThumbnailRenderer implements ThumbnailRenderer {
         detail: error instanceof Error ? error.message : String(error),
       };
     } finally {
-      await rm(dir, { recursive: true, force: true, maxRetries: 3 });
+      // 정리 실패(SIGKILL 직후 헬퍼 프로세스가 프로필에 쓰는 경합)는 결과를 바꾸지 않는다 — 값으로 끝난 결과를 예외로 덮지 않는다(리뷰 M2).
+      await rm(dir, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});
     }
   }
 }
 
 type ChromeRun =
   | { ok: true; png: Uint8Array }
+  | { ok: false; code: 'THUMBNAIL_CHROME_NOT_FOUND' }
   | { ok: false; code: 'THUMBNAIL_RENDER_TIMEOUT' | 'THUMBNAIL_RENDER_FAILED'; detail: string };
 
 /** PNG 끝 청크 — 파일이 다 써졌는지의 기준(rename이 아니라 제자리 쓰기라 크기만으로는 모른다). */
@@ -197,6 +218,11 @@ function runChrome(
   signal?: AbortSignal,
 ): Promise<ChromeRun> {
   return new Promise((resolve) => {
+    // 이미 중단된 신호는 abort 이벤트가 다시 오지 않는다 — spawn 전에 본다(리뷰 M1).
+    if (signal?.aborted) {
+      resolve({ ok: false, code: 'THUMBNAIL_RENDER_FAILED', detail: '중단됨' });
+      return;
+    }
     let settled = false;
     let stderr = '';
     let exited = false;
@@ -254,7 +280,13 @@ function runChrome(
     });
     child.on('error', (error) => {
       exited = true;
-      finish({ ok: false, code: 'THUMBNAIL_RENDER_FAILED', detail: error.message });
+      // PATH 이름 후보(linux)가 없으면 여기로 온다 — "실행 실패"가 아니라 "못 찾음"으로 안내(리뷰 M3).
+      const code = (error as NodeJS.ErrnoException).code;
+      finish(
+        code === 'ENOENT'
+          ? { ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' }
+          : { ok: false, code: 'THUMBNAIL_RENDER_FAILED', detail: error.message },
+      );
     });
     child.on('exit', (code) => {
       exited = true;
