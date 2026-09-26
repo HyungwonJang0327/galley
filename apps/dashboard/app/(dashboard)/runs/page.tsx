@@ -2,7 +2,7 @@
 import 'server-only';
 import { parseRunView, runsHref } from '../../../lib/run-view';
 import { getRunList } from '../../../lib/run-list';
-import { runListRowView } from '../../../lib/run-list-row';
+import { evidenceFlagText, runListRowView } from '../../../lib/run-list-row';
 import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
 import { INSTRUCTION_MAX_LENGTH } from '@galley/pipeline';
 import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from 'galley-ui';
@@ -14,7 +14,7 @@ import {
 } from '../../../lib/run-labels';
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
-import { getRunArtifacts } from '../../../lib/run-artifacts';
+import { getRunArtifacts, getRunVerificationFlags } from '../../../lib/run-artifacts';
 import { getRunSeries } from '../../../lib/run-series';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
@@ -45,7 +45,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
   const { data: lists } = result;
   const activeId = pickActiveId(lists, selectedId);
-  const pane = resolveRunPane(preselected ?? (activeId ? await getRunDetail(activeId) : undefined));
+  // 목록 행의 "근거 없음 n"은 각 Run의 verification.json(DATA_DIR)에서 — 못 읽는 행은 조용히 빠진다.
+  const [pane, flags] = await Promise.all([
+    Promise.resolve(preselected ?? (activeId ? getRunDetail(activeId) : undefined)).then(
+      resolveRunPane,
+    ),
+    getRunVerificationFlags(lists),
+  ]);
   const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   // 시리즈 편이면 헤더 아래 한 줄(○○ 시리즈 N/M편 · 이전·다음 편). 못 읽으면 줄만 빠진다.
@@ -66,6 +72,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 const badge = runStatusBadge(list.status);
                 const view = runListRowView(list);
                 const doneCount = view.dots.filter((d) => d.status === 'done').length;
+                const flag = evidenceFlagText(flags[list.id]);
                 return (
                   <ListRow
                     key={list.id}
@@ -82,9 +89,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                       </Link>
                     }
                     trailing={
-                      <Badge tone={badge.tone} pulse={badge.pulse}>
-                        {badge.label}
-                      </Badge>
+                      <>
+                        {flag === undefined ? null : <span className={styles.flag}>{flag}</span>}
+                        <Badge tone={badge.tone} pulse={badge.pulse}>
+                          {badge.label}
+                        </Badge>
+                      </>
                     }
                     isActive={list.id === activeId}
                   />

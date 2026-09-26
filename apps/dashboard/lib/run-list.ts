@@ -5,8 +5,8 @@ import { listRuns, prisma, type RunListFilter, type RunListItem } from '@galley/
 import type { RunRecord } from './run-commands';
 
 export interface RunListRow extends RunRecord {
-  /** 파이프라인 순서 6행(진행 인디케이터·마지막 단계 미리보기용). */
-  steps: { name: string; status: string; origin: string }[];
+  /** 파이프라인 순서 6행(진행 인디케이터·마지막 단계 미리보기·"근거 없음 n"의 출처 Run 판정용). */
+  steps: { name: string; status: string; origin: string; sourceRunId: string | null }[];
 }
 
 export type RunListResult =
@@ -24,7 +24,12 @@ function toRow(item: RunListItem): RunListRow {
     modelId: item.modelId,
     startedAt: item.startedAt.toISOString(),
     finishedAt: item.finishedAt === null ? null : item.finishedAt.toISOString(),
-    steps: item.steps.map((s) => ({ name: s.name, status: s.status, origin: s.origin })),
+    steps: item.steps.map((s) => ({
+      name: s.name,
+      status: s.status,
+      origin: s.origin,
+      sourceRunId: s.sourceRunId,
+    })),
   };
 }
 
