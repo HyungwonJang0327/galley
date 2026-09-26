@@ -43,10 +43,16 @@ export interface RunForArtifacts {
   steps: readonly { name: string; status: string; origin: string; sourceRunId: string | null }[];
 }
 
+type StepRow = RunForArtifacts['steps'][number];
+
 /** 그 단계 결과를 실제로 만든 Run — carried면 출처 Run, 아니면 이 Run. */
-function producerOf(run: RunForArtifacts, step: RunForArtifacts['steps'][number]): string {
+function producerOf(run: RunForArtifacts, step: StepRow): string {
   return step.origin === STEP_ORIGIN.carried && step.sourceRunId ? step.sourceRunId : run.id;
 }
+
+/** 읽을 수 있는 단계인가 — 성공한 단계만(실패·진행 중인 단계의 파일은 이전 시도 것일 수 있다). 미리보기·썸네일 라우트가 같은 판정. */
+const isReadable = (step: StepRow): step is StepRow & { name: StepName } =>
+  isStepName(step.name) && step.status === 'succeeded';
 
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -55,9 +61,7 @@ const reason = (error: unknown) => (error instanceof Error ? error.message : Str
  * 던지지 않는다 — 스토어가 던지면(슬러그가 경로로 못 쓰는 값 등) 그 단계만 unavailable.
  */
 export async function getRunArtifacts(run: RunForArtifacts): Promise<RunArtifactViews> {
-  const targets = run.steps.filter(
-    (step) => isStepName(step.name) && step.status === 'succeeded' && MARKDOWN_ARTIFACT[step.name],
-  );
+  const targets = run.steps.filter(isReadable).filter((step) => MARKDOWN_ARTIFACT[step.name]);
   if (targets.length === 0) return {};
 
   const dataDir = resolveDashboardDataDir({
@@ -67,15 +71,13 @@ export async function getRunArtifacts(run: RunForArtifacts): Promise<RunArtifact
   const views: RunArtifactViews = {};
   if (!dataDir.ok) {
     for (const step of targets)
-      if (isStepName(step.name))
-        views[step.name] = { kind: 'unavailable', message: dataDir.message };
+      views[step.name] = { kind: 'unavailable', message: dataDir.message };
     return views;
   }
 
   const store = new LocalFsArtifactStore(dataDir.dir);
   await Promise.all(
     targets.map(async (step) => {
-      if (!isStepName(step.name)) return;
       const file = MARKDOWN_ARTIFACT[step.name];
       if (file === undefined) return;
       const producer = producerOf(run, step);
@@ -144,11 +146,17 @@ export async function getRunThumbnail(runId: string): Promise<RunThumbnailResult
     });
     if (!dataDir.ok) return { ok: false, error: { code: dataDir.code, message: dataDir.message } };
 
-    const step = run.steps.find((s) => s.name === 'publishInfo');
-    const producer = step ? producerOf(run, step) : run.id;
+    // 미리보기와 같은 판정 — 발행정보 단계가 성공한 Run만 썸네일이 있다.
+    const step = run.steps.find((s) => s.name === 'publishInfo' && isReadable(s));
+    if (!step) {
+      return {
+        ok: false,
+        error: { code: 'THUMBNAIL_MISSING', message: '썸네일 파일이 없습니다.' },
+      };
+    }
     const result = await new LocalFsArtifactStore(dataDir.dir).readBytes(
       run.topicSlug,
-      producer,
+      producerOf(run, step),
       THUMBNAIL_ARTIFACT,
     );
     if (result.ok) return { ok: true, data: { bytes: result.bytes } };

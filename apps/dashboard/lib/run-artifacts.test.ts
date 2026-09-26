@@ -105,10 +105,25 @@ describe('getRunArtifacts', () => {
     expect(readBytes.mock.calls).toEqual([['무한-스크롤', 'run_1', 'thumbnail.png']]);
   });
 
-  it('썸네일 파일이 없으면 URL 없이 본문만', async () => {
-    const views = await getRunArtifacts(run([step('publishInfo')]));
+  it('썸네일 파일이 없거나 확인이 던지면 URL 없이 본문만', async () => {
+    expect((await getRunArtifacts(run([step('publishInfo')]))).publishInfo).toEqual({
+      kind: 'markdown',
+      text: '# publish.md',
+    });
 
-    expect(views.publishInfo).toEqual({ kind: 'markdown', text: '# publish.md' });
+    readBytes.mockRejectedValue(new Error('EACCES'));
+    expect((await getRunArtifacts(run([step('publishInfo')]))).publishInfo).toEqual({
+      kind: 'markdown',
+      text: '# publish.md',
+    });
+  });
+
+  it('썸네일 URL은 Run id를 경로 인코딩한다', async () => {
+    readBytes.mockResolvedValue({ ok: true, bytes: new Uint8Array([1]) });
+
+    const views = await getRunArtifacts({ ...run([step('publishInfo')]), id: 'run/1 a' });
+
+    expect(views.publishInfo).toMatchObject({ thumbnailUrl: '/api/runs/run%2F1%20a/thumbnail' });
   });
 
   it('carried 단계는 출처 Run의 파일을 읽는다', async () => {
@@ -205,6 +220,20 @@ describe('getRunThumbnail', () => {
     expect(await getRunThumbnail('run_2')).toMatchObject({
       ok: false,
       error: { code: 'DATA_DIR_MISSING' },
+    });
+    expect(readBytes).not.toHaveBeenCalled();
+  });
+
+  it('발행정보 단계가 성공하지 않은 Run은 파일을 읽지 않고 THUMBNAIL_MISSING(미리보기와 같은 판정)', async () => {
+    getRunWithSteps.mockResolvedValue({
+      id: 'run_2',
+      topicSlug: '무한-스크롤',
+      steps: [step('velog'), step('publishInfo', 'failed')],
+    });
+
+    expect(await getRunThumbnail('run_2')).toMatchObject({
+      ok: false,
+      error: { code: 'THUMBNAIL_MISSING' },
     });
     expect(readBytes).not.toHaveBeenCalled();
   });
