@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaWorkerRepo } from './PrismaWorkerRepo.ts';
-import { HEARTBEAT_TIMEOUT_MS, runOnce } from './runOnce.ts';
+import { HEARTBEAT_TIMEOUT_MS, STEP_TIMEOUT_MS, runOnce } from './runOnce.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
 import {
   RUN_STATUS,
@@ -75,8 +75,10 @@ function makeDeps(overrides: Partial<WorkerDeps> = {}) {
     // 단계가 즉시 끝나는 Mock이라 발화할 일이 없다 — 타이머는 등록만 받는다.
     timers: {
       every: () => () => {},
-      // 일회 타이머는 다음 I/O 턴에 바로 발화(재시도 대기를 실제로 기다리지 않는다). 취소되면 안 부른다.
-      after: (_ms, fn) => {
+      // 재시도 대기(RETRY_DELAYS_MS)는 다음 I/O 턴에 바로 발화해 실제로 기다리지 않는다. 취소되면 안 부른다.
+      // 단계 타임아웃(STEP_TIMEOUT_MS)은 등록만 — 발화하면 Mock 시도를 STEP_TIMEOUT으로 끊어 버린다.
+      after: (ms, fn) => {
+        if (ms === STEP_TIMEOUT_MS) return () => {};
         let cancelled = false;
         setImmediate(() => {
           if (!cancelled) fn();
