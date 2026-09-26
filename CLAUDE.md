@@ -105,6 +105,7 @@ Galley/
 | 서버 경계     | server-only (pipeline 값을 쓰는 대시보드 파일 마커)          | 0.0.1                                                 |
 | 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                      |
 | DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
+| 마크다운 렌더 | react-markdown + remark-gfm (apps/dashboard, 서버 컴포넌트)  | 10.1.0 · 4.0.1 (decisions/navigation.md 갱신 이력)    |
 | 테스트        | Vitest + happy-dom + testing-library (ui·dashboard 공통)     | 5.0.0 · happy-dom 20.14.0 · testing-library 16.3.3    |
 | 빌드(ui)      | Vite 라이브러리 모드 (ESM+CJS+스코프 CSS+d.ts) + Changesets  | vite 8.2.2 · vite-plugin-dts 5.1.0 · changesets 3.0.2 |
 | 린트/포맷     | ESLint + Prettier + typescript-eslint                        | eslint 10.10.0 · prettier 3.9.6 · tseslint 8.70.0     |
