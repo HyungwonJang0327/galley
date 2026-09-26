@@ -30,13 +30,15 @@ afterAll(async () => {
 /**
  * 워커를 띄우고 stdout·stderr·종료 코드를 모은다. `ready`가 보이면 SIGTERM을 보낸다(기동 실패 케이스는 그냥 끝난다).
  * 값이 `undefined`인 키는 환경에서 **지운다** — 실모드 케이스의 NODE_ENV(테스트 러너의 test가 상속되면 Mock 모드가 된다),
- * 그리고 개발자 셸의 REDACT_CONFIG_PATH(깨진 파일을 가리키면 모든 케이스가 기동 실패로 흔들린다 — 리포 기본값만 쓴다).
+ * 그리고 개발자 셸의 REDACT_CONFIG_PATH·THUMBNAIL_CONFIG_PATH·GALLEY_CHROME(깨진 파일을 가리키면 케이스가 흔들린다 — 리포 기본값만 쓴다).
  */
 function spawnWorker(env: Record<string, string | undefined>, ready?: string) {
   const merged: Record<string, string | undefined> = {
     ...process.env,
     DATABASE_URL: databaseUrl,
     REDACT_CONFIG_PATH: undefined,
+    THUMBNAIL_CONFIG_PATH: undefined,
+    GALLEY_CHROME: undefined,
     ...env,
   };
   for (const key of Object.keys(merged)) if (merged[key] === undefined) delete merged[key];
@@ -87,6 +89,18 @@ describe('워커 프로세스', () => {
     });
     expect(exitCode).toBe(1);
     expect(stderr).toContain('식별 정보 필터 설정이 깨져');
+    expect(stdout).not.toContain('워커 시작');
+  });
+
+  test('썸네일 설정이 깨져 있으면 기동하지 않고 종료 코드 1', async () => {
+    const broken = join(dbDir, 'broken-thumbnail.json');
+    await writeFile(broken, '{ nope');
+    const { exitCode, stdout, stderr } = await spawnWorker({
+      NODE_ENV: 'test',
+      THUMBNAIL_CONFIG_PATH: broken,
+    });
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain('썸네일 설정');
     expect(stdout).not.toContain('워커 시작');
   });
 
