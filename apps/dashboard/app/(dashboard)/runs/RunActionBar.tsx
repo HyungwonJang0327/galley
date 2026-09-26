@@ -142,13 +142,13 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
   };
 
   // 승인: 되돌릴 수 없는 종결이라 확인을 거친다(decisions/layout.md "승인(주요, Dialog 확인)").
-  // 승인은 Run 상태 변경일 뿐 공개 발행이 아니다(decisions/publish-gate.md) — 문구도 그렇게.
+  // 승인은 posts/<슬러그>/ 산출물 쓰기와 큐 완료 이동까지 하지만(B3a) 공개 발행은 아니다(decisions/publish-gate.md) — 문구도 그렇게.
   const onApproveClick = async () => {
     setMessage(null);
     const ok = await confirm({
       title: '승인할까요?',
       description:
-        '이 초안을 검수 완료로 종결합니다. 공개 발행은 일어나지 않고, 발행 준비 화면에서 채널별로 이어집니다.',
+        '이 초안을 검수 완료로 종결하고, 산출물을 blog 폴더의 posts/<슬러그>/에 쓰고 주제를 큐 파일의 완료 섹션으로 옮깁니다. 공개 발행은 일어나지 않습니다.',
       confirmLabel: '승인',
       cancelLabel: '취소',
       closeLabel: '닫기',
