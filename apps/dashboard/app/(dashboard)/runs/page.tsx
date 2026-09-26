@@ -14,6 +14,7 @@ import {
 } from '../../../lib/run-labels';
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
+import { getRunArtifacts } from '../../../lib/run-artifacts';
 import { getRunSeries } from '../../../lib/run-series';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
@@ -48,7 +49,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   // 시리즈 편이면 헤더 아래 한 줄(○○ 시리즈 N/M편 · 이전·다음 편). 못 읽으면 줄만 빠진다.
-  const series = selected ? await getRunSeries(selected.topicId) : undefined;
+  // 산출물 미리보기는 성공한 단계의 DATA_DIR 파일 — 폴링(2s)마다 다시 읽지만 로컬 파일 몇 개라 가볍다.
+  const [series, artifacts] = selected
+    ? await Promise.all([getRunSeries(selected.topicId), getRunArtifacts(selected)])
+    : [undefined, undefined];
   return (
     <>
       <PageHeader title="실행" />
@@ -129,7 +133,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               {/* 다른 실행을 고르면 폴러를 새로 만든다 — 같은 인스턴스가 "running → 아님" 전환으로
                   오인해 refresh를 한 번 더 부르지 않도록. */}
               <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
-              <RunTimeline steps={selected.steps} />
+              <RunTimeline steps={selected.steps} artifacts={artifacts} />
             </>
           ) : pane.kind === 'failed' ? (
             <p className={styles.note} role="alert">

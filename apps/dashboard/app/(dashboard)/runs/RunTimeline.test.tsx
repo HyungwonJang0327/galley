@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { RunStepView } from '../../../lib/run-detail';
 import { RunTimeline } from './RunTimeline';
 
@@ -228,5 +228,54 @@ describe('RunTimeline', () => {
     const row = rows()[4]!;
     expect(row.dataset.status).toBe('pending');
     expect(markerLabel(row)).toBe('weird');
+  });
+
+  describe('산출물 미리보기(B2e)', () => {
+    const velog = step({ name: 'velog', order: 2, status: 'succeeded', durationMs: 1_000 });
+
+    it('산출물이 없는 줄은 펼침 버튼도 "보기"도 없다', () => {
+      render(<RunTimeline steps={[velog]} />);
+
+      expect(screen.queryByRole('button')).toBeNull();
+      expect(document.body.textContent).not.toContain('보기');
+    });
+
+    it('산출물이 있는 줄은 제목이 토글 버튼, 펼치면 마크다운이 렌더된다', () => {
+      render(
+        <RunTimeline
+          steps={[velog]}
+          artifacts={{ velog: { kind: 'markdown', text: '# 본문 제목\n\n첫 문단' } }}
+        />,
+      );
+
+      const button = screen.getByRole('button', { name: /벨로그 본문/ });
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(rows()[1]!.textContent).toContain('보기');
+      // 내용은 처음부터 DOM에 있고(hidden) 펼치면 보인다 — 서버가 렌더한 마크다운.
+      const heading = screen.getByRole('heading', { level: 1, hidden: true });
+      expect(heading.textContent).toBe('본문 제목');
+
+      fireEvent.click(button);
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('본문 제목');
+    });
+
+    it('파일이 없으면(Mock·옛 실행) 안내 한 줄, 못 읽으면 alert 문구', () => {
+      render(
+        <RunTimeline
+          steps={[velog, step({ name: 'zenn', order: 5, status: 'succeeded' })]}
+          artifacts={{
+            velog: { kind: 'missing' },
+            zenn: { kind: 'unavailable', message: '산출물(zenn.md)을 읽지 못했습니다.' },
+          }}
+        />,
+      );
+
+      expect(rows()[1]!.textContent).toContain('산출물 파일이 DATA_DIR에 없습니다');
+      expect(screen.getByRole('alert', { hidden: true }).textContent).toBe(
+        '산출물(zenn.md)을 읽지 못했습니다.',
+      );
+      expect(screen.getAllByRole('button')).toHaveLength(2);
+    });
   });
 });
