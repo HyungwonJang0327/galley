@@ -72,6 +72,7 @@ const BUNDLE: EvidenceBundle = {
       snippet: 'const SECRET_SNIPPET = 1;',
     },
   ],
+  analyses: [{ id: 'a1', kind: 'area', title: 'src 영역', summary: 'SUMMARY_TEXT' }],
   unreadable: 0,
   filtered: true,
 };
@@ -191,6 +192,9 @@ describe('approveAndPublishRun', () => {
       commit: 'abcdef1234567',
       path: 'src/scroll.ts',
     });
+    // 분석 글 요약도 포인터가 아니다 — posts 사본에는 없다(리뷰 M2).
+    expect(JSON.parse(pointers)).not.toHaveProperty('analyses');
+    expect(pointers).not.toContain('SUMMARY_TEXT');
 
     // 큐 파일: 대기에서 빠지고 완료 맨 끝에 `날짜 글제목 (posts/슬러그)`.
     const queue = await readFile(join(blogDir, '주제_큐.md'), 'utf8');
@@ -324,6 +328,95 @@ describe('approveAndPublishRun', () => {
       code: 'TOPIC_NOT_IN_QUEUE',
       detail: '완료',
     });
+  });
+
+  test('큐 파일 쓰기가 실패하면 DB(QueueItem·Run)는 되돌아간다 — 파일 쓰기는 트랜잭션 안 마지막', async () => {
+    const run = await finishedRun();
+    const failing: ApprovePublishDeps = {
+      ...deps,
+      storage: {
+        readQueueFile: () => storage.readQueueFile(),
+        writeQueueFile: () => Promise.reject(new Error('EACCES: blog 폴더 쓰기 거부')),
+      },
+    };
+
+    await expect(approveAndPublishRun(failing, run.id)).rejects.toThrow('EACCES');
+
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
+      RUN_STATUS.pendingApproval,
+    );
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
+      status: '대기',
+      title: '무한 스크롤 (spacehome)',
+    });
+    expect(await readFile(join(blogDir, '주제_큐.md'), 'utf8')).toBe(QUEUE);
+  });
+
+  test('그새 상태가 바뀌었으면(Run 갱신 0건) 롤백 — 큐 파일·QueueItem 그대로, NOT_PENDING_APPROVAL', async () => {
+    const run = await finishedRun();
+    const racing: ApprovePublishDeps = {
+      ...deps,
+      posts: {
+        async write(input) {
+          // posts를 쓰는 사이 수정 지시가 끼어들어 Run이 revised가 됐다.
+          await prisma.run.update({ where: { id: run.id }, data: { status: RUN_STATUS.revised } });
+          return deps.posts.write(input);
+        },
+      },
+    };
+
+    expect(await approveAndPublishRun(racing, run.id)).toEqual({
+      ok: false,
+      code: 'NOT_PENDING_APPROVAL',
+    });
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
+      status: '대기',
+    });
+    expect(await readFile(join(blogDir, '주제_큐.md'), 'utf8')).toBe(QUEUE);
+  });
+
+  test('재적재가 던져도 승인은 성공이다(다음 요청이 다시 적재한다)', async () => {
+    const run = await finishedRun();
+    let reads = 0;
+    const flaky: ApprovePublishDeps = {
+      ...deps,
+      storage: {
+        readQueueFile: () => {
+          reads += 1;
+          // 첫 읽기는 승인 절차, 두 번째 읽기는 재적재.
+          return reads === 2 ? Promise.reject(new Error('EBUSY')) : storage.readQueueFile();
+        },
+        writeQueueFile: (content) => storage.writeQueueFile(content),
+      },
+    };
+
+    const result = await approveAndPublishRun(flaky, run.id);
+
+    expect(result.ok).toBe(true);
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
+      RUN_STATUS.done,
+    );
+  });
+
+  test('시리즈 편은 완료 줄이 태그를 유지하고 재적재 뒤에도 같은 행에 seriesKey·episodeNo가 남는다', async () => {
+    const seriesQueue = QUEUE.replace(
+      '- 무한 스크롤 (spacehome)',
+      '- [A-2] 무한 스크롤 (spacehome)',
+    );
+    await writeFile(join(blogDir, '주제_큐.md'), seriesQueue, 'utf8');
+    await importQueueFromFile({ storage, prisma });
+    const run = await finishedRun();
+
+    expect((await approveAndPublishRun(deps, run.id)).ok).toBe(true);
+
+    const queue = await readFile(join(blogDir, '주제_큐.md'), 'utf8');
+    expect(queue).toContain(`- ${TODAY} [A-2] 무한 스크롤 미리 불러오기 (posts/${SLUG})\n`);
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
+      status: '완료',
+      seriesKey: 'A',
+      episodeNo: 2,
+    });
+    expect(await prisma.queueItem.count()).toBe(3);
   });
 
   test.each([RUN_STATUS.running, RUN_STATUS.done, RUN_STATUS.failed, RUN_STATUS.revised])(

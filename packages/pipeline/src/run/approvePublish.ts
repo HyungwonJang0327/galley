@@ -2,12 +2,14 @@
 // posts/<슬러그>/로 복사하고, 주제를 큐 파일의 완료 섹션으로 옮기고(completeTopic), Run을 done으로. posts에는 승인본만 남는다
 // (Run별 이력은 DATA_DIR — decisions/run-execution-model.md). 공개 발행은 여기서 일어나지 않는다(publish-gate).
 //
-// 순서: 읽기·검증(부작용 없음) → posts 쓰기 → 큐 파일 쓰기 → DB(QueueItem·Run 한 트랜잭션) → 재적재. 앞에서 실패하면
-// 뒤는 하지 않고 값으로 돌려준다(Run은 승인 대기로 남는다). posts를 쓴 뒤 실패하면 폴더가 남는데, DB에 승인된 Run이 없어
-// 다음 승인이 POSTS_DIR_EXISTS로 거절된다 — 문구가 폴더를 지우라고 안내한다(마커 파일을 두지 않는 대가, 사용자 결정).
+// 순서: 읽기·검증(부작용 없음) → posts 쓰기 → DB 트랜잭션(QueueItem·Run 갱신이 성공한 뒤 **그 안에서** 큐 파일 쓰기) → 재적재.
+// 앞에서 실패하면 뒤는 하지 않고 값으로 돌려준다(Run은 승인 대기로 남는다). 되돌릴 수 없는 큐 파일 쓰기를 맨 마지막에 두어
+// 파일 쓰기 실패·롤백(그새 수정 지시)이면 DB가 같이 되돌아간다(리뷰 M1) — 남는 창은 "파일을 쓴 뒤 커밋 실패"뿐이다. posts를
+// 쓴 뒤 실패하면 폴더가 남는데, DB에 승인된 Run이 없어 다음 승인이 POSTS_DIR_EXISTS로 거절된다 — 문구가 폴더를 지우라고
+// 안내한다(마커 파일을 두지 않는 대가, 사용자 결정). 커밋 뒤 재적재 실패는 승인 실패가 아니다(다음 요청이 다시 적재한다).
 import type { PrismaClient } from '@prisma/client';
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
-import { stripSnippets } from '../evidence/bundle.ts';
+import { stripSnippets, type EvidenceBundle, type EvidencePointers } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { PostsWriter } from '../publish/PostsWriter.ts';
 import { completeTopic, completedTitle } from '../queue/completeQueue.ts';
@@ -55,6 +57,16 @@ export type ApprovePublishResult =
   | { ok: false; code: ApprovePublishFailure; detail?: string };
 
 const ACTIVE_SECTIONS: readonly QueueStatus[] = ['대기', '후보', '보류'];
+
+/**
+ * posts/<슬러그>/evidence.json 내용 — **포인터만**(CLAUDE.md §5). 조각(snippet)뿐 아니라 분석 글 요약(`analyses`)도 뺀다 —
+ * 요약은 포인터가 아니고 DATA_DIR 원본에 남는다(리뷰 M2, 사용자 결정). `## 근거` 목록은 요약을 쓰지 않는다.
+ */
+export function toPostsEvidence(bundle: EvidenceBundle): Omit<EvidencePointers, 'analyses'> {
+  const { analyses: _analyses, ...pointers } = stripSnippets(bundle);
+  void _analyses;
+  return pointers;
+}
 
 /** 트랜잭션 안의 값-실패를 던져 되돌리고 밖에서 값으로 바꾼다. */
 class Rollback extends Error {
@@ -161,7 +173,7 @@ export async function approveAndPublishRun(
       linkedin: texts.linkedin!,
       zenn: texts.zenn!,
       publishInfo: texts.publishInfo!,
-      evidence: `${JSON.stringify(stripSnippets(bundle.bundle), null, 2)}\n`,
+      evidence: `${JSON.stringify(toPostsEvidence(bundle.bundle), null, 2)}\n`,
       verification: texts.verification!,
     },
     overwrite: priorApproved > 0,
@@ -171,8 +183,8 @@ export async function approveAndPublishRun(
       ? { ok: false, code: written.code, detail: written.dir }
       : { ok: false, code: written.code, detail: written.detail };
 
-  // 5. 큐 파일(완료 줄) → DB(QueueItem을 완료 줄과 같은 키·상태로 먼저 맞춘다 — 재적재에서 행이 갈라지지 않게, BX4 M2) → Run done.
-  await deps.storage.writeQueueFile(serializeQueue(moved.queue));
+  // 5. DB(QueueItem을 완료 줄과 같은 키·상태로 먼저 맞춘다 — 재적재에서 행이 갈라지지 않게, BX4 M2) + Run done, 둘 다 성공한
+  //    뒤 같은 트랜잭션 안에서 큐 파일(완료 줄). 파일 쓰기가 던지면 DB는 되돌아간다.
   try {
     await deps.prisma.$transaction(async (tx) => {
       await tx.queueItem.update({
@@ -191,12 +203,18 @@ export async function approveAndPublishRun(
         data: { status: decision.status, finishedAt: now, workerId: null },
       });
       if (count === 0) throw new Rollback();
+      await deps.storage.writeQueueFile(serializeQueue(moved.queue));
     });
   } catch (error) {
     if (error instanceof Rollback) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
     throw error;
   }
-  await importQueueFromFile({ storage: deps.storage, prisma: deps.prisma });
+  // 재적재는 승인의 일부가 아니다 — 여기서 실패해도 승인·posts·큐 이동은 끝났고 다음 페이지 요청이 다시 적재한다(리뷰 M5).
+  try {
+    await importQueueFromFile({ storage: deps.storage, prisma: deps.prisma });
+  } catch {
+    /* 다음 적재가 같은 결과를 낸다 */
+  }
 
   const summary = await deps.prisma.run.findUniqueOrThrow({
     where: { id: run.id },
