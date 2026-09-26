@@ -1,4 +1,4 @@
-// /api/runs/[id]/* 세 핸들러가 같이 쓰는 것 — 응답 봉투, 본문 파싱, 코드→HTTP 상태.
+// /api/runs/[id]/* 핸들러들이 같이 쓰는 것 — 응답 봉투, 본문 파싱, 코드→HTTP 상태.
 // 상태 표는 decisions/error-handling.md "HTTP 상태 매핑": 형식 400 · 없음 404 · 상태 충돌 409 · 그 밖 500.
 import 'server-only';
 import { INSTRUCTION_MAX_LENGTH, isStepName, type StepName } from '@galley/pipeline';
@@ -7,13 +7,18 @@ import type {
   RunRerunPlanErrorCode,
   RunReviseErrorCode,
 } from '../../../../lib/run-commands';
+import type { RunThumbnailErrorCode } from '../../../../lib/run-artifacts';
 
 /** Next 16 동적 라우트 — `params`는 Promise다. */
 export type RouteContext = { params: Promise<{ id: string }> };
 
-/** 세 핸들러가 낼 수 있는 코드 전부. 어댑터에 코드가 늘면 아래 표가 타입으로 깨진다. */
+/** 핸들러들이 낼 수 있는 코드 전부. 어댑터에 코드가 늘면 아래 표가 타입으로 깨진다. */
 export type ErrorCode =
-  'INVALID_BODY' | RunApproveErrorCode | RunReviseErrorCode | RunRerunPlanErrorCode;
+  | 'INVALID_BODY'
+  | RunApproveErrorCode
+  | RunReviseErrorCode
+  | RunRerunPlanErrorCode
+  | RunThumbnailErrorCode;
 
 const STATUS_OF: Record<ErrorCode, number> = {
   INVALID_BODY: 400,
@@ -36,6 +41,10 @@ const STATUS_OF: Record<ErrorCode, number> = {
   RUN_APPROVE_FAILED: 500,
   RUN_REVISE_FAILED: 500,
   RUN_RERUN_PLAN_FAILED: 500,
+  // 썸네일 GET(B2e) — 파일 없음은 404(이미지 요청이라 브라우저가 깨진 이미지로 보인다), 읽기 실패는 500.
+  THUMBNAIL_MISSING: 404,
+  THUMBNAIL_UNREADABLE: 500,
+  RUN_THUMBNAIL_FAILED: 500,
 };
 
 export function fail(code: ErrorCode, message: string): Response {

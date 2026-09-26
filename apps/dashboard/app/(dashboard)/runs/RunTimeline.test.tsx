@@ -260,6 +260,26 @@ describe('RunTimeline', () => {
       expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('본문 제목');
     });
 
+    it('발행정보에 썸네일 URL이 있으면 본문 위에 이미지를 둔다', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'publishInfo', order: 6, status: 'succeeded' })]}
+          artifacts={{
+            publishInfo: {
+              kind: 'markdown',
+              text: '# 발행 정보',
+              thumbnailUrl: '/api/runs/run_1/thumbnail',
+            },
+          }}
+        />,
+      );
+
+      const img = screen.getByRole('img', { name: '썸네일 미리보기', hidden: true });
+      expect(img.getAttribute('src')).toBe('/api/runs/run_1/thumbnail');
+      expect(img.getAttribute('width')).toBe('1200');
+      expect(img.getAttribute('height')).toBe('630');
+    });
+
     it('파일이 없으면(Mock·옛 실행) 안내 한 줄, 못 읽으면 alert 문구', () => {
       render(
         <RunTimeline
