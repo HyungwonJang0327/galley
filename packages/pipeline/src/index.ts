@@ -279,6 +279,25 @@ export {
 export type { PublishInfoInput } from './steps/publishInfo.ts';
 export { postFileNames, toFileStem } from './publish/postFiles.ts';
 export { LocalFsPostsWriter } from './publish/PostsWriter.ts';
+export {
+  ChromeThumbnailRenderer,
+  findChrome,
+  renderThumbnailHtml,
+  loadThumbnailConfig,
+  parseThumbnailConfig,
+  defaultThumbnailConfigPath,
+  DEFAULT_THUMBNAIL_CONFIG,
+  THUMBNAIL_WIDTH,
+  THUMBNAIL_HEIGHT,
+  THUMBNAIL_SCALE,
+} from './publish/thumbnail.ts';
+export type {
+  ThumbnailRenderer,
+  ThumbnailInput,
+  ThumbnailRenderResult,
+  ThumbnailConfig,
+  ThumbnailConfigResult,
+} from './publish/thumbnail.ts';
 export type {
   PostsWriter,
   PostFiles,
