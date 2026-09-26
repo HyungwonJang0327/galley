@@ -72,7 +72,7 @@ Galley/
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
 │     │  │  ├─ page.tsx        # 홈(요약 대시보드) — 루트 / (목록형 A의 변형 "요약형", decisions/navigation·layout)
 │     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A) — 행 ⋮ "근거 편집" Dialog
-│     │  │  ├─ runs/           # 실행 상세(2분할)·이력 (패턴 B) — 타임라인 6줄(근거 수집·검증 펼침)
+│     │  │  ├─ runs/           # 실행 상세(2분할)·이력 (패턴 B) — 타임라인 6줄(마크다운 4줄 펼침 미리보기·썸네일, 근거·검증 펼침은 BE13)
 │     │  │  └─ settings/repos/ # 리포 연결·인덱싱 상태 (Phase 2, Phase 1-B는 CLI index)
 │     │  └─ api/               # Route Handlers → @galley/pipeline 호출만
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
