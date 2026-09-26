@@ -27,15 +27,19 @@ afterAll(async () => {
   await rm(dbDir, { recursive: true, force: true });
 });
 
-/** 워커를 띄우고 stdout·stderr·종료 코드를 모은다. `ready`가 보이면 SIGTERM을 보낸다(기동 실패 케이스는 그냥 끝난다). */
+/**
+ * 워커를 띄우고 stdout·stderr·종료 코드를 모은다. `ready`가 보이면 SIGTERM을 보낸다(기동 실패 케이스는 그냥 끝난다).
+ * 값이 `undefined`인 키는 환경에서 **지운다** — 실모드 케이스의 NODE_ENV(테스트 러너의 test가 상속되면 Mock 모드가 된다),
+ * 그리고 개발자 셸의 REDACT_CONFIG_PATH(깨진 파일을 가리키면 모든 케이스가 기동 실패로 흔들린다 — 리포 기본값만 쓴다).
+ */
 function spawnWorker(env: Record<string, string | undefined>, ready?: string) {
   const merged: Record<string, string | undefined> = {
     ...process.env,
     DATABASE_URL: databaseUrl,
+    REDACT_CONFIG_PATH: undefined,
     ...env,
   };
-  // 실모드 케이스는 NODE_ENV를 지운다 — 테스트 러너의 값(test)이 상속되면 Mock 모드가 된다.
-  for (const key of Object.keys(env)) if (env[key] === undefined) delete merged[key];
+  for (const key of Object.keys(merged)) if (merged[key] === undefined) delete merged[key];
   const child = spawn(process.execPath, ['bin/worker.ts'], {
     cwd: packageRoot,
     env: merged,
@@ -55,41 +59,20 @@ function spawnWorker(env: Record<string, string | undefined>, ready?: string) {
       child.kill('SIGTERM');
     }
   });
+  // `exit`가 아니라 `close`에서 푼다 — exit 시점엔 stdio 파이프가 아직 흘러 마지막 로그("워커 종료")가 빠질 수 있다.
   return new Promise<{
     exitCode: number | null;
     signal: NodeJS.Signals | null;
     stdout: string;
     stderr: string;
   }>((resolve) =>
-    child.on('exit', (exitCode, signal) => resolve({ exitCode, signal, stdout, stderr })),
+    child.on('close', (exitCode, signal) => resolve({ exitCode, signal, stdout, stderr })),
   );
 }
 
 describe('워커 프로세스', () => {
   test('SIGTERM을 받으면 종료 코드 0으로 끝나고 "워커 종료"를 남긴다', async () => {
-    const child = spawn(process.execPath, ['bin/worker.ts'], {
-      cwd: packageRoot,
-      env: { ...process.env, DATABASE_URL: databaseUrl, NODE_ENV: 'test' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    let stdout = '';
-    let stderr = '';
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-
-    // 기동 로그가 찍힌 뒤에 신호를 보낸다 — 그 전에 보내면 핸들러가 아직 없다.
-    await new Promise<void>((resolve, reject) => {
-      child.stdout.on('data', (chunk: Buffer) => {
-        stdout += chunk.toString();
-        if (stdout.includes('워커 시작')) resolve();
-      });
-      child.on('exit', (code) => reject(new Error(`기동 전에 종료됐다(code ${code}): ${stderr}`)));
-    });
-
-    child.kill('SIGTERM');
-    const exitCode = await new Promise<number | null>((resolve) => child.on('exit', resolve));
+    const { exitCode, stdout, stderr } = await spawnWorker({ NODE_ENV: 'test' }, '워커 시작');
 
     expect(exitCode, stderr).toBe(0);
     expect(stdout).toContain('워커 종료');
@@ -98,25 +81,10 @@ describe('워커 프로세스', () => {
   test('식별 정보 필터 설정이 깨져 있으면 기동하지 않고 종료 코드 1', async () => {
     const broken = join(dbDir, 'broken-redact.json');
     await writeFile(broken, '{ not json');
-    const child = spawn(process.execPath, ['bin/worker.ts'], {
-      cwd: packageRoot,
-      env: {
-        ...process.env,
-        DATABASE_URL: databaseUrl,
-        NODE_ENV: 'test',
-        REDACT_CONFIG_PATH: broken,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
+    const { exitCode, stdout, stderr } = await spawnWorker({
+      NODE_ENV: 'test',
+      REDACT_CONFIG_PATH: broken,
     });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-    const exitCode = await new Promise<number | null>((resolve) => child.on('exit', resolve));
     expect(exitCode).toBe(1);
     expect(stderr).toContain('식별 정보 필터 설정이 깨져');
     expect(stdout).not.toContain('워커 시작');

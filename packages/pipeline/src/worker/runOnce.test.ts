@@ -78,6 +78,9 @@ async function flush(): Promise<void> {
 /**
  * 재시도 대기를 손으로 넘기며 틱을 끝까지 돌린다 — 실패 뒤 워커는 `timers.after`로 기다리므로(RETRY_DELAYS_MS) 발화가
  * 없으면 틱이 끝나지 않는다. Mock 러너는 즉시 끝나 타임아웃 타이머가 살아 있지 않으니 발화는 대기만 깨운다.
+ *
+ * **blockingRunner와 같이 쓰지 않는다** — 시도가 열린 채면 `fireAfter`가 단계 타임아웃 타이머까지 발화해 그 시도를
+ * STEP_TIMEOUT으로 끊는다. 시도 도중의 시간이 필요한 테스트는 `fireAfter`·`release`를 손으로 부른다.
  */
 async function drive<T>(tick: Promise<T>, d: { timersRef: ReturnType<typeof fakeTimers> }) {
   let settled = false;
@@ -456,6 +459,30 @@ describe('runOnce — heartbeat', () => {
     await drive(runOnce(d), d);
 
     expect(state.beats).toHaveLength(MAX_STEP_ATTEMPTS + 1);
+  });
+
+  it('재시도 대기 중에도 5초 heartbeat 타이머가 돈다(대기가 30초 공백으로 회수되지 않게)', async () => {
+    const { repo, state } = fakeRepo();
+    const d = deps({
+      repo,
+      stepRunner: createMockStepRunner({
+        failAt: { step: 'evidence', code: 'TIMEOUT', retryable: true },
+      }),
+    });
+    await runOnce(d); // 잡는 틱(박동 1)
+
+    const tick = runOnce(d);
+    await flush(); // 첫 시도(박동 2) 실패 → 재시도 대기 등록. 이제 워커는 timers.after만 기다린다.
+    expect(state.beats).toHaveLength(2);
+    expect(d.timersRef.afters.some((a) => !a.cancelled && a.ms === retryDelayMs(1))).toBe(true);
+
+    d.clockRef.advance(HEARTBEAT_INTERVAL_MS);
+    d.timersRef.fireEvery();
+    await Promise.resolve();
+    expect(state.beats).toHaveLength(3);
+    expect(state.beats[2]).toEqual(d.clock.now());
+
+    await drive(tick, d);
   });
 });
 
