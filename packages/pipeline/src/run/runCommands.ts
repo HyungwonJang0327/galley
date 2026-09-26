@@ -18,7 +18,7 @@ import {
   type StepName,
 } from './stateMachine.ts';
 
-const RUN_SUMMARY_SELECT = {
+export const RUN_SUMMARY_SELECT = {
   id: true,
   topicId: true,
   attempt: true,
