@@ -46,12 +46,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const { data: lists } = result;
   const activeId = pickActiveId(lists, selectedId);
   // 목록 행의 "근거 없음 n"은 각 Run의 verification.json(DATA_DIR)에서 — 못 읽는 행은 조용히 빠진다.
-  const [pane, flags] = await Promise.all([
-    Promise.resolve(preselected ?? (activeId ? getRunDetail(activeId) : undefined)).then(
-      resolveRunPane,
-    ),
+  const [detail, flags] = await Promise.all([
+    preselected ?? (activeId ? getRunDetail(activeId) : undefined),
     getRunVerificationFlags(lists),
   ]);
+  const pane = resolveRunPane(detail);
   const selected = pane.kind === 'selected' ? pane.run : undefined;
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   // 시리즈 편이면 헤더 아래 한 줄(○○ 시리즈 N/M편 · 이전·다음 편). 못 읽으면 줄만 빠진다.
