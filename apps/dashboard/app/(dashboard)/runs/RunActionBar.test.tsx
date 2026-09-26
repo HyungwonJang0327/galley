@@ -164,7 +164,8 @@ describe('RunActionBar', () => {
     fireEvent.click(screen.getByRole('button', { name: '승인' }));
 
     const dialog = await screen.findByRole('dialog', { name: '승인할까요?' });
-    expect(dialog.textContent).toContain('공개 발행은 일어나지 않고');
+    expect(dialog.textContent).toContain('posts/<슬러그>/');
+    expect(dialog.textContent).toContain('공개 발행은 일어나지 않습니다');
     expect(approveRun).not.toHaveBeenCalled();
 
     await clickDialogButton('승인');
