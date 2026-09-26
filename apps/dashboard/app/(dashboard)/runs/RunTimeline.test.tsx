@@ -381,7 +381,9 @@ describe('RunTimeline', () => {
         'supported',
       ]);
       expect(items[0]!.textContent).toContain('근거 없음');
-      expect(items[0]!.textContent).toContain('경로 · 본문 L40');
+      expect(items[0]!.textContent).toContain('경로 · 본문 L40 · 근거에 없음');
+      expect(items[1]!.textContent).toContain('숫자 · 본문 L12');
+      expect(items[1]!.textContent).not.toContain('L12 ·');
       expect(items[0]!.textContent).toContain('src/nope.ts');
       expect(items[1]!.textContent).toContain('src/feed.ts:L10 · abcdef0');
     });

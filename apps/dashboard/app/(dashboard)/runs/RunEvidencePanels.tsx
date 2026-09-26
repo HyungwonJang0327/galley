@@ -15,6 +15,17 @@ const KIND_LABEL = {
   identifier: '식별자',
   statement: '서술',
 } as const;
+/** 판정 사유(ClaimReason) — 코드 의미는 packages/pipeline evidence/verification.ts 주석. 사용자 결정(BE13 리뷰 M3): 화면에 표시. */
+const REASON_LABEL: Record<NonNullable<ClaimView['reason']>, string> = {
+  'not-in-evidence': '근거에 없음',
+  generalizable: '근거에 없어 일반화된 표현으로 봄',
+  'in-analysis-summary': '분석 요약에만 있음',
+  judged: '모델 판정',
+  'not-judged': '판정 상한 초과',
+  'judge-missing': '모델 판정 누락',
+  'judge-unparsed': '판정 출력 깨짐',
+  'judge-truncated': '판정 출력 잘림',
+};
 const JUDGE_NOTE: Partial<Record<VerificationView['judge'], string>> = {
   unparsed: '모델 판정 출력이 깨져 서술은 전부 불확실로 두었습니다.',
   truncated: '모델 판정 출력이 잘려 서술은 전부 불확실로 두었습니다.',
@@ -69,6 +80,7 @@ function ClaimRow({ claim }: { claim: ClaimView }) {
         </span>
         <span className={styles.muted}>
           {KIND_LABEL[claim.kind]} · 본문 L{claim.line}
+          {claim.reason ? ` · ${REASON_LABEL[claim.reason]}` : ''}
         </span>
       </div>
       <p className={styles.claim}>{claim.text}</p>

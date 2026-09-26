@@ -441,6 +441,39 @@ describe('parseVerificationReport', () => {
     expect(parseVerificationReport(JSON.stringify({ ...REPORT, cleanRoom: {} }))).toBeUndefined();
     expect(parseVerificationReport(JSON.stringify({ ...REPORT, judge: {} }))).toBeUndefined();
   });
+
+  it('화면이 쓰는 필드의 값 범위도 본다 — kind·reason·judge.status·evidenceRef 형태(리뷰 M2)', () => {
+    const withClaim = (claim: object) =>
+      parseVerificationReport(
+        JSON.stringify({ ...REPORT, claims: [{ ...REPORT.claims[0], ...claim }] }),
+      );
+    expect(withClaim({ kind: 'weird' })).toBeUndefined();
+    expect(withClaim({ reason: 'weird' })).toBeUndefined();
+    expect(withClaim({ evidenceRef: 'abcdef' })).toBeUndefined();
+    expect(withClaim({ evidenceRef: { commit: 'a', path: 'p' } })).toBeUndefined();
+    expect(
+      withClaim({ evidenceRef: { commit: 'a', path: 'p', lineRange: { start: 1 } } }),
+    ).toBeUndefined();
+    expect(withClaim({ note: 3 })).toBeUndefined();
+    expect(withClaim({ reason: 'judge-missing', note: '메모' })).toBeTruthy();
+    expect(
+      parseVerificationReport(JSON.stringify({ ...REPORT, judge: { status: 'weird' } })),
+    ).toBeUndefined();
+    expect(
+      parseVerificationReport(JSON.stringify({ ...REPORT, judge: { status: 'skipped' } })),
+    ).toBeTruthy();
+  });
+
+  it('형식 불량은 예외 문구가 아니라 "형식이 맞지 않습니다"로(evidenceRef가 문자열이어도)', async () => {
+    read.mockResolvedValue({
+      ok: true,
+      text: JSON.stringify({ ...REPORT, claims: [{ ...REPORT.claims[0], evidenceRef: 'abcdef' }] }),
+    });
+    expect((await getRunArtifacts(run([step('verify')]))).verify).toEqual({
+      kind: 'unavailable',
+      message: '검증 리포트(verification.json)의 형식이 맞지 않습니다.',
+    });
+  });
 });
 
 describe('getRunVerificationFlags — 목록 행', () => {
