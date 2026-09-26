@@ -141,9 +141,13 @@ async function createStepRunnerForEnv(
         clock: deps.clock,
       });
     }
-    deps.logger.info('단계 러너: Mock(DATA_DIR 없음 — 산출물을 쓰지 않아 승인·미리보기 불가)', {
+    // 아예 없으면(스모크·CI) 조용히, 있는데 규칙에 안 맞으면(상대경로·BLOG_DIR 안) error로 알린다 — 같은 .env를 실모드로
+    // 바꾸면 기동 거부될 설정을 development에서 미리 보게(사용자 결정 2026-09-27 M4 리뷰). 폴백은 둘 다 같다.
+    const log = mockDataDir.code === 'DATA_DIR_MISSING' ? deps.logger.info : deps.logger.error;
+    log('단계 러너: Mock(DATA_DIR 없음 — 산출물을 쓰지 않아 승인·미리보기 불가)', {
       NODE_ENV: process.env.NODE_ENV,
       code: mockDataDir.code,
+      value: mockDataDir.value,
     });
     return createMockStepRunner();
   }

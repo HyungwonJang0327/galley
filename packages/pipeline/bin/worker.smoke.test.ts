@@ -143,6 +143,17 @@ describe('워커 프로세스', () => {
     expect(stdout).toContain('단계 러너: Mock(DATA_DIR 없음');
   });
 
+  test('Mock 모드에 DATA_DIR이 규칙에 안 맞으면(상대경로) error 로그로 알리고 안 쓰는 Mock으로 기동한다', async () => {
+    const { exitCode, stdout, stderr } = await spawnWorker(
+      { NODE_ENV: 'test', DATA_DIR: './relative-data' },
+      '워커 시작',
+    );
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain('단계 러너: Mock(DATA_DIR 없음');
+    expect(stderr).toContain('DATA_DIR_NOT_ABSOLUTE');
+    expect(stdout).toContain('워커 시작');
+  });
+
   test('Mock 모드에 DATA_DIR이 있으면 산출물을 쓰는 Mock 러너로 기동한다', async () => {
     const { exitCode, stdout } = await spawnWorker(
       { NODE_ENV: 'test', DATA_DIR: dbDir, BLOG_DIR: '' },
