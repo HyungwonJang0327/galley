@@ -1,9 +1,9 @@
 // 실행 목록(2분할 좌측) 한 행의 표시값(서버 전용). decisions/layout.md "실행 /runs":
-// 6단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 시간. "근거 없음 n"은 근거 검증
-// 결과(BE10)가 생긴 뒤 BE13에서 붙인다.
+// 6단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 시간 · 상태 배지 옆 "근거 없음 n"(BE13).
 import 'server-only';
 import type { TimelineStatus } from 'galley-ui';
 import type { RunListRow } from './run-list';
+import type { VerificationFlags } from './run-artifacts';
 import { STEP_OPTIONS, stepTimeline } from './run-labels';
 
 export interface RunStepDot {
@@ -46,4 +46,11 @@ export function runListRowView(row: RunListRow): RunListRowView {
   const touched = dots.filter((d) => d.status !== 'pending');
   const lastStep = touched.length === 0 ? '대기' : touched[touched.length - 1]!.label;
   return { dots, lastStep, time: formatShortDateTime(row.finishedAt ?? row.startedAt) };
+}
+
+/** 상태 배지 옆 작은 텍스트 — 근거 없는 주장이 있을 때만("근거 없음 n"). 불확실만 있으면 조용히(타임라인 배지가 보여 준다). */
+export function evidenceFlagText(flags: VerificationFlags | undefined): string | undefined {
+  return flags !== undefined && flags.unsupported > 0
+    ? `근거 없음 ${flags.unsupported}`
+    : undefined;
 }

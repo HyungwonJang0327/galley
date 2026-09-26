@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RunListRow } from './run-list';
-import { formatShortDateTime, runListRowView } from './run-list-row';
+import { evidenceFlagText, formatShortDateTime, runListRowView } from './run-list-row';
 
 function row(overrides: Partial<RunListRow> = {}): RunListRow {
   return {
@@ -38,8 +38,8 @@ describe('runListRowView', () => {
     const view = runListRowView(
       row({
         steps: [
-          { name: 'evidence', status: 'succeeded', origin: 'fresh' },
-          { name: 'velog', status: 'running', origin: 'fresh' },
+          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
+          { name: 'velog', status: 'running', origin: 'fresh', sourceRunId: null },
         ],
       }),
     );
@@ -53,8 +53,8 @@ describe('runListRowView', () => {
       row({
         status: 'failed',
         steps: [
-          { name: 'evidence', status: 'succeeded', origin: 'fresh' },
-          { name: 'velog', status: 'failed', origin: 'fresh' },
+          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
+          { name: 'velog', status: 'failed', origin: 'fresh', sourceRunId: null },
         ],
       }),
     );
@@ -65,7 +65,9 @@ describe('runListRowView', () => {
 
   it('carried 단계는 done 점에 "이전 결과" 라벨', () => {
     const view = runListRowView(
-      row({ steps: [{ name: 'evidence', status: 'succeeded', origin: 'carried' }] }),
+      row({
+        steps: [{ name: 'evidence', status: 'succeeded', origin: 'carried', sourceRunId: null }],
+      }),
     );
 
     expect(view.dots[0]).toEqual({
@@ -79,9 +81,9 @@ describe('runListRowView', () => {
     const view = runListRowView(
       row({
         steps: [
-          { name: 'verify', status: 'succeeded', origin: 'fresh' },
-          { name: 'evidence', status: 'succeeded', origin: 'fresh' },
-          { name: 'velog', status: 'succeeded', origin: 'fresh' },
+          { name: 'verify', status: 'succeeded', origin: 'fresh', sourceRunId: null },
+          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
+          { name: 'velog', status: 'succeeded', origin: 'fresh', sourceRunId: null },
         ],
       }),
     );
@@ -106,5 +108,13 @@ describe('formatShortDateTime', () => {
 
     expect(text).not.toContain('2026');
     expect(text).toMatch(/\d{1,2}\. \d{1,2}\. \d{2}:\d{2}/);
+  });
+});
+
+describe('evidenceFlagText', () => {
+  it('근거 없음이 1 이상일 때만 "근거 없음 n", 아니면 없음', () => {
+    expect(evidenceFlagText({ unsupported: 3, uncertain: 1 })).toBe('근거 없음 3');
+    expect(evidenceFlagText({ unsupported: 0, uncertain: 5 })).toBeUndefined();
+    expect(evidenceFlagText(undefined)).toBeUndefined();
   });
 });
