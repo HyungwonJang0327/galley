@@ -1,8 +1,9 @@
-import { TimelineItem, TimelineItems } from 'galley-ui';
+import { Badge, TimelineItem, TimelineItems } from 'galley-ui';
 import { STEP_OPTIONS, stepTimeline } from '../../../lib/run-labels';
 import type { RunStepView } from '../../../lib/run-detail';
 import type { RunArtifactViews, StepArtifactView } from '../../../lib/run-artifacts';
 import { ArtifactMarkdown } from './ArtifactMarkdown';
+import { EvidencePanel, VerificationPanel } from './RunEvidencePanels';
 import styles from './RunTimeline.module.css';
 
 const time = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ko-KR') : null);
@@ -25,22 +26,47 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
   return [seconds(step.durationMs), tokens(step)].filter(Boolean).join(' · ');
 }
 
-/** 펼침 힌트 — 토글 버튼(제목+meta) 안에 있어야 클릭되고 읽힌다(decisions/layout.md `보기`). 볼 본문이 없으면 그 사실을. */
-const HINT: Record<StepArtifactView['kind'], string> = {
-  markdown: '보기',
-  evidence: '보기',
-  verification: '보기',
-  missing: '산출물 없음',
-  unavailable: '산출물 읽기 실패',
-};
+/**
+ * 펼침 힌트 — 토글 버튼(제목+meta) 안에 있어야 클릭되고 읽힌다(decisions/layout.md `보기`). 볼 본문이 없으면 그 사실을.
+ * 근거 수집은 "linked n · discovered n"(decisions/evidence-collection.md 타임라인)이 힌트를 겸한다.
+ */
+function hintOf(view: StepArtifactView): string {
+  switch (view.kind) {
+    case 'markdown':
+    case 'verification':
+      return '보기';
+    case 'evidence':
+      return [
+        `linked ${view.evidence.linked} · discovered ${view.evidence.discovered}`,
+        view.evidence.unreadable > 0 ? `읽지 못함 ${view.evidence.unreadable}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    case 'missing':
+      return '산출물 없음';
+    case 'unavailable':
+      return '산출물 읽기 실패';
+  }
+}
+
+/** 근거 검증 줄의 배지 "근거 없음 n · 불확실 n" — unsupported ≥ 1이면 주황(decisions/layout.md). */
+function verifyBadge(view: StepArtifactView | undefined) {
+  if (view?.kind !== 'verification') return undefined;
+  const { unsupported, uncertain } = view.verification.counts;
+  return (
+    <Badge tone={unsupported > 0 ? 'warning' : 'neutral'}>
+      근거 없음 {unsupported} · 불확실 {uncertain}
+    </Badge>
+  );
+}
 
 /** 펼침 내용 — 산출물이 있으면 마크다운, 없거나 못 읽으면 한 줄 안내(검수자가 왜 비었는지 알아야 한다). */
 function artifactPanel(view: StepArtifactView) {
   switch (view.kind) {
     case 'evidence':
+      return <EvidencePanel evidence={view.evidence} />;
     case 'verification':
-      // 구조화 표시는 다음 커밋(BE13)에서 — 지금은 펼침만 열린다.
-      return null;
+      return <VerificationPanel verification={view.verification} />;
     case 'markdown':
       return (
         <>
@@ -95,7 +121,8 @@ export function RunTimeline({
             status={line.status}
             statusLabel={line.statusLabel}
             title={label}
-            meta={[metaOf(step, line.carried), view && HINT[view.kind]].filter(Boolean).join(' · ')}
+            meta={[metaOf(step, line.carried), view && hintOf(view)].filter(Boolean).join(' · ')}
+            trailing={verifyBadge(view)}
             isLast={idx === STEP_OPTIONS.length - 1}
           >
             {view === undefined ? undefined : artifactPanel(view)}
