@@ -107,7 +107,7 @@ function createStepRunnerForEnv(
     deps.logger.error('DATA_DIR이 규칙에 맞지 않아 기동하지 않는다', {
       code: dataDir.code,
       value: dataDir.value,
-      hint: '루트 .env에 DATA_DIR을 절대경로로, BLOG_DIR 밖에 둔다(예: ~/.galley/data)',
+      hint: '루트 .env에 DATA_DIR을 절대경로로, BLOG_DIR 밖에 둔다(`~` 불가 — 셸이 아니라 확장되지 않는다)',
     });
     return null;
   }
@@ -119,10 +119,16 @@ function createStepRunnerForEnv(
     });
     return null;
   }
+  // 어떤 모델로 돌 수 있는지 기동 로그에서 바로 보이게 — 키가 빠진 채 띄우면 Run은 MODEL_UNAVAILABLE로만 실패한다.
+  const availableModels = registry
+    .list()
+    .filter((adapter) => adapter.available)
+    .map((adapter) => adapter.id);
   deps.logger.info('단계 러너: 실제(발행정보는 B3a 전까지 Mock)', {
     dataDir: dataDir.dir,
     promptsDir: prompts.dir,
     redact: redactConfig !== null,
+    availableModels,
   });
   return createStepRunner({
     prisma,
