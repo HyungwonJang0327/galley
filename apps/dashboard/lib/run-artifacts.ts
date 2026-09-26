@@ -1,7 +1,7 @@
 // 실행 상세 타임라인의 산출물 미리보기(서버 전용, B2e·BE13). 단계가 DATA_DIR `artifacts/<슬러그>/<runId>/`에 쓴 마크다운,
 // `evidence/<슬러그>/<runId>.json` 근거 번들, `verification.json` 검증 리포트를 서버 컴포넌트가 읽어 TimelineItem children으로
 // 넘긴다 — GET API 없음(decisions/navigation.md 2026-09-26). carried 단계는 `sourceRunId`의 파일을 읽는다(승인 approvePublish와
-// 같은 규칙). 파일이 없는 것(Mock 실행·B3a 전 실행)은 오류가 아니라 "없음" 상태다. 값은 표시용으로 줄인 것(조각 미리보기 몇 줄,
+// 같은 규칙). 파일이 없는 것(DATA_DIR 없이 돈 Mock 실행·B3a 전 실행)은 오류가 아니라 "없음" 상태다. 값은 표시용으로 줄인 것(조각 미리보기 몇 줄,
 // 해시 7자)이고 라벨은 화면(RunTimeline)이 붙인다.
 import 'server-only';
 import {
@@ -91,7 +91,7 @@ export type StepArtifactView =
   | { kind: 'markdown'; text: string; thumbnailUrl?: string }
   | { kind: 'evidence'; evidence: EvidenceView }
   | { kind: 'verification'; verification: VerificationView }
-  /** DATA_DIR에 파일이 없다 — Mock 실행이거나 산출물을 쓰기 전(B3a 전) 실행. */
+  /** DATA_DIR에 파일이 없다 — DATA_DIR 없이 돈 Mock 실행이거나 산출물을 쓰기 전(B3a 전) 실행. */
   | { kind: 'missing' }
   /** DATA_DIR 설정 오류·읽기 실패·형식 불량 — 사람이 읽는 문구. */
   | { kind: 'unavailable'; message: string };

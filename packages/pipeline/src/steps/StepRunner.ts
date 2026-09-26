@@ -5,7 +5,7 @@
 // 그래서 워커는 오케스트레이션(클레임·순서·기록·heartbeat·재시도 정책)만 하고,
 // 무엇을 하는지는 여기 구현이 안다. (decisions/run-execution-model.md)
 //
-// 구현은 BE8~BE11이 단계별로 채운다. 지금은 Mock 하나뿐이다.
+// 구현은 단계별 러너(evidence·velog·verify·linkedin·zenn·publishInfo, createStepRunner로 라우팅)와 Mock(토큰 없이 같은 파일을 쓴다)이다.
 import type { StepName } from '../run/stateMachine.ts';
 import type { SeriesStepInfo } from './series.ts';
 
@@ -33,7 +33,7 @@ export interface StepContext {
 }
 
 export interface StepResult {
-  /** 이 단계가 만든 산출물. 파일로 쓰는 것은 워커가 아니라 B3a가 맡는다. */
+  /** 이 단계가 만든 산출물(내용). 파일은 단계 구현이 ArtifactStore·EvidenceStore(DATA_DIR)에 직접 쓴다 — 워커는 이 값을 저장하지 않는다. */
   artifacts: Record<string, string>;
   /** 모델을 쓴 단계만 채운다. 워커는 받은 값을 기록만 하고 추정하지 않는다. */
   tokens?: { input: number; output: number };
