@@ -9,7 +9,7 @@
 - **DB**: SQLite는 Prisma 접근 계층 뒤. Postgres 전환 시 스키마·쿼리 수정 최소(→ db-access-layer).
 - **실행 위치**: 파이프라인 실행은 `@galley/pipeline` 함수, 앱은 호출만. 나중에 워커로 추출 쉽게(→ pipeline-execution-location).
 - **인증 자리**: 로그인 없음. 대신 `app/(dashboard)` 라우트 그룹 하나 아래에 두고, 요청 컨텍스트에 `userId`(지금 고정값 `"local"`)를 통과시키는 자리만. 멀티유저 데이터 모델은 만들지 않는다.
-- **썸네일**: `tools/make_thumb.py`(Python+Playwright)는 Phase 1에선 그대로 호출하되 `ThumbnailRenderer` 인터페이스 뒤. 배포에 Python이 없을 수 있어 Node(Playwright/satori) 구현으로 교체 가능하게.
+- **썸네일**: ~~`tools/make_thumb.py`(Python+Playwright)는 Phase 1에선 그대로 호출하되~~ `ThumbnailRenderer` 인터페이스 뒤. ~~배포에 Python이 없을 수 있어 Node(Playwright/satori) 구현으로 교체 가능하게.~~ **⚠️ 결정 변경(2026-09-26 B3b, 사용자)**: 첫 구현은 **설치된 Chrome headless `--screenshot`**(`ChromeThumbnailRenderer`, make_thumb.py의 HTML 템플릿을 그대로 이식, 새 라이브러리 없음) — 로컬 어느 Python에도 playwright가 없었고 Galley는 이미 verify:layout에서 같은 Chrome 규칙(`GALLEY_CHROME`)을 쓴다. 인터페이스는 그대로라 Python·satori 구현으로 교체 가능. Chrome이 없는 배포는 발행정보 단계가 `THUMBNAIL_CHROME_NOT_FOUND`로 실패한다(기동 조건 아님). Docker root면 `--no-sandbox`가 필요(미구현, 기록).
 - **비밀값**: API 키·Zenn 토큰은 `.env`로만. 코드·SQLite·산출물 파일에 절대 안 씀.
 - **OS 의존**: macOS 전용 명령(`open`, `pbcopy`)·경로 구분자 가정 금지.
 
@@ -29,3 +29,4 @@
 ## 갱신 이력
 
 - 2026-09-08 최초 결정.
+- 2026-09-26 B3b: 썸네일 **결정 변경** — make_thumb.py 호출 대신 Node headless Chrome(사용자 결정). 세부는 run-execution-model §1·evidence-collection 발행정보.
