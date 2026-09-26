@@ -88,7 +88,8 @@ function artifactPanel(view: StepArtifactView) {
     case 'missing':
       return (
         <p className={styles.note}>
-          산출물 파일이 DATA_DIR에 없습니다. Mock 실행이거나 산출물을 쓰기 전의 실행입니다.
+          산출물 파일이 DATA_DIR에 없습니다. DATA_DIR 없이 돈 Mock 실행이거나 산출물을 쓰기 전의
+          실행입니다.
         </p>
       );
     case 'unavailable':
