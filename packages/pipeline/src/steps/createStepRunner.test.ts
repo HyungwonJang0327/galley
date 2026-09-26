@@ -85,7 +85,10 @@ describe('createStepRunner', () => {
       promptsDir: join(dir, 'prompts'),
       adapters: { get: () => undefined },
       redactConfig: null,
-      thumbnails: { render: async () => ({ ok: true, png: new Uint8Array() }) },
+      thumbnails: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
       clock: { now: () => new Date('2026-09-26T00:00:00Z') },
     });
   });
@@ -117,7 +120,10 @@ describe('createStepRunner', () => {
       promptsDir: join(dir, 'prompts'),
       adapters: { get: () => undefined },
       redactConfig: null,
-      thumbnails: { render: async () => ({ ok: true, png: new Uint8Array() }) },
+      thumbnails: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
       clock: { now: () => new Date() },
       publishInfo: { run: custom },
     });
