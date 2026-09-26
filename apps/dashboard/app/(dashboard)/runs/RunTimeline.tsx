@@ -28,6 +28,8 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
 /** 펼침 힌트 — 토글 버튼(제목+meta) 안에 있어야 클릭되고 읽힌다(decisions/layout.md `보기`). 볼 본문이 없으면 그 사실을. */
 const HINT: Record<StepArtifactView['kind'], string> = {
   markdown: '보기',
+  evidence: '보기',
+  verification: '보기',
   missing: '산출물 없음',
   unavailable: '산출물 읽기 실패',
 };
@@ -35,6 +37,10 @@ const HINT: Record<StepArtifactView['kind'], string> = {
 /** 펼침 내용 — 산출물이 있으면 마크다운, 없거나 못 읽으면 한 줄 안내(검수자가 왜 비었는지 알아야 한다). */
 function artifactPanel(view: StepArtifactView) {
   switch (view.kind) {
+    case 'evidence':
+    case 'verification':
+      // 구조화 표시는 다음 커밋(BE13)에서 — 지금은 펼침만 열린다.
+      return null;
     case 'markdown':
       return (
         <>
