@@ -1,4 +1,4 @@
-// 승인 = Run을 done으로 끝내면서 **발행 준비를 마친다**(B3a, 2026-09-26 사용자 결정 "승인 시 복사"): DATA_DIR의 최신 산출물을
+// 승인 = Run을 done으로 끝내면서 **발행 준비를 마친다**(B3a, 2026-09-26 사용자 결정 "승인 시 복사"): DATA_DIR의 최신 산출물(썸네일 포함 7개)을
 // posts/<슬러그>/로 복사하고, 주제를 큐 파일의 완료 섹션으로 옮기고(completeTopic), Run을 done으로. posts에는 승인본만 남는다
 // (Run별 이력은 DATA_DIR — decisions/run-execution-model.md). 공개 발행은 여기서 일어나지 않는다(publish-gate).
 //
@@ -19,7 +19,7 @@ import { parseQueue, serializeQueue, type QueueStatus } from '../queue/queueFile
 import type { Storage } from '../storage/Storage.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
 import { parsePublishTitle } from '../steps/publishInfo.ts';
-import { PUBLISH_ARTIFACT } from '../steps/publishInfoStep.ts';
+import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from '../steps/publishInfoStep.ts';
 import { VELOG_ARTIFACT } from '../steps/velogStep.ts';
 import { VERIFICATION_ARTIFACT } from '../steps/verifyStep.ts';
 import { ZENN_ARTIFACT } from '../steps/zennStep.ts';
@@ -134,6 +134,13 @@ export async function approveAndPublishRun(
     if (texts[key] === undefined) return { ok: false, code: 'ARTIFACT_MISSING', detail: name };
   const bundle = await deps.evidence.read(slug, producer('evidence'));
   if (!bundle.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: 'evidence' };
+  // 썸네일은 발행정보 단계가 같이 만든다(B3b) — 그 전에 돈 Run은 없어서 발행정보 단계부터 다시 돌아야 한다.
+  const thumbnail = await deps.artifacts.readBytes(
+    slug,
+    producer('publishInfo'),
+    THUMBNAIL_ARTIFACT,
+  );
+  if (!thumbnail.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: THUMBNAIL_ARTIFACT };
 
   const articleTitle = parsePublishTitle(texts.publishInfo!);
   if (articleTitle === undefined) return { ok: false, code: 'PUBLISH_TITLE_MISSING' };
@@ -173,6 +180,7 @@ export async function approveAndPublishRun(
       linkedin: texts.linkedin!,
       zenn: texts.zenn!,
       publishInfo: texts.publishInfo!,
+      thumbnail: thumbnail.bytes,
       evidence: `${JSON.stringify(toPostsEvidence(bundle.bundle), null, 2)}\n`,
       verification: texts.verification!,
     },
