@@ -263,7 +263,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [ ] **B2d-2** fe·pl — 실패 실행의 재실행 진입(상태 머신 `applyCommand`가 승인 대기만 허용 — 실패에서 "처음부터/실패 단계부터"를 열려면 pipeline 결정 선행). B2d에서 쪼갬(2026-09-14).
 - [x] **B2d-3** (2026-09-14 `0a50521`, feat/dashboard-approve-dialog, PR #95) fe — 승인 확인 Dialog("승인할까요?" — 검수 완료로 종결, 공개 발행 아님). 확인해야 approve API. 커밋: `feat(dashboard): 승인 전 확인 Dialog 추가`
   - 완료조건([B]#6): 좌 목록 선택→우 타임라인 전환, 하단 바 입력이 pipeline 함수 호출로 이어짐.
-- [x] **B2e** (2026-09-26 `b723afe`·`578381c`·`d618b30`·`687e95a`·`9330ee1` + 리뷰 `e276c2f`·`e45c007`·`85ecf59`, feat/run-artifact-preview) fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown + remark-gfm**(apps/dashboard, 서버 컴포넌트). 마크다운 4줄(벨로그·링크드인·Zenn·발행정보)만 — 근거 수집·검증 줄은 BE13. 발행정보 펼침에 썸네일(`GET /api/runs/[id]/thumbnail`). 링크 새 탭·이미지 차단·힌트는 meta 끝(사용자 결정). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
+- [x] **B2e** (2026-09-26 `0ecd969`·`2f52c9e`·`c5aabfd`·`19f11b7`·`3b67513` + 리뷰 `ddec64b`·`75c29ff`·`935bd8d`, feat/run-artifact-preview) fe — 타임라인 항목 펼침 시 그 단계 산출물 마크다운 렌더(검수 필수). 렌더러 = **react-markdown + remark-gfm**(apps/dashboard, 서버 컴포넌트). 마크다운 4줄(벨로그·링크드인·Zenn·발행정보)만 — 근거 수집·검증 줄은 BE13. 발행정보 펼침에 썸네일(`GET /api/runs/[id]/thumbnail`). 링크 새 탭·이미지 차단·힌트는 meta 끝(사용자 결정). 커밋: `feat(dashboard): 실행 타임라인 산출물 미리보기 추가`
   - 이월(리뷰, 기록만): L4 `reason(error)` 문구 노출(TD5와 함께) · L5 실행 중 폴링마다 본문 재직렬화 · L6 `--ui-font-mono` 토큰(P7m) · L10 data-dir 실패 형태 · `ArtifactStore.exists` 없음(썸네일 존재 확인이 PNG를 읽음) · DATA_DIR 미설정 안내 4줄 중복 · `diff`(재실행 후) 표기는 미구현.
 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
