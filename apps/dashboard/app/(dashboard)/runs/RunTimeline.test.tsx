@@ -282,6 +282,135 @@ describe('RunTimeline', () => {
       expect(img.getAttribute('loading')).toBe('lazy');
     });
 
+    it('근거 수집 줄 — meta에 linked·discovered, 펼치면 항목(경로:줄·해시·날짜·출처·조각 3줄)', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'evidence', order: 1, status: 'succeeded', durationMs: 2_000 })]}
+          artifacts={{
+            evidence: {
+              kind: 'evidence',
+              evidence: {
+                linked: 2,
+                discovered: 1,
+                unreadable: 1,
+                filtered: true,
+                items: [
+                  {
+                    path: 'src/feed.ts',
+                    commit: 'abcdef0',
+                    lineRange: { start: 10, end: 20 },
+                    date: '2026-03-01',
+                    source: 'linked',
+                    note: '피드 끝 감지',
+                    snippetPreview: ['const a = 1;', 'const b = 2;', 'const c = 3;'],
+                    hasMore: true,
+                    redacted: true,
+                    truncated: false,
+                  },
+                ],
+              },
+            },
+          }}
+        />,
+      );
+
+      expect(
+        screen.getByRole('button', {
+          name: '근거 수집 2초 · linked 2 · discovered 1 · 읽지 못함 1',
+        }),
+      ).toBeTruthy();
+      const row = rows()[0]!;
+      expect(row.textContent).toContain('연결 2 · 탐색 1 · 읽지 못한 포인터 1');
+      expect(row.textContent).toContain('src/feed.ts:L10-20');
+      expect(row.textContent).toContain('abcdef0 · 2026-03-01 · 연결 · 치환됨');
+      expect(row.textContent).toContain('피드 끝 감지');
+      expect(row.querySelector('pre')?.textContent).toBe(
+        'const a = 1;\nconst b = 2;\nconst c = 3;\n…',
+      );
+      expect(row.textContent).not.toContain('보기');
+    });
+
+    it('근거 검증 줄 — 배지 "근거 없음 n · 불확실 n"(unsupported ≥ 1이면 warning), 펼치면 주장 목록', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'verify', order: 3, status: 'succeeded' })]}
+          artifacts={{
+            verify: {
+              kind: 'verification',
+              verification: {
+                counts: { supported: 1, unsupported: 1, uncertain: 0 },
+                verbatimMatches: 2,
+                judge: 'truncated',
+                claims: [
+                  {
+                    text: 'src/nope.ts',
+                    kind: 'path',
+                    status: 'unsupported',
+                    line: 40,
+                    reason: 'not-in-evidence',
+                  },
+                  {
+                    text: '3초',
+                    kind: 'number',
+                    status: 'supported',
+                    line: 12,
+                    evidenceRef: {
+                      path: 'src/feed.ts',
+                      commit: 'abcdef0',
+                      lineRange: { start: 10, end: 10 },
+                    },
+                  },
+                ],
+              },
+            },
+          }}
+        />,
+      );
+
+      const row = rows()[2]!;
+      const badge = row.querySelector('[class*="warning"]');
+      expect(badge?.textContent).toBe('근거 없음 1 · 불확실 0');
+      expect(screen.getByRole('button', { name: '근거 검증 보기' })).toBeTruthy();
+      expect(row.textContent).toContain(
+        '근거 있음 1 · 근거 없음 1 · 불확실 0 · 근거 조각을 그대로 담은 자리 2',
+      );
+      expect(row.textContent).toContain('모델 판정 출력이 잘려');
+      const items = Array.from(row.querySelectorAll('li[data-status]'));
+      expect(items.map((li) => li.getAttribute('data-status'))).toEqual([
+        'unsupported',
+        'supported',
+      ]);
+      expect(items[0]!.textContent).toContain('근거 없음');
+      expect(items[0]!.textContent).toContain('경로 · 본문 L40');
+      expect(items[0]!.textContent).toContain('src/nope.ts');
+      expect(items[1]!.textContent).toContain('src/feed.ts:L10 · abcdef0');
+    });
+
+    it('근거 검증에 unsupported가 없으면 배지는 neutral', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'verify', order: 3, status: 'succeeded' })]}
+          artifacts={{
+            verify: {
+              kind: 'verification',
+              verification: {
+                counts: { supported: 3, unsupported: 0, uncertain: 2 },
+                verbatimMatches: 0,
+                judge: 'judged',
+                claims: [],
+              },
+            },
+          }}
+        />,
+      );
+
+      const row = rows()[2]!;
+      expect(row.querySelector('[class*="warning"]')).toBeNull();
+      expect(row.querySelector('[class*="neutral"]')?.textContent).toBe('근거 없음 0 · 불확실 2');
+      expect(row.textContent).toContain('추출된 주장이 없습니다.');
+      expect(row.textContent).not.toContain('그대로 담은 자리');
+    });
+
     it('파일이 없으면(Mock·옛 실행) 힌트 "산출물 없음"+안내, 못 읽으면 "산출물 읽기 실패"+문구(alert 아님)', () => {
       render(
         <RunTimeline

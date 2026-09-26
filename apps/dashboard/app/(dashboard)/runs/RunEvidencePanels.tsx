@@ -1,0 +1,108 @@
+// 근거 수집·근거 검증 줄의 펼침 내용(BE13, 서버 컴포넌트). 값은 lib/run-artifacts가 줄인 것이고 여기서 한국어 라벨만 붙인다
+// (DB·파일 값은 영어 — decisions/db-value-language.md). 조각 미리보기는 DATA_DIR 쪽이라 로컬 화면에만 보인다.
+import type { ClaimView, EvidenceView, VerificationView } from '../../../lib/run-artifacts';
+import styles from './RunEvidencePanels.module.css';
+
+const SOURCE_LABEL = { linked: '연결', discovered: '탐색' } as const;
+const STATUS_LABEL = {
+  supported: '근거 있음',
+  unsupported: '근거 없음',
+  uncertain: '불확실',
+} as const;
+const KIND_LABEL = {
+  number: '숫자',
+  path: '경로',
+  identifier: '식별자',
+  statement: '서술',
+} as const;
+const JUDGE_NOTE: Partial<Record<VerificationView['judge'], string>> = {
+  unparsed: '모델 판정 출력이 깨져 서술은 전부 불확실로 두었습니다.',
+  truncated: '모델 판정 출력이 잘려 서술은 전부 불확실로 두었습니다.',
+};
+
+const range = ({ start, end }: { start: number; end: number }) =>
+  start === end ? `L${start}` : `L${start}-${end}`;
+
+export function EvidencePanel({ evidence }: { evidence: EvidenceView }) {
+  return (
+    <div className={styles.panel}>
+      <p className={styles.summary}>
+        연결 {evidence.linked} · 탐색 {evidence.discovered}
+        {evidence.unreadable > 0 ? ` · 읽지 못한 포인터 ${evidence.unreadable}` : ''}
+        {evidence.filtered ? '' : ' · 식별 정보 필터 없음'}
+      </p>
+      {evidence.items.length === 0 ? (
+        <p className={styles.note}>근거 항목이 없습니다.</p>
+      ) : (
+        <ul className={styles.list}>
+          {evidence.items.map((item, i) => (
+            <li key={i} className={styles.item}>
+              <div className={styles.head}>
+                <code className={styles.code}>
+                  {item.path}:{range(item.lineRange)}
+                </code>
+                <span className={styles.muted}>
+                  {item.commit} · {item.date} · {SOURCE_LABEL[item.source]}
+                  {item.redacted ? ' · 치환됨' : ''}
+                  {item.truncated ? ' · 잘림' : ''}
+                </span>
+              </div>
+              {item.note ? <p className={styles.note}>{item.note}</p> : null}
+              <pre className={styles.snippet}>
+                {item.snippetPreview.join('\n')}
+                {item.hasMore ? '\n…' : ''}
+              </pre>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ClaimRow({ claim }: { claim: ClaimView }) {
+  return (
+    <li className={styles.item} data-status={claim.status}>
+      <div className={styles.head}>
+        <span className={styles.status} data-status={claim.status}>
+          {STATUS_LABEL[claim.status]}
+        </span>
+        <span className={styles.muted}>
+          {KIND_LABEL[claim.kind]} · 본문 L{claim.line}
+        </span>
+      </div>
+      <p className={styles.claim}>{claim.text}</p>
+      {claim.evidenceRef ? (
+        <code className={styles.code}>
+          {claim.evidenceRef.path}:{range(claim.evidenceRef.lineRange)} · {claim.evidenceRef.commit}
+        </code>
+      ) : null}
+      {claim.note ? <p className={styles.note}>{claim.note}</p> : null}
+    </li>
+  );
+}
+
+export function VerificationPanel({ verification }: { verification: VerificationView }) {
+  const { counts } = verification;
+  const judgeNote = JUDGE_NOTE[verification.judge];
+  return (
+    <div className={styles.panel}>
+      <p className={styles.summary}>
+        근거 있음 {counts.supported} · 근거 없음 {counts.unsupported} · 불확실 {counts.uncertain}
+        {verification.verbatimMatches > 0
+          ? ` · 근거 조각을 그대로 담은 자리 ${verification.verbatimMatches}`
+          : ''}
+      </p>
+      {judgeNote ? <p className={styles.note}>{judgeNote}</p> : null}
+      {verification.claims.length === 0 ? (
+        <p className={styles.note}>추출된 주장이 없습니다.</p>
+      ) : (
+        <ul className={styles.list}>
+          {verification.claims.map((claim, i) => (
+            <ClaimRow key={i} claim={claim} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

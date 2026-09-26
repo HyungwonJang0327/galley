@@ -1,0 +1,95 @@
+/* 근거·검증 펼침 — 목록형. 토큰만 참조. 상태 색은 Badge와 같은 계열(success/danger/warning fg). */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-text-sm);
+}
+
+.summary {
+  margin: 0;
+  color: var(--ui-color-text);
+}
+
+.note {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.item[data-status='unsupported'] {
+  border-color: var(--ui-color-danger-fg);
+}
+
+.item[data-status='uncertain'] {
+  border-color: var(--ui-color-warning-fg);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ui-space-2);
+}
+
+.muted {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+}
+
+.status {
+  font-weight: var(--ui-weight-medium);
+}
+
+.status[data-status='supported'] {
+  color: var(--ui-color-success-fg);
+}
+
+.status[data-status='unsupported'] {
+  color: var(--ui-color-danger-fg);
+}
+
+.status[data-status='uncertain'] {
+  color: var(--ui-color-warning-fg);
+}
+
+.claim {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 코드 글꼴은 토큰이 없어 시스템 고정폭 스택(P7m에서 --ui-font-mono로 교체). */
+.code,
+.snippet {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ui-text-xs);
+}
+
+.code {
+  overflow-wrap: anywhere;
+}
+
+.snippet {
+  margin: 0;
+  padding: var(--ui-space-2);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-neutral-bg);
+  overflow-x: auto;
+}
