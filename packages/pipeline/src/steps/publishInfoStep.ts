@@ -84,16 +84,19 @@ export function parsePublishInfoOutput(
   const cleanIntro = intro.replace(/\s+/g, ' ').trim();
   if (cleanIntro === '') return undefined;
   const rawSubtitle = typeof subtitle === 'string' ? subtitle.replace(/\s+/g, ' ').trim() : '';
-  const cleanSubtitle = Array.from(rawSubtitle === '' ? cleanIntro : rawSubtitle)
-    .slice(0, THUMBNAIL_SUBTITLE_MAX_CHARS)
-    .join('');
+  // 상한을 넘으면 39자 + 말줄임(문장 중간에서 뚝 끊기지 않게 — 리뷰 L4).
+  const subtitleChars = Array.from(rawSubtitle === '' ? cleanIntro : rawSubtitle);
+  const cleanSubtitle =
+    subtitleChars.length > THUMBNAIL_SUBTITLE_MAX_CHARS
+      ? `${subtitleChars.slice(0, THUMBNAIL_SUBTITLE_MAX_CHARS - 1).join('')}…`
+      : subtitleChars.join('');
   const cleanTag =
     typeof tag === 'string' && /^[A-Z][A-Z0-9-]{1,23}$/.test(tag.trim()) ? tag.trim() : '';
   const seen = new Set<string>();
   const cleanTags: string[] = [];
-  for (const tag of tags) {
-    if (typeof tag !== 'string') continue;
-    const t = tag.replace(/\s+/g, ' ').trim();
+  for (const raw of tags) {
+    if (typeof raw !== 'string') continue;
+    const t = raw.replace(/\s+/g, ' ').trim();
     const key = t.toLowerCase();
     if (t === '' || seen.has(key)) continue;
     seen.add(key);
@@ -233,6 +236,15 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
           bundle.code === 'EVIDENCE_BUNDLE_MISSING'
             ? '근거 묶음이 없습니다. 근거 수집 단계부터 다시 실행하세요.'
             : '근거 묶음을 읽지 못했습니다. 근거 수집 단계부터 다시 실행하세요.',
+          false,
+        );
+
+      // 썸네일을 찍을 수 있는지 **모델을 부르기 전에** — Chrome이 없으면 토큰을 쓰지 않고 바로 실패한다(리뷰 M4, 사용자 결정).
+      const ready = await deps.thumbnails.check();
+      if (!ready.ok)
+        throw new StepFailure(
+          ready.code,
+          '썸네일을 찍을 Chrome을 찾지 못했습니다. .env의 GALLEY_CHROME에 실행 파일 경로를 적으세요.',
           false,
         );
 

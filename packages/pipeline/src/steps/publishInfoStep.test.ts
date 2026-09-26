@@ -66,6 +66,11 @@ function fakeThumbnails(result?: Awaited<ReturnType<ThumbnailRenderer['render']>
   const calls: ThumbnailInput[] = [];
   const renderer: ThumbnailRenderer & { calls: ThumbnailInput[] } = {
     calls,
+    async check() {
+      return result !== undefined && !result.ok && result.code === 'THUMBNAIL_CHROME_NOT_FOUND'
+        ? { ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' }
+        : { ok: true };
+    },
     async render(input) {
       calls.push(input);
       return result ?? { ok: true, png: PNG };
@@ -136,7 +141,7 @@ describe('parsePublishInfoOutput', () => {
         tag: 'trouble shooting',
       }),
     );
-    expect(out?.subtitle).toBe('가'.repeat(40));
+    expect(out?.subtitle).toBe(`${'가'.repeat(39)}…`);
     expect(out?.tag).toBe('');
     expect(
       parsePublishInfoOutput(JSON.stringify({ intro: '소개', tags: [], tag: 'RETRO-2' }))?.tag,
