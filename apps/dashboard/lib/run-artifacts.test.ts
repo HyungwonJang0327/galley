@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { read, readBytes, getRunWithSteps, constructed } = vi.hoisted(() => ({
+const { read, readBytes, readBundle, getRunWithSteps, constructed } = vi.hoisted(() => ({
   read: vi.fn(),
   readBytes: vi.fn(),
+  readBundle: vi.fn(),
   getRunWithSteps: vi.fn(),
   constructed: [] as string[],
 }));
@@ -17,6 +18,7 @@ vi.mock('@galley/pipeline', () => ({
   ZENN_ARTIFACT: 'zenn.md',
   PUBLISH_ARTIFACT: 'publish.md',
   THUMBNAIL_ARTIFACT: 'thumbnail.png',
+  VERIFICATION_ARTIFACT: 'verification.json',
   prisma: {},
   getRunWithSteps,
   resolveDataDir: (env: { DATA_DIR?: string }) =>
@@ -28,9 +30,17 @@ vi.mock('@galley/pipeline', () => ({
     read = read;
     readBytes = readBytes;
   },
+  LocalFsEvidenceStore: class {
+    read = readBundle;
+  },
 }));
 
-import { getRunArtifacts, getRunThumbnail } from './run-artifacts';
+import {
+  getRunArtifacts,
+  getRunThumbnail,
+  getRunVerificationFlags,
+  parseVerificationReport,
+} from './run-artifacts';
 
 const step = (
   name: string,
@@ -53,22 +63,117 @@ beforeEach(() => {
     text: `# ${name}`,
   }));
   readBytes.mockResolvedValue({ ok: false, code: 'ARTIFACT_MISSING' });
+  readBundle.mockResolvedValue({ ok: false, code: 'EVIDENCE_BUNDLE_MISSING' });
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
   read.mockReset();
   readBytes.mockReset();
+  readBundle.mockReset();
   getRunWithSteps.mockReset();
 });
 
+const BUNDLE = {
+  version: 1,
+  runId: 'run_2',
+  topicId: 'topic_1',
+  topicSlug: '무한-스크롤',
+  collectedAt: '2026-09-26T00:00:00.000Z',
+  unreadable: 1,
+  filtered: true,
+  items: [
+    {
+      commit: 'abcdef0123456789',
+      path: 'src/feed.ts',
+      lineRange: { start: 10, end: 20 },
+      date: '2026-03-01T09:00:00+09:00',
+      source: 'linked',
+      redacted: false,
+      truncated: false,
+      snippet: 'l1\nl2\nl3\nl4',
+    },
+    {
+      commit: '1234567abcdef',
+      path: 'src/api.ts',
+      lineRange: { start: 1, end: 3 },
+      date: '2026-04-02T00:00:00Z',
+      source: 'discovered',
+      note: '메모',
+      redacted: true,
+      truncated: true,
+      snippet: 'only',
+    },
+    {
+      commit: '999999999',
+      path: 'src/x.ts',
+      lineRange: { start: 5, end: 5 },
+      date: '2026-05-01',
+      source: 'linked',
+      redacted: false,
+      truncated: false,
+      snippet: '',
+    },
+  ],
+};
+
+const REPORT = {
+  version: 1,
+  runId: 'run_2',
+  topicSlug: '무한-스크롤',
+  verifiedAt: '2026-09-26T00:00:00.000Z',
+  sources: { velog: 'run_2', evidence: 'run_2' },
+  claims: [
+    {
+      text: '3초',
+      kind: 'number',
+      status: 'supported',
+      line: 12,
+      evidenceRef: {
+        commit: 'abcdef0123456789',
+        path: 'src/feed.ts',
+        lineRange: { start: 10, end: 20 },
+      },
+    },
+    { text: '서술 A', kind: 'statement', status: 'uncertain', line: 30, reason: 'not-judged' },
+    {
+      text: 'src/nope.ts',
+      kind: 'path',
+      status: 'unsupported',
+      line: 40,
+      reason: 'not-in-evidence',
+    },
+    {
+      text: '서술 B',
+      kind: 'statement',
+      status: 'unsupported',
+      line: 8,
+      reason: 'judged',
+      note: '근거에 없음',
+    },
+  ],
+  counts: { supported: 1, unsupported: 2, uncertain: 1 },
+  cleanRoom: {
+    threshold: 6,
+    matches: [
+      {
+        evidenceRef: { commit: 'a', path: 'p', lineRange: { start: 1, end: 2 } },
+        bodyLine: 3,
+        snippetLine: 1,
+        lines: 6,
+      },
+    ],
+  },
+  judge: { status: 'judged', model: 'mock', statements: 2 },
+};
+
 describe('getRunArtifacts', () => {
-  it('성공한 마크다운 단계만 이 Run의 파일로 읽는다(대기·실패·JSON 단계는 읽지 않는다)', async () => {
+  it('성공한 단계만 이 Run의 파일로 읽는다(대기·실패 단계는 읽지 않는다)', async () => {
     const views = await getRunArtifacts(
       run([
-        step('evidence'),
+        step('evidence', 'failed'),
         step('velog'),
-        step('verify'),
+        step('verify', 'pending'),
         step('linkedin', 'failed'),
         step('zenn', 'pending'),
         step('publishInfo'),
@@ -84,6 +189,7 @@ describe('getRunArtifacts', () => {
       ['무한-스크롤', 'run_2', 'velog.md'],
       ['무한-스크롤', 'run_2', 'publish.md'],
     ]);
+    expect(readBundle).not.toHaveBeenCalled();
   });
 
   it('발행정보는 썸네일이 있을 때만 URL을 붙인다(출처 Run의 파일, 다른 단계는 확인하지 않는다)', async () => {
@@ -148,7 +254,9 @@ describe('getRunArtifacts', () => {
   it('읽을 단계가 없으면 DATA_DIR을 해석하지도, 스토어를 만들지도 않는다', async () => {
     vi.stubEnv('DATA_DIR', '');
 
-    expect(await getRunArtifacts(run([step('evidence'), step('velog', 'running')]))).toEqual({});
+    expect(
+      await getRunArtifacts(run([step('evidence', 'failed'), step('velog', 'running')])),
+    ).toEqual({});
     expect(constructed).toEqual([]);
   });
 
@@ -189,6 +297,203 @@ describe('getRunArtifacts', () => {
       kind: 'unavailable',
       message: expect.stringContaining('파일 이름으로 쓸 수 없는 값'),
     });
+  });
+});
+
+describe('getRunArtifacts — 근거 수집·근거 검증(BE13)', () => {
+  it('근거 번들은 출처 Run 파일에서 읽어 linked·discovered 수와 조각 미리보기(3줄·해시 7자·날짜)로', async () => {
+    readBundle.mockResolvedValue({ ok: true, bundle: BUNDLE });
+
+    const views = await getRunArtifacts(
+      run([step('evidence', 'succeeded', { origin: 'carried', sourceRunId: 'run_1' })]),
+    );
+
+    expect(readBundle).toHaveBeenCalledWith('무한-스크롤', 'run_1');
+    expect(views.evidence).toEqual({
+      kind: 'evidence',
+      evidence: {
+        linked: 2,
+        discovered: 1,
+        unreadable: 1,
+        filtered: true,
+        items: [
+          {
+            path: 'src/feed.ts',
+            commit: 'abcdef0',
+            lineRange: { start: 10, end: 20 },
+            date: '2026-03-01',
+            source: 'linked',
+            snippetPreview: ['l1', 'l2', 'l3'],
+            hasMore: true,
+            redacted: false,
+            truncated: false,
+          },
+          {
+            path: 'src/api.ts',
+            commit: '1234567',
+            lineRange: { start: 1, end: 3 },
+            date: '2026-04-02',
+            source: 'discovered',
+            note: '메모',
+            snippetPreview: ['only'],
+            hasMore: false,
+            redacted: true,
+            truncated: true,
+          },
+          {
+            path: 'src/x.ts',
+            commit: '9999999',
+            lineRange: { start: 5, end: 5 },
+            date: '2026-05-01',
+            source: 'linked',
+            snippetPreview: [''],
+            hasMore: false,
+            redacted: false,
+            truncated: false,
+          },
+        ],
+      },
+    });
+  });
+
+  it('번들 없음은 missing, 형식 불량·읽기 실패는 unavailable 문구', async () => {
+    expect((await getRunArtifacts(run([step('evidence')]))).evidence).toEqual({ kind: 'missing' });
+
+    readBundle.mockResolvedValue({ ok: false, code: 'EVIDENCE_BUNDLE_INVALID' });
+    expect((await getRunArtifacts(run([step('evidence')]))).evidence).toEqual({
+      kind: 'unavailable',
+      message: '근거 번들 파일의 형식이 맞지 않습니다.',
+    });
+
+    readBundle.mockResolvedValue({ ok: false, code: 'EVIDENCE_BUNDLE_UNREADABLE' });
+    expect((await getRunArtifacts(run([step('evidence')]))).evidence).toMatchObject({
+      kind: 'unavailable',
+    });
+  });
+
+  it('검증 리포트는 주장을 unsupported → uncertain → supported, 같은 상태는 줄 순으로', async () => {
+    read.mockResolvedValue({ ok: true, text: JSON.stringify(REPORT) });
+
+    const views = await getRunArtifacts(run([step('verify')]));
+
+    expect(read).toHaveBeenCalledWith('무한-스크롤', 'run_2', 'verification.json');
+    expect(views.verify).toMatchObject({
+      kind: 'verification',
+      verification: {
+        counts: { supported: 1, unsupported: 2, uncertain: 1 },
+        verbatimMatches: 1,
+        judge: 'judged',
+      },
+    });
+    if (views.verify?.kind !== 'verification') throw new Error('kind');
+    expect(views.verify.verification.claims.map((c) => [c.status, c.line])).toEqual([
+      ['unsupported', 8],
+      ['unsupported', 40],
+      ['uncertain', 30],
+      ['supported', 12],
+    ]);
+    expect(views.verify.verification.claims[3]).toEqual({
+      text: '3초',
+      kind: 'number',
+      status: 'supported',
+      line: 12,
+      evidenceRef: { path: 'src/feed.ts', commit: 'abcdef0', lineRange: { start: 10, end: 20 } },
+    });
+    expect(views.verify.verification.claims[0]).toMatchObject({
+      reason: 'judged',
+      note: '근거에 없음',
+    });
+  });
+
+  it('검증 리포트 형식이 깨지면 unavailable, 파일 없음은 missing', async () => {
+    read.mockResolvedValue({ ok: true, text: '{"version":2}' });
+    expect((await getRunArtifacts(run([step('verify')]))).verify).toEqual({
+      kind: 'unavailable',
+      message: '검증 리포트(verification.json)의 형식이 맞지 않습니다.',
+    });
+
+    read.mockResolvedValue({ ok: false, code: 'ARTIFACT_MISSING' });
+    expect((await getRunArtifacts(run([step('verify')]))).verify).toEqual({ kind: 'missing' });
+  });
+});
+
+describe('parseVerificationReport', () => {
+  it('version 1·counts 셋·claims 배열·cleanRoom.matches·judge.status가 있어야 한다', () => {
+    expect(parseVerificationReport(JSON.stringify(REPORT))).toBeTruthy();
+    expect(parseVerificationReport('not json')).toBeUndefined();
+    expect(parseVerificationReport('[]')).toBeUndefined();
+    expect(
+      parseVerificationReport(JSON.stringify({ ...REPORT, counts: { supported: 1 } })),
+    ).toBeUndefined();
+    expect(
+      parseVerificationReport(
+        JSON.stringify({ ...REPORT, counts: { ...REPORT.counts, uncertain: -1 } }),
+      ),
+    ).toBeUndefined();
+    expect(
+      parseVerificationReport(JSON.stringify({ ...REPORT, claims: [{ text: 'x' }] })),
+    ).toBeUndefined();
+    expect(
+      parseVerificationReport(
+        JSON.stringify({ ...REPORT, claims: [{ ...REPORT.claims[0], status: 'weird' }] }),
+      ),
+    ).toBeUndefined();
+    expect(parseVerificationReport(JSON.stringify({ ...REPORT, cleanRoom: {} }))).toBeUndefined();
+    expect(parseVerificationReport(JSON.stringify({ ...REPORT, judge: {} }))).toBeUndefined();
+  });
+});
+
+describe('getRunVerificationFlags — 목록 행', () => {
+  const rows = [
+    run([step('verify')]),
+    {
+      ...run([step('verify', 'succeeded', { origin: 'carried', sourceRunId: 'run_0' })]),
+      id: 'run_3',
+    },
+    { ...run([step('verify', 'running')]), id: 'run_4' },
+    { ...run([step('evidence')]), id: 'run_5' },
+  ];
+
+  it('성공한 검증 단계가 있는 Run만, carried는 출처 Run 파일에서 수를 읽는다', async () => {
+    read.mockImplementation(async (_s: string, runId: string) =>
+      runId === 'run_0'
+        ? {
+            ok: true,
+            text: JSON.stringify({
+              ...REPORT,
+              counts: { supported: 5, unsupported: 0, uncertain: 2 },
+            }),
+          }
+        : { ok: true, text: JSON.stringify(REPORT) },
+    );
+
+    expect(await getRunVerificationFlags(rows)).toEqual({
+      run_2: { unsupported: 2, uncertain: 1 },
+      run_3: { unsupported: 0, uncertain: 2 },
+    });
+    expect(read.mock.calls.map((c) => c[1])).toEqual(['run_2', 'run_0']);
+  });
+
+  it('파일 없음·형식 불량·예외인 행은 빠지고 나머지는 그린다. DATA_DIR이 없으면 빈 결과', async () => {
+    read.mockImplementation(async (_s: string, runId: string) => {
+      if (runId === 'run_0') throw new Error('EACCES');
+      return { ok: false, code: 'ARTIFACT_MISSING' };
+    });
+    expect(await getRunVerificationFlags(rows)).toEqual({});
+
+    read.mockResolvedValue({ ok: true, text: '{}' });
+    expect(await getRunVerificationFlags(rows)).toEqual({});
+
+    vi.stubEnv('DATA_DIR', '');
+    constructed.length = 0;
+    read.mockResolvedValue({ ok: true, text: JSON.stringify(REPORT) });
+    expect(await getRunVerificationFlags(rows)).toEqual({});
+    expect(constructed).toEqual([]);
+  });
+
+  it('읽을 행이 없으면 DATA_DIR을 해석하지 않는다', async () => {
+    vi.stubEnv('DATA_DIR', '');
+    expect(await getRunVerificationFlags([run([step('velog')])])).toEqual({});
   });
 });
 
