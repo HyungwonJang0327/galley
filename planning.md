@@ -38,7 +38,7 @@
 - **근거 수집·근거 검증**: 실행마다 분석 글 포인터를 따라 원본 코드 조각을 읽어 EvidenceBundle 생성(snippet은 `DATA_DIR`에만, `posts/<슬러그>/evidence.json`은 포인터만), 본문 입력은 EvidenceBundle뿐. discovered는 키워드 점수만(상한 8). 본문 뒤 근거 검증이 주장(정규식 + 서술은 모델)을 대조해 `verification.json`(supported/unsupported/uncertain) — 표시 조건, 실패 아님. 식별 정보 필터 `.galley/redact.json` 한 곳
 - **단계 구현(모델 호출)**: 벨로그 본문·링크드인·Zenn 단계는 StepRunner 구현이 ModelAdapter를 부른다. **어투 프롬프트는 `.galley/prompts/{velog,linkedin,zenn}.md`**(리포 파일, 사람 편집)이고 읽은 내용의 해시를 `RunStep.promptHash`에 기록한다(UI 노출 없음 — decisions/tone-prompts.md)
 - 실행 이력 SQLite 저장·조회
-- 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(make_thumb.py 호출) + `evidence.json`(포인터)·`verification.json` = 7개. 발행정보에 `## 근거` 섹션(EvidenceBundle에서 생성)
+- 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(make_thumb.py 호출) + `evidence.json`(포인터)·`verification.json` = 7개 **루트에 최신본**(Run별 이력은 DATA_DIR). **승인 시** 복사·큐 완료 이동(B3a, decisions/run-execution-model.md §1). 파일 이름은 blog 폴더 기존 관례(`<제목>_링크드인.md` 등). 발행정보에 `## 근거` 섹션(EvidenceBundle에서 생성), 소개·태그는 모델 1회
 - 화면: TopBar/Sidebar 셸(사용 흐름 순 IA — decisions/navigation.md), 큐(패턴 A·탭 4개), 실행 상세(패턴 B)
 - 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스(Storybook)는 Phase 2. (decisions/component-gallery.md)
 - **galley-ui 0.1.0 npm 배포**(Phase P, 2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선): 라이트+다크 토큰 · 폼·피드백 최소 구색 8개 + `useAwaitDialog`/`useConfirm`/`useAlert`(decisions/confirm-dialog-usage.md) · README · 배포 메타데이터. 배포명 `galley-ui`(unscoped, decisions/package-name.md). 절차는 todo/mvp-todo.md Phase P. [x] **배포됨(2026-09-21, galley-ui@0.1.0 — https://www.npmjs.com/package/galley-ui, 90파일 141.7 kB)**
