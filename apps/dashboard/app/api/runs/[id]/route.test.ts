@@ -49,10 +49,17 @@ describe('POST /api/runs/[id]/approve', () => {
     expect(approveRunById).toHaveBeenCalledWith('run_1');
   });
 
-  it('없는 실행은 404, 승인 대기가 아니면 409, 그 밖은 500', async () => {
+  it('없는 실행은 404, 상태·산출물·폴더 충돌은 409, 설정·쓰기 실패는 500', async () => {
     for (const [code, status] of [
       ['RUN_NOT_FOUND', 404],
       ['NOT_PENDING_APPROVAL', 409],
+      ['ARTIFACT_MISSING', 409],
+      ['PUBLISH_TITLE_MISSING', 409],
+      ['TOPIC_NOT_IN_QUEUE', 409],
+      ['POSTS_DIR_EXISTS', 409],
+      ['POSTS_WRITE_FAILED', 500],
+      ['BLOG_DIR_MISSING', 500],
+      ['DATA_DIR_MISSING', 500],
       ['RUN_APPROVE_FAILED', 500],
     ] as const) {
       approveRunById.mockResolvedValue({ ok: false, error: { code, message: '문구' } });

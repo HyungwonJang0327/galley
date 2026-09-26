@@ -1,14 +1,20 @@
 // 승인·수정 지시·재실행 미리보기(서버 전용): pipeline이 Run 상태를 바꾸고, 실제 재실행은 워커가
 // 집어간다 — decisions/run-location.md. 실패는 던지지 않고 { ok: false, error } 형태로 돌려주며,
 // 코드 → 한국어 문구는 여기(앱 어댑터)에서 붙인다(decisions/error-handling.md ②).
+// 승인은 posts/<슬러그>/ 쓰기·큐 완료 이동까지(B3a) — DATA_DIR·BLOG_DIR 스토어를 여기서 조립한다(조립 루트).
 import 'server-only';
 import {
-  approveRun,
+  approveAndPublishRun,
   createModelRegistryFromEnv,
+  LocalFsArtifactStore,
+  LocalFsEvidenceStore,
+  LocalFsPostsWriter,
+  LocalFsStorage,
   previewRerun,
   prisma,
+  resolveDataDir,
   reviseRun,
-  type ApproveRunFailure,
+  type ApprovePublishFailure,
   type PreviewRerunFailure,
   type RerunPreview,
   type ReviseRunFailure,
@@ -51,21 +57,70 @@ const reason = (error: unknown) => (error instanceof Error ? error.message : Str
 
 // ── 승인 ─────────────────────────────────────────────────────────────────────
 
-export type RunApproveErrorCode = ApproveRunFailure | 'RUN_APPROVE_FAILED';
-export type RunApproveResult = { ok: true; data: RunRecord } | Failure<RunApproveErrorCode>;
+export type RunApproveErrorCode =
+  ApprovePublishFailure | 'BLOG_DIR_MISSING' | 'DATA_DIR_MISSING' | 'RUN_APPROVE_FAILED';
 
-const APPROVE_MESSAGE: Record<ApproveRunFailure, string> = {
-  RUN_NOT_FOUND: '실행을 찾을 수 없습니다.',
-  NOT_PENDING_APPROVAL: '승인 대기 상태의 실행만 승인할 수 있습니다.',
+/** 승인 결과 — 실행 + 산출물이 놓인 posts 폴더(절대경로, 화면이 안내에 쓴다). */
+export interface ApprovedRun extends RunRecord {
+  postsDir: string;
+}
+
+export type RunApproveResult = { ok: true; data: ApprovedRun } | Failure<RunApproveErrorCode>;
+
+const APPROVE_MESSAGE: Record<ApprovePublishFailure, (detail?: string) => string> = {
+  RUN_NOT_FOUND: () => '실행을 찾을 수 없습니다.',
+  NOT_PENDING_APPROVAL: () => '승인 대기 상태의 실행만 승인할 수 있습니다.',
+  ARTIFACT_MISSING: (detail) =>
+    `산출물(${detail ?? '?'})이 DATA_DIR에 없어 승인할 수 없습니다. 수정 지시로 다시 실행하세요.`,
+  PUBLISH_TITLE_MISSING: () =>
+    '발행정보에서 글 제목을 읽지 못했습니다. 발행정보 단계부터 다시 실행하세요.',
+  TOPIC_NOT_IN_QUEUE: (detail) =>
+    detail === '완료'
+      ? '이 주제는 이미 완료 섹션에 있습니다.'
+      : '주제_큐.md에서 이 주제를 찾지 못했습니다. 큐 파일을 확인하세요.',
+  INVALID_COMPLETION: () => '완료 줄을 만들 수 없는 제목이나 슬러그입니다.',
+  POSTS_DIR_EXISTS: (detail) =>
+    `posts 폴더가 이미 있습니다(${detail ?? ''}). Galley가 만든 폴더가 아니면 옮기거나 지운 뒤 다시 승인하세요.`,
+  POSTS_WRITE_FAILED: (detail) => `posts 폴더에 쓰지 못했습니다: ${detail ?? ''}`,
 };
 
 export async function approveRunById(runId: string): Promise<RunApproveResult> {
+  const blogDir = process.env.BLOG_DIR;
+  if (!blogDir) {
+    return {
+      ok: false,
+      error: { code: 'BLOG_DIR_MISSING', message: '루트 .env에 BLOG_DIR이 없습니다.' },
+    };
+  }
+  // 워커와 같은 규칙(절대경로·BLOG_DIR 밖) — 승인은 DATA_DIR을 읽기만 하지만 다른 폴더를 읽어 옛 산출물을 내보내면 안 된다.
+  const dataDir = resolveDataDir({ DATA_DIR: process.env.DATA_DIR, BLOG_DIR: blogDir });
+  if (!dataDir.ok) {
+    return {
+      ok: false,
+      error: {
+        code: 'DATA_DIR_MISSING',
+        message: `루트 .env의 DATA_DIR이 규칙에 맞지 않습니다(${dataDir.code}). 절대경로로, BLOG_DIR 밖에 두세요.`,
+      },
+    };
+  }
   try {
-    const result = await approveRun(prisma, runId);
+    const result = await approveAndPublishRun(
+      {
+        prisma,
+        artifacts: new LocalFsArtifactStore(dataDir.dir),
+        evidence: new LocalFsEvidenceStore(dataDir.dir),
+        posts: new LocalFsPostsWriter(blogDir),
+        storage: new LocalFsStorage(blogDir),
+      },
+      runId,
+    );
     if (!result.ok) {
-      return { ok: false, error: { code: result.code, message: APPROVE_MESSAGE[result.code] } };
+      return {
+        ok: false,
+        error: { code: result.code, message: APPROVE_MESSAGE[result.code](result.detail) },
+      };
     }
-    return { ok: true, data: toRecord(result.run) };
+    return { ok: true, data: { ...toRecord(result.run), postsDir: result.postsDir } };
   } catch (error) {
     return {
       ok: false,
