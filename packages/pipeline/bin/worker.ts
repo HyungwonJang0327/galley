@@ -119,11 +119,11 @@ async function loadThumbnail(): Promise<
   return { ok: true, config: null };
 }
 
-function createStepRunnerForEnv(
+async function createStepRunnerForEnv(
   registry: ModelRegistry,
   redactConfig: RedactConfig | null,
   thumbnailConfig: ThumbnailConfig | null,
-): StepRunner | null {
+): Promise<StepRunner | null> {
   if (usesMockSteps(process.env)) {
     deps.logger.info('단계 러너: Mock', { NODE_ENV: process.env.NODE_ENV });
     return createMockStepRunner();
@@ -150,11 +150,13 @@ function createStepRunnerForEnv(
     .list()
     .filter((adapter) => adapter.available)
     .map((adapter) => adapter.id);
+  const thumbnails = new ChromeThumbnailRenderer({ env: process.env });
   const chrome = findChrome(process.env);
-  if (chrome === undefined)
+  // 못 찾았거나 GALLEY_CHROME이 없는 파일을 가리키면(오타) 기동은 하되 미리 알린다 — 단계에서 THUMBNAIL_CHROME_NOT_FOUND로 실패한다.
+  if (!(await thumbnails.check()).ok)
     deps.logger.error(
-      'Chrome을 찾지 못했다 — 발행정보 단계(썸네일)가 실패한다. .env GALLEY_CHROME에 경로를 적는다',
-      {},
+      'Chrome을 찾지 못했다 — 발행정보 단계(썸네일)가 실패한다. .env GALLEY_CHROME에 실행 파일 경로를 적는다',
+      { GALLEY_CHROME: process.env.GALLEY_CHROME ?? null, candidate: chrome ?? null },
     );
   deps.logger.info('단계 러너: 실제', {
     dataDir: dataDir.dir,
@@ -172,7 +174,7 @@ function createStepRunnerForEnv(
     adapters: registry,
     redactConfig,
     clock: deps.clock,
-    thumbnails: new ChromeThumbnailRenderer({ env: process.env }),
+    thumbnails,
     ...(thumbnailConfig === null ? {} : { thumbnailConfig }),
   });
 }
@@ -231,7 +233,7 @@ async function main(): Promise<void> {
   const thumbnail = await loadThumbnail();
   const stepRunner =
     redact.ok && thumbnail.ok
-      ? createStepRunnerForEnv(registry, redact.config, thumbnail.config)
+      ? await createStepRunnerForEnv(registry, redact.config, thumbnail.config)
       : null;
   if (!redact.ok || !thumbnail.ok || stepRunner === null) {
     await prisma.$disconnect();

@@ -42,9 +42,9 @@ describe('findChrome', () => {
     expect(findChrome({ GALLEY_CHROME: '/no/such/chrome' })).toBe('/no/such/chrome');
   });
 
-  test('PATH가 비면(후보 없음) undefined일 수 있다 — 값으로 돌려준다', () => {
-    const found = findChrome({ PATH: '' });
-    expect(found === undefined || typeof found === 'string').toBe(true);
+  test('PATH 이름 후보뿐인 플랫폼(linux)에서 PATH가 비면 undefined', () => {
+    if (process.platform !== 'linux') return;
+    expect(findChrome({ PATH: '' })).toBeUndefined();
   });
 });
 
@@ -128,11 +128,32 @@ describe('ChromeThumbnailRenderer (Chrome 없이)', () => {
     expect(await renderer.render(INPUT)).toEqual({ ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' });
   });
 
-  test('실행 파일이 잘못된 경로면 THUMBNAIL_RENDER_FAILED(값)', async () => {
+  test('지정한 절대경로에 파일이 없으면(오타) check·render 모두 THUMBNAIL_CHROME_NOT_FOUND', async () => {
     const renderer = new ChromeThumbnailRenderer({ chromePath: '/no/such/chrome' });
-    expect(await renderer.render(INPUT)).toMatchObject({
+    expect(await renderer.check()).toEqual({ ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' });
+    expect(await renderer.render(INPUT)).toEqual({ ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' });
+  });
+
+  test('실행 파일이 출력 없이 끝나면 THUMBNAIL_RENDER_FAILED(종료 코드 문구)', async () => {
+    // node 자체를 "Chrome"으로 — 인자를 무시하고 바로 끝나 PNG가 없다.
+    const renderer = new ChromeThumbnailRenderer({
+      chromePath: process.execPath,
+      timeoutMs: 20_000,
+    });
+    const result = await renderer.render(INPUT);
+    expect(result).toMatchObject({ ok: false, code: 'THUMBNAIL_RENDER_FAILED' });
+    if (!result.ok && result.code === 'THUMBNAIL_RENDER_FAILED')
+      expect(result.detail).toContain('출력 없이 끝났다');
+  });
+
+  test('이미 중단된 신호면 프로세스를 띄우지 않고 중단 실패', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const renderer = new ChromeThumbnailRenderer({ chromePath: process.execPath });
+    expect(await renderer.render(INPUT, controller.signal)).toEqual({
       ok: false,
       code: 'THUMBNAIL_RENDER_FAILED',
+      detail: '중단됨',
     });
   });
 });
