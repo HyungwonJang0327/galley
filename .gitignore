@@ -13,7 +13,8 @@ coverage/
 # 식별 정보 필터 실제 설정(회사명·도메인 패턴)과 그 백업·사본 — 예시 파일만 커밋 (decisions/evidence-collection.md)
 .galley/redact*
 !.galley/redact.example.json
-.galley/thumbnail.json
+.galley/thumbnail*
+!.galley/thumbnail.example.json
 .mcp.json
 .claude/settings.local.json
 
