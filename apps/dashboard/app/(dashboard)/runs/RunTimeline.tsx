@@ -29,7 +29,21 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
 function artifactPanel(view: StepArtifactView) {
   switch (view.kind) {
     case 'markdown':
-      return <ArtifactMarkdown text={view.text} />;
+      return (
+        <>
+          {view.thumbnailUrl === undefined ? null : (
+            // 1200×630 원본을 폭에 맞춰 줄인다. 캐시하지 않는 GET이라 재실행 뒤에도 최신 그림.
+            <img
+              className={styles.thumbnail}
+              src={view.thumbnailUrl}
+              alt="썸네일 미리보기"
+              width={1200}
+              height={630}
+            />
+          )}
+          <ArtifactMarkdown text={view.text} />
+        </>
+      );
     case 'missing':
       return (
         <p className={styles.note}>
