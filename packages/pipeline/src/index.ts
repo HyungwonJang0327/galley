@@ -238,7 +238,11 @@ export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
 export { LocalFsArtifactStore } from './artifacts/ArtifactStore.ts';
-export type { ArtifactStore, ArtifactReadResult } from './artifacts/ArtifactStore.ts';
+export type {
+  ArtifactStore,
+  ArtifactReadResult,
+  ArtifactBytesResult,
+} from './artifacts/ArtifactStore.ts';
 export { WRITING_LIMITS } from './steps/limits.ts';
 export type { WritingLimits } from './steps/limits.ts';
 export { createVelogStepRunner, buildVelogPrompt, VELOG_ARTIFACT } from './steps/velogStep.ts';
@@ -269,6 +273,7 @@ export {
   createPublishInfoStepRunner,
   parseZennFrontmatter,
   PUBLISH_ARTIFACT,
+  THUMBNAIL_ARTIFACT,
 } from './steps/publishInfoStep.ts';
 export {
   renderPublishInfo,

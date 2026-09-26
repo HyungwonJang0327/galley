@@ -7,6 +7,7 @@ import type { EvidenceLimits } from '../evidence/limits.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
 import type { VerifyLimits } from '../evidence/verifyLimits.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
+import type { ThumbnailConfig, ThumbnailRenderer } from '../publish/thumbnail.ts';
 import { isStepName, type StepName } from '../run/stateMachine.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
 import { createEvidenceStepRunner } from './evidenceStep.ts';
@@ -31,6 +32,9 @@ export interface StepRunnerDeps {
   /** 식별 정보 필터 — null이면 설정 없음(근거 수집이 readOnly 리포를 거부한다). */
   redactConfig: RedactConfig | null;
   clock: Clock;
+  /** 썸네일 렌더러(발행정보 단계) + 템플릿 설정(.galley/thumbnail.json, 없으면 빈 푸터). */
+  thumbnails: ThumbnailRenderer;
+  thumbnailConfig?: ThumbnailConfig;
   /** 발행정보 단계를 바꿔 끼울 자리(테스트용). 없으면 실제 러너(createPublishInfoStepRunner, B3a). */
   publishInfo?: StepRunner;
   limits?: { evidence?: EvidenceLimits; writing?: WritingLimits; verify?: VerifyLimits };
@@ -90,6 +94,8 @@ export function createStepRunner(deps: StepRunnerDeps): StepRunner {
         store: deps.evidenceStore,
         artifacts: deps.artifactStore,
         adapters: deps.adapters,
+        thumbnails: deps.thumbnails,
+        ...(deps.thumbnailConfig === undefined ? {} : { thumbnailConfig: deps.thumbnailConfig }),
         ...writingLimits,
       }),
   });

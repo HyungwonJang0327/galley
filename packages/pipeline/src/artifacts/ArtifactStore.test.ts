@@ -40,6 +40,22 @@ describe('LocalFsArtifactStore', () => {
     });
   });
 
+  test('이진 산출물(썸네일 PNG)도 같은 경로 규칙으로 쓰고 읽는다', async () => {
+    const store = new LocalFsArtifactStore(dir);
+    const png = new Uint8Array([137, 80, 78, 71, 0, 255, 13, 10]);
+    await store.writeBytes('slug', 'run_b', 'thumbnail.png', png);
+    expect(await store.readBytes('slug', 'run_b', 'thumbnail.png')).toEqual({
+      ok: true,
+      bytes: png,
+    });
+    expect(await store.readBytes('slug', 'run_b', 'none.png')).toEqual({
+      ok: false,
+      code: 'ARTIFACT_MISSING',
+    });
+    await store.remove('slug', 'run_b', 'thumbnail.png');
+    expect((await store.readBytes('slug', 'run_b', 'thumbnail.png')).ok).toBe(false);
+  });
+
   test('경로 조각에 구분자·..·NUL이 있으면 프로그래머 오류로 던진다(dataDir 밖을 가리킬 수 없다)', () => {
     const store = new LocalFsArtifactStore(dir);
     expect(() => store.pathFor('../x', 'run', 'a.md')).toThrow('topicSlug');

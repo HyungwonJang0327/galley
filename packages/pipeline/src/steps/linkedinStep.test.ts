@@ -236,6 +236,8 @@ describe('createLinkedinStepRunner', () => {
         ...artifacts,
         read: artifacts.read.bind(artifacts),
         remove: artifacts.remove.bind(artifacts),
+        readBytes: artifacts.readBytes.bind(artifacts),
+        writeBytes: artifacts.writeBytes.bind(artifacts),
         write: async () => {
           throw new Error('EACCES: permission denied, open /abs/data/x');
         },

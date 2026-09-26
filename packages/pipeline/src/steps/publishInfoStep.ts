@@ -1,13 +1,19 @@
 // 발행정보 단계(publishInfo) — 마지막 단계. 벨로그 본문(제목)·Zenn 원고(frontmatter)·근거 번들(포인터)을 DATA_DIR에서 읽어
 // `publish.md`를 조립한다. 모델은 **소개(150자)·태그 하나에만** 쓴다(2026-09-26 사용자 결정 — 자리표시자 대신 모델 1회, 짧아
 // 비용이 작다). 입력은 본문뿐이고 근거 번들·리포 경로는 프롬프트에 가지 않는다(근거 목록은 코드가 조립). posts/<슬러그>/에는
-// 승인 시 복사한다(approvePublish). 썸네일은 B3b.
+// 승인 시 복사한다(approvePublish). 썸네일(`thumbnail.png`, B3b)도 여기서 만든다 — 같은 모델 호출이 부제·태그를 주고
+// ThumbnailRenderer(설치된 Chrome)가 찍는다. 썸네일 실패는 단계 실패다(2026-09-26 사용자 결정 — 5종이 다 있어야 승인 대기로).
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
 import { stripSnippets } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { postFileNames } from '../publish/postFiles.ts';
+import {
+  DEFAULT_THUMBNAIL_CONFIG,
+  type ThumbnailConfig,
+  type ThumbnailRenderer,
+} from '../publish/thumbnail.ts';
 import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 import {
@@ -25,16 +31,25 @@ export interface PublishInfoStepDeps {
   store: EvidenceStore;
   artifacts: ArtifactStore;
   adapters: { get(id: string): ModelAdapter | undefined };
+  thumbnails: ThumbnailRenderer;
+  /** 푸터·기본 태그(.galley/thumbnail.json). 없으면 빈 푸터. */
+  thumbnailConfig?: ThumbnailConfig;
   limits?: WritingLimits;
 }
 
 /** 산출물 이름(DATA_DIR) — posts에서는 `<제목>_발행정보.md`(postFileNames). */
 export const PUBLISH_ARTIFACT = 'publish.md';
+/** 썸네일 PNG(DATA_DIR) — posts에서는 `<제목>_썸네일.png`. */
+export const THUMBNAIL_ARTIFACT = 'thumbnail.png';
+/** 썸네일 부제 길이 상한(28px 한 줄 안팎). */
+export const THUMBNAIL_SUBTITLE_MAX_CHARS = 40;
 
 const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨로그 글을 읽고 발행 정보를 JSON 하나로만 답합니다.
 - "intro": 글을 소개하는 한국어 한 문단, 공백 포함 ${PUBLISH_INTRO_MAX_CHARS}자 이내. 본문에 없는 사실을 더하지 않습니다.
 - "tags": 벨로그 태그 3~${PUBLISH_TAGS_MAX}개(문자열 배열). 기술 이름은 널리 쓰는 표기, 나머지는 한국어. 회사·서비스 이름은 넣지 않습니다.
-- 출력은 {"intro": "...", "tags": ["..."]} 형태의 JSON뿐이며 코드 펜스나 설명을 붙이지 않습니다.`;
+- "subtitle": 썸네일에 들어갈 한국어 부제 한 줄, ${THUMBNAIL_SUBTITLE_MAX_CHARS}자 이내. 제목을 되풀이하지 않고 글의 핵심을 한 문장으로.
+- "tag": 썸네일 상단 라벨 — 영문 대문자 한 단어(예 TROUBLESHOOTING, RETROSPECTIVE, ARCHITECTURE, MIGRATION).
+- 출력은 {"intro": "...", "tags": ["..."], "subtitle": "...", "tag": "..."} 형태의 JSON뿐이며 코드 펜스나 설명을 붙이지 않습니다.`;
 
 /** 모델에 보내는 프롬프트 — 테스트용으로 공개. 본문은 상한까지만(소개·태그는 앞부분으로 충분). */
 export function buildPublishInfoPrompt(
@@ -48,10 +63,13 @@ export function buildPublishInfoPrompt(
   return { system: SYSTEM, prompt: `# 제목\n${input.title}\n\n# 본문\n${body}\n` };
 }
 
-/** 모델 출력 → 소개·태그. 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는 상한에서 자르고 태그는 정리·중복 제거. */
+/**
+ * 모델 출력 → 소개·태그·부제·라벨. 소개·태그 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는 상한에서 자르고
+ * 태그는 정리·중복 제거. 부제는 없으면 소개 앞부분, 라벨은 없거나 대문자 한 단어가 아니면 빈 문자열(호출부가 기본 태그로).
+ */
 export function parsePublishInfoOutput(
   text: string,
-): { intro: string; tags: string[] } | undefined {
+): { intro: string; tags: string[]; subtitle: string; tag: string } | undefined {
   // 전체를 감싼 펜스는 정보 문자열이 무엇이든(json 등) 벗긴다 — writing.unwrapFence는 markdown만 받는다.
   const unfenced = /^(`{3,})\w*[ \t]*\n([\s\S]*?)\n\1\s*$/.exec(text.trim());
   let parsed: unknown;
@@ -61,10 +79,16 @@ export function parsePublishInfoOutput(
     return undefined;
   }
   if (typeof parsed !== 'object' || parsed === null) return undefined;
-  const { intro, tags } = parsed as Record<string, unknown>;
+  const { intro, tags, subtitle, tag } = parsed as Record<string, unknown>;
   if (typeof intro !== 'string' || !Array.isArray(tags)) return undefined;
   const cleanIntro = intro.replace(/\s+/g, ' ').trim();
   if (cleanIntro === '') return undefined;
+  const rawSubtitle = typeof subtitle === 'string' ? subtitle.replace(/\s+/g, ' ').trim() : '';
+  const cleanSubtitle = Array.from(rawSubtitle === '' ? cleanIntro : rawSubtitle)
+    .slice(0, THUMBNAIL_SUBTITLE_MAX_CHARS)
+    .join('');
+  const cleanTag =
+    typeof tag === 'string' && /^[A-Z][A-Z0-9-]{1,23}$/.test(tag.trim()) ? tag.trim() : '';
   const seen = new Set<string>();
   const cleanTags: string[] = [];
   for (const tag of tags) {
@@ -79,6 +103,8 @@ export function parsePublishInfoOutput(
   return {
     intro: Array.from(cleanIntro).slice(0, PUBLISH_INTRO_MAX_CHARS).join(''),
     tags: cleanTags,
+    subtitle: cleanSubtitle,
+    tag: cleanTag,
   };
 }
 
@@ -242,17 +268,51 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
         ...(ctx.series === undefined ? {} : { series: ctx.series }),
       };
       const text = renderPublishInfo(input);
+
+      // 썸네일 — 모델 출력의 부제·라벨 + 설정의 푸터. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
+      ctx.signal.throwIfAborted();
+      const config = deps.thumbnailConfig ?? DEFAULT_THUMBNAIL_CONFIG;
+      const rendered = await deps.thumbnails.render(
+        {
+          title,
+          subtitle: parsed.subtitle,
+          tag: parsed.tag === '' ? config.defaultTag : parsed.tag,
+          footerLeft: config.footerLeft,
+          footerRight: config.footerRight,
+        },
+        ctx.signal,
+      );
+      if (!rendered.ok) {
+        ctx.signal.throwIfAborted();
+        throw new StepFailure(
+          rendered.code,
+          rendered.code === 'THUMBNAIL_CHROME_NOT_FOUND'
+            ? '썸네일을 찍을 Chrome을 찾지 못했습니다. .env의 GALLEY_CHROME에 실행 파일 경로를 적으세요.'
+            : rendered.code === 'THUMBNAIL_RENDER_TIMEOUT'
+              ? '썸네일 렌더가 제한 시간 안에 끝나지 않았습니다.'
+              : '썸네일을 만들지 못했습니다(Chrome 실행 실패).',
+          rendered.code === 'THUMBNAIL_RENDER_TIMEOUT',
+        );
+      }
+
       try {
         await deps.artifacts.write(ctx.topic.slug, ctx.runId, PUBLISH_ARTIFACT, text);
+        await deps.artifacts.writeBytes(
+          ctx.topic.slug,
+          ctx.runId,
+          THUMBNAIL_ARTIFACT,
+          rendered.png,
+        );
       } catch (error) {
         throw new StepFailure(
           'PUBLISH_INFO_STORE_WRITE_FAILED',
-          '발행정보를 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
+          '발행정보·썸네일을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
           false,
           { cause: error },
         );
       }
       return {
+        // 이진 산출물(썸네일)은 artifacts 맵(문자열)에 넣지 않는다 — DATA_DIR 파일이 진실이고 승인이 거기서 읽는다.
         artifacts: { [PUBLISH_ARTIFACT]: text },
         tokens: { input: generated.usage.inputTokens, output: generated.usage.outputTokens },
         costUsd: generated.costUsd,
@@ -261,6 +321,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
     },
     async discard(ctx) {
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, PUBLISH_ARTIFACT);
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, THUMBNAIL_ARTIFACT);
     },
   };
 }
