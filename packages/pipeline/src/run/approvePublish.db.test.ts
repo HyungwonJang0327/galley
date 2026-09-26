@@ -13,7 +13,7 @@ import { LocalFsPostsWriter } from '../publish/PostsWriter.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
 import { LocalFsStorage } from '../storage/LocalFsStorage.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
-import { PUBLISH_ARTIFACT } from '../steps/publishInfoStep.ts';
+import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from '../steps/publishInfoStep.ts';
 import { VELOG_ARTIFACT } from '../steps/velogStep.ts';
 import { VERIFICATION_ARTIFACT } from '../steps/verifyStep.ts';
 import { ZENN_ARTIFACT } from '../steps/zennStep.ts';
@@ -38,6 +38,7 @@ let evidence: LocalFsEvidenceStore;
 const NOW = new Date('2026-09-26T05:00:00Z');
 const TODAY = localDate(NOW);
 const SLUG = 'infinite-scroll';
+const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1]);
 const QUEUE = `# 큐
 
 ## 대기
@@ -157,11 +158,12 @@ async function writeArtifacts(runId: string, title: string) {
   await artifacts.write(SLUG, runId, ZENN_ARTIFACT, `---\ntitle: "x"\n---\n\n本文\n`);
   await artifacts.write(SLUG, runId, VERIFICATION_ARTIFACT, `{"runId":"${runId}"}\n`);
   await artifacts.write(SLUG, runId, PUBLISH_ARTIFACT, `# 발행 정보 — ${title}\n\n## 근거\n`);
+  await artifacts.writeBytes(SLUG, runId, THUMBNAIL_ARTIFACT, PNG);
   await evidence.write({ ...BUNDLE, runId, topicId });
 }
 
 describe('approveAndPublishRun', () => {
-  test('posts에 6개 파일, 큐 파일 완료 줄, QueueItem 완료(같은 행), Run done', async () => {
+  test('posts에 7개 파일, 큐 파일 완료 줄, QueueItem 완료(같은 행), Run done', async () => {
     const run = await finishedRun();
 
     const result = await approveAndPublishRun(deps, run.id);
@@ -178,6 +180,7 @@ describe('approveAndPublishRun', () => {
         '무한_스크롤_미리_불러오기_링크드인.md',
         '무한_스크롤_미리_불러오기_zenn.md',
         '무한_스크롤_미리_불러오기_발행정보.md',
+        '무한_스크롤_미리_불러오기_썸네일.png',
         'evidence.json',
         'verification.json',
       ].sort(),
@@ -185,6 +188,9 @@ describe('approveAndPublishRun', () => {
     expect(await readFile(join(dir, '무한_스크롤_미리_불러오기.md'), 'utf8')).toBe(
       `# 무한 스크롤 미리 불러오기\n\n본문 ${run.id}\n`,
     );
+    expect(
+      new Uint8Array(await readFile(join(dir, '무한_스크롤_미리_불러오기_썸네일.png'))),
+    ).toEqual(PNG);
     // posts의 evidence.json은 포인터뿐 — 조각이 새지 않는다.
     const pointers = await readFile(join(dir, 'evidence.json'), 'utf8');
     expect(pointers).not.toContain('SECRET_SNIPPET');
@@ -225,6 +231,7 @@ describe('approveAndPublishRun', () => {
       PUBLISH_ARTIFACT,
       `# 발행 정보 — 무한 스크롤 미리 불러오기\n`,
     );
+    await artifacts.writeBytes(SLUG, second.id, THUMBNAIL_ARTIFACT, PNG);
 
     const result = await approveAndPublishRun(deps, second.id);
 
@@ -297,6 +304,16 @@ describe('approveAndPublishRun', () => {
     expect(await approveAndPublishRun(deps, run.id)).toMatchObject({
       code: 'ARTIFACT_MISSING',
       detail: 'evidence',
+    });
+  });
+
+  test('썸네일이 없으면(B3b 전 Run) ARTIFACT_MISSING(thumbnail.png)', async () => {
+    const run = await finishedRun();
+    await artifacts.remove(SLUG, run.id, THUMBNAIL_ARTIFACT);
+    expect(await approveAndPublishRun(deps, run.id)).toEqual({
+      ok: false,
+      code: 'ARTIFACT_MISSING',
+      detail: THUMBNAIL_ARTIFACT,
     });
   });
 

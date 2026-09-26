@@ -1,4 +1,4 @@
-// posts/<슬러그>/ 산출물 쓰기 — blog 폴더(BLOG_DIR)에 쓰는 **유일한 산출물 경로**. 파일 이름은 postFileNames, 내용은 호출부
+// posts/<슬러그>/ 산출물 7개 쓰기 — blog 폴더(BLOG_DIR)에 쓰는 **유일한 산출물 경로**. 파일 이름은 postFileNames, 내용은 호출부
 // (approvePublish)가 DATA_DIR에서 읽어 넘긴다. 회사 코드 조각은 여기로 오지 않는다(evidence는 포인터 사본 — CLAUDE.md §5).
 // 폴더가 이미 있으면 `overwrite`일 때만 쓴다 — Galley가 만든 폴더(DB에 이 주제의 승인된 Run)만 덮어쓰고 사람이 만든 같은
 // 슬러그 폴더는 거부한다(2026-09-26 사용자 결정). 파일마다 임시 파일 + rename(원자적, 에디터로 열어 둔 파일이 잘리지 않게).
@@ -6,12 +6,14 @@ import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { postFileNames } from './postFiles.ts';
 
-/** 사람이 읽는 4개(썸네일은 B3b) + Galley 부산물 2개. 값은 파일 내용(문자열). */
+/** 사람이 읽는 5개 + Galley 부산물 2개. 값은 파일 내용(문자열, 썸네일은 PNG 바이트). */
 export interface PostFiles {
   velog: string;
   linkedin: string;
   zenn: string;
   publishInfo: string;
+  /** PNG 바이트(발행정보 단계가 만든 thumbnail.png). */
+  thumbnail: Uint8Array;
   /** JSON 텍스트 — 포인터만(stripSnippets 결과). */
   evidence: string;
   verification: string;
@@ -55,11 +57,12 @@ export class LocalFsPostsWriter implements PostsWriter {
   async write(input: WritePostInput): Promise<WritePostResult> {
     const dir = this.dirFor(input.slug);
     const names = postFileNames(input.articleTitle);
-    const plan: [string, string][] = [
+    const plan: [string, string | Uint8Array][] = [
       [names.velog, input.files.velog],
       [names.linkedin, input.files.linkedin],
       [names.zenn, input.files.zenn],
       [names.publishInfo, input.files.publishInfo],
+      [names.thumbnail, input.files.thumbnail],
       [names.evidence, input.files.evidence],
       [names.verification, input.files.verification],
     ];
@@ -79,7 +82,7 @@ export class LocalFsPostsWriter implements PostsWriter {
       for (const [name, text] of plan) {
         const path = join(dir, name);
         temp = `${path}.${process.pid}.tmp`;
-        await writeFile(temp, text, 'utf8');
+        await writeFile(temp, text);
         await rename(temp, path);
         temp = undefined;
       }

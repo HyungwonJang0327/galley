@@ -19,6 +19,7 @@ const FILES: PostFiles = {
   linkedin: '링크드인\n',
   zenn: '---\ntitle: "x"\n---\n\n本文\n',
   publishInfo: '# 발행 정보 — 무한 스크롤\n',
+  thumbnail: new Uint8Array([137, 80, 78, 71, 0, 255]),
   evidence: '{"items":[]}\n',
   verification: '{"claims":[]}\n',
 };
@@ -28,12 +29,13 @@ const EXPECTED = [
   '무한_스크롤_링크드인.md',
   '무한_스크롤_zenn.md',
   '무한_스크롤_발행정보.md',
+  '무한_스크롤_썸네일.png',
   'evidence.json',
   'verification.json',
 ];
 
 describe('LocalFsPostsWriter', () => {
-  test('posts/<슬러그>/에 6개 파일(썸네일은 B3b)을 쓰고 임시 파일을 남기지 않는다', async () => {
+  test('posts/<슬러그>/에 7개 파일을 쓰고 임시 파일을 남기지 않는다', async () => {
     await withTempDir(async (blogDir) => {
       const writer = new LocalFsPostsWriter(blogDir);
 
@@ -49,6 +51,9 @@ describe('LocalFsPostsWriter', () => {
       expect((await readdir(dir)).sort()).toEqual([...EXPECTED].sort());
       expect(await readFile(join(dir, '무한_스크롤.md'), 'utf8')).toBe(FILES.velog);
       expect(await readFile(join(dir, 'evidence.json'), 'utf8')).toBe(FILES.evidence);
+      expect(new Uint8Array(await readFile(join(dir, '무한_스크롤_썸네일.png')))).toEqual(
+        FILES.thumbnail,
+      );
     });
   });
 
