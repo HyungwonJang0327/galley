@@ -101,9 +101,10 @@ describe('createStepRunner', () => {
     await expect(runner.run(ctx('zenn'))).rejects.toMatchObject({ code: 'ZENN_MODEL_UNKNOWN' });
   });
 
-  test('발행정보는 B3a 전까지 Mock — publish.md를 낸다', async () => {
-    const result = await runner.run(ctx('publishInfo'));
-    expect(Object.keys(result.artifacts)).toEqual(['publish.md']);
+  test('발행정보는 실제 러너 — 모델이 없으면 그 단계 코드로 실패', async () => {
+    await expect(runner.run(ctx('publishInfo'))).rejects.toMatchObject({
+      code: 'PUBLISH_INFO_MODEL_UNKNOWN',
+    });
   });
 
   test('publishInfo 러너를 넘기면 그것을 쓴다(B3a 교체 자리)', async () => {

@@ -92,7 +92,7 @@ async function loadRedact(): Promise<{ ok: true; config: RedactConfig | null } |
 
 /**
  * 실제 단계 러너 조립. DATA_DIR(코드 조각·산출물)·PROMPTS_DIR(어투)이 규칙에 맞지 않으면 기동하지 않는다 — 어디에 쓰는지
- * 모르는 채 돌지 않는다(BE8 ⑩·BS1 리뷰 3). 발행정보는 B3a 전까지 Mock(createStepRunner 기본).
+ * 모르는 채 돌지 않는다(BE8 ⑩·BS1 리뷰 3).
  */
 function createStepRunnerForEnv(
   registry: ModelRegistry,
@@ -124,7 +124,7 @@ function createStepRunnerForEnv(
     .list()
     .filter((adapter) => adapter.available)
     .map((adapter) => adapter.id);
-  deps.logger.info('단계 러너: 실제(발행정보는 B3a 전까지 Mock)', {
+  deps.logger.info('단계 러너: 실제', {
     dataDir: dataDir.dir,
     promptsDir: prompts.dir,
     redact: redactConfig !== null,

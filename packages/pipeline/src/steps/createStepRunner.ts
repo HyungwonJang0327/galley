@@ -12,7 +12,7 @@ import type { Clock } from '../worker/WorkerDeps.ts';
 import { createEvidenceStepRunner } from './evidenceStep.ts';
 import type { WritingLimits } from './limits.ts';
 import { createLinkedinStepRunner } from './linkedinStep.ts';
-import { createMockStepRunner } from './MockStepRunner.ts';
+import { createPublishInfoStepRunner } from './publishInfoStep.ts';
 import type { StepContext, StepResult, StepRunner } from './StepRunner.ts';
 import { createVelogStepRunner } from './velogStep.ts';
 import { createVerifyStepRunner } from './verifyStep.ts';
@@ -31,10 +31,7 @@ export interface StepRunnerDeps {
   /** 식별 정보 필터 — null이면 설정 없음(근거 수집이 readOnly 리포를 거부한다). */
   redactConfig: RedactConfig | null;
   clock: Clock;
-  /**
-   * 발행정보 단계. **B3a 전까지는 Mock**(2026-09-26 사용자 결정 — 라우터는 배선에 집중하고 B3a가 교체한다). 넘기지 않으면
-   * `createMockStepRunner()`의 publish.md가 나간다.
-   */
+  /** 발행정보 단계를 바꿔 끼울 자리(테스트용). 없으면 실제 러너(createPublishInfoStepRunner, B3a). */
   publishInfo?: StepRunner;
   limits?: { evidence?: EvidenceLimits; writing?: WritingLimits; verify?: VerifyLimits };
 }
@@ -87,6 +84,13 @@ export function createStepRunner(deps: StepRunnerDeps): StepRunner {
     }),
     linkedin: createLinkedinStepRunner({ ...writing, ...writingLimits }),
     zenn: createZennStepRunner({ ...writing, ...writingLimits }),
-    publishInfo: deps.publishInfo ?? createMockStepRunner(),
+    publishInfo:
+      deps.publishInfo ??
+      createPublishInfoStepRunner({
+        store: deps.evidenceStore,
+        artifacts: deps.artifactStore,
+        adapters: deps.adapters,
+        ...writingLimits,
+      }),
   });
 }
