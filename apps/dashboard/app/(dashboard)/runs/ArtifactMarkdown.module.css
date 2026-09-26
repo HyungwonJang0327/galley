@@ -1,0 +1,115 @@
+/* 산출물 본문 — 검수용 읽기 스타일. 토큰만 참조(색·간격·타이포). 요소 선택자는 이 래퍼 안에서만. */
+.markdown {
+  color: var(--ui-color-text);
+  font-size: var(--ui-text-body);
+  line-height: var(--ui-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: var(--ui-space-5) 0 var(--ui-space-2);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-leading-tight);
+}
+
+.markdown h1 {
+  font-size: var(--ui-text-h2);
+}
+
+.markdown h2 {
+  font-size: var(--ui-text-title);
+}
+
+.markdown h3,
+.markdown h4 {
+  font-size: var(--ui-text-body);
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote,
+.markdown pre,
+.markdown table {
+  margin: 0 0 var(--ui-space-3);
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: var(--ui-space-5);
+}
+
+.markdown li + li {
+  margin-top: var(--ui-space-1);
+}
+
+.markdown a {
+  color: var(--ui-color-accent);
+}
+
+.markdown blockquote {
+  padding-left: var(--ui-space-3);
+  border-left: 3px solid var(--ui-color-border);
+  color: var(--ui-color-text-muted);
+}
+
+/* 코드 글꼴은 토큰이 없어 시스템 고정폭 스택을 쓴다(ui에 --ui-font-mono가 생기면 교체). */
+.markdown code {
+  padding: 0 var(--ui-space-1);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-neutral-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ui-text-sm);
+}
+
+.markdown pre {
+  padding: var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+  background-color: var(--ui-color-neutral-bg);
+  overflow-x: auto;
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  font-size: var(--ui-text-sm);
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--ui-space-1) var(--ui-space-2);
+  border: 1px solid var(--ui-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown th {
+  background-color: var(--ui-color-neutral-bg);
+  font-weight: var(--ui-weight-medium);
+}
+
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown hr {
+  margin: var(--ui-space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--ui-color-border);
+}

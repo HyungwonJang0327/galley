@@ -1,0 +1,6 @@
+/* 펼침 안의 안내 문구(산출물 없음·읽기 실패) — 본문과 구분되게 작고 흐리게. */
+.note {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
