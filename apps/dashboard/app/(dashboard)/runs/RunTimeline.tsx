@@ -28,7 +28,7 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
 
 /**
  * 펼침 힌트 — 토글 버튼(제목+meta) 안에 있어야 클릭되고 읽힌다(decisions/layout.md `보기`). 볼 본문이 없으면 그 사실을.
- * 근거 수집은 "linked n · discovered n"(decisions/evidence-collection.md 타임라인)이 힌트를 겸한다.
+ * 근거 수집은 "연결 n · 탐색 n"(decisions/evidence-collection.md 타임라인 — 표시는 한국어, 사용자 결정 BE13 리뷰 L1)이 힌트를 겸한다.
  */
 function hintOf(view: StepArtifactView): string {
   switch (view.kind) {
@@ -37,7 +37,7 @@ function hintOf(view: StepArtifactView): string {
       return '보기';
     case 'evidence':
       return [
-        `linked ${view.evidence.linked} · discovered ${view.evidence.discovered}`,
+        `연결 ${view.evidence.linked} · 탐색 ${view.evidence.discovered}`,
         view.evidence.unreadable > 0 ? `읽지 못함 ${view.evidence.unreadable}` : '',
       ]
         .filter(Boolean)
