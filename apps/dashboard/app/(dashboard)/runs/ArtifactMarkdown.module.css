@@ -23,12 +23,13 @@
   line-height: var(--ui-leading-tight);
 }
 
+/* 위계는 단조 감소: h1 22 > h2 16 > h3·h4 본문. 산출물 H1은 글 제목이라 카드 안에서 가장 크다. */
 .markdown h1 {
-  font-size: var(--ui-text-h2);
+  font-size: var(--ui-text-title);
 }
 
 .markdown h2 {
-  font-size: var(--ui-text-title);
+  font-size: var(--ui-text-h2);
 }
 
 .markdown h3,
@@ -85,7 +86,11 @@
   background: none;
 }
 
+/* 넓은 표(기존 글 21편)는 패널 안에서 가로 스크롤 — 카드 밖으로 삐지지 않게. */
 .markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   font-size: var(--ui-text-sm);
 }
@@ -103,9 +108,14 @@
   font-weight: var(--ui-weight-medium);
 }
 
-.markdown img {
-  max-width: 100%;
-  height: auto;
+/* 이미지는 렌더하지 않고 자리만 표시(ArtifactMarkdown COMPONENTS). */
+.markdown .imagePlaceholder {
+  display: inline-block;
+  padding: 0 var(--ui-space-1);
+  border: 1px dashed var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
 }
 
 .markdown hr {
