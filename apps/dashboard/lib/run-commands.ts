@@ -12,7 +12,6 @@ import {
   LocalFsStorage,
   previewRerun,
   prisma,
-  resolveDataDir,
   reviseRun,
   type ApprovePublishFailure,
   type PreviewRerunFailure,
@@ -20,6 +19,7 @@ import {
   type ReviseRunFailure,
   type StepName,
 } from '@galley/pipeline';
+import { resolveDashboardDataDir } from './data-dir';
 import type { StartedRun } from './run-start';
 
 /** 화면·API가 그대로 쓰는 직렬화 형태. `StartedRun`에 종결 시각을 더한 것. */
@@ -93,16 +93,8 @@ export async function approveRunById(runId: string): Promise<RunApproveResult> {
     };
   }
   // 워커와 같은 규칙(절대경로·BLOG_DIR 밖) — 승인은 DATA_DIR을 읽기만 하지만 다른 폴더를 읽어 옛 산출물을 내보내면 안 된다.
-  const dataDir = resolveDataDir({ DATA_DIR: process.env.DATA_DIR, BLOG_DIR: blogDir });
-  if (!dataDir.ok) {
-    return {
-      ok: false,
-      error: {
-        code: 'DATA_DIR_MISSING',
-        message: `루트 .env의 DATA_DIR이 규칙에 맞지 않습니다(${dataDir.code}). 절대경로로, BLOG_DIR 밖에 두세요.`,
-      },
-    };
-  }
+  const dataDir = resolveDashboardDataDir({ DATA_DIR: process.env.DATA_DIR, BLOG_DIR: blogDir });
+  if (!dataDir.ok) return { ok: false, error: { code: dataDir.code, message: dataDir.message } };
   try {
     const result = await approveAndPublishRun(
       {
