@@ -346,7 +346,7 @@ describe('getRunArtifacts — 근거 수집·근거 검증(BE13)', () => {
             lineRange: { start: 5, end: 5 },
             date: '2026-05-01',
             source: 'linked',
-            snippetPreview: [''],
+            snippetPreview: [],
             hasMore: false,
             redacted: false,
             truncated: false,
@@ -354,6 +354,26 @@ describe('getRunArtifacts — 근거 수집·근거 검증(BE13)', () => {
         ],
       },
     });
+  });
+
+  it('조각의 끝 개행·CRLF — 끝 빈 줄은 미리보기에 안 세고 CRLF는 한 줄', async () => {
+    readBundle.mockResolvedValue({
+      ok: true,
+      bundle: {
+        ...BUNDLE,
+        items: [
+          { ...BUNDLE.items[0], snippet: 'a\r\nb\r\n\r\n' },
+          { ...BUNDLE.items[0], snippet: 'a\nb\nc\nd\n' },
+        ],
+      },
+    });
+
+    const views = await getRunArtifacts(run([step('evidence')]));
+    if (views.evidence?.kind !== 'evidence') throw new Error('kind');
+    expect(views.evidence.evidence.items.map((i) => [i.snippetPreview, i.hasMore])).toEqual([
+      [['a', 'b'], false],
+      [['a', 'b', 'c'], true],
+    ]);
   });
 
   it('번들 없음은 missing, 형식 불량·읽기 실패는 unavailable 문구', async () => {
@@ -505,6 +525,15 @@ describe('getRunVerificationFlags — 목록 행', () => {
       run_3: { unsupported: 0, uncertain: 2 },
     });
     expect(read.mock.calls.map((c) => c[1])).toEqual(['run_2', 'run_0']);
+  });
+
+  it('검증 단계가 실패한 행은 읽지 않는다', async () => {
+    read.mockResolvedValue({ ok: true, text: JSON.stringify(REPORT) });
+
+    expect(
+      await getRunVerificationFlags([{ ...run([step('verify', 'failed')]), id: 'run_9' }]),
+    ).toEqual({});
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('파일 없음·형식 불량·예외인 행은 빠지고 나머지는 그린다. DATA_DIR이 없으면 빈 결과', async () => {

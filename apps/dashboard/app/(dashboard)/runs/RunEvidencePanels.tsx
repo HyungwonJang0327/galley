@@ -40,8 +40,14 @@ export function EvidencePanel({ evidence }: { evidence: EvidenceView }) {
       <p className={styles.summary}>
         연결 {evidence.linked} · 탐색 {evidence.discovered}
         {evidence.unreadable > 0 ? ` · 읽지 못한 포인터 ${evidence.unreadable}` : ''}
-        {evidence.filtered ? '' : ' · 식별 정보 필터 없음'}
       </p>
+      {evidence.filtered ? null : (
+        // 사용자 결정(BE13 리뷰 L8): 필터를 안 거친 조각은 브라우저로 보내지 않는다 — 경로·해시·수만.
+        <p className={styles.note}>
+          식별 정보 필터를 거치지 않아 조각을 표시하지 않습니다. `.galley/redact.json`을 두고 근거
+          수집부터 다시 실행하면 보입니다.
+        </p>
+      )}
       {evidence.items.length === 0 ? (
         <p className={styles.note}>근거 항목이 없습니다.</p>
       ) : (
@@ -59,10 +65,13 @@ export function EvidencePanel({ evidence }: { evidence: EvidenceView }) {
                 </span>
               </div>
               {item.note ? <p className={styles.note}>{item.note}</p> : null}
-              <pre className={styles.snippet}>
-                {item.snippetPreview.join('\n')}
-                {item.hasMore ? '\n…' : ''}
-              </pre>
+              {evidence.filtered && item.snippetPreview.length > 0 ? (
+                // 가로 스크롤 영역은 키보드 초점이 가야 한다(axe scrollable-region-focusable).
+                <pre className={styles.snippet} tabIndex={0} aria-label="근거 조각 미리보기">
+                  {item.snippetPreview.join('\n')}
+                  {item.hasMore ? '\n…' : ''}
+                </pre>
+              ) : null}
             </li>
           ))}
         </ul>

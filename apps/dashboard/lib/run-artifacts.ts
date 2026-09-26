@@ -50,7 +50,7 @@ export interface EvidenceItemView {
   date: string;
   source: EvidenceSource;
   note?: string;
-  /** 조각 앞 몇 줄(DATA_DIR 쪽 — 화면은 로컬이라 조각을 보여 준다, decisions/evidence-collection.md). */
+  /** 조각 앞 몇 줄(DATA_DIR 쪽 — 화면은 로컬이라 조각을 보여 준다, decisions/evidence-collection.md). 빈 조각이면 []. */
   snippetPreview: string[];
   /** 미리보기 뒤에 더 있는가(조각이 SNIPPET_PREVIEW_LINES보다 길다). */
   hasMore: boolean;
@@ -230,7 +230,9 @@ const shortSha = (commit: string) => commit.slice(0, 7);
 
 export function toEvidenceView(bundle: EvidenceBundle): EvidenceView {
   const items = bundle.items.map((item): EvidenceItemView => {
-    const lines = item.snippet.split(/\r?\n/);
+    // 끝의 빈 줄은 미리보기 자리를 차지하지 않게 뗀다(빈 조각이면 []). CRLF도 한 줄.
+    const lines = item.snippet.replace(/(\r?\n)+$/, '').split(/\r?\n/);
+    if (lines.length === 1 && lines[0] === '') lines.length = 0;
     return {
       path: item.path,
       commit: shortSha(item.commit),

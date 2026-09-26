@@ -282,7 +282,7 @@ describe('RunTimeline', () => {
       expect(img.getAttribute('loading')).toBe('lazy');
     });
 
-    it('근거 수집 줄 — meta에 linked·discovered, 펼치면 항목(경로:줄·해시·날짜·출처·조각 3줄)', () => {
+    it('근거 수집 줄 — meta에 연결·탐색 수, 펼치면 항목(경로:줄·해시·날짜·출처·조각 3줄)', () => {
       render(
         <RunTimeline
           steps={[step({ name: 'evidence', order: 1, status: 'succeeded', durationMs: 2_000 })]}
@@ -316,7 +316,7 @@ describe('RunTimeline', () => {
 
       expect(
         screen.getByRole('button', {
-          name: '근거 수집 2초 · linked 2 · discovered 1 · 읽지 못함 1',
+          name: '근거 수집 2초 · 연결 2 · 탐색 1 · 읽지 못함 1',
         }),
       ).toBeTruthy();
       const row = rows()[0]!;
@@ -324,10 +324,92 @@ describe('RunTimeline', () => {
       expect(row.textContent).toContain('src/feed.ts:L10-20');
       expect(row.textContent).toContain('abcdef0 · 2026-03-01 · 연결 · 치환됨');
       expect(row.textContent).toContain('피드 끝 감지');
-      expect(row.querySelector('pre')?.textContent).toBe(
-        'const a = 1;\nconst b = 2;\nconst c = 3;\n…',
-      );
+      const pre = row.querySelector('pre');
+      expect(pre?.textContent).toBe('const a = 1;\nconst b = 2;\nconst c = 3;\n…');
+      expect(pre?.getAttribute('tabindex')).toBe('0');
       expect(row.textContent).not.toContain('보기');
+      expect(row.textContent).not.toContain('식별 정보 필터');
+    });
+
+    it('근거 수집 — 필터를 안 거친 번들은 조각을 숨기고 안내, 읽지 못함 0이면 접미 없음, 항목 0건 안내', () => {
+      const item = {
+        path: 'src/feed.ts',
+        commit: 'abcdef0',
+        lineRange: { start: 1, end: 1 },
+        date: '2026-03-01',
+        source: 'discovered' as const,
+        snippetPreview: ['secret = 1'],
+        hasMore: false,
+        redacted: false,
+        truncated: false,
+      };
+      const { unmount } = render(
+        <RunTimeline
+          steps={[step({ name: 'evidence', order: 1, status: 'succeeded' })]}
+          artifacts={{
+            evidence: {
+              kind: 'evidence',
+              evidence: { linked: 0, discovered: 1, unreadable: 0, filtered: false, items: [item] },
+            },
+          }}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: '근거 수집 연결 0 · 탐색 1' })).toBeTruthy();
+      let row = rows()[0]!;
+      expect(row.textContent).toContain('식별 정보 필터를 거치지 않아 조각을 표시하지 않습니다');
+      expect(row.querySelector('pre')).toBeNull();
+      expect(row.textContent).not.toContain('secret = 1');
+      expect(row.textContent).toContain('src/feed.ts:L1');
+      unmount();
+
+      render(
+        <RunTimeline
+          steps={[step({ name: 'evidence', order: 1, status: 'succeeded' })]}
+          artifacts={{
+            evidence: {
+              kind: 'evidence',
+              evidence: { linked: 0, discovered: 0, unreadable: 0, filtered: true, items: [] },
+            },
+          }}
+        />,
+      );
+      row = rows()[0]!;
+      expect(row.textContent).toContain('근거 항목이 없습니다.');
+    });
+
+    it('근거 수집 — 빈 조각은 <pre>를 그리지 않는다', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'evidence', order: 1, status: 'succeeded' })]}
+          artifacts={{
+            evidence: {
+              kind: 'evidence',
+              evidence: {
+                linked: 1,
+                discovered: 0,
+                unreadable: 0,
+                filtered: true,
+                items: [
+                  {
+                    path: 'src/x.ts',
+                    commit: '9999999',
+                    lineRange: { start: 5, end: 5 },
+                    date: '2026-05-01',
+                    source: 'linked',
+                    snippetPreview: [],
+                    hasMore: false,
+                    redacted: false,
+                    truncated: false,
+                  },
+                ],
+              },
+            },
+          }}
+        />,
+      );
+
+      expect(rows()[0]!.querySelector('pre')).toBeNull();
     });
 
     it('근거 검증 줄 — 배지 "근거 없음 n · 불확실 n"(unsupported ≥ 1이면 warning), 펼치면 주장 목록', () => {
