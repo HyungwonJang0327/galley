@@ -246,8 +246,10 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] **BX6** (2026-09-26 `a21c5fe`, docs/series, PR #137) doc — CLAUDE.md "파이프라인 단계" 아래 시리즈 한 줄, decisions/queue-sync-direction.md "정의 줄 보존" 항목, decisions/evidence-collection.md 파서 확장 절에 태그 한 줄, README 사용법에 시리즈 표기 예시 4줄, worklog·todo·PR 마감. 브랜치 `docs/series`. 커밋: `docs: 시리즈 대응 문서 반영`
   - 완료조건: 문서 간 표기(태그 문법·정의 줄 문법·산출물 형식)가 decisions/series.md와 일치.
 
-- [ ] **BS5** pl — 단계 라우팅: `createStepRunner({ registry, prompts, storage… })`가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · B3a publishInfo)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV=development`·테스트만). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
-  - 완료조건: 6단계 전부 구현으로 이어지고 모르는 단계명은 프로그래머 오류(throw). 워커 스모크(`test:smoke`) 계속 통과.
+- [x] **BS5** (2026-09-26 `3e58a69`·`cccf07c`·`41cdbcc`·`0ed767a`·`fe24f3d` + 리뷰 `35d10a4`·`f47eaed`, feat/step-router) pl — 단계 라우팅: `createStepRunner(deps: StepRunnerDeps)`(prisma·evidenceStore·artifactStore·promptsDir·adapters·redactConfig·clock·publishInfo?)가 단계명 → 구현(BE8 evidence · BS2 velog · BE10 verify · BS3 linkedin · BS4 zenn · publishInfo는 **B3a 전까지 Mock 위임**)으로 분기하는 StepRunner 하나. `bin/worker.ts`가 Mock 대신 이것을 쓴다(Mock은 `NODE_ENV` `test`·`development`만 — 사용자 결정). 커밋: `feat(pipeline): 단계 구현 라우팅 StepRunner 추가`
+  - 완료조건 충족: 6단계 전부 구현으로 이어지고 모르는 단계명은 프로그래머 오류(throw). 워커 스모크 8케이스(실모드 DATA_DIR 없음·BLOG_DIR 안·정상 기동·Mock 모드 추가) 통과. 실모델 스모크 `GALLEY_LIVE_SMOKE=1`(기본 Haiku).
+  - 리뷰(high 0 · med 3 · low 12) 반영: DATA_DIR 안내 `~` 예시 삭제(Node --env-file 미확장, 사용자 결정) · 실모드 기동 로그 `availableModels` · 재시도 대기 중 heartbeat 단언 · 스모크 `close`·REDACT_CONFIG_PATH 제거. 규칙은 decisions/run-execution-model.md §2·§3.
+  - 기록만: SDK maxRetries 전달 테스트 없음(클라이언트 lazy) · resolveDataDir 심볼릭 링크·대소문자(macOS) · `REDACT_CONFIG_PATH` 절대경로 규칙 미결(tone-prompts ⑦).
   - BE8 리뷰에서 넘어온 것(decisions BE8 ⑩): `DATA_DIR`이 비었거나 `BLOG_DIR` 안이면 기동 거부(빈 문자열이면 cwd 상대경로). `LocalFsEvidenceStore(DATA_DIR)`·redact 설정·prisma·clock을 `createEvidenceStepRunner`에 배선.
   - BS2 리뷰에서 넘어온 것: 어댑터 `maxRetries` 명시 + 워커 재시도 사이 `timers.after` 대기(429 최대 9회 방지) · `LocalFsArtifactStore(DATA_DIR)`·`resolveTonePromptsDir`(절대경로) 배선·기동 검증 · 환경 변수로 켜는 실모델 스모크 vitest 하나.
 
@@ -265,6 +267,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 ### B3. 산출물 파일 쓰기 + 썸네일 — [B] Phase 1-B #7
 
 - [ ] **B3a** pl — `posts/<슬러그>/` 5개 파일 쓰기(벨로그·링크드인·Zenn·발행정보·썸네일 자리) + `evidence.json`·`verification.json` via Storage. 새 슬러그 폴더에만. 발행정보에 `## 근거` 섹션(BE11). 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
+  - BS5에서 이월: `createStepRunner`의 `publishInfo` Mock을 실제 구현으로 교체(`StepRunnerDeps.publishInfo`) · **B3a 전에 승인된 Run은 posts 폴더가 없고 completeTopic도 안 돈다**(리뷰 L10 — 그 Run들은 재실행으로 채우거나 무시, 결정 필요) · BX4 M2(완료 줄 제목이 큐 제목과 다르면 매칭 키 갈라짐 → 파일 쓰기 전 QueueItem 갱신).
 - [ ] **B3b** pl — ThumbnailRenderer 인터페이스 + make_thumb.py 호출 구현. 커밋: `feat(publish): 썸네일 렌더러(make_thumb.py 호출) 추가`
 - [ ] **B3c** ts — 산출물 5개 + evidence/verification 2개 구조·파일명 픽스처 테스트. 커밋: `test(publish): posts 산출물 구조 테스트`
 

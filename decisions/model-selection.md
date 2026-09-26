@@ -13,6 +13,7 @@
 - **ModelAdapter**(요구사항 — 인터페이스 파일은 🔒 사용자 작성, AI는 초안·나머지 배선·테스트): `id`(예 `anthropic:claude-opus-5`)·`label`·`provider`·가격(입력·출력 백만 토큰당 USD)·`available`(API 키 설정 여부) / `generate(input) → { text, usage:{ inputTokens, outputTokens }, costUsd, durationMs }`. **스트리밍은 Phase 1에 안 함** — 인터페이스에 자리만 남기지 않고 필요할 때 추가(YAGNI).
 - **ModelRegistry**: `list()` / `get(id)` / `default()`. API 키 없는 provider의 어댑터는 목록에 남되 `available:false`(UI 비활성 + 툴팁 "API 키 없음 (.env ANTHROPIC_API_KEY / OPENAI_API_KEY)"). **레지스트리 정의 = `packages/pipeline` 코드 상수** — 어댑터 추가 = 파일 하나 + 등록 한 줄. 어댑터 provider 로직이 어차피 코드라 json 외부화 이득이 적다(YAGNI). 단가·레지스트리 외부화는 Phase 2.
 - **SDK 의존성 2개**: `@anthropic-ai/sdk` + `openai`. 라이브러리 추가 결정은 이 문서로 갈음(설치·버전 핀은 BM3에서). provider 타입 `'anthropic' | 'openai' | 'mock'`.
+- **SDK 재시도는 레지스트리가 정한다**(2026-09-26 BS5, 사용자 결정): 어댑터 옵션 `maxRetries`를 `ADAPTER_MAX_RETRIES = 1`로 넘긴다(SDK 기본 2). 단계 재시도(워커 3회 + 대기 10s·20s, run-execution-model §3)와 곱해지므로 어댑터 쪽은 짧게 — 429가 최대 9회 몰리던 것을 막는다. 앱·단계 코드는 이 값을 모른다.
 - **가격표**: 어댑터별 상수로 시작. 비용 = usage × 단가를 **어댑터 안에서** 계산. 가격이 바뀌면 코드 수정으로 대응(Anthropic은 가격 API가 없어 자동화 이득도 없음). provider API 가격 조회는 Phase 2 검토 항목.
 - **첫 구현(2026-09-09 확정)**: Claude 4개 + GPT 3개 + Mock. id·단가는 각 provider 문서에서 확인(아래 표). Mock 어댑터(고정 텍스트·비용 0, 테스트·데모용)는 프로덕션 레지스트리에 `NODE_ENV=development`에서만 노출. 기본 모델(`default()`)은 Claude Opus 5.
 
@@ -68,3 +69,4 @@
 - 2026-09-09 최초 결정.
 - 2026-09-09 **멀티 provider 확정**: 픽커에 Claude 4개(Fable 5.1·Opus 5·Sonnet 5·Haiku 4.5) + GPT 3개(gpt-5.5·gpt-5.1·gpt-5-mini) + Mock. provider 타입에 `openai` 추가, SDK 2개(`@anthropic-ai/sdk`·`openai`) 도입(라이브러리 추가 결정 = 이 문서). id·단가는 각 provider 라이브 문서에서 확인해 표로 고정. 기본 모델 = Opus 5.
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+- 2026-09-26 BS5: 어댑터 `maxRetries` 1(레지스트리 상수). Mock 러너 조건(NODE_ENV)은 run-execution-model §2.

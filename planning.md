@@ -32,7 +32,7 @@
 ### 포함 (Phase 1)
 
 - 큐 관리: **큐 1화면 + 탭 4개(대기/후보/보류/완료)**, 순서 변경(DnD), 섹션 이동, `주제_큐.md` 반영, 파일 기준 수동 갱신(큐 헤더 버튼, 자동 적재와 병행 — decisions/queue-sync-direction.md)
-- 파이프라인 실행: **6단계**(근거 수집 → 벨로그 본문 → 근거 검증 → 링크드인 → Zenn → 발행정보·썸네일) 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). **별도 워커 프로세스가 실행**(decisions/run-location.md)
+- 파이프라인 실행: **6단계**(근거 수집 → 벨로그 본문 → 근거 검증 → 링크드인 → Zenn → 발행정보·썸네일) 상태 머신 + 승인 게이트(실행→승인 대기→수정 재실행→완료). **별도 워커 프로세스가 실행**(decisions/run-location.md). 워커는 실제 단계 구현으로 돌고 Mock 러너는 `NODE_ENV` `test`·`development`만(BS5, decisions/run-execution-model.md §2)
 - 모델 어댑터 인터페이스(교체 가능 + 토큰·비용 기록) + **실행별 모델 선택**(모델은 Run 속성, 어댑터 레지스트리 — decisions/model-selection.md)
 - **리포 인덱스**: 연결 리포를 워커가 한 번 훑어 분석 글(포인터 ≥ 1)을 SQLite에 캐시, HEAD 변경 시 증분 재인덱싱. 인덱싱 모델 기본 Haiku 4.5(레지스트리 상수) + CLI `--model`. 입력 상한 16KB/20개·160KB/30개. Phase 1-B 진입은 CLI `index <path>`. 주제↔분석 글 자동 연결(키워드·기간, `TopicAnalysisLink` 슬러그 키) + 큐 행 "근거 편집" (decisions/evidence-collection.md)
 - **근거 수집·근거 검증**: 실행마다 분석 글 포인터를 따라 원본 코드 조각을 읽어 EvidenceBundle 생성(snippet은 `DATA_DIR`에만, `posts/<슬러그>/evidence.json`은 포인터만), 본문 입력은 EvidenceBundle뿐. discovered는 키워드 점수만(상한 8). 본문 뒤 근거 검증이 주장(정규식 + 서술은 모델)을 대조해 `verification.json`(supported/unsupported/uncertain) — 표시 조건, 실패 아님. 식별 정보 필터 `.galley/redact.json` 한 곳
