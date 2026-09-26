@@ -272,6 +272,13 @@ export {
 } from './steps/publishInfo.ts';
 export type { PublishInfoInput } from './steps/publishInfo.ts';
 export { postFileNames, toFileStem } from './publish/postFiles.ts';
+export { LocalFsPostsWriter } from './publish/PostsWriter.ts';
+export type {
+  PostsWriter,
+  PostFiles,
+  WritePostInput,
+  WritePostResult,
+} from './publish/PostsWriter.ts';
 export type { PostFileNames } from './publish/postFiles.ts';
 export type { StepRunnerDeps } from './steps/createStepRunner.ts';
 export {
