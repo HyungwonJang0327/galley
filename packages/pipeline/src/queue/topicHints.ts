@@ -34,6 +34,11 @@ const PERIOD = new RegExp(
 export const ALREADY_PUBLISHED_NOTE = '기존 글';
 /** 힌트가 아닌 표시 메모. 비교는 공백 정리·NFC 뒤 원문 그대로. */
 const NON_HINT_TERMS: ReadonlySet<string> = new Set([ALREADY_PUBLISHED_NOTE]);
+/**
+ * 완료 줄의 산출물 위치 `posts/<슬러그>`(completeQueue가 붙인다) — 근거 힌트가 아니다. 키워드로 세면 되돌린 주제의
+ * 자동 연결에 슬러그 조각이 섞인다(decisions/topic-slug.md "따라오는 것").
+ */
+const POSTS_POINTER = /^posts\//i;
 const LEADING_GROUP = /^\s*[(（]([^)）]*)[)）]/;
 
 /**
@@ -69,7 +74,7 @@ export function parseTopicHints(title: string): RawTopicHints {
   for (const m of title.normalize('NFC').matchAll(GROUPS)) {
     for (const raw of (m[1] ?? '').split(SEPARATORS)) {
       const term = raw.replace(/\s+/g, ' ').trim();
-      if (term === '' || NON_HINT_TERMS.has(term)) continue;
+      if (term === '' || NON_HINT_TERMS.has(term) || POSTS_POINTER.test(term)) continue;
       const normalized = normalizePeriodHint(term);
       if (normalized !== undefined) {
         if (period === null) period = normalized;

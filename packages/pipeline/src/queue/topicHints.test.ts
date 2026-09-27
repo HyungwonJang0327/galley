@@ -8,6 +8,22 @@ import {
 } from './topicHints.ts';
 
 describe('parseTopicHints', () => {
+  test('완료 줄의 posts/<슬러그>는 힌트가 아니다 — 키워드로 세지 않는다(메모는 남는다)', () => {
+    expect(parseTopicHints('무한 스크롤 미리 불러오기 (posts/무한-스크롤)')).toEqual({
+      terms: [],
+      period: null,
+    });
+    expect(parseTopicHints('무한 스크롤 (spacehome, posts/무한-스크롤)')).toEqual({
+      terms: ['spacehome'],
+      period: null,
+    });
+    // 경로 표기 일반(`src/app`)은 그대로 항이다 — posts/로 시작하는 것만.
+    expect(parseTopicHints('라우팅 (src/app, POSTS/x)')).toEqual({
+      terms: ['src/app'],
+      period: null,
+    });
+  });
+
   test('(기존 글) 메모는 키워드로 세지 않는다(이미 발행된 시리즈 편 표시)', () => {
     expect(parseTopicHints('(기존 글) DB 세션 다시 보기 (linklet)')).toEqual({
       terms: ['linklet'],
