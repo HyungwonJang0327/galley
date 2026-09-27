@@ -3,6 +3,7 @@
 // 검수 상태(status)와 전이 규칙은 상태 머신(B1a)이 소유하므로 여기서는 스키마 기본값을 그대로 둔다.
 import type { PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
+import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import { slugForTopicTitle } from '../queue/topicSlug.ts';
 import type { RunSummary } from './runQueries.ts';
 
@@ -58,7 +59,9 @@ export async function startRun(
   if (!topic) return { ok: false, code: 'TOPIC_NOT_FOUND' };
 
   const title = topic.title.trim();
-  if (title === '') return { ok: false, code: 'EMPTY_TITLE' };
+  // 괄호 힌트뿐인 제목(`(spacehome)`)도 빈 제목이다 — 힌트를 떼면 프롬프트 제목이 비고 슬러그가 전부 `topic`으로
+  // 뭉친다(TS1 리뷰 M1, 사용자 결정). 비용을 쓰기 전에 막는다.
+  if (stripTopicHints(title) === '') return { ok: false, code: 'EMPTY_TITLE' };
 
   const adapter = input.modelId ? deps.registry.get(input.modelId) : deps.registry.default();
   if (!adapter) return { ok: false, code: 'UNKNOWN_MODEL' };
