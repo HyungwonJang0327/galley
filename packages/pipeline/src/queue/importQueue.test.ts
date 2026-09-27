@@ -79,3 +79,25 @@ describe('parsedQueueToRows', () => {
     expect(parsedQueueToRows(parsed)).toEqual([]);
   });
 });
+
+describe('parsedQueueToRows — 완료 줄의 posts/<슬러그>', () => {
+  test('산출물 위치는 키워드로 들어가지 않는다(메모는 키워드로 남는다)', () => {
+    const parsed: ParsedQueue = {
+      preamble: '',
+      seriesDefs: [],
+      sections: {
+        대기: [],
+        후보: [],
+        보류: [],
+        완료: [
+          { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', completedOn: '2026-09-26' },
+          { title: '다른 글 (회고, posts/다른-글)', completedOn: '2026-09-27' },
+        ],
+      },
+    };
+
+    const rows = parsedQueueToRows(parsed);
+
+    expect(rows.map((r) => r.keywords)).toEqual(['[]', '["회고"]']);
+  });
+});

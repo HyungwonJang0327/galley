@@ -8,6 +8,7 @@ import { indexByTitle, takeMatch } from './importQueue.ts';
 import { normalizeTopicTitle, stripTopicHints, trailingUrl } from './normalizeTitle.ts';
 import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
 import { isAlreadyPublished } from './topicHints.ts';
+import { POSTS_POINTER_IN_TITLE } from './postsPointer.ts';
 
 export interface SeriesEpisode {
   /** QueueItem.id — 주제 키. 아직 적재되지 않은 새 줄이면 없다(대시보드가 다음 적재 때 만든다). */
@@ -48,8 +49,7 @@ export interface SeriesTopicRow {
 }
 
 const STATUS_ORDER: readonly QueueStatus[] = ['대기', '후보', '보류', '완료'];
-/** 괄호 안의 `posts/<슬러그>` 항 — 괄호 시작이나 쉼표 바로 뒤만(`…/posts/x` 같은 URL 경로는 아니다). */
-const POSTS_SLUG = /[(（,，]\s*posts\/([^\s,，)）]+)/;
+const POSTS_SLUG = POSTS_POINTER_IN_TITLE;
 /** 이전 편 링크로 쓰는 URL은 벨로그만 — 다른 링크면 자리표시자로 떨어진다. */
 const VELOG_URL = /^https?:\/\/(?:www\.)?velog\.io\//;
 const JA_TERM = /^ja[:：]\s*(.+)$/i;
