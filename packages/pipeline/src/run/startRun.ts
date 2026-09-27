@@ -76,13 +76,20 @@ export async function startRun(
   if (active) return { ok: false, code: 'RUN_ALREADY_ACTIVE' };
 
   const previous = await deps.prisma.run.count({ where: { topicId: topic.id } });
+  // 같은 주제의 실행은 슬러그를 승계한다(decisions/topic-slug.md 규칙 2) — 제목·힌트를 고쳤거나 완료 줄을 되돌려도
+  // 주제당 폴더는 하나다. 가장 최근 시도의 것을 쓴다(재실행 사슬은 startRerun이 복사하므로 어느 Run이든 같은 값).
+  const latest = await deps.prisma.run.findFirst({
+    where: { topicId: topic.id },
+    orderBy: { attempt: 'desc' },
+    select: { topicSlug: true },
+  });
 
   const run = await deps.prisma.run.create({
     data: {
       topicId: topic.id,
       attempt: previous + 1,
-      // 힌트(리포 별칭·기간·posts/…)를 뗀 제목에서 — decisions/topic-slug.md 규칙 1.
-      topicSlug: slugForTopicTitle(title),
+      // 첫 실행만 제목에서 — 힌트(리포 별칭·기간·posts/…)를 뗀 제목(규칙 1).
+      topicSlug: latest?.topicSlug ?? slugForTopicTitle(title),
       topicTitle: title,
       modelId: adapter.id,
       workerState: 'queued',

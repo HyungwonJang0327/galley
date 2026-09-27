@@ -160,7 +160,7 @@ describe('startRun', () => {
     });
   });
 
-  test('되돌린 완료 줄 제목((posts/…)·줄 끝 URL)에서도 슬러그가 길어지지 않는다', async () => {
+  test('첫 실행의 제목이 되돌린 완료 줄 모양((posts/…)·줄 끝 URL)이어도 슬러그가 길어지지 않는다', async () => {
     await prisma.queueItem.update({
       where: { id: topicId },
       data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤) https://velog.io/@me/x' },
@@ -172,6 +172,44 @@ describe('startRun', () => {
     });
   });
 
+  test('승인 뒤 완료 줄을 되돌려 실행하면(글 제목이 주제 제목과 달라도) 같은 슬러그를 승계한다', async () => {
+    const first = await startRun(deps(), { topicId });
+    if (!first.ok) throw new Error('첫 실행이 만들어져야 한다');
+    await prisma.run.update({
+      where: { id: first.run.id },
+      data: { status: RUN_STATUS.done, finishedAt: new Date() },
+    });
+    // 승인이 바꾼 제목(completedTitle) 그대로 대기로 되돌린 상태.
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '대기' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { attempt: 2, topicSlug: '무한-스크롤' },
+    });
+  });
+
+  test('가장 최근 시도의 슬러그를 승계한다(옛 규칙으로 기록된 힌트 포함 슬러그도 그대로)', async () => {
+    await prisma.run.create({
+      data: {
+        topicId,
+        attempt: 1,
+        topicSlug: '무한-스크롤-spacehome',
+        topicTitle: '무한 스크롤 (spacehome)',
+        modelId: 'mock:default',
+        status: RUN_STATUS.failed,
+        finishedAt: new Date(),
+      },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { attempt: 2, topicSlug: '무한-스크롤-spacehome' },
+    });
+  });
+
   test('괄호 힌트뿐인 제목은 빈 제목으로 거절한다(슬러그가 topic으로 뭉치지 않게)', async () => {
     await prisma.queueItem.update({ where: { id: topicId }, data: { title: '(spacehome)' } });
 
@@ -179,7 +217,7 @@ describe('startRun', () => {
     expect(await prisma.run.count()).toBe(0);
   });
 
-  test('제목이 바뀌면 새 슬러그로 기록하지만 같은 주제로 이어진다', async () => {
+  test('제목이 바뀌어도 같은 주제면 슬러그를 승계하고 attempt가 이어진다(주제당 폴더 하나)', async () => {
     const first = await startRun(deps(), { topicId });
     if (!first.ok) throw new Error('첫 실행이 만들어져야 한다');
     await prisma.run.update({
@@ -193,10 +231,10 @@ describe('startRun', () => {
 
     const second = await startRun(deps(), { topicId });
 
-    // 슬러그는 그 실행이 쓴 폴더의 사실 기록이라 달라지지만, topicId가 키라 attempt는 이어진다.
+    // topicId가 키라 attempt가 이어지고, 슬러그는 첫 실행이 정한 것을 그대로 쓴다. topicTitle은 지금 제목.
     expect(second).toMatchObject({
       ok: true,
-      run: { topicId, attempt: 2, topicSlug: '무한-스크롤-개선기' },
+      run: { topicId, attempt: 2, topicSlug: '무한-스크롤', topicTitle: '무한 스크롤 개선기' },
     });
   });
 });
