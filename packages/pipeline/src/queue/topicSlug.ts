@@ -1,8 +1,10 @@
-// 주제 키(슬러그). 파일이 진실인 큐와 DB가 진실인 실행 이력을 잇는 유일한 안정 키다
-// — decisions/queue-sync-direction.md "주제 키는 id가 아니라 슬러그".
+// 주제 슬러그 — 그 주제의 산출물 폴더 이름(posts/<슬러그>, DATA_DIR artifacts/<슬러그>). **키가 아니다** — 주제 키는
+// QueueItem.id이고 슬러그는 "그 실행이 어느 폴더에 썼는가"의 사실 기록이다(decisions/queue-sync-direction.md
+// 2026-09-12 결정 변경). 파생·승계 규칙은 decisions/topic-slug.md: 힌트를 뗀 제목에서 첫 실행 때 한 번 만든다.
 //
 // 규칙: 같은 제목이면 언제나 같은 슬러그. 제목이 한국어라 로마자 변환은 하지 않는다
 // (변환하면 서로 다른 제목이 같은 슬러그로 뭉개진다). 한글·영숫자만 남기고 나머지는 구분자로 본다.
+import { stripTopicHints } from './normalizeTitle.ts';
 
 const MAX_LENGTH = 80;
 
@@ -20,4 +22,13 @@ export function topicSlug(title: string): string {
 
   if (normalized === '') return 'topic';
   return normalized.slice(0, MAX_LENGTH).replace(/-$/, '');
+}
+
+/**
+ * 큐 제목 → 그 주제의 슬러그. 시리즈 태그·줄 끝 URL·괄호 힌트(리포 별칭·기간·`posts/…`)를 **뗀 뒤** 만든다
+ * (decisions/topic-slug.md 규칙 1) — 별칭이 posts 폴더 이름·완료 줄·URL 슬러그로 나가지 않고, 힌트만 고쳐도 슬러그가
+ * 바뀌지 않는다. 힌트뿐인 제목은 `topic`.
+ */
+export function slugForTopicTitle(title: string): string {
+  return topicSlug(stripTopicHints(title));
 }
