@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
+import { LocalFsReplacedStore } from '../artifacts/ReplacedStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { LocalFsPostsWriter } from '../publish/PostsWriter.ts';
@@ -35,6 +36,7 @@ let deps: ApprovePublishDeps;
 let blogDir: string;
 let artifacts: LocalFsArtifactStore;
 let evidence: LocalFsEvidenceStore;
+let dataDir: string;
 
 const NOW = new Date('2026-09-26T05:00:00Z');
 const TODAY = localDate(NOW);
@@ -102,7 +104,7 @@ beforeEach(async () => {
   await prisma.run.deleteMany();
   await prisma.queueItem.deleteMany();
   blogDir = await mkdtemp(join(root, 'blog-'));
-  const dataDir = await mkdtemp(join(root, 'data-'));
+  dataDir = await mkdtemp(join(root, 'data-'));
   await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
   storage = new LocalFsStorage(blogDir);
   await importQueueFromFile({ storage, prisma });
@@ -113,6 +115,7 @@ beforeEach(async () => {
     prisma,
     artifacts,
     evidence,
+    replaced: new LocalFsReplacedStore(dataDir),
     posts: new LocalFsPostsWriter(blogDir),
     storage,
     clock: { now: () => NOW },
@@ -302,6 +305,162 @@ describe('approveAndPublishRun', () => {
     );
   });
 
+  describe('재승인에서 글 제목이 바뀐 경우 — 직전 승인 파일을 DATA_DIR로 옮긴다(TS4)', () => {
+    const OLD = [
+      '무한_스크롤_미리_불러오기.md',
+      '무한_스크롤_미리_불러오기_링크드인.md',
+      '무한_스크롤_미리_불러오기_zenn.md',
+      '무한_스크롤_미리_불러오기_발행정보.md',
+      '무한_스크롤_미리_불러오기_썸네일.png',
+    ];
+    const NEW = [
+      '무한_스크롤을_다시_쓰다.md',
+      '무한_스크롤을_다시_쓰다_링크드인.md',
+      '무한_스크롤을_다시_쓰다_zenn.md',
+      '무한_스크롤을_다시_쓰다_발행정보.md',
+      '무한_스크롤을_다시_쓰다_썸네일.png',
+      'evidence.json',
+      'verification.json',
+    ];
+
+    /** 승인 뒤 주제를 대기로 되돌린다(파일·DB) — 재실행·재승인 시나리오. */
+    async function revertTopic() {
+      await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { title: '무한 스크롤 (spacehome)', status: '대기', completedOn: null, order: 0 },
+      });
+    }
+
+    async function approvedThenReverted() {
+      const first = await finishedRun();
+      expect((await approveAndPublishRun(deps, first.id)).ok).toBe(true);
+      await revertTopic();
+      return first;
+    }
+
+    test('옛 5개는 DATA_DIR/replaced/<슬러그>/<이번 Run>으로, posts에는 새 7개와 사람 파일만', async () => {
+      await approvedThenReverted();
+      const dir = join(blogDir, 'posts', SLUG);
+      await writeFile(join(dir, '메모.md'), '사람이 쓴 메모', 'utf8');
+      const second = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(second.id, '무한 스크롤을 다시 쓰다');
+
+      const result = await approveAndPublishRun(deps, second.id);
+
+      const into = join(dataDir, 'replaced', SLUG, second.id);
+      expect(result).toMatchObject({ ok: true, leftover: [], replacedDir: into });
+      if (!result.ok) return;
+      expect([...result.replaced].sort()).toEqual([...OLD].sort());
+      expect((await readdir(dir)).sort()).toEqual([...NEW, '메모.md'].sort());
+      expect((await readdir(into)).sort()).toEqual([...OLD].sort());
+    });
+
+    test('글 제목이 같으면 옮기지 않는다(replacedDir 없음)', async () => {
+      await approvedThenReverted();
+      const second = await finishedRun();
+
+      const result = await approveAndPublishRun(deps, second.id);
+
+      expect(result).toMatchObject({ ok: true, replaced: [], leftover: [] });
+      if (!result.ok) return;
+      expect(result.replacedDir).toBeUndefined();
+      expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(7);
+    });
+
+    test('직전 승인 Run의 발행정보가 DATA_DIR에 없으면 옛 이름 파일은 posts에 남는다', async () => {
+      const first = await approvedThenReverted();
+      await artifacts.remove(SLUG, first.id, PUBLISH_ARTIFACT);
+      const second = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(second.id, '무한 스크롤을 다시 쓰다');
+
+      const result = await approveAndPublishRun(deps, second.id);
+
+      expect(result).toMatchObject({ ok: true, replaced: [], leftover: [] });
+      expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(12);
+    });
+
+    test('직전 승인 하나만 본다 — 그보다 앞선 승인의 이름은 건드리지 않는다', async () => {
+      await approvedThenReverted();
+      const second = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(second.id, '둘째 제목');
+      expect((await approveAndPublishRun(deps, second.id)).ok).toBe(true);
+      // 첫 제목 이름의 파일이 폴더에 (다시) 있다 — 사람이 넣었거나 정리 전의 잔여.
+      const dir = join(blogDir, 'posts', SLUG);
+      await writeFile(join(dir, '무한_스크롤_미리_불러오기.md'), '남은 옛 본문', 'utf8');
+      await revertTopic();
+      const third = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(third.id, '셋째 제목');
+
+      const result = await approveAndPublishRun(deps, third.id);
+
+      if (!result.ok) throw new Error(result.code);
+      expect(result.replaced).toContain('둘째_제목.md');
+      expect(result.replaced).not.toContain('무한_스크롤_미리_불러오기.md');
+      expect(await readFile(join(dir, '무한_스크롤_미리_불러오기.md'), 'utf8')).toBe(
+        '남은 옛 본문',
+      );
+    });
+
+    test('직전 승인의 발행정보가 carried면 출처 Run의 발행정보에서 제목을 읽는다', async () => {
+      const source = await finishedRun({ status: RUN_STATUS.revised });
+      const carried = await finishedRun({ withArtifacts: false });
+      // 직전 승인 Run의 발행정보 단계만 carried(출처 = source)로 바꾸고, 나머지 산출물은 이 Run이 쓴다.
+      await writeArtifacts(carried.id, '무한 스크롤 미리 불러오기');
+      await artifacts.remove(SLUG, carried.id, PUBLISH_ARTIFACT);
+      await prisma.runStep.updateMany({
+        where: { runId: carried.id, name: 'publishInfo' },
+        data: { origin: STEP_ORIGIN.carried, sourceRunId: source.id },
+      });
+      expect((await approveAndPublishRun(deps, carried.id)).ok).toBe(true);
+      await revertTopic();
+      const next = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(next.id, '무한 스크롤을 다시 쓰다');
+
+      const result = await approveAndPublishRun(deps, next.id);
+
+      if (!result.ok) throw new Error(result.code);
+      expect([...result.replaced].sort()).toEqual([...OLD].sort());
+    });
+
+    test('승인이 확정되지 못하면(큐 파일 쓰기 실패) 옛 승인본을 옮기지 않는다', async () => {
+      await approvedThenReverted();
+      const second = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(second.id, '무한 스크롤을 다시 쓰다');
+      const failing: ApprovePublishDeps = {
+        ...deps,
+        storage: {
+          readQueueFile: () => storage.readQueueFile(),
+          writeQueueFile: () => Promise.reject(new Error('EACCES: blog 폴더 쓰기 거부')),
+        },
+      };
+
+      await expect(approveAndPublishRun(failing, second.id)).rejects.toThrow('EACCES');
+
+      const names = await readdir(join(blogDir, 'posts', SLUG));
+      for (const name of OLD) expect(names, name).toContain(name);
+      await expect(readdir(join(dataDir, 'replaced'))).rejects.toThrow();
+    });
+
+    test('옮기기가 던져도 승인은 성공이다(옛 파일은 posts에 남는다)', async () => {
+      await approvedThenReverted();
+      const second = await finishedRun({ withArtifacts: false });
+      await writeArtifacts(second.id, '무한 스크롤을 다시 쓰다');
+      const throwing: ApprovePublishDeps = {
+        ...deps,
+        posts: {
+          write: (input) => deps.posts.write(input),
+          retire: () => Promise.reject(new Error('boom')),
+        },
+      };
+
+      const result = await approveAndPublishRun(throwing, second.id);
+
+      expect(result).toMatchObject({ ok: true, replaced: [], leftover: [] });
+      expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(12);
+    });
+  });
+
   test('이 주제의 승인된 Run이 같은 슬러그에 있으면 덮어쓴다(재승인)', async () => {
     const first = await finishedRun();
     expect((await approveAndPublishRun(deps, first.id)).ok).toBe(true);
@@ -420,6 +579,7 @@ describe('approveAndPublishRun', () => {
           await prisma.run.update({ where: { id: run.id }, data: { status: RUN_STATUS.revised } });
           return deps.posts.write(input);
         },
+        retire: (input) => deps.posts.retire(input),
       },
     };
 

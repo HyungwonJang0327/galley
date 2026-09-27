@@ -9,6 +9,7 @@ import {
   LocalFsArtifactStore,
   LocalFsEvidenceStore,
   LocalFsPostsWriter,
+  LocalFsReplacedStore,
   LocalFsStorage,
   previewRerun,
   prisma,
@@ -63,6 +64,11 @@ export type RunApproveErrorCode =
 /** 승인 결과 — 실행 + 산출물이 놓인 posts 폴더(절대경로, 화면이 안내에 쓴다). */
 export interface ApprovedRun extends RunRecord {
   postsDir: string;
+  /** 재승인에서 글 제목이 바뀌어 DATA_DIR로 옮긴 직전 승인 파일 이름(없으면 빈 배열)과 옮긴 폴더. */
+  replaced: string[];
+  replacedDir?: string;
+  /** 옮기지 못해 posts 폴더에 남은 옛 이름 — 화면이 "폴더에 옛 파일이 남았다"를 안내할 근거. */
+  leftover: string[];
 }
 
 export type RunApproveResult = { ok: true; data: ApprovedRun } | Failure<RunApproveErrorCode>;
@@ -101,6 +107,7 @@ export async function approveRunById(runId: string): Promise<RunApproveResult> {
         prisma,
         artifacts: new LocalFsArtifactStore(dataDir.dir),
         evidence: new LocalFsEvidenceStore(dataDir.dir),
+        replaced: new LocalFsReplacedStore(dataDir.dir),
         posts: new LocalFsPostsWriter(blogDir),
         storage: new LocalFsStorage(blogDir),
       },
@@ -112,7 +119,16 @@ export async function approveRunById(runId: string): Promise<RunApproveResult> {
         error: { code: result.code, message: APPROVE_MESSAGE[result.code](result.detail) },
       };
     }
-    return { ok: true, data: { ...toRecord(result.run), postsDir: result.postsDir } };
+    return {
+      ok: true,
+      data: {
+        ...toRecord(result.run),
+        postsDir: result.postsDir,
+        replaced: result.replaced,
+        ...(result.replacedDir === undefined ? {} : { replacedDir: result.replacedDir }),
+        leftover: result.leftover,
+      },
+    };
   } catch (error) {
     return {
       ok: false,
