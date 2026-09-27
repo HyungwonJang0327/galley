@@ -1,6 +1,7 @@
 // 주제 슬러그 — 그 주제의 산출물 폴더 이름(posts/<슬러그>, DATA_DIR artifacts/<슬러그>). **키가 아니다** — 주제 키는
 // QueueItem.id이고 슬러그는 "그 실행이 어느 폴더에 썼는가"의 사실 기록이다(decisions/queue-sync-direction.md
-// 2026-09-12 결정 변경). 파생·승계 규칙은 decisions/topic-slug.md: 힌트를 뗀 제목에서 첫 실행 때 한 번 만든다.
+// 2026-09-12 결정 변경). 파생·승계 규칙은 decisions/topic-slug.md: 힌트를 뗀 제목에서 만든다(규칙 1 — 지금은 startRun마다
+// 다시 파생한다, 같은 주제의 승계는 규칙 2·TS2).
 //
 // 규칙: 같은 제목이면 언제나 같은 슬러그. 제목이 한국어라 로마자 변환은 하지 않는다
 // (변환하면 서로 다른 제목이 같은 슬러그로 뭉개진다). 한글·영숫자만 남기고 나머지는 구분자로 본다.
@@ -9,8 +10,9 @@ import { stripTopicHints } from './normalizeTitle.ts';
 const MAX_LENGTH = 80;
 
 /**
- * 제목 → 슬러그. 소문자화 → 한글/영숫자 외 문자는 하이픈 → 중복·양끝 하이픈 정리 → 길이 상한.
+ * 글자 변환만: 소문자화 → 한글/영숫자 외 문자는 하이픈 → 중복·양끝 하이픈 정리 → 길이 상한.
  * 남는 글자가 없으면(기호만 있는 제목) 빈 문자열이 아니라 'topic'을 돌려준다.
+ * **큐 제목에는 직접 쓰지 않는다** — 괄호 힌트(리포 별칭)가 슬러그에 들어간다. `slugForTopicTitle`을 쓴다.
  */
 export function topicSlug(title: string): string {
   const normalized = title

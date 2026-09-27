@@ -69,7 +69,16 @@ describe('slugForTopicTitle — 큐 제목에서 주제 슬러그(decisions/topi
     expect(slugForTopicTitle('[A-1] DB 세션 다시 보기 (linklet)')).toBe('db-세션-다시-보기');
   });
 
-  test('힌트뿐인 제목은 topic', () => {
+  test('힌트뿐인 제목은 topic(함수의 폴백 — startRun은 이런 제목을 EMPTY_TITLE로 거절한다)', () => {
     expect(slugForTopicTitle('(spacehome)')).toBe('topic');
+  });
+
+  test('80자 절단은 힌트를 뗀 뒤에 건다(긴 힌트가 제목 글자를 밀어내지 않는다)', () => {
+    const title = `${'가'.repeat(70)} (${'a'.repeat(60)})`;
+    expect(slugForTopicTitle(title)).toBe('가'.repeat(70));
+  });
+
+  test('제목 본문의 괄호도 뗀다 — 매칭 키(normalizeTopicTitle)와 같은 범위(알려진 한계)', () => {
+    expect(slugForTopicTitle('useEffect(의존성 배열) 정리')).toBe('useeffect-정리');
   });
 });

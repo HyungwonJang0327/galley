@@ -160,6 +160,25 @@ describe('startRun', () => {
     });
   });
 
+  test('되돌린 완료 줄 제목((posts/…)·줄 끝 URL)에서도 슬러그가 길어지지 않는다', async () => {
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤) https://velog.io/@me/x' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { topicSlug: '무한-스크롤-미리-불러오기' },
+    });
+  });
+
+  test('괄호 힌트뿐인 제목은 빈 제목으로 거절한다(슬러그가 topic으로 뭉치지 않게)', async () => {
+    await prisma.queueItem.update({ where: { id: topicId }, data: { title: '(spacehome)' } });
+
+    expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'EMPTY_TITLE' });
+    expect(await prisma.run.count()).toBe(0);
+  });
+
   test('제목이 바뀌면 새 슬러그로 기록하지만 같은 주제로 이어진다', async () => {
     const first = await startRun(deps(), { topicId });
     if (!first.ok) throw new Error('첫 실행이 만들어져야 한다');
