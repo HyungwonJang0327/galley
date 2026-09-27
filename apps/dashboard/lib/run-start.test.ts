@@ -57,6 +57,18 @@ describe('startRunForTopic', () => {
     });
   });
 
+  it('완료된 주제는 되돌리는 방법을 문구로 안내한다', async () => {
+    startRun.mockResolvedValue({ ok: false, code: 'TOPIC_ALREADY_DONE' });
+
+    expect(await startRunForTopic({ topicId: 'topic_1' })).toEqual({
+      ok: false,
+      error: {
+        code: 'TOPIC_ALREADY_DONE',
+        message: expect.stringContaining('날짜만 뗀 뒤'),
+      },
+    });
+  });
+
   it('던지면 RUN_START_FAILED로 감싼다', async () => {
     startRun.mockRejectedValue(new Error('SQLITE_BUSY'));
 

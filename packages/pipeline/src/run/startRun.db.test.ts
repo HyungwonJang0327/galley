@@ -126,6 +126,24 @@ describe('startRun', () => {
     expect(await prisma.run.count()).toBe(0);
   });
 
+  test('완료된 주제는 실행하지 않는다(승인에서야 막히기 전에 — 비용)', async () => {
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '완료' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'TOPIC_ALREADY_DONE' });
+    expect(await prisma.run.count()).toBe(0);
+  });
+
+  test('대기·후보·보류 주제는 실행할 수 있다(완료만 막는다)', async () => {
+    for (const status of ['후보', '보류', '대기']) {
+      await prisma.run.updateMany({ data: { status: RUN_STATUS.failed, finishedAt: new Date() } });
+      await prisma.queueItem.update({ where: { id: topicId }, data: { status } });
+      expect((await startRun(deps(), { topicId })).ok, status).toBe(true);
+    }
+  });
+
   test('같은 주제가 아직 끝나지 않았으면 또 만들지 않는다', async () => {
     await startRun(deps(), { topicId });
 
