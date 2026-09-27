@@ -238,6 +238,8 @@ export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
 export { LocalFsArtifactStore } from './artifacts/ArtifactStore.ts';
+export { LocalFsReplacedStore } from './artifacts/ReplacedStore.ts';
+export type { ReplacedStore } from './artifacts/ReplacedStore.ts';
 export type {
   ArtifactStore,
   ArtifactReadResult,
@@ -308,6 +310,8 @@ export type {
   PostFiles,
   WritePostInput,
   WritePostResult,
+  RetirePostInput,
+  RetirePostResult,
 } from './publish/PostsWriter.ts';
 export type { PostFileNames } from './publish/postFiles.ts';
 export type { StepRunnerDeps } from './steps/createStepRunner.ts';
