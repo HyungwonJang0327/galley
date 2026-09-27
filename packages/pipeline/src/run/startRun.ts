@@ -4,10 +4,14 @@
 import type { PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
 import { stripTopicHints } from '../queue/normalizeTitle.ts';
+import type { QueueStatus } from '../queue/queueFile.ts';
 import { postsPointerSlug } from '../queue/postsPointer.ts';
 import { slugForTopicTitle } from '../queue/topicSlug.ts';
 import type { RunSummary } from './runQueries.ts';
 import { RUN_STATUS } from './stateMachine.ts';
+
+/** QueueItem.status의 완료 값 — 큐 상태는 아직 파일 어휘(한국어)로 저장된다(todo TD1). */
+const DONE_STATUS: QueueStatus = '완료';
 
 export interface StartRunInput {
   /** 주제 키 = `QueueItem.id`. 내용에서 파생되지 않아 제목이 바뀌어도 이력이 끊기지 않는다. */
@@ -19,7 +23,9 @@ export interface StartRunInput {
 export type StartRunFailure =
   /** 큐에 없는 주제 id */
   | 'TOPIC_NOT_FOUND'
-  /** 큐 항목의 제목이 비었음(공백만) */
+  /** 이미 완료된 주제 — 다시 쓰려면 먼저 큐에서 되돌린다(decisions/topic-slug.md 규칙 3) */
+  | 'TOPIC_ALREADY_DONE'
+  /** 큐 항목의 제목이 비었음(공백만·괄호 힌트뿐) */
   | 'EMPTY_TITLE'
   /** 레지스트리에 없는 모델 id */
   | 'UNKNOWN_MODEL'
@@ -57,9 +63,12 @@ export async function startRun(
 ): Promise<StartRunResult> {
   const topic = await deps.prisma.queueItem.findUnique({
     where: { id: input.topicId },
-    select: { id: true, title: true },
+    select: { id: true, title: true, status: true },
   });
   if (!topic) return { ok: false, code: 'TOPIC_NOT_FOUND' };
+  // 완료 주제는 실행하지 않는다 — 승인이 TOPIC_NOT_IN_QUEUE(완료)로 거절할 것을 6단계를 다 돌린 뒤에야 알게 된다
+  // (비용). 다시 쓰려면 주제_큐.md에서 완료 줄을 대기로 되돌린다(decisions/topic-slug.md "되돌리기 절차").
+  if (topic.status === DONE_STATUS) return { ok: false, code: 'TOPIC_ALREADY_DONE' };
 
   const title = topic.title.trim();
   // 괄호 힌트뿐인 제목(`(spacehome)`)도 빈 제목이다 — 힌트를 떼면 프롬프트 제목이 비고 슬러그가 전부 `topic`으로

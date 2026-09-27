@@ -5,10 +5,11 @@ import { startRunForTopic, type RunStartErrorCode } from '../../../lib/run-start
 
 type ErrorCode = RunStartErrorCode | 'INVALID_BODY';
 
-/** 코드 → HTTP 상태. 입력 문제는 400, 없는 주제는 404, 이미 도는 주제는 409, 그 밖은 500. */
+/** 코드 → HTTP 상태. 입력 문제는 400, 없는 주제는 404, 이미 도는·이미 완료된 주제는 409, 그 밖은 500. */
 const STATUS: Record<ErrorCode, number> = {
   INVALID_BODY: 400,
   TOPIC_NOT_FOUND: 404,
+  TOPIC_ALREADY_DONE: 409,
   EMPTY_TITLE: 400,
   UNKNOWN_MODEL: 400,
   MODEL_UNAVAILABLE: 400,

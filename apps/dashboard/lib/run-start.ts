@@ -30,6 +30,8 @@ export type RunStartResult =
 
 const FAILURE_MESSAGE: Record<StartRunFailure, string> = {
   TOPIC_NOT_FOUND: '큐에 없는 주제입니다. 파일에서 다시 불러온 뒤 시도해 주세요.',
+  TOPIC_ALREADY_DONE:
+    '이미 완료된 주제입니다. 다시 쓰려면 주제_큐.md에서 완료 줄을 대기로 옮기고 날짜만 뗀 뒤 큐를 다시 불러오세요.',
   EMPTY_TITLE: '주제 제목이 비어 있습니다. 괄호 힌트 밖에 제목이 있어야 합니다.',
   UNKNOWN_MODEL: '등록되지 않은 모델입니다.',
   MODEL_UNAVAILABLE: '이 모델의 API 키가 .env에 없습니다.',
