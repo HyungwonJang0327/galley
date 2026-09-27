@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { topicSlug } from './topicSlug.ts';
+import { slugForTopicTitle, topicSlug } from './topicSlug.ts';
 
 describe('topicSlug', () => {
   test('같은 제목이면 언제나 같은 슬러그(재적재에도 안정)', () => {
@@ -14,7 +14,7 @@ describe('topicSlug', () => {
     expect(topicSlug('Cursor Based Paging')).toBe('cursor-based-paging');
   });
 
-  test('따옴표·괄호·특수문자는 구분자로 본다', () => {
+  test('따옴표·괄호·특수문자는 구분자로 본다(글자 변환만 — 힌트를 떼는 것은 slugForTopicTitle)', () => {
     expect(topicSlug('채팅 "더 불러오기" — 스크롤 위치 유지')).toBe(
       '채팅-더-불러오기-스크롤-위치-유지',
     );
@@ -41,5 +41,35 @@ describe('topicSlug', () => {
 
     expect(slug.length).toBeLessThanOrEqual(80);
     expect(slug.endsWith('-')).toBe(false);
+  });
+});
+
+describe('slugForTopicTitle — 큐 제목에서 주제 슬러그(decisions/topic-slug.md 규칙 1)', () => {
+  test('괄호 힌트(리포 별칭·기간)는 슬러그에 들어가지 않는다', () => {
+    expect(slugForTopicTitle('무한 스크롤 (spacehome)')).toBe('무한-스크롤');
+    expect(slugForTopicTitle('택배사별 엑셀 정렬 (vendor manager, 2024.03)')).toBe(
+      '택배사별-엑셀-정렬',
+    );
+    expect(slugForTopicTitle('（전각 힌트） 무한 스크롤')).toBe('무한-스크롤');
+  });
+
+  test('힌트만 고쳐도 슬러그는 같다', () => {
+    expect(slugForTopicTitle('무한 스크롤 (spacehome, react-router)')).toBe(
+      slugForTopicTitle('무한 스크롤 (spacehome)'),
+    );
+  });
+
+  test('완료 줄의 (posts/…)·줄 끝 URL·시리즈 태그도 뗀다 — 되돌린 줄에서 슬러그가 길어지지 않는다', () => {
+    expect(slugForTopicTitle('무한 스크롤 미리 불러오기 (posts/무한-스크롤-spacehome)')).toBe(
+      '무한-스크롤-미리-불러오기',
+    );
+    expect(
+      slugForTopicTitle('무한 스크롤 미리 불러오기 (posts/무한-스크롤) https://velog.io/@me/x'),
+    ).toBe('무한-스크롤-미리-불러오기');
+    expect(slugForTopicTitle('[A-1] DB 세션 다시 보기 (linklet)')).toBe('db-세션-다시-보기');
+  });
+
+  test('힌트뿐인 제목은 topic', () => {
+    expect(slugForTopicTitle('(spacehome)')).toBe('topic');
   });
 });

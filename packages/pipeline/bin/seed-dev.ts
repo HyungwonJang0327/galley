@@ -10,7 +10,7 @@ import { calculateCostUsd } from '../src/model/cost.ts';
 import { createModelRegistryFromEnv, DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
 import { RUN_STATUS, STEP_ORDER, STEP_ORIGIN, STEP_STATUS } from '../src/run/stateMachine.ts';
 import type { QueueStatus } from '../src/queue/queueFile.ts';
-import { topicSlug } from '../src/queue/topicSlug.ts';
+import { slugForTopicTitle } from '../src/queue/topicSlug.ts';
 
 if (process.env.NODE_ENV === 'production') {
   console.error('seed-dev: production에서는 돌리지 않는다.');
@@ -98,7 +98,7 @@ function pickTopics(count: number): Promise<Topic[]> {
 
 const runOf = (t: Topic) => ({
   topicId: t.id,
-  topicSlug: topicSlug(t.title),
+  topicSlug: slugForTopicTitle(t.title),
   topicTitle: t.title,
   modelId: MODEL,
 });

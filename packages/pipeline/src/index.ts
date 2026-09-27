@@ -57,7 +57,7 @@ export type {
   MoveQueueFailure,
   MoveQueueResult,
 } from './queue/moveQueue.ts';
-export { topicSlug } from './queue/topicSlug.ts';
+export { topicSlug, slugForTopicTitle } from './queue/topicSlug.ts';
 export {
   countRunsByStatus,
   countPendingApproval,

@@ -3,7 +3,7 @@
 // 검수 상태(status)와 전이 규칙은 상태 머신(B1a)이 소유하므로 여기서는 스키마 기본값을 그대로 둔다.
 import type { PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
-import { topicSlug } from '../queue/topicSlug.ts';
+import { slugForTopicTitle } from '../queue/topicSlug.ts';
 import type { RunSummary } from './runQueries.ts';
 
 export interface StartRunInput {
@@ -78,7 +78,8 @@ export async function startRun(
     data: {
       topicId: topic.id,
       attempt: previous + 1,
-      topicSlug: topicSlug(title),
+      // 힌트(리포 별칭·기간·posts/…)를 뗀 제목에서 — decisions/topic-slug.md 규칙 1.
+      topicSlug: slugForTopicTitle(title),
       topicTitle: title,
       modelId: adapter.id,
       workerState: 'queued',

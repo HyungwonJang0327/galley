@@ -148,6 +148,18 @@ describe('startRun', () => {
     expect(await prisma.run.count()).toBe(2);
   });
 
+  test('슬러그는 괄호 힌트를 뗀 제목에서 만든다(리포 별칭이 폴더 이름으로 나가지 않는다)', async () => {
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '무한 스크롤 (spacehome, 2024.03)' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { topicSlug: '무한-스크롤', topicTitle: '무한 스크롤 (spacehome, 2024.03)' },
+    });
+  });
+
   test('제목이 바뀌면 새 슬러그로 기록하지만 같은 주제로 이어진다', async () => {
     const first = await startRun(deps(), { topicId });
     if (!first.ok) throw new Error('첫 실행이 만들어져야 한다');
