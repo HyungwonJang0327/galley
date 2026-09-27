@@ -33,6 +33,10 @@ ${waiting}- 다른 주제
 
 ## 후보
 
+### 시리즈
+
+시리즈 A. 노트 앱 만들기
+
 ## 보류
 
 ## 완료
@@ -170,6 +174,7 @@ describe('되돌리기 → 재승인 흐름', () => {
       postsDir: join(blogDir, 'posts', SLUG),
     });
     expect(await readdir(join(blogDir, 'posts'))).toEqual([SLUG]);
+    // 7개인 것은 글 제목이 같아서다(Mock은 주제 제목을 글 제목으로 쓴다). 글 제목이 바뀌면 옛 이름 5개가 남는다 — TS4.
     expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(7);
     expect(await readFile(join(blogDir, 'posts', SLUG, '무한_스크롤.md'), 'utf8')).toContain(
       '도입부를 짧게',
@@ -182,7 +187,69 @@ describe('되돌리기 → 재승인 흐름', () => {
     });
   });
 
-  test('되돌리면서 제목을 고치면 새 주제가 되고, 폴더가 이미 있어 승인이 거절된다(절차 3을 지켜야 하는 이유)', async () => {
+  test('시리즈 편·줄 끝 URL이 있는 완료 줄도 날짜만 떼면 같은 주제로 붙고, 재승인한 완료 줄이 태그와 URL을 유지한다', async () => {
+    const url = 'https://velog.io/@me/feed-model';
+    await writeFile(queuePath, queue('- [A-1] 데이터 모델 (pono-web)\n', ''), 'utf8');
+    await prisma.queueItem.deleteMany();
+    await importQueueFromFile({ storage, prisma });
+    const topic = await prisma.queueItem.findFirstOrThrow({ where: { seriesKey: 'A' } });
+
+    const first = await startRun({ prisma, registry }, { topicId: topic.id });
+    if (!first.ok) throw new Error(first.code);
+    expect(first.run.topicSlug).toBe('데이터-모델');
+    await runToPendingApproval(first.run.id);
+    expect((await approveAndPublishRun(deps, first.run.id)).ok).toBe(true);
+    expect(await readFile(queuePath, 'utf8')).toContain(
+      `- ${TODAY} [A-1] 데이터 모델 (posts/데이터-모델)\n`,
+    );
+
+    // 사람이 발행 뒤 URL을 붙였고, 나중에 되돌린다 — 날짜만 떼고, 힌트는 기존 괄호 안에 쉼표로.
+    await writeFile(
+      queuePath,
+      queue(`- [A-1] 데이터 모델 (posts/데이터-모델, pono-web) ${url}\n`, ''),
+      'utf8',
+    );
+    await importQueueFromFile({ storage, prisma });
+    expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } })).toMatchObject({
+      status: '대기',
+      seriesKey: 'A',
+      episodeNo: 1,
+    });
+
+    const second = await startRun({ prisma, registry }, { topicId: topic.id });
+    if (!second.ok) throw new Error(second.code);
+    expect(second.run).toMatchObject({ attempt: 2, topicSlug: '데이터-모델' });
+    await runToPendingApproval(second.run.id);
+    expect((await approveAndPublishRun(deps, second.run.id)).ok).toBe(true);
+
+    expect(await readFile(queuePath, 'utf8')).toContain(
+      `- ${TODAY} [A-1] 데이터 모델 (posts/데이터-모델) ${url}\n`,
+    );
+    expect(await readdir(join(blogDir, 'posts'))).toEqual(['데이터-모델']);
+  });
+
+  test('날짜를 떼지 않고 옮기면 새 주제가 되고, 실행 전에 SLUG_TAKEN으로 막힌다', async () => {
+    const topic = await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } });
+    const first = await startRun({ prisma, registry }, { topicId: topic.id });
+    if (!first.ok) throw new Error(first.code);
+    await runToPendingApproval(first.run.id);
+    expect((await approveAndPublishRun(deps, first.run.id)).ok).toBe(true);
+
+    await writeFile(queuePath, queue(`- ${TODAY} 무한 스크롤 (posts/${SLUG})\n`, ''), 'utf8');
+    await importQueueFromFile({ storage, prisma });
+    const fresh = await prisma.queueItem.findFirstOrThrow({
+      where: { status: '대기', title: { startsWith: TODAY } },
+    });
+    expect(fresh.id).not.toBe(topic.id);
+
+    expect(await startRun({ prisma, registry }, { topicId: fresh.id })).toEqual({
+      ok: false,
+      code: 'SLUG_TAKEN',
+    });
+    expect(await prisma.run.count({ where: { topicId: fresh.id } })).toBe(0);
+  });
+
+  test('되돌리면서 제목을 고치면 새 주제가 되고, 실행 전에 SLUG_TAKEN으로 막힌다(절차 3을 지켜야 하는 이유)', async () => {
     const topic = await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } });
     const first = await startRun({ prisma, registry }, { topicId: topic.id });
     if (!first.ok) throw new Error(first.code);
@@ -197,14 +264,12 @@ describe('되돌리기 → 재승인 흐름', () => {
     });
     expect(fresh.id).not.toBe(topic.id);
 
-    // 새 주제는 실행 기록이 없어 제목의 posts 표기를 슬러그로 쓰지만, 이 주제의 승인된 Run이 없으니 덮어쓰지 않는다.
-    const second = await startRun({ prisma, registry }, { topicId: fresh.id });
-    if (!second.ok) throw new Error(second.code);
-    expect(second.run).toMatchObject({ attempt: 1, topicSlug: SLUG });
-    await runToPendingApproval(second.run.id);
-    expect(await approveAndPublishRun(deps, second.run.id)).toMatchObject({
+    // 새 주제는 실행 기록이 없어 제목의 posts 표기를 슬러그로 쓰는데, 그 슬러그는 옛 주제의 승인된 Run 것이다 —
+    // 6단계를 돌린 뒤 승인에서 POSTS_DIR_EXISTS가 되기 전에 실행을 거절한다.
+    expect(await startRun({ prisma, registry }, { topicId: fresh.id })).toEqual({
       ok: false,
-      code: 'POSTS_DIR_EXISTS',
+      code: 'SLUG_TAKEN',
     });
+    expect(await prisma.run.count({ where: { topicId: fresh.id } })).toBe(0);
   });
 });

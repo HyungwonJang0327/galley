@@ -144,6 +144,64 @@ describe('startRun', () => {
     }
   });
 
+  describe('SLUG_TAKEN — 첫 실행의 슬러그를 다른 주제의 승인된 실행이 쓰고 있다', () => {
+    const otherTopicRun = async (status: string, topicSlug = '무한-스크롤') => {
+      const other = await prisma.queueItem.create({
+        data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '완료', order: 9 },
+      });
+      await prisma.run.create({
+        data: {
+          topicId: other.id,
+          attempt: 1,
+          topicSlug,
+          topicTitle: '무한 스크롤',
+          modelId: 'mock:default',
+          status,
+          finishedAt: new Date(),
+        },
+      });
+    };
+
+    test('승인된(done) 실행이면 실행 전에 거절한다(승인에서 POSTS_DIR_EXISTS가 될 것 — 비용)', async () => {
+      await otherTopicRun(RUN_STATUS.done);
+
+      expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'SLUG_TAKEN' });
+      expect(await prisma.run.count({ where: { topicId } })).toBe(0);
+    });
+
+    test('다른 주제의 실행이 승인되지 않았으면(폴더가 없다) 막지 않는다', async () => {
+      await otherTopicRun(RUN_STATUS.failed);
+
+      expect((await startRun(deps(), { topicId })).ok).toBe(true);
+    });
+
+    test('슬러그가 다르면 막지 않는다', async () => {
+      await otherTopicRun(RUN_STATUS.done, '다른-슬러그');
+
+      expect((await startRun(deps(), { topicId })).ok).toBe(true);
+    });
+
+    test('승계한 슬러그는 검사하지 않는다(이 주제의 폴더다)', async () => {
+      await otherTopicRun(RUN_STATUS.done);
+      await prisma.run.create({
+        data: {
+          topicId,
+          attempt: 1,
+          topicSlug: '무한-스크롤',
+          topicTitle: '무한 스크롤',
+          modelId: 'mock:default',
+          status: RUN_STATUS.done,
+          finishedAt: new Date(),
+        },
+      });
+
+      expect(await startRun(deps(), { topicId })).toMatchObject({
+        ok: true,
+        run: { attempt: 2, topicSlug: '무한-스크롤' },
+      });
+    });
+  });
+
   test('같은 주제가 아직 끝나지 않았으면 또 만들지 않는다', async () => {
     await startRun(deps(), { topicId });
 
