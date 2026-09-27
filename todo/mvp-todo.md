@@ -283,8 +283,10 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] **TS1** (2026-09-27 `09f898c`·`41408ac` + 리뷰 `d8424fe`·`0d06bd3`, fix/slug-strip-hints) pl — 슬러그 파생 입력을 힌트 뗀 제목으로: `startRun`이 `slugForTopicTitle(title)`(= `topicSlug(stripTopicHints(title))`), `topicSlug.ts` 머리 주석 정정, 재적재 힌트 추출에서 정확히 `posts/<슬러그>` 모양인 항을 키워드에서 제외(`queue/postsPointer.ts` 공유), 힌트뿐인 제목은 `EMPTY_TITLE`(사용자 결정). 커밋: `fix(run): 슬러그 파생 입력을 힌트 뗀 제목으로 변경`
   - 완료조건 충족: `무한 스크롤 (spacehome)` → `무한-스크롤`, 줄 끝 URL·`(posts/…)`·시리즈 태그가 슬러그에 없음(테스트). `topicSlug`의 괄호 케이스는 글자 변환 테스트로 남기고 힌트 제거는 `slugForTopicTitle`·`startRun` 테스트가 본다.
   - 이월(리뷰, 기록만): M2 TS2 전 중간 상태에서 재승인 덮어쓰기 경로가 열림(통합 테스트 TS3) · L1 제목 본문 괄호도 빠짐 · L2 닫히지 않은·중첩 괄호는 별칭이 남음(TD8) · L3 URL이 괄호 앞인 줄 · **TS3에 넘김**: 완료 줄에는 원래 힌트가 없어 되돌린 주제는 자동 연결 0건 — 절차에 "힌트를 다시 적어도 된다"를 넣을지.
-- [ ] **TS2** pl — 같은 주제의 실행은 슬러그 승계: `startRun`이 그 `topicId`의 가장 최근 Run `topicSlug`를 쓰고 없을 때만 파생. 커밋: `feat(run): 같은 주제 실행의 슬러그 승계`
-  - 완료조건: 제목·힌트를 고친 뒤 실행해도 같은 슬러그(DB 테스트), 첫 실행은 파생. `startRun.db.test.ts` "제목이 바뀌면 새 슬러그" 케이스를 승계로 바꾼다. `startRerun` 슬러그 복사를 단언하는 테스트 추가(지금 없음).
+- [x] **TS2** (2026-09-27 `dc44856`·`9e37998` + 리뷰 `d6a9fbe`, feat/slug-inherit) pl — 같은 주제의 실행은 슬러그 승계: `startRun`이 그 `topicId`의 **승인된 Run 중 가장 최근 → 가장 최근 Run → 제목의 `(posts/<슬러그>)` → 파생** 순으로(리뷰에서 결정 변경 2건, 사용자). 커밋: `feat(run): 같은 주제 실행의 슬러그 승계`
+  - 완료조건 충족: 제목·힌트를 고친 뒤 실행해도 같은 슬러그(DB 테스트), 첫 실행은 파생. "제목이 바뀌면 새 슬러그" 케이스를 승계로 교체, `startRerun` 슬러그·제목 복사 단언, 슬러그가 섞인 주제·posts 표기 케이스.
+  - 같은 브랜치: INTENT·README 옛 문구 정정(`491157a` 6단계 · `cae2f02` 승인 시 posts 복사·시작 단계부터 재실행·산출물 7개, 사용자 결정).
+  - 이월(리뷰, 기록만): **M2 TS3·TS4 전에는 실제 BLOG_DIR에서 되돌리기 → 재승인을 하지 않는다**(덮어쓰기가 열렸고 옛 파일 정리·통합 테스트가 아직) · L1 동시 startRun의 attempt 중복(`(topicId, attempt)` unique 없음 — 마이그레이션 필요, 보류) · L2 count+findFirst를 한 쿼리로(startRerun과 같이 맞춰야 함) · L4 옛 슬러그가 URL 슬러그로도 나감 · L5 미승인 주제의 슬러그 고정.
 - [ ] **TS3** pl+fe — 완료 주제 실행 거절 `TOPIC_ALREADY_DONE`(409, 한국어 문구) + 되돌리기 절차를 README 사용법에. 커밋: `feat(run): 완료 주제 실행 거절`
   - 완료조건: 완료 주제에 `POST /api/runs` → 409, Run이 생기지 않는다(테스트). 되돌린 줄(날짜만 뗌)로 재적재 → 같은 주제 → 실행 → 승인이 같은 폴더를 덮어쓰는 통합 테스트(TS2 뒤).
 - [ ] **TS4** pl — 재승인 시 직전 승인이 쓴 5개 이름만 지우고 덮어쓰기: 직전 done Run의 `publish.md`(DATA_DIR)에서 글 제목 → `postFileNames` → 삭제. 못 읽으면 지우지 않음. 커밋: `feat(publish): 재승인 시 직전 승인 파일 정리`
