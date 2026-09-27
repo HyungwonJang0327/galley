@@ -1,4 +1,4 @@
-// 주제를 완료로 옮기는 순수 함수 — 완료 줄은 `- YYYY-MM-DD [A-1] <글 제목> (<메모>, posts/<슬러그>)`(스케줄 실행 결과와 같은 형식,
+// 주제를 완료로 옮기는 순수 함수 — 완료 줄은 `- YYYY-MM-DD [A-1] <글 제목> (<메모>, posts/<슬러그>) <URL>`(스케줄 실행 결과와 같은 형식,
 // decisions/series.md). 시리즈 태그는 줄이 들고 간다. 파일 쓰기·DB 재적재는 호출하는 쪽(B3a·Phase 2)이 moveQueueTopic과 같은 순서로.
 // 주의(BX4 리뷰 M2): 완료 줄 제목이 큐 제목과 다르면 매칭 키(normalizeTopicTitle)가 달라져, 그대로 재적재하면 완료 줄이 새 행이
 // 되고 원래 행은 "사라진 줄"로 남는다(Run 이력·seriesKey가 새 행에 안 붙음). 호출부가 파일을 쓰기 전에 그 QueueItem 행의
@@ -27,6 +27,11 @@ export interface CompleteTopicInput {
   slug: string;
   /** 괄호 메모(예: `2023 글 리라이트`). posts 항 앞에 쉼표로. 한 줄, 괄호 없이. */
   note?: string;
+  /**
+   * 줄 끝 URL(괄호 밖, 벨로그 링크) — 되돌려 다시 쓴 주제가 발행 URL을 잃지 않게 이어받는다(decisions/topic-slug.md
+   * 2026-09-27 TS3). 시리즈 다음 편의 "이전 편 링크"가 이 URL로 만들어진다. http(s), 공백·괄호 없이.
+   */
+  url?: string;
 }
 
 export type CompleteTopicFailure =
@@ -42,6 +47,8 @@ const SLUG = POSTS_SLUG_SHAPE;
 const LINE_BREAK = /[\r\n]/;
 /** 메모의 괄호는 완료 줄 괄호를 깨고 힌트 파서가 어긋난다(BX4 리뷰 M1) — 슬러그와 같은 규칙. */
 const NOTE_PAREN = /[()（）]/;
+/** 줄 끝 URL — 다시 읽을 때 `trailingUrl`이 같은 값을 돌려주는 모양(공백·닫는 괄호 없음). */
+const URL_SHAPE = /^https?:\/\/[^\s)）]+$/;
 
 function isValidArticleTitle(title: string): boolean {
   const trimmed = title.trim();
@@ -57,12 +64,13 @@ function isValidNote(note: string | undefined): boolean {
   return note === undefined || (!LINE_BREAK.test(note) && !NOTE_PAREN.test(note));
 }
 
-/** 완료 줄 제목 부분 — `<글 제목> (<메모>, posts/<슬러그>)`. */
+/** 완료 줄 제목 부분 — `<글 제목> (<메모>, posts/<슬러그>)`, URL이 있으면 줄 끝에 한 칸 띄워. */
 export function completedTitle(
-  input: Pick<CompleteTopicInput, 'articleTitle' | 'slug' | 'note'>,
+  input: Pick<CompleteTopicInput, 'articleTitle' | 'slug' | 'note' | 'url'>,
 ): string {
   const note = input.note?.trim();
-  return `${input.articleTitle.trim()} (${note ? `${note}, ` : ''}posts/${input.slug})`;
+  const url = input.url === undefined ? '' : ` ${input.url}`;
+  return `${input.articleTitle.trim()} (${note ? `${note}, ` : ''}posts/${input.slug})${url}`;
 }
 
 /**
@@ -81,7 +89,8 @@ export function completeTopic(
     !DATE.test(input.completedOn) ||
     !SLUG.test(input.slug) ||
     !isValidArticleTitle(input.articleTitle) ||
-    !isValidNote(input.note)
+    !isValidNote(input.note) ||
+    (input.url !== undefined && !URL_SHAPE.test(input.url))
   )
     return { ok: false, code: 'INVALID_COMPLETION' };
 

@@ -46,6 +46,37 @@ describe('completeTopic', () => {
     );
   });
 
+  test('줄 끝 URL을 이어받는다 — 괄호 밖, 다시 읽으면 같은 제목(시리즈 이전 편 링크가 유지된다)', () => {
+    const url = 'https://velog.io/@me/clerk-webhook';
+    const result = completeTopic(parseQueue(QUEUE), input({ url }));
+    if (!result.ok) throw new Error(result.code);
+    const text = serializeQueue(result.queue);
+    expect(text).toContain(
+      `- 2026-09-25 [A-2] Clerk 붙이기 — 웹훅이 늦게 올 때 (posts/clerk-webhook-late) ${url}\n`,
+    );
+    expect(parseQueue(text).sections.완료.at(-1)).toEqual({
+      title: `Clerk 붙이기 — 웹훅이 늦게 올 때 (posts/clerk-webhook-late) ${url}`,
+      completedOn: '2026-09-25',
+      series: { key: 'A', episode: 2 },
+    });
+  });
+
+  test('URL 모양이 아니면(공백·괄호·개행·다른 프로토콜) 옮기지 않는다', () => {
+    for (const url of [
+      'velog.io/@me/x',
+      'https://a b',
+      'https://a)',
+      'https://a\nb',
+      'ftp://a',
+      '',
+    ]) {
+      expect(completeTopic(parseQueue(QUEUE), input({ url })), JSON.stringify(url)).toEqual({
+        ok: false,
+        code: 'INVALID_COMPLETION',
+      });
+    }
+  });
+
   test('다시 읽으면 태그·날짜·제목이 그대로(라운드트립)', () => {
     const result = completeTopic(parseQueue(QUEUE), input({ note: '2023 글 리라이트' }));
     if (!result.ok) throw new Error(result.code);
