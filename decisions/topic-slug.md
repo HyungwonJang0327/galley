@@ -41,6 +41,9 @@
 - **힌트를 뗀 제목이 같은 두 주제는 슬러그가 같다**(예: 같은 제목에 리포만 다른 두 줄). 둘째 주제의 승인은 `POSTS_DIR_EXISTS`로 거절되고 사람이 제목을 구분해야 한다. 시리즈의 같은 한계(series.md)와 같은 처리 — 현행 유지.
 - **파일에서 제목을 고쳐 되돌리면 새 주제**가 된다. 새 주제는 이전 Run이 없어 제목에서 슬러그를 만들고, 폴더가 이미 있으면 `POSTS_DIR_EXISTS`다. 절차 3을 지킨다.
 - 직전 승인 Run의 `publish.md`가 DATA_DIR에 없으면(옛 Run·DATA_DIR 정리) 옛 이름 파일은 남는다.
+- **제목 본문의 괄호도 빠진다.** 뗀 범위가 매칭 키(`normalizeTopicTitle`)와 같아서 `useEffect(의존성 배열) 정리` → `useeffect-정리`다. 키가 같은 제목끼리만 슬러그가 같으므로 새 충돌은 없다.
+- **닫히지 않은·중첩 괄호는 별칭이 남는다**(`제목 (spacehome` → `제목-spacehome`). `stripTopicHints`를 고치면 매칭 키가 바뀌어 기존 행 매칭에 영향이 가므로 여기서 다루지 않는다 — todo TD8과 같은 뿌리. 줄 끝 URL이 괄호 앞에 오는 줄(문서화된 형식이 아님)도 URL이 남는다.
+- **힌트뿐인 제목은 실행하지 않는다**(`(spacehome)` — 힌트를 떼면 빈 제목). `startRun`이 `EMPTY_TITLE`로 거절한다(2026-09-27 TS1 리뷰, 사용자 결정). `slugForTopicTitle` 자체의 폴백은 `topic`.
 
 ## 기각된 대안
 
@@ -56,4 +59,5 @@
 
 ## 갱신 이력
 
+- 2026-09-27 **TS1 구현**(규칙 1): `slugForTopicTitle(title) = topicSlug(stripTopicHints(title))`를 `startRun`·seed가 쓴다. 완료 줄의 산출물 위치는 **정확히 `posts/<슬러그>` 모양인 항만** 키워드에서 뺀다(`queue/postsPointer.ts` — completeQueue·seriesContext·topicHints가 같은 모양을 공유, 소문자 `posts/`만; `posts/[id] 라우트` 같은 사람의 메모는 힌트로 남는다). 힌트뿐인 제목은 `EMPTY_TITLE`. 중간 상태: TS2 전이라 `startRun`은 매번 다시 파생한다 — 되돌린 줄의 글 제목이 힌트 뗀 주제 제목과 같으면 슬러그가 같아져 재승인 덮어쓰기 경로가 처음 열린다(의도된 동작, 통합 테스트는 TS3·옛 파일 정리는 TS4). 알려진 한계 3건 추가.
 - 2026-09-27 최초 결정. 구현은 todo TS1~TS4(각각 작은 단위). queue-sync-direction의 옛 문장("슬러그는 유일한 안정 키")을 취소선 처리.
