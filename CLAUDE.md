@@ -129,6 +129,7 @@ Galley/
 - **회사 리포 경로(`~/Desktop/Flowing-Repository`, `Flowing-Legacy`)를 열지 않는다.** 클린룸.
 - **`~/Desktop/blog`의 기존 파일을 덮어쓰지 않는다.** 산출물은 새 슬러그 폴더(`posts/<슬러그>/`)에만 쓴다.
   - 예외: `주제_큐.md`는 Galley가 쓸 수 있는 유일한 기존 파일. 단 **섹션 구조(대기/후보/보류/완료)·줄 순서를 깨지 않는다.**
+  - 예외: **Galley가 승인해 쓴 `posts/<슬러그>/`는 같은 주제의 재승인이 덮어쓴다**(DB에 그 주제·그 슬러그의 승인된 Run이 있을 때만). 글 제목이 바뀌었으면 직전 승인이 쓴 5개 이름만, 승인이 확정된 뒤, **지우지 않고 `DATA_DIR/replaced/`로 옮긴다.** 그 밖의 파일은 건드리지 않는다. blog 폴더의 파일을 없애는 코드는 이 옮기기(다른 볼륨이면 복사가 확인된 뒤 원본 제거)와 Galley 자신의 임시 파일 정리뿐이다 — 그 밖에 지우는 코드를 만들지 않는다. decisions/topic-slug.md 규칙 4.
 - **공개 발행 API(velog 공개, Zenn 公開)를 호출하는 코드를 만들지 않는다.** Zenn은 `published:false`(下書き)까지만.
 - **루트 `/`는 홈(요약 대시보드).** `app/(dashboard)/page.tsx`가 셸 안에서 그린다. redirect 아님(2026-09-09 결정 변경 — decisions/navigation.md). 목록형(A)의 변형 "요약형"이며 새 패턴이 아니다.
 - **`packages/ui`에 도메인 단어(주제·큐·실행·Zenn·벨로그) 금지.** ui는 `Badge` variant를 알지 "승인 대기"를 모른다.
