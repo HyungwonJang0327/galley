@@ -2,7 +2,9 @@
 // posts/<슬러그>/로 복사하고, 주제를 큐 파일의 완료 섹션으로 옮기고(completeTopic), Run을 done으로. posts에는 승인본만 남는다
 // (Run별 이력은 DATA_DIR — decisions/run-execution-model.md). 공개 발행은 여기서 일어나지 않는다(publish-gate).
 //
-// 순서: 읽기·검증(부작용 없음) → posts 쓰기 → DB 트랜잭션(QueueItem·Run 갱신이 성공한 뒤 **그 안에서** 큐 파일 쓰기) → 재적재.
+// 순서: 읽기·검증(부작용 없음) → posts 쓰기 → DB 트랜잭션(QueueItem·Run 갱신이 성공한 뒤 **그 안에서** 큐 파일 쓰기) →
+// (재승인이고 글 제목이 바뀌었으면) 직전 승인 파일을 DATA_DIR로 옮기기 → 재적재. 옮기기는 **승인이 확정된 뒤**다 — 트랜잭션이
+// 실패하면 옛 승인본이 posts에 그대로 남는다(decisions/topic-slug.md 규칙 4, TS4 리뷰 M1).
 // 앞에서 실패하면 뒤는 하지 않고 값으로 돌려준다(Run은 승인 대기로 남는다). 되돌릴 수 없는 큐 파일 쓰기를 맨 마지막에 두어
 // 파일 쓰기 실패·롤백(그새 수정 지시)이면 DB가 같이 되돌아간다(리뷰 M1) — 남는 창은 "파일을 쓴 뒤 커밋 실패"뿐이다. posts를
 // 쓴 뒤 실패하면 폴더가 남는데, DB에 승인된 Run이 없어 다음 승인이 POSTS_DIR_EXISTS로 거절된다 — 문구가 폴더를 지우라고
@@ -11,6 +13,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
 import { stripSnippets, type EvidenceBundle, type EvidencePointers } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
+import type { ReplacedStore } from '../artifacts/ReplacedStore.ts';
 import type { PostsWriter } from '../publish/PostsWriter.ts';
 import { completeTopic, completedTitle } from '../queue/completeQueue.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
@@ -33,6 +36,8 @@ export interface ApprovePublishDeps {
   /** DATA_DIR — 단계 산출물·근거 번들. */
   artifacts: ArtifactStore;
   evidence: EvidenceStore;
+  /** DATA_DIR — 재승인이 치운 옛 승인본을 두는 자리(지우지 않고 옮긴다). */
+  replaced: ReplacedStore;
   /** BLOG_DIR — posts 폴더와 주제_큐.md. */
   posts: PostsWriter;
   storage: Storage;
@@ -53,7 +58,17 @@ export type ApprovePublishFailure =
   | 'POSTS_WRITE_FAILED';
 
 export type ApprovePublishResult =
-  | { ok: true; run: RunSummary; postsDir: string; files: string[] }
+  | {
+      ok: true;
+      run: RunSummary;
+      postsDir: string;
+      files: string[];
+      /** 재승인에서 글 제목이 바뀌어 DATA_DIR로 옮긴 직전 승인 파일(없으면 빈 배열)과 옮긴 폴더. */
+      replaced: string[];
+      replacedDir?: string;
+      /** 옮기지 못해 posts 폴더에 남은 옛 이름(폴더가 섞여 있다 — 사람이 정리). */
+      leftover: string[];
+    }
   | { ok: false; code: ApprovePublishFailure; detail?: string };
 
 const ACTIVE_SECTIONS: readonly QueueStatus[] = ['대기', '후보', '보류'];
@@ -172,9 +187,26 @@ export async function approveAndPublishRun(
     return { ok: false, code: moved.code === 'TOPIC_MISMATCH' ? 'TOPIC_NOT_IN_QUEUE' : moved.code };
 
   // 4. posts 쓰기 — 폴더가 있으면 Galley가 쓴 것(이 주제의 승인된 Run이 같은 슬러그에 있음)일 때만 덮어쓴다.
-  const priorApproved = await deps.prisma.run.count({
+  const priorApproved = await deps.prisma.run.findFirst({
     where: { topicId: run.topicId, topicSlug: slug, status: RUN_STATUS.done, id: { not: run.id } },
+    orderBy: { attempt: 'desc' },
+    select: {
+      id: true,
+      steps: { where: { name: 'publishInfo' }, select: { origin: true, sourceRunId: true } },
+    },
   });
+  // 직전 승인의 글 제목 — 그 Run의 발행정보(DATA_DIR, carried면 출처 Run)에서 읽는다(부작용 없음). 못 읽으면 옛 파일은
+  // 그대로 둔다. **직전 승인 하나만** 본다(결정 문서 그대로 — 치우는 범위를 넓히지 않는다).
+  let previousTitle: string | undefined;
+  if (priorApproved) {
+    const step = priorApproved.steps[0];
+    const priorProducer =
+      step?.origin === STEP_ORIGIN.carried && step.sourceRunId
+        ? step.sourceRunId
+        : priorApproved.id;
+    const text = await deps.artifacts.read(slug, priorProducer, PUBLISH_ARTIFACT);
+    if (text.ok) previousTitle = parsePublishTitle(text.text);
+  }
   const written = await deps.posts.write({
     slug,
     articleTitle,
@@ -187,7 +219,7 @@ export async function approveAndPublishRun(
       evidence: `${JSON.stringify(toPostsEvidence(bundle.bundle), null, 2)}\n`,
       verification: texts.verification!,
     },
-    overwrite: priorApproved > 0,
+    overwrite: priorApproved !== null,
   });
   if (!written.ok)
     return written.code === 'POSTS_DIR_EXISTS'
@@ -220,6 +252,13 @@ export async function approveAndPublishRun(
     if (error instanceof Rollback) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
     throw error;
   }
+  // 6. 승인이 확정됐다 — 글 제목이 바뀐 재승인이면 직전 승인이 쓴 5개 이름을 DATA_DIR로 옮긴다. 실패해도 승인은 끝났다
+  //    (못 옮긴 이름은 leftover로 돌려준다).
+  const retired =
+    previousTitle === undefined
+      ? { moved: [], leftover: [] }
+      : await retirePrevious(deps, { slug, runId: run.id, previousTitle, keep: written.files });
+
   // 재적재는 승인의 일부가 아니다 — 여기서 실패해도 승인·posts·큐 이동은 끝났고 다음 페이지 요청이 다시 적재한다(리뷰 M5).
   try {
     await importQueueFromFile({ storage: deps.storage, prisma: deps.prisma });
@@ -231,5 +270,30 @@ export async function approveAndPublishRun(
     where: { id: run.id },
     select: RUN_SUMMARY_SELECT,
   });
-  return { ok: true, run: summary, postsDir: written.dir, files: written.files };
+  return {
+    ok: true,
+    run: summary,
+    postsDir: written.dir,
+    files: written.files,
+    replaced: retired.moved,
+    ...(retired.moved.length === 0 ? {} : { replacedDir: deps.replaced.dirFor(slug, run.id) }),
+    leftover: retired.leftover,
+  };
+}
+
+/** 옮기기는 승인 뒤 정리라 던지지 않는다 — 예외는 "아무것도 못 옮김"으로 본다(옛 파일은 posts에 남는다). */
+async function retirePrevious(
+  deps: ApprovePublishDeps,
+  input: { slug: string; runId: string; previousTitle: string; keep: readonly string[] },
+): Promise<{ moved: string[]; leftover: string[] }> {
+  try {
+    return await deps.posts.retire({
+      slug: input.slug,
+      previousTitle: input.previousTitle,
+      keep: input.keep,
+      into: deps.replaced.dirFor(input.slug, input.runId),
+    });
+  } catch {
+    return { moved: [], leftover: [] };
+  }
 }

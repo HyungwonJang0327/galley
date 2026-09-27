@@ -27,6 +27,9 @@ vi.mock('@galley/pipeline', () => ({
   LocalFsPostsWriter: class {
     constructor(public dir: string) {}
   },
+  LocalFsReplacedStore: class {
+    constructor(public dir: string) {}
+  },
   LocalFsStorage: class {
     constructor(public dir: string) {}
   },
@@ -73,6 +76,9 @@ describe('approveRunById', () => {
       run: { ...PREVIOUS, status: 'done' },
       postsDir: '/blog/posts/무한-스크롤',
       files: ['a.md'],
+      replaced: ['옛_제목.md'],
+      replacedDir: '/data/replaced/무한-스크롤/run_1',
+      leftover: ['옛_제목_zenn.md'],
     });
 
     const result = await approveRunById('run_1');
@@ -85,6 +91,10 @@ describe('approveRunById', () => {
         startedAt: '2026-09-13T03:00:00.000Z',
         finishedAt: '2026-09-13T03:00:00.000Z',
         postsDir: '/blog/posts/무한-스크롤',
+        // 옮긴 것·못 옮긴 것을 그대로 전한다 — 화면이 "폴더에 옛 파일이 남았다"를 안내할 근거.
+        replaced: ['옛_제목.md'],
+        replacedDir: '/data/replaced/무한-스크롤/run_1',
+        leftover: ['옛_제목_zenn.md'],
       }),
     });
     expect(approveAndPublishRun).toHaveBeenCalledWith(
@@ -92,6 +102,7 @@ describe('approveRunById', () => {
         prisma: {},
         artifacts: expect.objectContaining({ dir: '/data' }),
         evidence: expect.objectContaining({ dir: '/data' }),
+        replaced: expect.objectContaining({ dir: '/data' }),
         posts: expect.objectContaining({ dir: '/blog' }),
         storage: expect.objectContaining({ dir: '/blog' }),
       }),

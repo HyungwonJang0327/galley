@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
+import { LocalFsReplacedStore } from '../artifacts/ReplacedStore.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
@@ -98,6 +99,7 @@ beforeEach(async () => {
     prisma,
     artifacts,
     evidence,
+    replaced: new LocalFsReplacedStore(dataDir),
     posts: new LocalFsPostsWriter(blogDir),
     storage,
     clock: { now: () => NOW },
@@ -174,7 +176,8 @@ describe('되돌리기 → 재승인 흐름', () => {
       postsDir: join(blogDir, 'posts', SLUG),
     });
     expect(await readdir(join(blogDir, 'posts'))).toEqual([SLUG]);
-    // 7개인 것은 글 제목이 같아서다(Mock은 주제 제목을 글 제목으로 쓴다). 글 제목이 바뀌면 옛 이름 5개가 남는다 — TS4.
+    // Mock은 주제 제목을 글 제목으로 써서 이름이 같다 — 그대로 덮어쓴다. 글 제목이 바뀌는 재승인(옛 5개를 DATA_DIR로
+    // 옮김)은 approvePublish.db.test.ts가 본다.
     expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(7);
     expect(await readFile(join(blogDir, 'posts', SLUG, '무한_스크롤.md'), 'utf8')).toContain(
       '도입부를 짧게',
