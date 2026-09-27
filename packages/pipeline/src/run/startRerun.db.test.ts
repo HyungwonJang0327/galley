@@ -155,6 +155,27 @@ describe('startRerun', () => {
     }
   });
 
+  test('슬러그·제목은 직전 Run 것을 복사한다 — 큐 제목이 그새 바뀌어도 다시 계산하지 않는다', async () => {
+    const previous = await finishedRun();
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '완전히 다른 제목 (spacehome)' },
+    });
+
+    const result = await startRerun(deps(), {
+      previousRunId: previous.id,
+      plan: planRerun({ instruction: '도입부를 짧게' }),
+      instruction: '도입부를 짧게',
+    });
+
+    // 단계·승인·미리보기가 "현재 Run의 슬러그 + 출처 Run id"로 파일을 찾는다 — 사슬 안에서 슬러그가 갈리면 전부 깨진다
+    // (decisions/topic-slug.md "따라오는 것").
+    expect(result).toMatchObject({
+      ok: true,
+      run: { topicSlug: '무한-스크롤', topicTitle: '무한 스크롤' },
+    });
+  });
+
   test('직전 Run의 검수 상태는 건드리지 않는다(종결은 승인 게이트 배선의 몫)', async () => {
     const previous = await finishedRun();
 
