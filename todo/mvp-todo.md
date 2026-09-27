@@ -280,13 +280,14 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 각 항목 = 브랜치·PR 하나. 순서대로(TS2가 TS1의 파생 함수를 쓴다).
 
-- [ ] **TS1** pl — 슬러그 파생 입력을 힌트 뗀 제목으로: `startRun`이 `topicSlug(stripTopicHints(title))`, `topicSlug.ts` 머리 주석(옛 "주제 키는 슬러그") 정정, 재적재 힌트 추출에서 `posts/`로 시작하는 토큰을 키워드에서 제외. 커밋: `fix(run): 슬러그를 힌트 뗀 제목에서 만든다`
-  - 완료조건: `무한 스크롤 (spacehome)` → `무한-스크롤`, 줄 끝 URL·`(posts/…)`·시리즈 태그가 슬러그에 없음(테스트). `topicSlug.test.ts`의 힌트 포함 고정 케이스는 호출부 테스트로 옮긴다.
-- [ ] **TS2** pl — 같은 주제의 실행은 슬러그 승계: `startRun`이 그 `topicId`의 가장 최근 Run `topicSlug`를 쓰고 없을 때만 파생. 커밋: `feat(run): 같은 주제의 실행은 슬러그를 승계한다`
+- [x] **TS1** (2026-09-27 `42bc40d`·`6bf42f8` + 리뷰 `902dece`·`9eb796e`, fix/slug-strip-hints) pl — 슬러그 파생 입력을 힌트 뗀 제목으로: `startRun`이 `slugForTopicTitle(title)`(= `topicSlug(stripTopicHints(title))`), `topicSlug.ts` 머리 주석 정정, 재적재 힌트 추출에서 정확히 `posts/<슬러그>` 모양인 항을 키워드에서 제외(`queue/postsPointer.ts` 공유), 힌트뿐인 제목은 `EMPTY_TITLE`(사용자 결정). 커밋: `fix(run): 슬러그 파생 입력을 힌트 뗀 제목으로 변경`
+  - 완료조건 충족: `무한 스크롤 (spacehome)` → `무한-스크롤`, 줄 끝 URL·`(posts/…)`·시리즈 태그가 슬러그에 없음(테스트). `topicSlug`의 괄호 케이스는 글자 변환 테스트로 남기고 힌트 제거는 `slugForTopicTitle`·`startRun` 테스트가 본다.
+  - 이월(리뷰, 기록만): M2 TS2 전 중간 상태에서 재승인 덮어쓰기 경로가 열림(통합 테스트 TS3) · L1 제목 본문 괄호도 빠짐 · L2 닫히지 않은·중첩 괄호는 별칭이 남음(TD8) · L3 URL이 괄호 앞인 줄 · **TS3에 넘김**: 완료 줄에는 원래 힌트가 없어 되돌린 주제는 자동 연결 0건 — 절차에 "힌트를 다시 적어도 된다"를 넣을지.
+- [ ] **TS2** pl — 같은 주제의 실행은 슬러그 승계: `startRun`이 그 `topicId`의 가장 최근 Run `topicSlug`를 쓰고 없을 때만 파생. 커밋: `feat(run): 같은 주제 실행의 슬러그 승계`
   - 완료조건: 제목·힌트를 고친 뒤 실행해도 같은 슬러그(DB 테스트), 첫 실행은 파생. `startRun.db.test.ts` "제목이 바뀌면 새 슬러그" 케이스를 승계로 바꾼다. `startRerun` 슬러그 복사를 단언하는 테스트 추가(지금 없음).
-- [ ] **TS3** pl+fe — 완료 주제 실행 거절 `TOPIC_ALREADY_DONE`(409, 한국어 문구) + 되돌리기 절차를 README 사용법에. 커밋: `feat(run): 완료된 주제는 실행하지 않는다`
+- [ ] **TS3** pl+fe — 완료 주제 실행 거절 `TOPIC_ALREADY_DONE`(409, 한국어 문구) + 되돌리기 절차를 README 사용법에. 커밋: `feat(run): 완료 주제 실행 거절`
   - 완료조건: 완료 주제에 `POST /api/runs` → 409, Run이 생기지 않는다(테스트). 되돌린 줄(날짜만 뗌)로 재적재 → 같은 주제 → 실행 → 승인이 같은 폴더를 덮어쓰는 통합 테스트(TS2 뒤).
-- [ ] **TS4** pl — 재승인 시 직전 승인이 쓴 5개 이름만 지우고 덮어쓰기: 직전 done Run의 `publish.md`(DATA_DIR)에서 글 제목 → `postFileNames` → 삭제. 못 읽으면 지우지 않음. 커밋: `feat(publish): 재승인 시 직전 승인 파일을 정리한다`
+- [ ] **TS4** pl — 재승인 시 직전 승인이 쓴 5개 이름만 지우고 덮어쓰기: 직전 done Run의 `publish.md`(DATA_DIR)에서 글 제목 → `postFileNames` → 삭제. 못 읽으면 지우지 않음. 커밋: `feat(publish): 재승인 시 직전 승인 파일 정리`
   - 완료조건: 글 제목이 바뀐 재승인 뒤 폴더에 7개만, 사람이 넣은 다른 파일은 그대로(테스트).
 - [ ] **TS5** fe — (보류) 완료 탭 행 "다시 쓰기": 파일 줄을 대기로 옮기고 날짜를 뗀다. 수요가 생기면.
 
