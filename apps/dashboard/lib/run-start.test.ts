@@ -67,6 +67,20 @@ describe('startRunForTopic', () => {
         message: expect.stringContaining('날짜만 뗀 뒤'),
       },
     });
+    const result = await startRunForTopic({ topicId: 'topic_1' });
+    if (result.ok) throw new Error('거절돼야 한다');
+    // 버튼 이름과 같은 말, 가장 실수하기 쉬운 주의.
+    expect(result.error.message).toContain('파일에서 다시 불러오세요');
+    expect(result.error.message).toContain('제목은 고치지 않습니다');
+  });
+
+  it('슬러그 충돌은 원인(되돌리며 제목 수정·날짜)을 짚어 준다', async () => {
+    startRun.mockResolvedValue({ ok: false, code: 'SLUG_TAKEN' });
+
+    expect(await startRunForTopic({ topicId: 'topic_1' })).toEqual({
+      ok: false,
+      error: { code: 'SLUG_TAKEN', message: expect.stringContaining('제목을 고쳤거나') },
+    });
   });
 
   it('던지면 RUN_START_FAILED로 감싼다', async () => {

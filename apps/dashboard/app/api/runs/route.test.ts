@@ -87,19 +87,15 @@ describe('POST /api/runs', () => {
     });
   });
 
-  it('이미 완료된 주제면 409', async () => {
-    startRunForTopic.mockResolvedValue({
-      ok: false,
-      error: { code: 'TOPIC_ALREADY_DONE', message: '이미 완료된 주제입니다.' },
-    });
+  it('이미 완료된 주제·슬러그 충돌이면 409', async () => {
+    for (const code of ['TOPIC_ALREADY_DONE', 'SLUG_TAKEN']) {
+      startRunForTopic.mockResolvedValue({ ok: false, error: { code, message: '문구' } });
 
-    const response = await post({ topicId: 'topic_1' });
+      const response = await post({ topicId: 'topic_1' });
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
-      ok: false,
-      error: { code: 'TOPIC_ALREADY_DONE', message: '이미 완료된 주제입니다.' },
-    });
+      expect(response.status, code).toBe(409);
+      expect(await response.json()).toEqual({ ok: false, error: { code, message: '문구' } });
+    }
   });
 
   it('시작하지 못하면 500', async () => {

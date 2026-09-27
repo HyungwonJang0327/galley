@@ -32,7 +32,12 @@ export type StartRunFailure =
   /** 등록은 됐지만 API 키가 없어 워커가 실행할 수 없는 모델 */
   | 'MODEL_UNAVAILABLE'
   /** 같은 주제의 실행이 아직 끝나지 않았음 */
-  | 'RUN_ALREADY_ACTIVE';
+  | 'RUN_ALREADY_ACTIVE'
+  /**
+   * 이 주제의 첫 실행인데 슬러그가 **다른 주제의 승인된 실행**과 같다 — 승인하면 POSTS_DIR_EXISTS로 거절될 것을 실행 전에
+   * 안다(비용). 되돌리면서 제목을 고쳤거나 날짜를 안 뗀 줄, 힌트 뗀 제목이 같은 두 주제(decisions/topic-slug.md).
+   */
+  | 'SLUG_TAKEN';
 
 export type StartRunResult = { ok: true; run: RunSummary } | { ok: false; code: StartRunFailure };
 
@@ -89,14 +94,22 @@ export async function startRun(
 
   const previous = await deps.prisma.run.count({ where: { topicId: topic.id } });
   const inherited = await inheritedSlug(deps.prisma, topic.id);
+  // 승계할 실행이 없으면 제목에 적힌 산출물 위치 `(posts/<슬러그>)`(되돌린 완료 줄 — DB를 초기화해도 기존 폴더와
+  // 같은 슬러그), 그것도 없으면 힌트(리포 별칭·기간)를 뗀 제목에서 파생(규칙 1).
+  const slug = inherited ?? postsPointerSlug(title) ?? slugForTopicTitle(title);
+  if (inherited === undefined) {
+    const taken = await deps.prisma.run.findFirst({
+      where: { topicSlug: slug, status: RUN_STATUS.done, topicId: { not: topic.id } },
+      select: { id: true },
+    });
+    if (taken) return { ok: false, code: 'SLUG_TAKEN' };
+  }
 
   const run = await deps.prisma.run.create({
     data: {
       topicId: topic.id,
       attempt: previous + 1,
-      // 승계할 실행이 없으면 제목에 적힌 산출물 위치 `(posts/<슬러그>)`(되돌린 완료 줄 — DB를 초기화해도 기존 폴더와
-      // 같은 슬러그), 그것도 없으면 힌트(리포 별칭·기간)를 뗀 제목에서 파생(규칙 1).
-      topicSlug: inherited ?? postsPointerSlug(title) ?? slugForTopicTitle(title),
+      topicSlug: slug,
       topicTitle: title,
       modelId: adapter.id,
       workerState: 'queued',
