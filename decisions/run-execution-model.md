@@ -87,6 +87,7 @@ StepResult  { artifacts, tokens, cost, model? }
 
 ## 갱신 이력
 
+- 2026-09-27 B3a M3·L2 결정: 슬러그 규칙은 decisions/topic-slug.md로(힌트 뗀 제목·주제 안 승계·완료 주제 실행 거절·재승인 시 직전 승인 파일만 정리). §1의 덮어쓰기 규칙(같은 주제·같은 슬러그의 done Run이 있을 때만)은 그대로 — 승계로 재승인 Run의 슬러그가 직전과 같아져 실제로 동작한다.
 - 2026-09-27 B3a M4: **Mock 러너가 DATA_DIR에 산출물·번들을 쓴다**(`createMockStepRunner({ stores, clock })`, 실제 단계 렌더러·상수 재사용, 제목 힌트 제거·`(기존 글)` 거부·저장 실패는 `MOCK_STORE_WRITE_FAILED`). 워커 Mock 분기는 `resolveDataDir` ok면 스토어 주입, DATA_DIR 없음은 info 폴백, 오설정은 error 로그 + 폴백(사용자 결정 — 실모드로 바꾸면 기동 거부될 설정을 미리 보게). §2 조합표 development/development 행 갱신 + 가짜 근거 주의. 승인 통합 테스트(Mock 6단계 → posts 7개·완료 줄).
 - 2026-09-26 B2e: 대시보드 산출물 미리보기는 DATA_DIR `artifacts/<슬러그>/<runId>/`를 **서버 컴포넌트가 직접 읽는다**(GET API 없음, carried는 `sourceRunId` — 승인과 같은 규칙). 이진(썸네일)만 `GET /api/runs/[id]/thumbnail`. ~~Mock 모드는 DATA_DIR에 안 쓰므로 미리보기가 "산출물 없음"~~ → 2026-09-27 M4부터 DATA_DIR이 있으면 Mock도 쓴다(§2 조합표). decisions/navigation.md 갱신 이력.
 - 2026-09-26 B3b: §1 썸네일(같은 모델 호출의 부제·라벨, thumbnail.json 푸터, 실패=단계 실패, check() 사전 점검, IEND 폴링), §2 썸네일은 Chrome 스크린샷. 사용자 결정 4건(Node headless Chrome·JSON 합침·실패=단계 실패·사전 점검).

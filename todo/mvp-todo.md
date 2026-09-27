@@ -271,10 +271,24 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 - [x] **B3a** (2026-09-26 `2d31325`·`9f89dba`·`e75d214`·`4819504`·`909d5cf` + 리뷰 `87d0adc`·`1cfb650`·`33b4d42`, feat/publish-posts) pl — **승인 시** `posts/<슬러그>/`에 6개 파일(썸네일은 B3b): 기존 관례 이름 `<제목>.md`·`_링크드인.md`·`_zenn.md`·`_발행정보.md` + `evidence.json`(포인터만, analyses 제외)·`verification.json`. 발행정보 단계 실제 러너(`createPublishInfoStepRunner` — `## 근거`·시리즈·Zenn·체크리스트 조립, 모델 1회로 소개·태그). `approveAndPublishRun`(읽기·검증 → posts 쓰기 → QueueItem 선갱신 + Run done + 큐 파일 완료 줄 한 트랜잭션 → 재적재), 대시보드 승인 배선(BLOG_DIR·DATA_DIR). 사용자 결정 4건 + 리뷰 4건은 decisions/run-execution-model.md §1. 커밋: `feat(publish): posts 슬러그 폴더 산출물 쓰기 추가`
   - 처리한 이월: publishInfo Mock 교체 ✓ · BX4 M2(QueueItem 선갱신) ✓ · B3a 전 승인된 Run은 posts 없음 → 재실행으로(그 Run의 publish.md는 Mock 형식이라 승인 시 `PUBLISH_TITLE_MISSING`으로 안내).
-  - 이월(리뷰, 기록만): **M3** 승인 뒤 큐 제목 `<글 제목> (posts/<슬러그>)` → 되돌려 재실행하면 `topicSlug`가 다른 슬러그(새 폴더) — 재승인 절차·슬러그 파생 규칙은 별도 결정 · ~~**M4** Mock 러너가 DATA_DIR에 안 써 development 조합에서 승인 불가~~ → **해소(2026-09-27 feat/mock-artifacts, run-execution-model §2)**: Mock이 DATA_DIR에 실제 형식 산출물을 쓴다(이월: L3 시리즈 표기 미반영 · L4 쓰기 사이 abort 확인 없음 · L8 Mock→publishInfoStep→thumbnail.ts import 체인, 상수를 순수 모듈로 옮기면 가벼워짐) · L2 재승인 시 제목 바뀌면 옛 이름 파일 잔존 · L3 섹션을 DB 상태로 고름 · L5 `approveRun` 호출처 없음 · L6 소개·태그 redact(TD8) · L7 근거 줄 리포 구분 없음 · L8 localDate TZ(대시보드 프로세스 TZ 확인) · 실행 상세에서 `postsDir` 안내(발행 화면).
+  - 이월(리뷰, 기록만): **M3 → 결정됨(2026-09-27 decisions/topic-slug.md, 구현 TS1~TS4)** 승인 뒤 큐 제목 `<글 제목> (posts/<슬러그>)` → 되돌려 재실행하면 `topicSlug`가 다른 슬러그(새 폴더) — 재승인 절차·슬러그 파생 규칙은 별도 결정 · ~~**M4** Mock 러너가 DATA_DIR에 안 써 development 조합에서 승인 불가~~ → **해소(2026-09-27 feat/mock-artifacts, run-execution-model §2)**: Mock이 DATA_DIR에 실제 형식 산출물을 쓴다(이월: L3 시리즈 표기 미반영 · L4 쓰기 사이 abort 확인 없음 · L8 Mock→publishInfoStep→thumbnail.ts import 체인, 상수를 순수 모듈로 옮기면 가벼워짐) · L2 재승인 시 제목 바뀌면 옛 이름 파일 잔존 · L3 섹션을 DB 상태로 고름 · L5 `approveRun` 호출처 없음 · L6 소개·태그 redact(TD8) · L7 근거 줄 리포 구분 없음 · L8 localDate TZ(대시보드 프로세스 TZ 확인) · 실행 상세에서 `postsDir` 안내(발행 화면).
 - [x] **B3b** (2026-09-26 `55f2540`·`17a2559`·`5d2843d` + 리뷰 `c4a48af`·`c188705`·`dfafdcd`, feat/thumbnail) pl — `ThumbnailRenderer`(check·render, 값) + `ChromeThumbnailRenderer`(설치된 Chrome headless `--screenshot`, make_thumb.py 템플릿 이식, PNG IEND 폴링 후 SIGKILL — 사용자 결정, deploy-readiness 결정 변경). 발행정보 단계가 같은 모델 호출의 부제·라벨 + `.galley/thumbnail.json` 푸터로 `thumbnail.png`를 DATA_DIR에 쓰고(실패 = 단계 실패, 모델 호출 전 check()), 승인이 `<제목>_썸네일.png`로 복사 — posts 7개 완성. `ArtifactStore.writeBytes/readBytes`. 커밋: `feat(publish): ThumbnailRenderer 인터페이스 + headless Chrome 구현`
   - 이월(리뷰, 기록만): L3 제목 75자+면 5줄로 부제·푸터 밀림(제목 길이 상한 없음) · L6 순수 렌더러가 상수 때문에 thumbnail.ts(child_process) import · L11 B3b 전 Run은 승인 시 ARTIFACT_MISSING(thumbnail.png) — 문구에 "발행정보 단계부터" 안내 없음 · L13 Docker root면 `--no-sandbox`, CI 러너는 CJK 글꼴 없음(tofu) · 타임아웃 재시도 때 모델 재호출 · ~~썸네일은 대시보드 미리보기에 안 보임~~ → B2e에서 해소(GET 라우트).
 - [x] **B3c** (2026-09-26 `e75d214`, B3a에 포함) ts — `PostsWriter.test.ts`·`postFiles.test.ts`: 6개 파일 이름·내용·임시 파일 잔여·덮어쓰기·거부. 커밋: `test(publish): posts 산출물 구조 테스트`
+
+### TS. 주제 슬러그 규칙 — decisions/topic-slug.md (2026-09-27 결정, B3a M3·L2에서)
+
+각 항목 = 브랜치·PR 하나. 순서대로(TS2가 TS1의 파생 함수를 쓴다).
+
+- [ ] **TS1** pl — 슬러그 파생 입력을 힌트 뗀 제목으로: `startRun`이 `topicSlug(stripTopicHints(title))`, `topicSlug.ts` 머리 주석(옛 "주제 키는 슬러그") 정정, 재적재 힌트 추출에서 `posts/`로 시작하는 토큰을 키워드에서 제외. 커밋: `fix(run): 슬러그를 힌트 뗀 제목에서 만든다`
+  - 완료조건: `무한 스크롤 (spacehome)` → `무한-스크롤`, 줄 끝 URL·`(posts/…)`·시리즈 태그가 슬러그에 없음(테스트). `topicSlug.test.ts`의 힌트 포함 고정 케이스는 호출부 테스트로 옮긴다.
+- [ ] **TS2** pl — 같은 주제의 실행은 슬러그 승계: `startRun`이 그 `topicId`의 가장 최근 Run `topicSlug`를 쓰고 없을 때만 파생. 커밋: `feat(run): 같은 주제의 실행은 슬러그를 승계한다`
+  - 완료조건: 제목·힌트를 고친 뒤 실행해도 같은 슬러그(DB 테스트), 첫 실행은 파생. `startRun.db.test.ts` "제목이 바뀌면 새 슬러그" 케이스를 승계로 바꾼다. `startRerun` 슬러그 복사를 단언하는 테스트 추가(지금 없음).
+- [ ] **TS3** pl+fe — 완료 주제 실행 거절 `TOPIC_ALREADY_DONE`(409, 한국어 문구) + 되돌리기 절차를 README 사용법에. 커밋: `feat(run): 완료된 주제는 실행하지 않는다`
+  - 완료조건: 완료 주제에 `POST /api/runs` → 409, Run이 생기지 않는다(테스트). 되돌린 줄(날짜만 뗌)로 재적재 → 같은 주제 → 실행 → 승인이 같은 폴더를 덮어쓰는 통합 테스트(TS2 뒤).
+- [ ] **TS4** pl — 재승인 시 직전 승인이 쓴 5개 이름만 지우고 덮어쓰기: 직전 done Run의 `publish.md`(DATA_DIR)에서 글 제목 → `postFileNames` → 삭제. 못 읽으면 지우지 않음. 커밋: `feat(publish): 재승인 시 직전 승인 파일을 정리한다`
+  - 완료조건: 글 제목이 바뀐 재승인 뒤 폴더에 7개만, 사람이 넣은 다른 파일은 그대로(테스트).
+- [ ] **TS5** fe — (보류) 완료 탭 행 "다시 쓰기": 파일 줄을 대기로 옮기고 날짜를 뗀다. 수요가 생기면.
 
 ---
 
