@@ -14,7 +14,7 @@ import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { PostsWriter } from '../publish/PostsWriter.ts';
 import { completeTopic, completedTitle } from '../queue/completeQueue.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
-import { normalizeTopicTitle } from '../queue/normalizeTitle.ts';
+import { normalizeTopicTitle, trailingUrl } from '../queue/normalizeTitle.ts';
 import { parseQueue, serializeQueue, type QueueStatus } from '../queue/queueFile.ts';
 import type { Storage } from '../storage/Storage.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
@@ -154,10 +154,13 @@ export async function approveAndPublishRun(
   const key = normalizeTopicTitle(run.topic.title);
   const index = section.findIndex((topic) => normalizeTopicTitle(topic.title) === key);
   if (index === -1) return { ok: false, code: 'TOPIC_NOT_IN_QUEUE', detail: from };
+  // 되돌려 다시 쓴 주제의 줄 끝 URL(발행한 벨로그 링크)은 새 완료 줄이 이어받는다 — 시리즈 다음 편의 이전 편 링크.
+  const url = trailingUrl(section[index]!.title);
   const completion = {
     articleTitle,
     slug,
     completedOn: localDate(now),
+    ...(url === undefined ? {} : { url }),
   };
   const moved = completeTopic(parsed, {
     from: from as Exclude<QueueStatus, '완료'>,
