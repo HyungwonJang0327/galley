@@ -6,6 +6,7 @@
 import type { ParsedQueue, QueueStatus } from './queueFile.ts';
 import { SERIES_TAG } from './normalizeTitle.ts';
 import { isAlreadyPublished } from './topicHints.ts';
+import { POSTS_SLUG_SHAPE } from './postsPointer.ts';
 
 export interface CompleteTopicInput {
   /** 지금 섹션(완료 제외). */
@@ -35,8 +36,8 @@ export type CompleteTopicFailure =
   | 'INVALID_COMPLETION';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-/** 슬러그는 topicSlug 산출물 모양 — 공백·괄호·쉼표가 들어가면 완료 줄 괄호가 깨진다. */
-const SLUG = /^[^\s(),，（）/]+$/;
+/** 슬러그는 topicSlug 산출물 모양 — 공백·괄호·쉼표가 들어가면 완료 줄 괄호가 깨진다(모양은 postsPointer.ts 한 곳). */
+const SLUG = POSTS_SLUG_SHAPE;
 /** 제목·메모에 개행이 들어가면 줄이 쪼개져 섹션 구조가 깨진다(BX4 리뷰 H1). */
 const LINE_BREAK = /[\r\n]/;
 /** 메모의 괄호는 완료 줄 괄호를 깨고 힌트 파서가 어긋난다(BX4 리뷰 M1) — 슬러그와 같은 규칙. */

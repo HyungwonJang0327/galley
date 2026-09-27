@@ -17,11 +17,16 @@ describe('parseTopicHints', () => {
       terms: ['spacehome'],
       period: null,
     });
-    // 경로 표기 일반(`src/app`)은 그대로 항이다 — posts/로 시작하는 것만.
-    expect(parseTopicHints('라우팅 (src/app, POSTS/x)')).toEqual({
-      terms: ['src/app'],
+    // 정확히 `posts/<슬러그>` 모양만 — 사람의 메모(경로 표기·대문자·공백 있는 항)는 그대로 항이다.
+    expect(
+      parseTopicHints(
+        '라우팅 (src/app, POSTS/x, posts/[id] 라우트, posts/a/b, src/posts/x, posts)',
+      ),
+    ).toEqual({
+      terms: ['src/app', 'POSTS/x', 'posts/[id] 라우트', 'posts/a/b', 'src/posts/x', 'posts'],
       period: null,
     });
+    expect(parseTopicHints('제목 ( posts/무한-스크롤 )')).toEqual({ terms: [], period: null });
   });
 
   test('(기존 글) 메모는 키워드로 세지 않는다(이미 발행된 시리즈 편 표시)', () => {
