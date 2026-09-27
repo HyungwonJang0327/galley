@@ -17,3 +17,20 @@ export function isPostsPointerTerm(term: string): boolean {
 
 /** 제목 안의 `posts/<슬러그>` 항 — 괄호 시작이나 쉼표 바로 뒤만(`…/posts/x` 같은 URL 경로는 아니다). */
 export const POSTS_POINTER_IN_TITLE = /[(（,，]\s*posts\/([^\s,，)）]+)/;
+
+const GROUPS = /[(（]([^)）]*)[)）]/g;
+const TERM_SEPARATORS = /[,，]/;
+
+/**
+ * 제목에 적힌 산출물 위치의 슬러그 — 완료 줄(또는 되돌린 줄)의 `(posts/<슬러그>)`. **괄호 안의 한 항 전체가** 정확히
+ * `posts/<슬러그>` 모양일 때만(`posts/[id] 라우트`처럼 뒤에 말이 붙은 메모는 아니다). 없으면 undefined.
+ * 실행 기록이 없는 주제(DB 초기화 뒤)가 기존 posts 폴더와 같은 슬러그를 쓰게 하는 데 쓴다(decisions/topic-slug.md 규칙 2).
+ */
+export function postsPointerSlug(title: string): string | undefined {
+  for (const group of title.normalize('NFC').matchAll(GROUPS))
+    for (const raw of (group[1] ?? '').split(TERM_SEPARATORS)) {
+      const term = raw.trim();
+      if (isPostsPointerTerm(term)) return term.slice('posts/'.length);
+    }
+  return undefined;
+}

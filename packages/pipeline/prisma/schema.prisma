@@ -76,7 +76,8 @@ model Run {
   topic   QueueItem @relation(fields: [topicId], references: [id])
 
   // 그 실행 시점의 슬러그·제목. **키가 아니라 사실 기록**이다 — 이 Run이 어느 폴더(posts/<슬러그>/)에
-  // 썼는지 알아야 하고, 슬러그가 바뀌어도 과거 Run의 폴더는 여전히 옛 슬러그다.
+  // 썼는지 알아야 한다. 슬러그는 주제 안에서 승계한다(startRun·startRerun, decisions/topic-slug.md) — 같은 주제의 Run은
+  // 같은 폴더를 쓴다. 규칙 전에 만든 Run은 옛 슬러그 그대로다.
   topicSlug  String
   topicTitle String
 
