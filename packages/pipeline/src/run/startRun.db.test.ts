@@ -160,7 +160,7 @@ describe('startRun', () => {
     });
   });
 
-  test('첫 실행의 제목이 되돌린 완료 줄 모양((posts/…)·줄 끝 URL)이어도 슬러그가 길어지지 않는다', async () => {
+  test('실행 기록이 없는 주제의 제목에 (posts/<슬러그>)가 있으면 그 슬러그를 쓴다(DB 초기화 뒤 되돌린 줄)', async () => {
     await prisma.queueItem.update({
       where: { id: topicId },
       data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤) https://velog.io/@me/x' },
@@ -168,7 +168,19 @@ describe('startRun', () => {
 
     expect(await startRun(deps(), { topicId })).toMatchObject({
       ok: true,
-      run: { topicSlug: '무한-스크롤-미리-불러오기' },
+      run: { attempt: 1, topicSlug: '무한-스크롤' },
+    });
+  });
+
+  test('슬러그 모양이 아닌 posts 표기는 읽지 않고 제목에서 파생한다', async () => {
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '라우팅 정리 (posts/[id] 라우트, posts/a/b)' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { topicSlug: '라우팅-정리' },
     });
   });
 
@@ -191,22 +203,50 @@ describe('startRun', () => {
     });
   });
 
-  test('가장 최근 시도의 슬러그를 승계한다(옛 규칙으로 기록된 힌트 포함 슬러그도 그대로)', async () => {
-    await prisma.run.create({
+  const pastRun = (attempt: number, topicSlug: string, status: string) =>
+    prisma.run.create({
       data: {
         topicId,
-        attempt: 1,
-        topicSlug: '무한-스크롤-spacehome',
+        attempt,
+        topicSlug,
         topicTitle: '무한 스크롤 (spacehome)',
         modelId: 'mock:default',
-        status: RUN_STATUS.failed,
+        status,
         finishedAt: new Date(),
       },
     });
 
+  test('승인된 실행이 없으면 가장 최근 시도의 슬러그를 승계한다(옛 힌트 포함 슬러그도 그대로)', async () => {
+    await pastRun(1, '옛-슬러그-a', RUN_STATUS.failed);
+    await pastRun(2, '무한-스크롤-spacehome', RUN_STATUS.failed);
+
     expect(await startRun(deps(), { topicId })).toMatchObject({
       ok: true,
-      run: { attempt: 2, topicSlug: '무한-스크롤-spacehome' },
+      run: { attempt: 3, topicSlug: '무한-스크롤-spacehome' },
+    });
+  });
+
+  test('슬러그가 섞인 주제는 승인된 실행의 슬러그가 우선이다(posts 폴더가 있는 쪽)', async () => {
+    await pastRun(1, '승인된-슬러그-옛것', RUN_STATUS.done);
+    await pastRun(2, '승인된-슬러그', RUN_STATUS.done);
+    await pastRun(3, '그-뒤-실패한-슬러그', RUN_STATUS.failed);
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { attempt: 4, topicSlug: '승인된-슬러그' },
+    });
+  });
+
+  test('승계가 제목의 posts 표기보다 우선이다', async () => {
+    await pastRun(1, '기록된-슬러그', RUN_STATUS.done);
+    await prisma.queueItem.update({
+      where: { id: topicId },
+      data: { title: '무한 스크롤 (posts/다른-슬러그)' },
+    });
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { topicSlug: '기록된-슬러그' },
     });
   });
 

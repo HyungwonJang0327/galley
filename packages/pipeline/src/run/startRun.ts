@@ -4,8 +4,10 @@
 import type { PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
 import { stripTopicHints } from '../queue/normalizeTitle.ts';
+import { postsPointerSlug } from '../queue/postsPointer.ts';
 import { slugForTopicTitle } from '../queue/topicSlug.ts';
 import type { RunSummary } from './runQueries.ts';
+import { RUN_STATUS } from './stateMachine.ts';
 
 export interface StartRunInput {
   /** 주제 키 = `QueueItem.id`. 내용에서 파생되지 않아 제목이 바뀌어도 이력이 끊기지 않는다. */
@@ -45,7 +47,8 @@ const RUN_SUMMARY_SELECT = {
  * 실패하면 아무것도 만들지 않는다(던지지 않고 코드로 돌려준다).
  *
  * `topicSlug`·`topicTitle`은 **그 실행 시점의 사실 기록**으로 함께 저장한다 — 이 Run이 어느
- * 폴더에 썼는지 알아야 하고, 나중에 제목이 바뀌어도 과거 Run의 폴더는 옛 슬러그다.
+ * 폴더에 썼는지 알아야 한다. 슬러그는 주제 안에서 승계하므로(아래 `inheritedSlug`) 제목이 바뀌어도 같은 주제의
+ * Run은 같은 폴더를 쓴다. `topicTitle`은 그 시점의 제목이다.
  * `attempt`는 `topicId` 기준으로 센다(재실행은 새 Run — decisions/run-execution-model.md).
  */
 export async function startRun(
@@ -76,20 +79,15 @@ export async function startRun(
   if (active) return { ok: false, code: 'RUN_ALREADY_ACTIVE' };
 
   const previous = await deps.prisma.run.count({ where: { topicId: topic.id } });
-  // 같은 주제의 실행은 슬러그를 승계한다(decisions/topic-slug.md 규칙 2) — 제목·힌트를 고쳤거나 완료 줄을 되돌려도
-  // 주제당 폴더는 하나다. 가장 최근 시도의 것을 쓴다(재실행 사슬은 startRerun이 복사하므로 어느 Run이든 같은 값).
-  const latest = await deps.prisma.run.findFirst({
-    where: { topicId: topic.id },
-    orderBy: { attempt: 'desc' },
-    select: { topicSlug: true },
-  });
+  const inherited = await inheritedSlug(deps.prisma, topic.id);
 
   const run = await deps.prisma.run.create({
     data: {
       topicId: topic.id,
       attempt: previous + 1,
-      // 첫 실행만 제목에서 — 힌트(리포 별칭·기간·posts/…)를 뗀 제목(규칙 1).
-      topicSlug: latest?.topicSlug ?? slugForTopicTitle(title),
+      // 승계할 실행이 없으면 제목에 적힌 산출물 위치 `(posts/<슬러그>)`(되돌린 완료 줄 — DB를 초기화해도 기존 폴더와
+      // 같은 슬러그), 그것도 없으면 힌트(리포 별칭·기간)를 뗀 제목에서 파생(규칙 1).
+      topicSlug: inherited ?? postsPointerSlug(title) ?? slugForTopicTitle(title),
       topicTitle: title,
       modelId: adapter.id,
       workerState: 'queued',
@@ -97,4 +95,21 @@ export async function startRun(
     select: RUN_SUMMARY_SELECT,
   });
   return { ok: true, run };
+}
+
+/**
+ * 같은 주제의 실행은 슬러그를 승계한다(decisions/topic-slug.md 규칙 2) — 제목·힌트를 고쳤거나 완료 줄을 되돌려도 주제당
+ * 폴더는 하나다. **승인된(done) 실행이 있으면 그중 가장 최근 것**(posts 폴더가 실제로 있는 슬러그), 없으면 가장 최근
+ * 실행. 규칙 1·2 전에 만든 주제는 한 주제에 슬러그가 섞여 있을 수 있어 "어느 Run이든 같은 값"을 가정하지 않는다.
+ */
+async function inheritedSlug(prisma: PrismaClient, topicId: string): Promise<string | undefined> {
+  const select = { topicSlug: true } as const;
+  const orderBy = { attempt: 'desc' } as const;
+  const approved = await prisma.run.findFirst({
+    where: { topicId, status: RUN_STATUS.done },
+    orderBy,
+    select,
+  });
+  if (approved) return approved.topicSlug;
+  return (await prisma.run.findFirst({ where: { topicId }, orderBy, select }))?.topicSlug;
 }

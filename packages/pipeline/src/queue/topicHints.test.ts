@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'vitest';
+import { postsPointerSlug } from './postsPointer.ts';
 import {
   isAlreadyPublished,
   isPeriodHint,
@@ -179,5 +180,23 @@ describe('isAlreadyPublished', () => {
     expect(isAlreadyPublished('(2025, 기존 글) 세션')).toBe(false);
     expect(isAlreadyPublished('(기존 글 리라이트) 세션')).toBe(false);
     expect(isAlreadyPublished('세션')).toBe(false);
+  });
+});
+
+describe('postsPointerSlug', () => {
+  test('제목의 (posts/<슬러그>)에서 슬러그를 읽는다 — 메모 뒤·전각 괄호도', () => {
+    expect(postsPointerSlug('무한 스크롤 미리 불러오기 (posts/무한-스크롤)')).toBe('무한-스크롤');
+    expect(postsPointerSlug('다른 글 (회고, posts/다른-글) https://velog.io/@me/x')).toBe(
+      '다른-글',
+    );
+    expect(postsPointerSlug('전각 （posts/전각-슬러그）')).toBe('전각-슬러그');
+  });
+
+  test('슬러그 모양이 아니거나 표기가 없으면 undefined', () => {
+    expect(postsPointerSlug('무한 스크롤 (spacehome)')).toBeUndefined();
+    expect(postsPointerSlug('라우팅 (posts/a/b)')).toBeUndefined();
+    // 항 전체가 표기여야 한다 — 뒤에 말이 붙은 메모는 슬러그가 아니다.
+    expect(postsPointerSlug('라우팅 (posts/[id] 라우트)')).toBeUndefined();
+    expect(postsPointerSlug('링크 https://x.dev/posts/abc')).toBeUndefined();
   });
 });
