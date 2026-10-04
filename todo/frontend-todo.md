@@ -33,7 +33,7 @@
 - [x] 🔒 B2c — 실행 상세 2분할 화면(사용자 작성 + 리뷰 14건 반영) (2026-09-14, PR #92)
 - [x] B2d — 하단 ActionBar 배선 (2026-09-14). 쪼갠 후속: B2d-2 실패 실행 재실행 진입(pl 선행) · ~~B2d-3 승인 확인 Dialog~~(2026-09-14 완료)
 - B2e — 타임라인 펼침 산출물 마크다운 미리보기
-- BM5 — Settings.defaultModelId + TopBar 칩 label 표시
+- [x] BM5 — Settings.defaultModelId + TopBar 칩 label 표시 (2026-10-04, 로컬 3커밋 — PR 전)
 - BM6 — 실행 시작 Dialog(모델 Select) + 진입점 3곳 (선행 UM1)
 - BM7 — 실행 상세 타임라인 모델·비용 표시
 - BM8 — 재실행 시 모델 변경(ActionBar Select)
