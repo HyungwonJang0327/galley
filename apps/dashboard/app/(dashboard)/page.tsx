@@ -3,15 +3,18 @@ import { PageHeader, StatTile } from 'galley-ui';
 import { getNavCounts } from '../../lib/nav-counts';
 import { buildNextRunView } from '../../lib/next-run';
 import { getQueueSections } from '../../lib/queue-data';
+import { getRunModelChoices } from '../../lib/run-model-options';
 import { nextSchedule } from '../../lib/schedule';
 import { NextRunCard } from './_components/NextRunCard';
+import { RunStartProvider } from './_components/RunStart';
 import styles from './page.module.css';
 
 // 홈(요약형 — layout.md §4). 루트 `/`는 redirect하지 않는다(decisions/navigation.md 2026-09-09 변경).
 // 카운트는 사이드바 배지와 같은 소스(lib/nav-counts) — 타일과 배지가 어긋나지 않게.
 export default async function HomePage() {
   // 큐는 한 번만 읽고 타일 카운트·"다음 실행" 카드가 나눠 쓴다(재적재 2회 방지).
-  const queue = await getQueueSections();
+  // 실행 시작 Dialog의 모델 선택지는 큐와 무관해 같이 읽는다(던지지 않는다).
+  const [queue, runChoices] = await Promise.all([getQueueSections(), getRunModelChoices()]);
   const counts = await getNavCounts(queue.ok ? queue.data : undefined);
   const nextRun = buildNextRunView(
     queue.ok ? queue.data : { 대기: [], 후보: [], 보류: [], 완료: [] },
@@ -47,7 +50,9 @@ export default async function HomePage() {
         <StatTile label="이번 달 비용" value={counts.monthlyCostUsd} tone="muted" />
       </div>
       <div className={styles.cards}>
-        <NextRunCard view={nextRun} />
+        <RunStartProvider choices={runChoices}>
+          <NextRunCard view={nextRun} />
+        </RunStartProvider>
       </div>
     </>
   );

@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { Button, Card, EmptyState, ListRow, ListRows } from 'galley-ui';
 import type { NextRunView } from '../../../lib/next-run';
+import { RunStartButton } from './RunStart';
 import styles from './NextRunCard.module.css';
 
 // 홈 "다음 실행" 카드(layout.md §4). 표현 전용 — 데이터는 홈 페이지가 넘긴다.
-// 실행 화면(BM6·B1e) 전이라 `지금 실행`은 사유와 함께 비활성(가짜로 동작시키지 않는다).
-const RUN_DISABLED_REASON = '실행 화면은 아직 준비 중입니다.';
+// `지금 실행`은 실행 시작 Dialog를 연다(큐와 같은 Dialog — 홈 페이지가 RunStartProvider로 감싼다).
 
 export function NextRunCard({ view }: { view: NextRunView }) {
   return (
@@ -30,9 +30,12 @@ export function NextRunCard({ view }: { view: NextRunView }) {
               ) : null}
             </div>
             <div className={styles.actions}>
-              <Button disabled title={RUN_DISABLED_REASON}>
+              <RunStartButton
+                topic={{ id: view.top.id, title: view.top.title }}
+                disabledReason={view.top.runDisabledReason}
+              >
                 지금 실행
-              </Button>
+              </RunStartButton>
               <Button variant="secondary" render={<Link href="/queue?tab=waiting" />}>
                 큐 편집
               </Button>
