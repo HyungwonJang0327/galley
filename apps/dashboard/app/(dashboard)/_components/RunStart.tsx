@@ -25,6 +25,34 @@ export function useRunStart(): (topic: RunStartTopic) => void {
   return open;
 }
 
+/**
+ * 주제 하나의 실행 시작 버튼(큐 상단 `맨 위 실행`·홈 `지금 실행`). 주제가 없거나 사유가 있으면 비활성 + 사유(title).
+ * 사유 판정은 서버(lib/next-run)가 한다.
+ */
+export function RunStartButton({
+  topic,
+  disabledReason,
+  children,
+}: {
+  topic: RunStartTopic | undefined;
+  disabledReason: string | undefined;
+  children: ReactNode;
+}) {
+  const open = useRunStart();
+  const disabled = topic === undefined || disabledReason !== undefined;
+  return (
+    <Button
+      disabled={disabled}
+      title={disabledReason}
+      onClick={() => {
+        if (topic !== undefined && !disabled) open(topic);
+      }}
+    >
+      {children}
+    </Button>
+  );
+}
+
 export function RunStartProvider({
   choices,
   children,

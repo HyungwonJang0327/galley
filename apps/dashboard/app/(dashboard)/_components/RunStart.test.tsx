@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { RunModelChoices } from '../../../lib/run-model-options';
-import { RunStartProvider, useRunStart } from './RunStart';
+import { RunStartButton, RunStartProvider, useRunStart } from './RunStart';
 
 const { push, startRun } = vi.hoisted(() => ({ push: vi.fn(), startRun: vi.fn() }));
 
@@ -140,5 +140,49 @@ describe('RunStartProvider / 실행 시작 Dialog', () => {
 
     expect(screen.getByRole('heading', { name: '다른 주제' })).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('RunStartButton', () => {
+  it('누르면 그 주제로 Dialog를 연다', async () => {
+    render(
+      <RunStartProvider choices={choices}>
+        <RunStartButton topic={{ id: 't9', title: '맨 위 주제' }} disabledReason={undefined}>
+          맨 위 실행
+        </RunStartButton>
+      </RunStartProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '맨 위 실행' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: '맨 위 주제' })).toBeTruthy());
+  });
+
+  it('사유가 있으면 비활성 + title', () => {
+    render(
+      <RunStartProvider choices={choices}>
+        <RunStartButton topic={{ id: 't9', title: '기존' }} disabledReason="이미 발행된 글입니다.">
+          맨 위 실행
+        </RunStartButton>
+      </RunStartProvider>,
+    );
+
+    const button = screen.getByRole('button', { name: '맨 위 실행' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.title).toBe('이미 발행된 글입니다.');
+  });
+
+  it('주제가 없으면 비활성', () => {
+    render(
+      <RunStartProvider choices={choices}>
+        <RunStartButton topic={undefined} disabledReason="대기 중인 주제가 없습니다.">
+          맨 위 실행
+        </RunStartButton>
+      </RunStartProvider>,
+    );
+
+    expect((screen.getByRole('button', { name: '맨 위 실행' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
   });
 });
