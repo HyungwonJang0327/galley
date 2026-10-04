@@ -40,6 +40,8 @@
 ## 화면 (decisions/layout·navigation과 연동)
 
 - **실행 시작 Dialog**(galley-ui Dialog): "지금 실행"이 눌리는 모든 진입점 — 큐 행 ⋮ · 큐 상단 `맨 위 실행` · 홈 "다음 실행" 카드 — 에서 **같은 Dialog**를 연다. 제목=주제명. 모델 Select(label + provider 보조 텍스트 + 우측 입력/출력 단가 회색 텍스트, `available:false`는 비활성 + 툴팁). 초기값 = `Settings.defaultModelId`. **예상 비용 미표시**(실행 전 토큰 불명 → 추정치는 오해를 낳음). 버튼 `취소` / `실행`(주요).
+  - 구현(2026-10-04 BM6): 페이지(큐·홈)가 `RunStartProvider` 하나를 두고 진입점은 `useRunStart()`로 주제(QueueItem.id·제목)를 넘겨 연다. 선택지·초기값은 서버(`lib/run-model-options`)가 만들어 props로. 단가 표기 `$입력 / $출력`(백만 토큰당, Dialog 설명에 단위). 실행 성공 → 실행 상세(`/runs?tab=active&id=`), 실패 → Dialog 안 사유. 요청 중에는 닫히지 않는다. `(기존 글)` 편은 세 진입점 모두 비활성 + "이미 발행된 글입니다.". 큐 상단 `맨 위 실행`은 대기 섹션 맨 위(보고 있는 탭과 무관, 홈 "다음 실행"과 같은 top), 대기가 비면 비활성.
+  - ⚠️ 결정 변경 확인 필요(2026-10-04 BM6): **기본 모델에 API 키가 없으면 초기값 = 첫 실행 가능 모델**(비활성 항목이 선택된 채 열리지 않게). 실행 가능 모델이 하나도 없으면 초기값 없음 + `.env` 안내 + 실행 비활성. 위 "초기값 = `Settings.defaultModelId`"가 다루지 않던 경우의 보완이지만, TopBar 칩(설정값)과 Dialog 초기값이 달라 보일 수 있다(로컬 키 없음 → 칩 `Claude Opus 5`, Dialog `Mock`).
 - **실행 상세**(/runs) 헤더: 상태 배지 옆 모델 label(작은 회색). 타임라인 한 줄: 기존 "단계명·상태·소요·토큰"에 **비용(USD, 소수 4자리)** 추가. 단계 모델이 Run 모델과 다르면 그 줄에만 모델 label.
 - **재실행 ActionBar**: 단계 Select + 수정 지시 input 옆 모델 Select(초기값 = 원래 모델). 좁으면 ⋮ 안으로.
 - **TopBar 칩**: `Settings.defaultModelId`의 label(+ 이번 달 비용 합계는 Phase 2). 클릭 → Select로 기본 모델 변경 = Settings 갱신. **실행 중인 Run에는 영향 없음**(툴팁 명시).
@@ -72,3 +74,4 @@
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
 - 2026-09-26 BS5: 어댑터 `maxRetries` 1(레지스트리 상수). Mock 러너 조건(NODE_ENV)은 run-execution-model §2.
 - 2026-10-04 BM5: `Settings.defaultModelId` 저장 형태(키-값 `Setting` 테이블)·폴백 규칙 구체화. 결정 변경 없음.
+- 2026-10-04 BM6: 실행 시작 Dialog 구현 세부(Provider·서버 선택지·맨 위 실행 대상). ⚠️ 기본 모델에 키가 없을 때 초기값 = 첫 실행 가능 모델 — 사용자 확인 필요.
