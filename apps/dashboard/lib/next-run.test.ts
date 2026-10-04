@@ -2,12 +2,16 @@ import { describe, it, expect } from 'vitest';
 import type { QueueSections } from '@galley/pipeline';
 import { buildNextRunView } from './next-run';
 
-const entry = (title: string, category: string | null = null) => ({
+const entry = (
+  title: string,
+  category: string | null = null,
+  series: { key: string; episode: number; alreadyPublished: boolean } | null = null,
+) => ({
   id: `id-${title}`,
   title,
   category,
   completedOn: null,
-  series: null,
+  series,
 });
 
 const sections = (waiting: ReturnType<typeof entry>[]): QueueSections => ({
@@ -21,7 +25,12 @@ describe('buildNextRunView', () => {
   it('대기 맨 위가 top, 그다음이 rest(파일 순서 그대로)', () => {
     const view = buildNextRunView(sections([entry('가'), entry('나'), entry('다')]));
 
-    expect(view.top).toEqual({ title: '가', category: undefined });
+    expect(view.top).toEqual({
+      id: 'id-가',
+      title: '가',
+      category: undefined,
+      runDisabledReason: undefined,
+    });
     expect(view.rest.map((t) => t.title)).toEqual(['나', '다']);
   });
 
@@ -51,5 +60,13 @@ describe('buildNextRunView', () => {
     const view = buildNextRunView(sections([entry('가', '프론트')]));
 
     expect(view.top?.category).toBe('프론트');
+  });
+
+  it('(기존 글) 편이면 실행 불가 사유가 붙는다(행 ⋮과 같은 문구)', () => {
+    const view = buildNextRunView(
+      sections([entry('기존', null, { key: 'A', episode: 1, alreadyPublished: true })]),
+    );
+
+    expect(view.top?.runDisabledReason).toBe('이미 발행된 글입니다.');
   });
 });

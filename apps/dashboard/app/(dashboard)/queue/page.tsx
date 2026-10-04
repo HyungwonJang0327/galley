@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
 import { getQueueSections, getQueueSeries } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
+import { buildNextRunView } from '../../../lib/next-run';
 import { getRunModelChoices } from '../../../lib/run-model-options';
 import { queueStatusBadgeTone } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
@@ -20,10 +21,12 @@ import { QueueGroupHeader } from './QueueGroupHeader';
 import { QueueRowMenu } from './QueueRowMenu';
 import { QueueRowTitle } from './QueueRowTitle';
 import { ReloadQueueButton } from './ReloadQueueButton';
-import { RunStartProvider } from '../_components/RunStart';
+import { RunStartButton, RunStartProvider } from '../_components/RunStart';
 import styles from './page.module.css';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const EMPTY_WAITING_REASON = '대기 중인 주제가 없습니다.';
 
 // 큐 1화면(목록형 A). 탭 = 주제_큐.md 섹션 4개, 활성 탭·카테고리는 URL(?tab=·?category=).
 // 요청마다 파일→DB 재적재 후 읽는다(decisions/queue-sync-direction.md). 로직은 lib/queue-view.
@@ -51,10 +54,25 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const [series, runChoices] = await Promise.all([getQueueSeries(), getRunModelChoices()]);
   const view = buildQueueView(result.data, { tab: params.tab, category: params.category }, series);
   const badgeTone = queueStatusBadgeTone(view.active.status);
+  // `맨 위 실행` = 대기 섹션 맨 위(어느 탭을 보고 있든) — 홈 "다음 실행"과 같은 top.
+  const top = buildNextRunView(result.data).top;
 
   return (
     <RunStartProvider choices={runChoices}>
-      <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
+      <PageHeader
+        title="큐"
+        actions={
+          <>
+            <RunStartButton
+              topic={top}
+              disabledReason={top === undefined ? EMPTY_WAITING_REASON : top.runDisabledReason}
+            >
+              맨 위 실행
+            </RunStartButton>
+            <ReloadQueueButton reload={reloadQueueAction} />
+          </>
+        }
+      />
       {missing.ok ? (
         <MissingTopicsNotice
           topics={missing.data}
