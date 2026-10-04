@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
+import { setDefaultModelId } from '../settings/settings.ts';
 import { RUN_STATUS } from './stateMachine.ts';
 import { startRun } from './startRun.ts';
 
@@ -33,6 +34,7 @@ let topicId: string;
 beforeEach(async () => {
   await prisma.run.deleteMany();
   await prisma.queueItem.deleteMany();
+  await prisma.setting.deleteMany();
   topicId = (await prisma.queueItem.create({ data: { title: '  무한 스크롤  ', order: 0 } })).id;
 });
 
@@ -92,6 +94,31 @@ describe('startRun', () => {
     const result = await startRun(deps(), { topicId, modelId: 'mock:other' });
 
     expect(result).toMatchObject({ ok: true, run: { modelId: 'mock:other' } });
+  });
+
+  test('modelId가 없으면 설정의 기본 모델로 만든다', async () => {
+    await setDefaultModelId(prisma, registry, 'mock:other');
+
+    expect(await startRun(deps(), { topicId })).toMatchObject({
+      ok: true,
+      run: { modelId: 'mock:other' },
+    });
+  });
+
+  test('modelId를 주면 설정의 기본 모델보다 그 모델이 우선한다', async () => {
+    await setDefaultModelId(prisma, registry, 'mock:other');
+
+    expect(await startRun(deps(), { topicId, modelId: 'mock:default' })).toMatchObject({
+      ok: true,
+      run: { modelId: 'mock:default' },
+    });
+  });
+
+  test('설정의 기본 모델에 API 키가 없으면 만들지 않는다', async () => {
+    await setDefaultModelId(prisma, registry, 'mock:no-key');
+
+    expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'MODEL_UNAVAILABLE' });
+    expect(await prisma.run.count()).toBe(0);
   });
 
   test('API 키 없는 모델이면 만들지 않는다', async () => {
