@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
 import { getQueueSections, getQueueSeries } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
+import { getRunModelChoices } from '../../../lib/run-model-options';
 import { queueStatusBadgeTone } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
@@ -19,6 +20,7 @@ import { QueueGroupHeader } from './QueueGroupHeader';
 import { QueueRowMenu } from './QueueRowMenu';
 import { QueueRowTitle } from './QueueRowTitle';
 import { ReloadQueueButton } from './ReloadQueueButton';
+import { RunStartProvider } from '../_components/RunStart';
 import styles from './page.module.css';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -45,12 +47,13 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
 
   // 시리즈 요약(배지 툴팁·후보 그룹 헤더)은 적재가 끝난 뒤 같은 파일에서 — 실패하면 빈 배열(장식).
-  const series = await getQueueSeries();
+  // 실행 시작 Dialog의 모델 선택지는 큐와 무관해 같이 읽는다(던지지 않는다).
+  const [series, runChoices] = await Promise.all([getQueueSeries(), getRunModelChoices()]);
   const view = buildQueueView(result.data, { tab: params.tab, category: params.category }, series);
   const badgeTone = queueStatusBadgeTone(view.active.status);
 
   return (
-    <>
+    <RunStartProvider choices={runChoices}>
       <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
       {missing.ok ? (
         <MissingTopicsNotice
@@ -107,6 +110,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   actions={
                     view.active.status === '완료' ? undefined : (
                       <QueueRowMenu
+                        topicId={item.row.id}
                         title={item.row.title}
                         status={view.active.status}
                         index={item.row.index}
@@ -123,6 +127,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
           <p className={styles.note}>{view.active.status} 섹션에 주제가 없습니다.</p>
         )}
       </Card>
-    </>
+    </RunStartProvider>
   );
 }

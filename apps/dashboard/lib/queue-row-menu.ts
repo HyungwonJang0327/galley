@@ -20,19 +20,14 @@ const MOVE_TARGETS: readonly { status: MovableStatus; label: string }[] = [
 const MOVE_PREFIX = 'move:';
 export const RUN_NOW_ID = 'run-now';
 
-/** 실행 화면(BM6·B1e) 전이라 "지금 실행"은 비활성. 가짜로 동작시키지 않는다. */
-const RUN_NOW: QueueRowMenuItem = {
-  id: RUN_NOW_ID,
-  label: '지금 실행',
-  disabled: true,
-  disabledReason: '실행 화면은 아직 준비 중입니다.',
-};
+/** "지금 실행" = 실행 시작 Dialog를 연다(BM6 — 큐 상단·홈 카드와 같은 Dialog). */
+const RUN_NOW: QueueRowMenuItem = { id: RUN_NOW_ID, label: '지금 실행' };
 
-/** `(기존 글)` 편 — 이미 발행돼 실행 대상이 아니다(decisions/series.md). 실행 버튼이 생겨도 같은 판정을 쓴다. */
+/** `(기존 글)` 편 — 이미 발행돼 실행 대상이 아니다(decisions/series.md). 실행 진입점 셋이 같은 판정을 쓴다. */
 export const ALREADY_PUBLISHED_REASON = '이미 발행된 글입니다.';
 
 export interface QueueRowMenuOptions {
-  /** 시리즈 `(기존 글)` 편 — 준비 중 사유보다 앞선다(준비가 끝나도 실행 불가). */
+  /** 시리즈 `(기존 글)` 편 — "지금 실행" 비활성 + 사유. */
   alreadyPublished?: boolean;
 }
 
@@ -45,7 +40,7 @@ export function queueRowMenuEntries(
     label: target.label,
   }));
   const runNow = options.alreadyPublished
-    ? { ...RUN_NOW, disabledReason: ALREADY_PUBLISHED_REASON }
+    ? { ...RUN_NOW, disabled: true, disabledReason: ALREADY_PUBLISHED_REASON }
     : RUN_NOW;
   return [...moves, { type: 'separator' }, runNow];
 }

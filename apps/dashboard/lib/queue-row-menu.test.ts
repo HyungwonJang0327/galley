@@ -16,18 +16,15 @@ describe('queueRowMenuEntries', () => {
     expect(labels('보류')).toEqual(['대기로', '후보로', '—', '지금 실행']);
   });
 
-  it('"지금 실행"은 사유와 함께 비활성(실행 화면 전)', () => {
+  it('"지금 실행"은 활성(실행 시작 Dialog를 연다)', () => {
     const runNow = queueRowMenuEntries('대기').find(
       (entry) => !('type' in entry) && entry.id === RUN_NOW_ID,
     );
 
-    expect(runNow).toMatchObject({
-      disabled: true,
-      disabledReason: expect.stringContaining('준비 중'),
-    });
+    expect(runNow).toEqual({ id: RUN_NOW_ID, label: '지금 실행' });
   });
 
-  it('(기존 글) 편이면 사유가 "이미 발행된 글"(준비 중보다 앞선다)', () => {
+  it('(기존 글) 편이면 비활성 + 사유 "이미 발행된 글"', () => {
     const entries = queueRowMenuEntries('후보', { alreadyPublished: true });
     expect(entries.map((entry) => ('type' in entry ? '—' : entry.label))).toEqual([
       '대기로',
