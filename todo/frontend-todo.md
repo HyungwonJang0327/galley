@@ -37,8 +37,8 @@
 - [x] BM6 — 실행 시작 Dialog(모델 Select) + 진입점 3곳 (2026-10-04, PR #150)
 - BM7 — 실행 상세 타임라인 모델·비용 표시
 - BM8 — 재실행 시 모델 변경(ActionBar Select)
-- BM9 — 설정 > 모델·비용에서 기본 모델 변경 (2026-10-04 TopBar 칩 제거로 변경)
-- TopBar 모델 칩 제거 (2026-10-04 결정, feat/run-start-dialog)
+- [x] BM9 — 설정 > 모델·비용에서 기본 모델 변경 (2026-10-04, 로컬 2커밋 — PR 전)
+- [x] TopBar 모델 칩 제거 (2026-10-04, PR #150)
 - BW4 — 수정 지시·승인·재실행을 Run 상태 변경으로(워커 pickup, B2b에서 미룬 몫 — 선행 B1a)
 - BW6 — TopBar 워커 생존 점
 - BE12 — 큐 행 ⋮ "근거 편집" Dialog + 실행 Dialog(BM6) 근거 목록·0건 경고 (decisions/evidence-collection.md, 선행 BE7·UM1)
