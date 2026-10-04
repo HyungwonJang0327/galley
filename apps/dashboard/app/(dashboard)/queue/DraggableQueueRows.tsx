@@ -153,6 +153,7 @@ function DraggableRow({
       trailing={<Badge tone={badgeTone}>{status}</Badge>}
       actions={
         <QueueRowMenu
+          topicId={row.id}
           title={row.title}
           status={status}
           index={row.index}

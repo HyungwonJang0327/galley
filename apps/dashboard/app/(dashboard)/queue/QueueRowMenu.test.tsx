@@ -1,6 +1,30 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { RunStartProvider } from '../_components/RunStart';
 import { QueueRowMenu } from './QueueRowMenu';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('../../../lib/run-api-client', () => ({ startRun: vi.fn() }));
+
+const choices = {
+  options: [
+    {
+      value: 'mock',
+      label: 'Mock',
+      description: 'Mock (개발용)',
+      meta: '$0 / $0',
+      disabled: false,
+      disabledReason: undefined,
+    },
+  ],
+  initialId: 'mock',
+};
+
+/** 행 메뉴는 페이지의 실행 시작 Dialog(Provider) 안에서만 쓰인다. */
+function renderInPage(ui: ReactElement) {
+  return render(<RunStartProvider choices={choices}>{ui}</RunStartProvider>);
+}
 
 function openMenu(name = '첫 주제 메뉴') {
   const trigger = screen.getByRole('button', { name });
@@ -15,11 +39,11 @@ function press(element: HTMLElement) {
   fireEvent.click(element);
 }
 
-const props = { title: '첫 주제', status: '대기' as const, index: 2 };
+const props = { topicId: 'topic-1', title: '첫 주제', status: '대기' as const, index: 2 };
 
 describe('QueueRowMenu', () => {
-  it('현재 섹션을 뺀 이동 항목과 비활성 "지금 실행"을 보여 준다', async () => {
-    render(<QueueRowMenu {...props} move={vi.fn()} />);
+  it('현재 섹션을 뺀 이동 항목과 "지금 실행"을 보여 준다', async () => {
+    renderInPage(<QueueRowMenu {...props} move={vi.fn()} />);
     openMenu();
 
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
@@ -28,13 +52,26 @@ describe('QueueRowMenu', () => {
       '보류로',
       '지금 실행',
     ]);
-    expect(screen.getByRole('menuitem', { name: '지금 실행' }).getAttribute('aria-disabled')).toBe(
-      'true',
-    );
+    expect(
+      screen.getByRole('menuitem', { name: '지금 실행' }).getAttribute('aria-disabled'),
+    ).toBeNull();
+  });
+
+  it('"지금 실행"을 고르면 그 주제로 실행 시작 Dialog를 연다(이동은 하지 않는다)', async () => {
+    const move = vi.fn();
+    renderInPage(<QueueRowMenu {...props} move={move} />);
+    openMenu();
+    await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
+
+    press(screen.getByRole('menuitem', { name: '지금 실행' }));
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
+    expect(screen.getByRole('heading', { name: '첫 주제' })).toBeTruthy();
+    expect(move).not.toHaveBeenCalled();
   });
 
   it('(기존 글) 편이면 "지금 실행" 사유가 이미 발행된 글(title 속성)', async () => {
-    render(<QueueRowMenu {...props} alreadyPublished move={vi.fn()} />);
+    renderInPage(<QueueRowMenu {...props} alreadyPublished move={vi.fn()} />);
     openMenu();
 
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
@@ -45,7 +82,7 @@ describe('QueueRowMenu', () => {
 
   it('이동 항목을 고르면 지금 섹션·위치·제목과 함께 move를 부른다', async () => {
     const move = vi.fn().mockResolvedValue({ ok: true });
-    render(<QueueRowMenu {...props} move={move} />);
+    renderInPage(<QueueRowMenu {...props} move={move} />);
     openMenu();
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
 
@@ -61,7 +98,7 @@ describe('QueueRowMenu', () => {
       ok: false,
       error: { code: 'TOPIC_MISMATCH', message: '주제_큐.md가 그새 바뀌었습니다.' },
     });
-    render(<QueueRowMenu {...props} move={move} />);
+    renderInPage(<QueueRowMenu {...props} move={move} />);
     openMenu();
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
 
@@ -74,7 +111,7 @@ describe('QueueRowMenu', () => {
 
   it('요청 자체가 던지면 다시 시도하라고 알린다', async () => {
     const move = vi.fn().mockRejectedValue(new Error('network'));
-    render(<QueueRowMenu {...props} move={move} />);
+    renderInPage(<QueueRowMenu {...props} move={move} />);
     openMenu();
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
 
@@ -87,7 +124,7 @@ describe('QueueRowMenu', () => {
 
   it('비활성 "지금 실행"을 눌러도 move를 부르지 않는다', async () => {
     const move = vi.fn();
-    render(<QueueRowMenu {...props} move={move} />);
+    renderInPage(<QueueRowMenu {...props} move={move} />);
     openMenu();
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
 
