@@ -46,3 +46,10 @@
 ## galley-ui 런타임 의존성 범위 (2026-09-21, RF-32)
 
 - `packages/ui`의 `@base-ui/react`·`lucide-react`는 **caret 범위**(`^1.8.0`·`^1.43.0`). 정확 핀이면 소비자가 같은 라이브러리를 다른 버전으로 쓸 때 두 벌이 설치되고, Base UI는 컨텍스트 기반이라 Provider 불일치가 난다. 모노레포 lockfile이 실제 버전을 고정하므로 개발 재현성은 유지된다.
+
+## Next.js 에이전트 안내 파일 커밋 (2026-10-04, 사용자 결정)
+
+- `apps/dashboard/AGENTS.md`(Next 관리 블록 "이 Next는 학습 데이터와 다르다 — `node_modules/next/dist/docs/`를 먼저 읽어라")·`apps/dashboard/CLAUDE.md`(`@AGENTS.md`)를 **커밋한다**. `next dev`가 AI 에이전트를 감지하고 블록이 없으면 만든다(`next.config`의 `agentRules`, 기본 켜짐).
+- 효과: `apps/dashboard` 아래 파일을 다루는 에이전트가 Next 16 번들 문서를 먼저 본다(이 리포를 받는 사람의 에이전트도). 루트 `CLAUDE.md`와 내용 충돌 없음 — 프로젝트 규칙은 루트, 이 파일은 Next 버전 안내만.
+- 주의: Next를 올리면 `next dev`가 블록을 고쳐 쓸 수 있다 → 그 diff는 **Next 업그레이드 커밋에 함께** 넣는다(다른 작업 커밋에 섞지 않는다). 블록을 손으로 고치지 않는다(다음 `next dev`가 되돌린다). prettier는 현재 내용을 바꾸지 않는다(2026-10-04 확인).
+- 기각: `.gitignore`(로컬 에이전트는 어차피 읽음 — 리포만 깨끗) · `agentRules: false` + 삭제(안내 자체를 버림).
