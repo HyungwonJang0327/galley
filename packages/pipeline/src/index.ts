@@ -184,6 +184,8 @@ export {
   ADAPTER_MAX_RETRIES,
 } from './model/ModelRegistry.ts';
 export type { ModelRegistry, ModelRegistryOptions, ModelEnv } from './model/ModelRegistry.ts';
+export { getDefaultModel, setDefaultModelId, SETTING_KEY } from './settings/settings.ts';
+export type { SetDefaultModelResult } from './settings/settings.ts';
 export {
   REPO_STATUS,
   ANALYSIS_KIND,
