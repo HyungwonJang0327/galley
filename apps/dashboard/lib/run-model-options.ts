@@ -39,7 +39,8 @@ function formatPricing({ pricing }: ModelAdapter): string {
   return `$${pricing.inputPerMTok} / $${pricing.outputPerMTok}`;
 }
 
-function toOption(adapter: ModelAdapter): RunModelOption {
+/** 어댑터 하나 → Select 항목. 실행 시작 Dialog와 설정 > 모델·비용이 같은 표기를 쓴다. */
+export function toRunModelOption(adapter: ModelAdapter): RunModelOption {
   const provider = PROVIDER[adapter.provider];
   return {
     value: adapter.id,
@@ -67,5 +68,5 @@ export async function getRunModelChoices(): Promise<RunModelChoices> {
   }
   const adapters = registry.list();
   const initial = preferred.available ? preferred : adapters.find((a) => a.available);
-  return { options: adapters.map(toOption), initialId: initial?.id };
+  return { options: adapters.map(toRunModelOption), initialId: initial?.id };
 }
