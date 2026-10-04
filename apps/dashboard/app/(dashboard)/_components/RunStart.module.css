@@ -1,0 +1,20 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+/* 안내·진행(회색)과 오류(빨강) 한 줄. 빈 <p>는 margin 0이라 높이 0. */
+.note,
+.error {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+}
+
+.note {
+  color: var(--ui-color-text-muted);
+}
+
+.error {
+  color: var(--ui-color-danger-fg);
+}

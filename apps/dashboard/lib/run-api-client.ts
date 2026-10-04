@@ -3,12 +3,19 @@
 // 응답 봉투는 { ok, data } | { ok, error:{ code, message } } 둘뿐(decisions/error-handling.md ③).
 // HTTP 상태가 아니라 `ok`로 판별한다.
 import type { RerunPlanView, RevisedRun, RunRecord } from './run-commands';
+import type { StartedRun } from './run-start';
 
 export interface ApiFailure {
   ok: false;
   error: { code: string; message: string };
 }
 export type ApiResult<T> = { ok: true; data: T } | ApiFailure;
+
+export interface StartRunRequest {
+  /** 주제 키 = QueueItem.id. */
+  topicId: string;
+  modelId: string;
+}
 
 export interface RerunRequest {
   instruction: string;
@@ -54,4 +61,8 @@ export function planRerun(runId: string, body: RerunRequest): Promise<ApiResult<
 
 export function reviseRun(runId: string, body: RerunRequest): Promise<ApiResult<RevisedRun>> {
   return post(`/api/runs/${encodeURIComponent(runId)}/revise`, body, '수정 지시');
+}
+
+export function startRun(body: StartRunRequest): Promise<ApiResult<StartedRun>> {
+  return post('/api/runs', body, '실행 시작');
 }
