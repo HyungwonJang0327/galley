@@ -315,3 +315,11 @@ model IndexJob {
   @@index([status, createdAt])
   @@index([repoId, createdAt])
 }
+
+// 앱 설정 키-값. 키는 SETTING_KEY(src/settings/settings.ts) 한 곳에서만 정한다 — 열에 흩지 않는다.
+// 값은 문자열 하나(어댑터 id 등). 해석·폴백은 읽는 쪽 함수가 한다(decisions/model-selection.md).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
