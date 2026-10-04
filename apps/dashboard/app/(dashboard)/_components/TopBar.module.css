@@ -4,11 +4,6 @@
   gap: var(--ui-space-3);
 }
 
-.right {
-  display: flex;
-  align-items: center;
-}
-
 /* 홈 링크지만 TopBar 위에서는 워드마크로 보여야 한다(다크 배경 글자색 상속, 밑줄 없음). */
 .wordmark {
   font-size: var(--ui-text-h2);

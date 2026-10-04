@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { getDefaultModelLabel } from '../../../lib/default-model';
 import { getNavCounts } from '../../../lib/nav-counts';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -14,10 +13,10 @@ import styles from '../layout.module.css';
  * 매칭되지 않은 경로는 그룹 레이아웃을 타지 않아, 셸 조립이 두 곳으로 갈리지 않게 여기 모은다.
  *
  * 배지는 여기(서버)에서 홈 타일과 같은 소스로 조회해 넘긴다 — 둘이 어긋나지 않게(navigation.md).
- * `getNavCounts`·`getDefaultModelLabel`은 실패해도 던지지 않는다(셸이 죽으면 모든 화면이 500이 된다).
+ * `getNavCounts`는 실패해도 던지지 않는다(셸이 죽으면 모든 화면이 500이 된다).
  */
 export async function AppFrame({ children }: { children: ReactNode }) {
-  const [counts, modelLabel] = await Promise.all([getNavCounts(), getDefaultModelLabel()]);
+  const counts = await getNavCounts();
   const badges = {
     '/queue': counts.waiting,
     '/runs': counts.pendingApproval,
@@ -26,10 +25,7 @@ export async function AppFrame({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <DashboardShell
-        topBar={<TopBar modelLabel={modelLabel} />}
-        sidebar={<Sidebar badges={badges} />}
-      >
+      <DashboardShell topBar={<TopBar />} sidebar={<Sidebar badges={badges} />}>
         <div className={styles.page}>{children}</div>
       </DashboardShell>
     </SidebarProvider>
