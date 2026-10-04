@@ -1,12 +1,16 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
-const { startRun, createModelRegistryFromEnv } = vi.hoisted(() => ({
+const { startRun, createModelRegistryFromEnv, getQueueSections } = vi.hoisted(() => ({
   startRun: vi.fn(),
   createModelRegistryFromEnv: vi.fn(() => ({ registry: true })),
+  getQueueSections: vi.fn(),
 }));
 
 // 실제 SQLite·모델 SDK 대신 pipeline 경계만 가짜로 둔다(생성 자체는 pipeline 테스트가 본다).
 vi.mock('@galley/pipeline', () => ({ prisma: {}, startRun, createModelRegistryFromEnv }));
+
+// 재적재 자체(파일 → DB)는 queue-data·pipeline 테스트가 본다. 여기서는 순서와 실패 처리만.
+vi.mock('./queue-data', () => ({ getQueueSections }));
 
 import { startRunForTopic } from './run-start';
 
@@ -22,11 +26,46 @@ const RUN = {
   finishedAt: null,
 };
 
+beforeEach(() => {
+  getQueueSections.mockResolvedValue({
+    ok: true,
+    data: { 대기: [], 후보: [], 보류: [], 완료: [] },
+  });
+});
+
 afterEach(() => {
   startRun.mockReset();
+  getQueueSections.mockReset();
 });
 
 describe('startRunForTopic', () => {
+  it('시작 직전에 큐 파일을 다시 적재한다(가드가 최신 상태를 보게)', async () => {
+    startRun.mockResolvedValue({ ok: true, run: RUN });
+
+    await startRunForTopic({ topicId: 'topic_1' });
+
+    expect(getQueueSections).toHaveBeenCalledTimes(1);
+    expect(getQueueSections.mock.invocationCallOrder[0]).toBeLessThan(
+      startRun.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('다시 읽지 못하면 시작하지 않는다(확인 못 한 상태로 비용을 쓰지 않는다)', async () => {
+    getQueueSections.mockResolvedValue({
+      ok: false,
+      error: { code: 'BLOG_DIR_MISSING', message: '루트 .env에 BLOG_DIR이 없습니다.' },
+    });
+
+    expect(await startRunForTopic({ topicId: 'topic_1' })).toEqual({
+      ok: false,
+      error: {
+        code: 'QUEUE_RELOAD_FAILED',
+        message: '실행 전에 큐 파일을 다시 읽지 못했습니다. 루트 .env에 BLOG_DIR이 없습니다.',
+      },
+    });
+    expect(startRun).not.toHaveBeenCalled();
+  });
+
   it('pipeline에 제목·모델을 넘기고 날짜를 문자열로 돌려준다', async () => {
     startRun.mockResolvedValue({ ok: true, run: RUN });
 

@@ -98,6 +98,16 @@ describe('POST /api/runs', () => {
     }
   });
 
+  it('실행 전에 큐 파일을 다시 읽지 못하면 500', async () => {
+    const error = { code: 'QUEUE_RELOAD_FAILED', message: '문구' };
+    startRunForTopic.mockResolvedValue({ ok: false, error });
+
+    const response = await post({ topicId: 'topic_1' });
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ ok: false, error });
+  });
+
   it('시작하지 못하면 500', async () => {
     startRunForTopic.mockResolvedValue({
       ok: false,

@@ -1,4 +1,5 @@
 // POST /api/runs — 주제 하나를 실행 큐에 올린다(Run을 queued로 생성). 워커가 집어가 실행한다.
+// 시작 직전에 주제_큐.md를 다시 적재한다(lib/run-start) — 못 읽으면 500으로 거절.
 // 응답 형태는 CLAUDE.md §4: 성공 { ok: true, data } / 실패 { ok: false, error: { code, message } }.
 // 재실행·승인은 Run 상태 전이(상태 머신 B1a)가 필요해 아직 여기에 없다 — decisions/run-location.md.
 import { startRunForTopic, type RunStartErrorCode } from '../../../lib/run-start';
@@ -15,6 +16,7 @@ const STATUS: Record<ErrorCode, number> = {
   MODEL_UNAVAILABLE: 400,
   RUN_ALREADY_ACTIVE: 409,
   SLUG_TAKEN: 409,
+  QUEUE_RELOAD_FAILED: 500,
   RUN_START_FAILED: 500,
 };
 

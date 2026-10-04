@@ -1,5 +1,7 @@
 // 실행 시작(서버 전용): pipeline이 Run을 queued로 만들고, 실제 실행은 워커가 집어간다
 // — decisions/run-location.md. 실패는 던지지 않고 { ok: false, error } 형태로 돌려준다.
+// 시작 직전에 주제_큐.md를 다시 적재한다 — pipeline의 가드(완료 주제 거절 등)는 DB 적재 상태를 보는데,
+// 화면을 연 뒤 파일이 바뀌었으면 옛 상태로 비용을 쓰게 된다(TS3 리뷰 L5).
 import 'server-only';
 import {
   createModelRegistryFromEnv,
@@ -7,8 +9,9 @@ import {
   startRun,
   type StartRunFailure,
 } from '@galley/pipeline';
+import { getQueueSections } from './queue-data';
 
-export type RunStartErrorCode = StartRunFailure | 'RUN_START_FAILED';
+export type RunStartErrorCode = StartRunFailure | 'QUEUE_RELOAD_FAILED' | 'RUN_START_FAILED';
 
 /** 화면·API가 그대로 쓰는 직렬화 형태(Date는 ISO 문자열). */
 export interface StartedRun {
@@ -44,6 +47,18 @@ export async function startRunForTopic(input: {
   topicId: string;
   modelId?: string;
 }): Promise<RunStartResult> {
+  // 다시 읽지 못하면 시작하지 않는다 — 확인하지 못한 상태로 비용을 쓰지 않는다(승인도 같은 파일이 필요하다).
+  const reloaded = await getQueueSections();
+  if (!reloaded.ok) {
+    return {
+      ok: false,
+      error: {
+        code: 'QUEUE_RELOAD_FAILED',
+        message: `실행 전에 큐 파일을 다시 읽지 못했습니다. ${reloaded.error.message}`,
+      },
+    };
+  }
+
   try {
     const registry = createModelRegistryFromEnv(process.env);
     const result = await startRun({ prisma, registry }, input);
