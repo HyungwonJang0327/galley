@@ -16,7 +16,7 @@
 ### 2. TopBar
 
 - 좌: 사이드바 접기 토글(햄버거) + `Galley`. (워크스페이스 탭 제거 — decisions/navigation.md.)
-- 우: 상태 칩 1개(단색 pill) — 현재 모델명 + ▾(모델 전환). Phase 1은 모델명만, 비용은 Phase 2.
+- 우: ~~상태 칩(모델명 ▾)~~ 없음(2026-10-04 결정 변경 — decisions/model-selection.md). 워커 생존 점(BW6)이 이 자리에 온다.
 - 앱에서 유일한 다크 영역.
 
 ### 3. Sidebar (사용 흐름 순 — decisions/navigation.md)
@@ -91,7 +91,7 @@
 **설정 /settings/\* — 목록형 카드 안 폼 섹션(A 변형) · Phase 2**
 
 - 리포 연결(/settings/repos): 행 = 이름 · 경로 · `읽기 전용` 배지 · 상태 배지(ready/stale/indexing) · 분석 글 n · 마지막 인덱싱 · 인덱싱 모델 label · `재인덱싱` · 제거. 상단 `폴더 추가`. 폴더 추가·재인덱싱은 Dialog(실행 Dialog와 같은 모델 Select, 기본 Haiku 4.5). 인덱싱 중이면 진행률(디렉터리 n/m). Phase 1-B는 CLI `index <path>`가 같은 일을 한다(evidence-collection).
-- 모델·비용: 어댑터 Select + 이번 달/월별 비용 표(TopBar 칩과 같은 소스).
+- 모델·비용: 기본 모델 Select(Phase 1, BM9) + 어댑터 목록·이번 달/월별 비용 표(Phase 2, 홈 "이번 달 비용" 타일과 같은 소스).
 - 어투 프롬프트: 탭(벨로그 / 링크드인 / Zenn) + 텍스트 에디터 + `저장`(파일 그대로 편집).
 
 ### 5. 상태 배지 색 (도메인↔variant 매핑은 apps/dashboard 어댑터. ui는 variant 이름만)
@@ -133,3 +133,4 @@
 - 2026-09-12 **StatTile·EmptyState 규칙 확정**(AH1, 에이전트 기본값을 사용자가 그대로 확정): 값 색 톤 `default|muted|warning` — `muted`는 §4 "0이면 회색"을 **앱이 지정**하게 하려고 추가(ui는 그 값이 0인지, 숫자인지조차 모른다. 값이 "—"일 수도 있어 ui가 판단하면 규칙이 지저분해진다). 숫자 크기 토큰 `--ui-text-stat` **26px**(§4 24~28px인데 기존 최대가 `--ui-text-title` 22px, 하드코딩 금지라 신설). **`CardGrid`는 만들지 않음** — 타일 4개 배치는 앱 CSS grid(`repeat(4, minmax(0,1fr))` + gap 토큰)로 충분(갤러리에서 확인), 재사용이 반복되면 그때 추출. 링크는 `href` 또는 `render`(SidebarItem과 같은 방식, ui는 next 미의존). `EmptyState`는 한 줄 메시지 + 선택 액션 슬롯.
 - 2026-09-12 §4 큐 헤더에 `파일에서 다시 불러오기`(보조) 추가 — 사용자 결정(queue-sync-direction 수동 갱신 버튼). TopBar 전역 버튼안은 기각(§2 유지).
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+- 2026-10-04 TopBar 모델 칩 제거(decisions/model-selection.md 갱신 이력, 사용자 제안). 우측은 워커 생존 점(BW6) 자리. 모델·비용 화면의 기본 모델 Select를 Phase 1로.

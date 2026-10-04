@@ -148,7 +148,7 @@
 - [ ] **BM7** fe — 실행 상세 타임라인에 모델 label·비용(USD 4자리) 표시(단계 모델이 Run과 다르면 그 줄에만 label). 커밋: `feat(dashboard): 실행 상세에 모델과 비용 표시`
 - [ ] **BM8** fe — 재실행 ActionBar에 모델 Select(초기값=원래 모델) → 그 `RunStep.modelId`만 변경. 커밋: `feat(dashboard): 단계 재실행 시 모델 변경 지원`
   - 완료조건: 한 단계만 다른 모델로 재실행 시 그 RunStep.modelId만 바뀌고 Run.modelId 유지.
-- [ ] **BM9** fe — TopBar 칩 클릭 → Select로 기본 모델 변경(Settings 갱신, 실행 중 Run엔 영향 없음 툴팁). 커밋: `feat(dashboard): TopBar 칩에서 기본 모델 변경`
+- [ ] **BM9** fe — (2026-10-04 변경: TopBar 칩 제거) 설정 > 모델·비용(`/settings/model`)에 기본 모델 Select(`setDefaultModelId`, 키 없는 모델 비활성+사유, "실행 중인 실행에는 영향 없음" 안내). 어댑터 목록·비용 표는 Phase 2. 커밋: `feat(dashboard): 설정 화면에서 기본 모델 변경`
 
 ### BW. 워커 실행 — [B] Phase 1-B (decisions/run-location.md) · B1↔B2 사이
 
@@ -160,7 +160,7 @@
   - 완료조건: running 워커를 강제 종료→재기동 시 완료 단계 다음부터 재개, 중간 단계는 처음부터.
 - [x] **BW4** (2026-09-13 `53a586a`·`4c74363`·`2bfd57c`·`ac36517`·`3a97b52`·`7660120`, feat/run-approve-revise, PR #89) fe — 수정 지시·승인·**재실행**을 Run 상태 변경으로(대시보드 write → 워커 pickup). **표면 두 경로**(사용자 결정): `POST /api/runs/[id]/approve`(200) · `POST /api/runs/[id]/revise`(201, `{ instruction, startStep?, modelId? }`) + 확인 Dialog용 `POST /api/runs/[id]/rerun-plan`(미리보기 — 부작용 없지만 지시가 길면 쿼리에 못 실어 POST, 상한 `INSTRUCTION_MAX_LENGTH` 2000자). pipeline: `approveRun`(조건부 updateMany로 경합 방지) · `reviseRun`(이 Run → **`revised`**(RUN_STATUS 신설, finishedAt 채움) + `startRerunIn`으로 새 Run, **한 트랜잭션**) · `previewRerun`(reviseRun과 같은 `planRerun`·`resolveCarriedSources` — 일치를 테스트로 고정). `startRerun`은 **최신 시도에서만**(`NOT_LATEST_ATTEMPT`, 사용자 결정) → `RUN_ALREADY_ACTIVE`는 도달 불가라 제거. 어댑터 `lib/run-commands.ts`, 라우트 공용 `[id]/_shared.ts`(상태 매핑은 코드 유니온). pipeline 214→235 · dashboard 123→155. 커밋: `feat(run): 수정 지시·승인을 Run 상태로 표현`
 - [ ] **BW5** doc — launchd plist 템플릿 + `docs/worker-setup.md`(KeepAlive·로그 경로·.env 로드, 잠자기 방지 안 함). 커밋: `docs: 워커 launchd 설치 문서와 plist 템플릿`
-- [ ] **BW6** fe — TopBar 칩 옆 워커 생존 점(최근 heartbeat 타임아웃 판정). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
+- [ ] **BW6** fe — TopBar 우측(모델 칩 자리, 2026-10-04 칩 제거) 워커 생존 점(최근 heartbeat 타임아웃 판정). TopBar 변경이므로 `verify:layout` 통과. 커밋: `feat(dashboard): TopBar에 워커 생존 표시 추가`
 
 ### BE. 근거 수집 구조 — [B] Phase 1-B (decisions/evidence-collection.md · 2026-09-09 확정)
 
