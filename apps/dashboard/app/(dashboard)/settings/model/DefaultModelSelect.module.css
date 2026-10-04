@@ -1,0 +1,22 @@
+/* Select 폭은 부모가 정한다 — Dialog와 같은 폭이면 단가 메타까지 한 줄에 들어간다. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  max-width: var(--ui-dialog-width);
+}
+
+/* 진행·결과(회색)와 오류(빨강) 한 줄. 빈 <p>는 margin 0이라 높이 0. */
+.note,
+.error {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+}
+
+.note {
+  color: var(--ui-color-text-muted);
+}
+
+.error {
+  color: var(--ui-color-danger-fg);
+}
