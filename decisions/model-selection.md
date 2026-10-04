@@ -7,6 +7,7 @@
 - 어댑터 계층은 `@galley/pipeline`에 둔다: `ModelAdapter` 인터페이스(🔒 직접 작성 핵심 모듈 b — decisions/core-modules.md) + `ModelRegistry` + 구체 어댑터. **멀티 provider**(`anthropic` + `openai`) — 유저가 실행 시 Claude·GPT를 함께 고른다.
 - 파이프라인 단계 코드는 **어댑터 id만** 받고 provider를 모른다. `costUsd`는 어댑터가 계산하고 파이프라인은 합산만 한다.
 - `Settings.defaultModelId` 하나 = 실행 Dialog 초기값 + TopBar 칩 표시값. **SQLite settings 테이블**에 저장.
+  - 저장 형태(2026-10-04 BM5): 키-값 테이블 `Setting { key @id, value, updatedAt }`, 키는 `SETTING_KEY`(pipeline `src/settings/settings.ts`) 한 곳. 읽기 `getDefaultModel` — 저장값이 없거나 **레지스트리에 없는 id**면 `registry.default()`로 폴백, 키 없는 모델(`available:false`)은 폴백하지 않는다(사람이 고른 값 — 실행 시작이 `MODEL_UNAVAILABLE`로 알린다). 쓰기 `setDefaultModelId`는 레지스트리에 없으면 `UNKNOWN_MODEL` 값 반환. `startRun`은 modelId가 없으면 이 값을 쓴다. 대시보드는 셸(AppFrame, 서버)이 label만 읽어 TopBar에 props로 넘기고, 조회 실패 시 레지스트리 기본 label(던지지 않음).
 
 ## 어댑터 계층 (packages/pipeline)
 
@@ -70,3 +71,4 @@
 - 2026-09-09 **멀티 provider 확정**: 픽커에 Claude 4개(Fable 5.1·Opus 5·Sonnet 5·Haiku 4.5) + GPT 3개(gpt-5.5·gpt-5.1·gpt-5-mini) + Mock. provider 타입에 `openai` 추가, SDK 2개(`@anthropic-ai/sdk`·`openai`) 도입(라이브러리 추가 결정 = 이 문서). id·단가는 각 provider 라이브 문서에서 확인해 표로 고정. 기본 모델 = Opus 5.
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
 - 2026-09-26 BS5: 어댑터 `maxRetries` 1(레지스트리 상수). Mock 러너 조건(NODE_ENV)은 run-execution-model §2.
+- 2026-10-04 BM5: `Settings.defaultModelId` 저장 형태(키-값 `Setting` 테이블)·폴백 규칙 구체화. 결정 변경 없음.
