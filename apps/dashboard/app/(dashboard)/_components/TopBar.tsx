@@ -6,10 +6,11 @@ import { TopBarChip } from 'galley-ui';
 import { useSidebarCollapse } from './SidebarProvider';
 import styles from './TopBar.module.css';
 
-// Phase 1은 모델명만 표시. 전환·비용은 Phase 2.
-const MODEL_LABEL = 'Claude Opus 4.8';
-
-export function TopBar() {
+/**
+ * `modelLabel` = 설정의 기본 모델 label. 서버(AppFrame)가 읽어 넘긴다 — 클라이언트는 pipeline을 모른다
+ * (decisions/server-only-boundary.md). 칩 클릭으로 바꾸기는 BM9, 비용 합계는 Phase 2.
+ */
+export function TopBar({ modelLabel }: { modelLabel: string }) {
   const { collapsed, toggle } = useSidebarCollapse();
   return (
     <>
@@ -23,7 +24,7 @@ export function TopBar() {
       </div>
       <div className={styles.right}>
         <TopBarChip trailing={<ChevronDown size={14} aria-hidden="true" />}>
-          {MODEL_LABEL}
+          {modelLabel}
         </TopBarChip>
       </div>
     </>
