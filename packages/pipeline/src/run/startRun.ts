@@ -8,6 +8,7 @@ import type { QueueStatus } from '../queue/queueFile.ts';
 import { postsPointerSlug } from '../queue/postsPointer.ts';
 import { slugForTopicTitle } from '../queue/topicSlug.ts';
 import type { RunSummary } from './runQueries.ts';
+import { getDefaultModel } from '../settings/settings.ts';
 import { RUN_STATUS } from './stateMachine.ts';
 
 /** QueueItem.status의 완료 값 — 큐 상태는 아직 파일 어휘(한국어)로 저장된다(todo TD1). */
@@ -16,7 +17,7 @@ const DONE_STATUS: QueueStatus = '완료';
 export interface StartRunInput {
   /** 주제 키 = `QueueItem.id`. 내용에서 파생되지 않아 제목이 바뀌어도 이력이 끊기지 않는다. */
   topicId: string;
-  /** 레지스트리 어댑터 id(`provider:model`). 없으면 레지스트리 기본 모델. */
+  /** 레지스트리 어댑터 id(`provider:model`). 없으면 설정의 기본 모델(없으면 레지스트리 기본). */
   modelId?: string;
 }
 
@@ -80,7 +81,9 @@ export async function startRun(
   // 뭉친다(TS1 리뷰 M1, 사용자 결정). 비용을 쓰기 전에 막는다.
   if (stripTopicHints(title) === '') return { ok: false, code: 'EMPTY_TITLE' };
 
-  const adapter = input.modelId ? deps.registry.get(input.modelId) : deps.registry.default();
+  const adapter = input.modelId
+    ? deps.registry.get(input.modelId)
+    : await getDefaultModel(deps.prisma, deps.registry);
   if (!adapter) return { ok: false, code: 'UNKNOWN_MODEL' };
   if (!adapter.available) return { ok: false, code: 'MODEL_UNAVAILABLE' };
 
