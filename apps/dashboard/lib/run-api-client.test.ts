@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { approveRun, planRerun, reviseRun } from './run-api-client';
+import { approveRun, planRerun, reviseRun, startRun } from './run-api-client';
 
 const fetchMock = vi.fn();
 
@@ -16,6 +16,19 @@ const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 describe('run-api-client', () => {
+  it('startRun은 주제 id·모델 id를 /api/runs로 POST한다', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true, data: { id: 'r9' } }, 201));
+
+    const result = await startRun({ topicId: 't1', modelId: 'mock' });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ topicId: 't1', modelId: 'mock' }),
+    });
+    expect(result).toEqual({ ok: true, data: { id: 'r9' } });
+  });
+
   it('approve는 본문 없이 POST하고 봉투를 그대로 돌려준다', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ ok: true, data: { id: 'r1' } }));
 
