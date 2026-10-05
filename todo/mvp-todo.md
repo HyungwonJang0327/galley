@@ -293,6 +293,9 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] **TS4** (2026-09-28 `4a79598`·`e45e3f1`·`5f22fba`, feat/reapprove-cleanup, PR #148 — 리뷰 두 번, 첫 리뷰 뒤 재설계해 커밋을 다시 나눔) pl — 재승인에서 글 제목이 바뀌면 직전 승인(가장 최근 done Run 하나)이 쓴 5개 이름을 **승인 확정 뒤 `DATA_DIR/replaced/<슬러그>/<runId>/`로 옮긴다**(지우지 않음 — 리뷰에서 결정 변경 2건, 사용자). 직전 제목은 그 Run의 `publish.md`(DATA_DIR)에서, 못 읽으면 옮기지 않음. CLAUDE.md §5 예외 한 줄. 커밋: `feat(publish): 재승인 확정 뒤 직전 승인 파일 정리`
   - 완료조건 충족: 글 제목이 바뀐 재승인 뒤 폴더에 7개만, 사람이 넣은 다른 파일은 그대로(테스트). 추가 고정: 제목의 대소문자만 바뀌면 새 파일 보존(리뷰 H1) · 접두 관계 이름 · 옛 이름 자리가 폴더(leftover) · 심볼릭 링크 · 깨진 제목(폴더 밖 무사) · carried 발행정보 · 승인 실패 시 옮기지 않음.
   - 이월(리뷰, 기록만): 이름이 같으면 사람이 만든 파일도 옮겨짐(되찾을 수 있음) · 승인에 실패한 실행이 쓴 새 제목 파일은 남음 · `posts/<슬러그>`가 심볼릭 링크면 그쪽에서 동작 · `replaced/` 폴더는 쌓이기만 함(정리 정책 없음) · 한 번 놓친 옛 파일(프로세스 종료·옮기기 실패·발행정보 없음)은 다음 재승인이 치우지 않음 · 조회와 트랜잭션 사이에 같은 주제의 다른 Run이 승인되면 직전 제목이 낡음(단일 사용자 로컬, 기존 창).
+- [x] **TS7** (2026-10-05 `4fee8fd` 로컬, fix/reject-missing-topic-run — 머지 뒤 해시 정정) pl+fe — 파일에서 사라진 주제 실행 거절 `TOPIC_MISSING_FROM_FILE`(409, 한국어 문구). `startRun`이 적재가 남긴 표시(`holdReason=removed-from-file`·`missingSince`)를 본다(decisions/queue-sync-direction.md "사라진 줄 처리"). 커밋: `fix(run): 파일에서 사라진 주제의 실행 거절`
+  - 완료조건 충족: 표시가 있는 주제 → 거절·Run 없음, manual 보류는 실행, 완료는 `TOPIC_ALREADY_DONE` 우선, **실제 적재를 거친** 줄 삭제·복구·제목 수정 케이스(DB 테스트).
+  - 이월: 수정 지시(재실행) 경로는 미결(TS3 L6과 같이) · 사라진 주제의 "지금 실행" 버튼 비활성+사유는 TD3와 같이.
 - [ ] **TS6** fe — 승인 결과 안내: 응답의 `postsDir`·`replaced`·`replacedDir`·`leftover`를 실행 상세에 보여 준다(특히 `leftover`가 있으면 "폴더에 옛 파일이 남았다"). B3a 이월 "실행 상세에서 postsDir 안내"와 같이. 커밋: `feat(dashboard): 승인 결과 안내`
 - [ ] **TS5** fe — (보류) 완료 탭 행 "다시 쓰기": 파일 줄을 대기로 옮기고 날짜를 뗀다. 수요가 생기면.
 
@@ -399,7 +402,7 @@ Zenn push 실연동(push 전 검사: frontmatter `title` 70자 이내·`topics` 
 
 ## 정리 대기 (기술 부채 — 결정은 났고 적용이 남은 것)
 
-- [ ] **TD3** fe — 보류 탭에서 `holdReason`을 구분해 보여준다(`removed-from-file` = 파일에서 사라져 내려온 것 / `manual` = 사람이 옮긴 것). 되살릴지 판단하는 근거다. A6e에서 데이터는 준비됐고 표시만 남았다. decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 보류 탭에 보류 사유 표시`
+- [ ] **TD3** fe — (2026-10-05 추가: 사라진 주제의 "지금 실행"·`맨 위 실행` 비활성 + 사유도 같이 — 서버 거절 TS7의 화면 쪽) 보류 탭에서 `holdReason`을 구분해 보여준다(`removed-from-file` = 파일에서 사라져 내려온 것 / `manual` = 사람이 옮긴 것). 되살릴지 판단하는 근거다. A6e에서 데이터는 준비됐고 표시만 남았다. decisions/queue-sync-direction.md "사라진 줄 처리". 커밋: `feat(queue): 보류 탭에 보류 사유 표시`
 - [x] **TD4** (2026-09-13 `a11d852`, feat/queue-missing-confirm, PR #86) fe — 셸(`getNavCounts`)이 매 요청 큐를 **재적재**하던 것 제거. 배지는 DB만 읽어도 되는데 파일 읽기+DB 쓰기가 모든 라우트에서 일어나고, 페이지 적재와 병렬로 돌아 직렬화(`importChain`)에 의존하게 만든다. 적재는 큐·홈 화면과 `파일에서 다시 불러오기`에만 두고 셸은 읽기만. 커밋: `perf(dashboard): 셸 배지를 재적재 없이 DB에서 읽기`
 
 - [ ] **TD1** pl+fe — `QueueItem.status`가 아직 한국어(`대기|후보|보류|완료`). decisions/db-value-language.md에 따라 **DB는 영어**(`waiting|candidate|hold|done`)로 옮기고, `주제_큐.md` 섹션 머리글은 한국어 그대로 두고 **파일 ↔ DB 경계에서 변환**한다. 닿는 곳: `queueFile`(파서 타입은 파일 어휘라 유지) · `importQueue` · `loadQueue` · `moveQueue`·`reorderQueue` 입력 · `lib/queue-tabs`·`queue-row-menu`·`queue-status-badge` · 큐 화면. URL은 이미 영어(`?tab=waiting`)라 매핑 지점이 있다. 커밋: `refactor(queue): 큐 상태 저장값을 영어로`
