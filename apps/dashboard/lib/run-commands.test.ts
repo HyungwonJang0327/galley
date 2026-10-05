@@ -35,6 +35,10 @@ vi.mock('@galley/pipeline', () => ({
   },
 }));
 
+// 재적재 자체(파일 → DB)는 queue-data·pipeline 테스트가 본다. 여기서는 순서와 실패 처리만.
+const { getQueueSections } = vi.hoisted(() => ({ getQueueSections: vi.fn() }));
+vi.mock('./queue-data', () => ({ getQueueSections }));
+
 import { approveRunById, planRerunById, reviseRunById } from './run-commands';
 
 const RUN = {
@@ -57,7 +61,15 @@ const PREVIOUS = {
 };
 const PLAN = { startStep: 'velog', fresh: ['velog', 'verify'], carried: ['evidence'] };
 
+beforeEach(() => {
+  getQueueSections.mockResolvedValue({
+    ok: true,
+    data: { 대기: [], 후보: [], 보류: [], 완료: [] },
+  });
+});
+
 afterEach(() => {
+  getQueueSections.mockReset();
   approveAndPublishRun.mockReset();
   reviseRun.mockReset();
   previewRerun.mockReset();
@@ -199,6 +211,8 @@ describe('reviseRunById', () => {
     ['CARRIED_STEP_NOT_SUCCEEDED', '앞 단계'],
     ['INSTRUCTION_TOO_LONG', '너무 깁니다'],
     ['MODEL_UNAVAILABLE', 'API 키'],
+    ['TOPIC_ALREADY_DONE', '완료 섹션'],
+    ['TOPIC_MISSING_FROM_FILE', '줄이 사라졌습니다'],
   ])('%s → 문구에 "%s"', async (code, phrase) => {
     reviseRun.mockResolvedValue({ ok: false, code });
 
@@ -206,6 +220,33 @@ describe('reviseRunById', () => {
       ok: false,
       error: { code, message: expect.stringContaining(phrase) },
     });
+  });
+
+  it('보내기 직전에 큐 파일을 다시 적재한다(주제 가드가 최신 상태를 보게)', async () => {
+    reviseRun.mockResolvedValue({ ok: true, previous: PREVIOUS, run: RUN, plan: PLAN });
+
+    await reviseRunById({ runId: 'run_1', instruction: '' });
+
+    expect(getQueueSections).toHaveBeenCalledTimes(1);
+    expect(getQueueSections.mock.invocationCallOrder[0]).toBeLessThan(
+      reviseRun.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('다시 읽지 못하면 보내지 않는다', async () => {
+    getQueueSections.mockResolvedValue({
+      ok: false,
+      error: { code: 'BLOG_DIR_MISSING', message: '루트 .env에 BLOG_DIR이 없습니다.' },
+    });
+
+    expect(await reviseRunById({ runId: 'run_1', instruction: '' })).toEqual({
+      ok: false,
+      error: {
+        code: 'QUEUE_RELOAD_FAILED',
+        message: '재실행 전에 큐 파일을 다시 읽지 못했습니다. 루트 .env에 BLOG_DIR이 없습니다.',
+      },
+    });
+    expect(reviseRun).not.toHaveBeenCalled();
   });
 
   it('던져지면 RUN_REVISE_FAILED로 감싼다', async () => {
