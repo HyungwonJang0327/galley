@@ -15,6 +15,7 @@ import {
   STEP_STATUS,
   type RerunPlan,
 } from './stateMachine.ts';
+import { topicRunBlock, type TopicRunBlock } from './topicGuard.ts';
 
 export interface StartRerunInput {
   /** 이어받을 직전 Run. 같은 주제의 다음 시도가 된다. */
@@ -34,6 +35,8 @@ export type StartRerunFailure =
   | 'RUN_IN_PROGRESS'
   /** 직전 Run이 그 주제의 최신 시도가 아님 — 이미 수정 지시된 Run에서 또 갈라지지 못한다 */
   | 'NOT_LATEST_ATTEMPT'
+  /** 완료됐거나 파일에서 줄이 사라진 주제 — 첫 실행과 같은 판정(topicGuard). 다시 돌려도 승인이 거절한다 */
+  | TopicRunBlock
   /** 계획이 6단계를 순서대로 덮지 않음(carried+fresh ≠ STEP_ORDER) */
   | 'INVALID_PLAN'
   /** 이어받을 단계가 직전 Run에서 성공하지 않았음(실패한 Run은 실패 단계부터만 다시 돌 수 있다) */
@@ -101,6 +104,7 @@ export async function startRerunIn(
         topicTitle: true,
         modelId: true,
         status: true,
+        topic: { select: { status: true, holdReason: true, missingSince: true } },
         steps: { select: { name: true, status: true } },
       },
     });
@@ -119,6 +123,11 @@ export async function startRerunIn(
     if (latest !== null && latest.id !== previous.id) {
       return { ok: false, code: 'NOT_LATEST_ATTEMPT' };
     }
+
+    // 완료됐거나 파일에서 사라진 주제는 다시 돌리지 않는다 — 승인이 TOPIC_NOT_IN_QUEUE로 거절할 것이라 재실행 비용만
+    // 나간다(TS3 리뷰 L6). 승인 대기 중에 큐 파일에서 제목을 고치거나 줄을 옮긴 경우다. 호출자가 직전에 적재한다.
+    const block = topicRunBlock(previous.topic);
+    if (block !== null) return { ok: false, code: block };
 
     const adapter = input.modelId ? registry.get(input.modelId) : registry.get(previous.modelId);
     if (!adapter) return { ok: false, code: 'UNKNOWN_MODEL' };

@@ -29,6 +29,10 @@ const STATUS_OF: Record<ErrorCode, number> = {
   NOT_PENDING_APPROVAL: 409,
   NOT_LATEST_ATTEMPT: 409,
   CARRIED_STEP_NOT_SUCCEEDED: 409,
+  // 수정 지시의 주제 가드 — 다시 돌려도 승인이 거절할 주제(완료·파일에서 사라짐). 적재 실패는 500.
+  TOPIC_ALREADY_DONE: 409,
+  TOPIC_MISSING_FROM_FILE: 409,
+  QUEUE_RELOAD_FAILED: 500,
   // 승인의 발행 준비(B3a) — 산출물·큐·폴더 상태가 맞지 않음은 충돌(409), 설정·쓰기 실패는 500.
   ARTIFACT_MISSING: 409,
   PUBLISH_TITLE_MISSING: 409,

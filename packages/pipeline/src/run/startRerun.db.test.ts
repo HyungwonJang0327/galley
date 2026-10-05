@@ -362,6 +362,35 @@ describe('startRerun', () => {
     expect(await prisma.run.count()).toBe(2);
   });
 
+  describe('주제 가드 — 다시 돌려도 승인이 거절할 주제', () => {
+    const rerun = (previousRunId: string) =>
+      startRerun(deps(), { previousRunId, plan: planRerun({ instruction: '' }), instruction: '' });
+
+    test('파일에서 줄이 사라진 주제(확인 대기)는 다시 돌리지 않는다', async () => {
+      const run = await finishedRun();
+      await prisma.queueItem.update({ where: { id: topicId }, data: { missingSince: new Date() } });
+
+      expect(await rerun(run.id)).toEqual({ ok: false, code: 'TOPIC_MISSING_FROM_FILE' });
+      expect(await prisma.run.count()).toBe(1);
+    });
+
+    test('완료 섹션으로 간 주제는 다시 돌리지 않는다', async () => {
+      const run = await finishedRun();
+      await prisma.queueItem.update({ where: { id: topicId }, data: { status: '완료' } });
+
+      expect(await rerun(run.id)).toEqual({ ok: false, code: 'TOPIC_ALREADY_DONE' });
+      expect(await prisma.run.count()).toBe(1);
+    });
+
+    test('줄이 돌아오면(표시가 지워지면) 다시 돌릴 수 있다', async () => {
+      const run = await finishedRun();
+      await prisma.queueItem.update({ where: { id: topicId }, data: { missingSince: new Date() } });
+      await prisma.queueItem.update({ where: { id: topicId }, data: { missingSince: null } });
+
+      expect((await rerun(run.id)).ok).toBe(true);
+    });
+  });
+
   test('API 키 없는 모델·모르는 모델이면 만들지 않는다', async () => {
     const previous = await finishedRun();
     const plan = planRerun({ instruction: '' });

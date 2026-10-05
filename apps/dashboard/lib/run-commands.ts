@@ -21,6 +21,7 @@ import {
   type StepName,
 } from '@galley/pipeline';
 import { resolveDashboardDataDir } from './data-dir';
+import { getQueueSections } from './queue-data';
 import type { StartedRun } from './run-start';
 
 /** 화면·API가 그대로 쓰는 직렬화 형태. `StartedRun`에 종결 시각을 더한 것. */
@@ -146,7 +147,7 @@ export interface RunReviseInput {
   modelId?: string;
 }
 
-export type RunReviseErrorCode = ReviseRunFailure | 'RUN_REVISE_FAILED';
+export type RunReviseErrorCode = ReviseRunFailure | 'QUEUE_RELOAD_FAILED' | 'RUN_REVISE_FAILED';
 
 export interface RevisedRun {
   /** `revised`로 끝난 그 실행. */
@@ -163,13 +164,31 @@ const REVISE_MESSAGE: Record<ReviseRunFailure, string> = {
   NOT_PENDING_APPROVAL: '승인 대기 상태의 실행에만 수정 지시를 내릴 수 있습니다.',
   INSTRUCTION_TOO_LONG: '수정 지시가 너무 깁니다.',
   NOT_LATEST_ATTEMPT: '이 주제의 최신 시도에서만 다시 실행할 수 있습니다.',
+  TOPIC_ALREADY_DONE:
+    '이 주제는 주제_큐.md에서 이미 완료 섹션에 있습니다. 다시 실행해도 승인할 수 없습니다 — 줄을 대기로 되돌린 뒤 시도하세요.',
+  TOPIC_MISSING_FROM_FILE:
+    '주제_큐.md에서 이 주제의 줄이 사라졌습니다. 다시 실행해도 승인할 수 없습니다 — 큐 화면의 "파일에서 사라진 주제" 안내에서 보류로 옮기거나 줄을 되살린 뒤 시도하세요.',
   CARRIED_STEP_NOT_SUCCEEDED:
     '이어받을 이전 단계가 성공하지 않았습니다. 더 앞 단계부터 다시 실행해 주세요.',
   UNKNOWN_MODEL: '등록되지 않은 모델입니다.',
   MODEL_UNAVAILABLE: '이 모델의 API 키가 .env에 없습니다.',
 };
 
+/**
+ * 수정 지시 직전에 주제_큐.md를 다시 적재한다 — pipeline의 주제 가드(완료·파일에서 사라짐)는 DB 적재 상태를 보는데,
+ * 실행 상세 화면은 큐를 적재하지 않는다(TS3 리뷰 L6, 실행 시작 lib/run-start와 같은 순서). 못 읽으면 보내지 않는다.
+ */
 export async function reviseRunById(input: RunReviseInput): Promise<RunReviseResult> {
+  const reloaded = await getQueueSections();
+  if (!reloaded.ok) {
+    return {
+      ok: false,
+      error: {
+        code: 'QUEUE_RELOAD_FAILED',
+        message: `재실행 전에 큐 파일을 다시 읽지 못했습니다. ${reloaded.error.message}`,
+      },
+    };
+  }
   try {
     const registry = createModelRegistryFromEnv(process.env);
     const result = await reviseRun({ prisma, registry }, input);

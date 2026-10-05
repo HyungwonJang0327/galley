@@ -203,6 +203,20 @@ describe('reviseRun', () => {
     );
   });
 
+  test('파일에서 사라진 주제면 수정 지시를 거절하고 이 Run은 승인 대기로 남는다', async () => {
+    const run = await finishedRun();
+    await prisma.queueItem.update({ where: { id: topicId }, data: { missingSince: new Date() } });
+
+    expect(await reviseRun(deps(), { runId: run.id, instruction: '' })).toEqual({
+      ok: false,
+      code: 'TOPIC_MISSING_FROM_FILE',
+    });
+    expect(await prisma.run.count()).toBe(1);
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
+      RUN_STATUS.pendingApproval,
+    );
+  });
+
   test('지시가 상한을 넘으면 DB를 보지 않고 거절한다', async () => {
     const run = await finishedRun();
 
