@@ -35,6 +35,8 @@ const FAILURE_MESSAGE: Record<StartRunFailure, string> = {
   TOPIC_NOT_FOUND: '큐에 없는 주제입니다. 파일에서 다시 불러온 뒤 시도해 주세요.',
   TOPIC_ALREADY_DONE:
     '이미 완료된 주제입니다. 다시 쓰려면 주제_큐.md에서 완료 줄을 대기로 옮기고 날짜만 뗀 뒤(제목은 고치지 않습니다) 파일에서 다시 불러오세요.',
+  TOPIC_MISSING_FROM_FILE:
+    '주제_큐.md에서 이 주제의 줄이 사라졌습니다. 제목을 고쳤다면 새로 생긴 행으로 실행하고, 지운 것이 아니라면 줄을 되살린 뒤 파일에서 다시 불러오세요.',
   EMPTY_TITLE: '주제 제목이 비어 있습니다. 괄호 힌트 밖에 제목이 있어야 합니다.',
   UNKNOWN_MODEL: '등록되지 않은 모델입니다.',
   MODEL_UNAVAILABLE: '이 모델의 API 키가 .env에 없습니다.',

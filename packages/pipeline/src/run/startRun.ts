@@ -3,6 +3,7 @@
 // 검수 상태(status)와 전이 규칙은 상태 머신(B1a)이 소유하므로 여기서는 스키마 기본값을 그대로 둔다.
 import type { PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
+import { HOLD_REASON_REMOVED } from '../queue/importQueue.ts';
 import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import type { QueueStatus } from '../queue/queueFile.ts';
 import { postsPointerSlug } from '../queue/postsPointer.ts';
@@ -26,6 +27,11 @@ export type StartRunFailure =
   | 'TOPIC_NOT_FOUND'
   /** 이미 완료된 주제 — 다시 쓰려면 먼저 큐에서 되돌린다(decisions/topic-slug.md 규칙 3) */
   | 'TOPIC_ALREADY_DONE'
+  /**
+   * 주제_큐.md에서 줄이 사라진 주제 — 승인이 그 줄을 못 찾아 TOPIC_NOT_IN_QUEUE로 거절할 것을 실행 전에 안다(비용).
+   * 제목을 고친 줄도 파서에게는 "삭제 + 추가"라 옛 행이 여기 걸린다 — 새 행으로 실행한다.
+   */
+  | 'TOPIC_MISSING_FROM_FILE'
   /** 큐 항목의 제목이 비었음(공백만·괄호 힌트뿐) */
   | 'EMPTY_TITLE'
   /** 레지스트리에 없는 모델 id */
@@ -69,12 +75,17 @@ export async function startRun(
 ): Promise<StartRunResult> {
   const topic = await deps.prisma.queueItem.findUnique({
     where: { id: input.topicId },
-    select: { id: true, title: true, status: true },
+    select: { id: true, title: true, status: true, holdReason: true, missingSince: true },
   });
   if (!topic) return { ok: false, code: 'TOPIC_NOT_FOUND' };
   // 완료 주제는 실행하지 않는다 — 승인이 TOPIC_NOT_IN_QUEUE(완료)로 거절할 것을 6단계를 다 돌린 뒤에야 알게 된다
   // (비용). 다시 쓰려면 주제_큐.md에서 완료 줄을 대기로 되돌린다(decisions/topic-slug.md "되돌리기 절차").
   if (topic.status === DONE_STATUS) return { ok: false, code: 'TOPIC_ALREADY_DONE' };
+  // 파일에서 사라진 주제도 실행하지 않는다. 적재가 남긴 표시 둘을 본다 — 실행 이력이 없어 자동으로 보류로 내린 것
+  // (holdReason)과 이력이 있어 확인을 기다리는 것(missingSince, "그대로 두기"를 골라도 남는다). 줄이 돌아오면 적재가
+  // 둘 다 지운다. **호출자가 직전에 적재했어야 표시가 최신이다**(대시보드 lib/run-start) — decisions/queue-sync-direction.md.
+  if (topic.holdReason === HOLD_REASON_REMOVED || topic.missingSince !== null)
+    return { ok: false, code: 'TOPIC_MISSING_FROM_FILE' };
 
   const title = topic.title.trim();
   // 괄호 힌트뿐인 제목(`(spacehome)`)도 빈 제목이다 — 힌트를 떼면 프롬프트 제목이 비고 슬러그가 전부 `topic`으로

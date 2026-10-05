@@ -96,6 +96,18 @@ describe('startRunForTopic', () => {
     });
   });
 
+  it('파일에서 사라진 주제는 새 행으로 실행하거나 줄을 되살리라고 안내한다', async () => {
+    startRun.mockResolvedValue({ ok: false, code: 'TOPIC_MISSING_FROM_FILE' });
+
+    expect(await startRunForTopic({ topicId: 'topic_1' })).toEqual({
+      ok: false,
+      error: {
+        code: 'TOPIC_MISSING_FROM_FILE',
+        message: expect.stringContaining('줄이 사라졌습니다'),
+      },
+    });
+  });
+
   it('완료된 주제는 되돌리는 방법을 문구로 안내한다', async () => {
     startRun.mockResolvedValue({ ok: false, code: 'TOPIC_ALREADY_DONE' });
 
