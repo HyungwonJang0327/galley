@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
+import { importQueueFromFile } from '../queue/importQueue.ts';
 import { setDefaultModelId } from '../settings/settings.ts';
 import { RUN_STATUS } from './stateMachine.ts';
 import { startRun } from './startRun.ts';
@@ -161,6 +162,110 @@ describe('startRun', () => {
 
     expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'TOPIC_ALREADY_DONE' });
     expect(await prisma.run.count()).toBe(0);
+  });
+
+  describe('TOPIC_MISSING_FROM_FILE — 주제_큐.md에서 줄이 사라진 주제', () => {
+    test('자동으로 보류로 내려간 주제(실행 이력 없음)는 실행하지 않는다', async () => {
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { status: '보류', holdReason: 'removed-from-file' },
+      });
+
+      expect(await startRun(deps(), { topicId })).toEqual({
+        ok: false,
+        code: 'TOPIC_MISSING_FROM_FILE',
+      });
+      expect(await prisma.run.count()).toBe(0);
+    });
+
+    test('확인을 기다리는 주제(실행 이력 있음)도 실행하지 않는다 — "그대로 두기"를 골라도', async () => {
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { missingSince: new Date(), missingAck: new Date() },
+      });
+
+      expect(await startRun(deps(), { topicId })).toEqual({
+        ok: false,
+        code: 'TOPIC_MISSING_FROM_FILE',
+      });
+      expect(await prisma.run.count()).toBe(0);
+    });
+
+    // 위 두 테스트는 표시를 손으로 넣는다. 아래는 **실제 적재가 그 표시를 남기는지**까지 — 적재 규칙이 바뀌면 여기서 깨진다.
+    describe('적재를 거쳐서', () => {
+      const file = (...waiting: string[]) =>
+        `# 큐\n\n## 대기\n\n${waiting.map((t) => `- ${t}\n`).join('')}\n## 후보\n\n## 보류\n\n## 완료\n`;
+      const load = (content: string) =>
+        importQueueFromFile({
+          storage: { readQueueFile: async () => content, writeQueueFile: async () => {} },
+          prisma,
+        });
+      const idOf = async (title: string) =>
+        (await prisma.queueItem.findFirstOrThrow({ where: { title } })).id;
+
+      beforeEach(async () => {
+        await prisma.queueItem.deleteMany();
+        await load(file('가', '나'));
+      });
+
+      test('줄을 지우면(실행 이력 없음) 거절하고, 줄이 돌아오면 다시 실행된다', async () => {
+        const id = await idOf('가');
+
+        await load(file('나'));
+        expect(await startRun(deps(), { topicId: id })).toEqual({
+          ok: false,
+          code: 'TOPIC_MISSING_FROM_FILE',
+        });
+
+        await load(file('가', '나'));
+        expect((await startRun(deps(), { topicId: id })).ok).toBe(true);
+      });
+
+      test('실행 이력이 있는 주제의 줄을 지워도 거절한다', async () => {
+        const id = await idOf('가');
+        await startRun(deps(), { topicId: id });
+        await prisma.run.updateMany({
+          data: { status: RUN_STATUS.failed, finishedAt: new Date() },
+        });
+
+        await load(file('나'));
+
+        expect(await startRun(deps(), { topicId: id })).toEqual({
+          ok: false,
+          code: 'TOPIC_MISSING_FROM_FILE',
+        });
+      });
+
+      test('제목을 고치면 옛 행은 거절하고 새 행은 실행된다', async () => {
+        const old = await idOf('가');
+
+        await load(file('가를 고친 제목', '나'));
+
+        expect(await startRun(deps(), { topicId: old })).toMatchObject({ ok: false });
+        expect((await startRun(deps(), { topicId: await idOf('가를 고친 제목') })).ok).toBe(true);
+      });
+    });
+
+    test('사람이 보류로 옮긴 주제(manual)는 실행할 수 있다', async () => {
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { status: '보류', holdReason: 'manual' },
+      });
+
+      expect((await startRun(deps(), { topicId })).ok).toBe(true);
+    });
+
+    test('완료 주제는 사라졌어도 TOPIC_ALREADY_DONE이 먼저다(되돌리는 방법을 안내하는 쪽)', async () => {
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { status: '완료', missingSince: new Date() },
+      });
+
+      expect(await startRun(deps(), { topicId })).toEqual({
+        ok: false,
+        code: 'TOPIC_ALREADY_DONE',
+      });
+    });
   });
 
   test('대기·후보·보류 주제는 실행할 수 있다(완료만 막는다)', async () => {

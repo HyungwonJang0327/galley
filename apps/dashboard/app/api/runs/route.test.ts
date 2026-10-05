@@ -87,8 +87,8 @@ describe('POST /api/runs', () => {
     });
   });
 
-  it('이미 완료된 주제·슬러그 충돌이면 409', async () => {
-    for (const code of ['TOPIC_ALREADY_DONE', 'SLUG_TAKEN']) {
+  it('이미 완료된·파일에서 사라진 주제·슬러그 충돌이면 409', async () => {
+    for (const code of ['TOPIC_ALREADY_DONE', 'TOPIC_MISSING_FROM_FILE', 'SLUG_TAKEN']) {
       startRunForTopic.mockResolvedValue({ ok: false, error: { code, message: '문구' } });
 
       const response = await post({ topicId: 'topic_1' });
