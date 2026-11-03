@@ -53,3 +53,13 @@
 .plan dd {
   margin: 0;
 }
+
+/* 승인 결과 안내 — ActionBar 바로 위. 경로가 길어 줄바꿈을 허용한다. */
+.notice {
+  margin-bottom: var(--ui-space-2);
+}
+
+.noticeLine {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
