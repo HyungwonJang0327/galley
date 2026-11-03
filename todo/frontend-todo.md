@@ -40,7 +40,7 @@
 - [x] BM9 — 설정 > 모델·비용에서 기본 모델 변경 (2026-10-04, PR #151)
 - [x] TopBar 모델 칩 제거 (2026-10-04, PR #150)
 - BW4 — 수정 지시·승인·재실행을 Run 상태 변경으로(워커 pickup, B2b에서 미룬 몫 — 선행 B1a)
-- BW6 — TopBar 워커 생존 점
+- [x] BW6 — TopBar 워커 생존 점 (2026-11-03)
 - BE12 — 큐 행 ⋮ "근거 편집" Dialog + 실행 Dialog(BM6) 근거 목록·0건 경고 (decisions/evidence-collection.md, 선행 BE7·UM1)
 - BE13 — 실행 상세 타임라인 6줄: 근거 수집·근거 검증 줄 펼침 표시 + 좌 목록·홈 "지금 할 일" "근거 없음 n" (선행 B2c·BE10)
 - BX5 — 큐 행 시리즈 Badge+Tooltip(`A-1` · 시리즈명 N/M편), 후보 탭 정의 줄 그룹 헤더, `(기존 글)` 실행 비활성, 실행 상세 시리즈 편 정보 (decisions/series.md, 선행 BX2)

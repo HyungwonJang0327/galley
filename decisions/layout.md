@@ -16,7 +16,7 @@
 ### 2. TopBar
 
 - 좌: 사이드바 접기 토글(햄버거) + `Galley`. (워크스페이스 탭 제거 — decisions/navigation.md.)
-- 우: ~~상태 칩(모델명 ▾)~~ 없음(2026-10-04 결정 변경 — decisions/model-selection.md). 워커 생존 점(BW6)이 이 자리에 온다.
+- 우: ~~상태 칩(모델명 ▾)~~ 없음(2026-10-04 결정 변경 — decisions/model-selection.md). 워커 생존 점(BW6)이 이 자리에 온다 — 점 + 글자 "워커 켜짐/꺼짐"(2026-11-03, decisions/run-location.md).
 - 앱에서 유일한 다크 영역.
 
 ### 3. Sidebar (사용 흐름 순 — decisions/navigation.md)
