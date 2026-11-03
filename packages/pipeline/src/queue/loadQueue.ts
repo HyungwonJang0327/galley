@@ -3,6 +3,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Storage } from '../storage/Storage.ts';
 import { importQueueFromFile } from './importQueue.ts';
+import { missingMark, type MissingMark } from './missingMark.ts';
 import type { QueueStatus } from './queueFile.ts';
 import { isAlreadyPublished } from './topicHints.ts';
 
@@ -23,6 +24,11 @@ export interface QueueEntry {
   completedOn: string | null;
   /** 시리즈 편이면 태그, 아니면 null. */
   series: QueueEntrySeries | null;
+  /**
+   * 파일에서 사라진 주제면 그 종류(자동 보류·확인 대기), 파일에 있으면 null. 화면은 실행을 막고(서버 가드 topicGuard와
+   * 같은 판정) 보류 탭에서 사유를 보인다 — decisions/queue-sync-direction.md "사라진 줄 처리".
+   */
+  missing: MissingMark | null;
 }
 
 export type QueueSections = Record<QueueStatus, QueueEntry[]>;
@@ -48,11 +54,14 @@ export async function loadQueueSections(deps: {
       completedOn: true,
       seriesKey: true,
       episodeNo: true,
+      holdReason: true,
+      missingSince: true,
     },
   });
 
   const sections: QueueSections = { 대기: [], 후보: [], 보류: [], 완료: [] };
-  for (const { id, status, title, category, completedOn, seriesKey, episodeNo } of items) {
+  for (const item of items) {
+    const { id, status, title, category, completedOn, seriesKey, episodeNo } = item;
     // status는 DB에서 문자열(스키마에 enum 없음). 방금 파일에서 적재했으므로 네 값뿐이다.
     if (!isQueueStatus(status)) continue;
     // 두 컬럼은 적재가 항상 같이 채운다 — 한쪽만 있으면 시리즈로 보지 않는다.
@@ -60,7 +69,14 @@ export async function loadQueueSections(deps: {
       seriesKey !== null && episodeNo !== null
         ? { key: seriesKey, episode: episodeNo, alreadyPublished: isAlreadyPublished(title) }
         : null;
-    sections[status].push({ id, title, category, completedOn, series });
+    sections[status].push({
+      id,
+      title,
+      category,
+      completedOn,
+      series,
+      missing: missingMark(item),
+    });
   }
   return sections;
 }

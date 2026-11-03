@@ -16,6 +16,7 @@ const topic = (title: string) => ({
   category: null,
   completedOn: null,
   series: null,
+  missing: null,
 });
 
 beforeEach(() => {

@@ -162,6 +162,8 @@ export type { StartRerunInput, StartRerunFailure, StartRerunResult } from './run
 export { loadQueueSections } from './queue/loadQueue.ts';
 export { countTopicsByStatus } from './queue/queueCounts.ts';
 export type { QueueEntry, QueueEntrySeries, QueueSections } from './queue/loadQueue.ts';
+export { missingMark } from './queue/missingMark.ts';
+export type { MissingMark } from './queue/missingMark.ts';
 export { loadQueueSeries, summarizeQueueSeries } from './queue/queueSeries.ts';
 export type { QueueSeriesSummary } from './queue/queueSeries.ts';
 export type { Storage } from './storage/Storage.ts';
