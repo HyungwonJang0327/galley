@@ -296,7 +296,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] **TS7** (2026-10-05 `ae1ece8`, PR #152) pl+fe — 파일에서 사라진 주제 실행 거절 `TOPIC_MISSING_FROM_FILE`(409, 한국어 문구). `startRun`이 적재가 남긴 표시(`holdReason=removed-from-file`·`missingSince`)를 본다(decisions/queue-sync-direction.md "사라진 줄 처리"). 커밋: `fix(run): 파일에서 사라진 주제의 실행 거절`
   - 완료조건 충족: 표시가 있는 주제 → 거절·Run 없음, manual 보류는 실행, 완료는 `TOPIC_ALREADY_DONE` 우선, **실제 적재를 거친** 줄 삭제·복구·제목 수정 케이스(DB 테스트).
   - 이월: ~~수정 지시(재실행) 경로는 미결(TS3 L6과 같이)~~(TS8) · 사라진 주제의 "지금 실행" 버튼 비활성+사유는 TD3와 같이.
-- [x] **TS8** (2026-10-05 `8094263`·`d8040e9` 로컬, fix/rerun-topic-guard — 머지 뒤 해시 정정) pl+fe — 재실행(수정 지시) 경로의 주제 가드: 판정을 `topicGuard`로 추출해 `startRun`·`startRerun` 공용, 완료·파일에서 사라진 주제는 `TOPIC_ALREADY_DONE`·`TOPIC_MISSING_FROM_FILE`(409), 대시보드는 수정 지시 직전에 재적재(`QUEUE_RELOAD_FAILED` 500). TS3 리뷰 L6 해소. 커밋: `refactor(run): 주제 실행 가드를 topicGuard로 추출` · `fix(run): 완료·사라진 주제의 재실행 거절`
+- [x] **TS8** (2026-10-05 `e28d8c3`·`3decc85`, PR #153) pl+fe — 재실행(수정 지시) 경로의 주제 가드: 판정을 `topicGuard`로 추출해 `startRun`·`startRerun` 공용, 완료·파일에서 사라진 주제는 `TOPIC_ALREADY_DONE`·`TOPIC_MISSING_FROM_FILE`(409), 대시보드는 수정 지시 직전에 재적재(`QUEUE_RELOAD_FAILED` 500). TS3 리뷰 L6 해소. 커밋: `refactor(run): 주제 실행 가드를 topicGuard로 추출` · `fix(run): 완료·사라진 주제의 재실행 거절`
   - 완료조건 충족: 표시가 있는 주제의 재실행 거절·Run 없음, 수정 지시가 거절돼도 그 실행은 승인 대기(DB 테스트), 재적재가 reviseRun보다 먼저·실패 시 보내지 않음.
   - 이월(기록만): 재실행 미리보기는 상태를 보지 않아 확인 Dialog 뒤에 거절 문구가 뜬다(decisions/queue-sync-direction.md) · B2d-2(실패 실행 재실행)가 `startRerun`을 쓰면 이 가드를 그대로 받는다(적재는 그 진입점이 해야 함).
 - [ ] **TS6** fe — 승인 결과 안내: 응답의 `postsDir`·`replaced`·`replacedDir`·`leftover`를 실행 상세에 보여 준다(특히 `leftover`가 있으면 "폴더에 옛 파일이 남았다"). B3a 이월 "실행 상세에서 postsDir 안내"와 같이. 커밋: `feat(dashboard): 승인 결과 안내`
