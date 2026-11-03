@@ -106,9 +106,19 @@ export function buildQueueView(
   };
 }
 
+/**
+ * 보류 탭의 보류 사유 — 파일에서 사라져 내려온 것과 사람이 옮긴 것을 구분한다(되살릴지 판단하는 근거,
+ * decisions/queue-sync-direction.md "사라진 줄 처리"). 사람이 옮긴 보류는 파일에 줄이 있어 표시가 없다(사유 없음).
+ */
+const HOLD_REASON_LABEL: Record<NonNullable<QueueEntry['missing']>, string> = {
+  'auto-held': '파일에서 사라짐 · 자동 보류',
+  pending: '파일에서 사라짐 · 확인 대기',
+};
+
 function rowMeta(tab: QueueTab, topic: QueueEntry): string | undefined {
-  const meta = tab.id === 'done' ? topic.completedOn : topic.category;
-  return meta ?? undefined;
+  if (tab.id === 'done') return topic.completedOn ?? undefined;
+  if (tab.id === 'hold' && topic.missing !== null) return HOLD_REASON_LABEL[topic.missing];
+  return topic.category ?? undefined;
 }
 
 function rowSeries(

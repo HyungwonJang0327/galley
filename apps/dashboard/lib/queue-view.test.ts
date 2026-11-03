@@ -154,6 +154,33 @@ describe('buildQueueView — 시리즈', () => {
     ]);
   });
 
+  it('보류 탭 보조 텍스트는 보류 사유 — 파일에서 사라져 내려온 것만 표시, 사람이 옮긴 것은 없음', () => {
+    const view = buildQueueView(
+      {
+        ...sections,
+        보류: [
+          { ...entry('내려온 것'), missing: 'auto-held' },
+          { ...entry('확인 대기'), missing: 'pending' },
+          entry('직접 옮긴 것'),
+        ],
+      },
+      { tab: 'hold' },
+    );
+    expect(view.rows.map((row) => [row.title, row.meta])).toEqual([
+      ['내려온 것', '파일에서 사라짐 · 자동 보류'],
+      ['확인 대기', '파일에서 사라짐 · 확인 대기'],
+      ['직접 옮긴 것', undefined],
+    ]);
+  });
+
+  it('사라짐 표시는 보류 탭 밖에서는 보조 텍스트를 바꾸지 않는다(대기·후보는 카테고리)', () => {
+    const view = buildQueueView(
+      { ...sections, 대기: [{ ...entry('확인 대기', '프론트'), missing: 'pending' }] },
+      {},
+    );
+    expect(view.rows[0]?.meta).toBe('프론트');
+  });
+
   it('파일에서 사라진 주제·(기존 글) 편은 행에 실행 불가 사유가 붙는다(행 ⋮이 문구만 받는다)', () => {
     const view = buildQueueView(
       {
