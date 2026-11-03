@@ -1,6 +1,6 @@
 // 큐 행 ⋮ 메뉴 항목(표현용, 순수). 클라이언트에서도 쓰므로 pipeline 값은 import하지 않는다(타입만).
 // 항목 구성은 decisions/layout.md §4 — 이동 3개 중 현재 섹션은 빼고, 구분선 뒤 "지금 실행".
-import type { MovableStatus, QueueStatus } from '@galley/pipeline';
+import type { MissingMark, MovableStatus, QueueStatus } from '@galley/pipeline';
 
 export interface QueueRowMenuItem {
   id: string;
@@ -25,10 +25,29 @@ const RUN_NOW: QueueRowMenuItem = { id: RUN_NOW_ID, label: '지금 실행' };
 
 /** `(기존 글)` 편 — 이미 발행돼 실행 대상이 아니다(decisions/series.md). 실행 진입점 셋이 같은 판정을 쓴다. */
 export const ALREADY_PUBLISHED_REASON = '이미 발행된 글입니다.';
+/**
+ * 주제_큐.md에서 줄이 사라진 주제 — 서버가 TOPIC_MISSING_FROM_FILE로 거절할 것을 버튼에서 먼저 보인다(보조 — Dialog를
+ * 연 뒤 바뀐 파일은 서버 가드가 막는다). 푸는 길은 큐 화면 "파일에서 사라진 주제" 안내 또는 줄 되살리기.
+ */
+export const MISSING_FROM_FILE_REASON =
+  '주제_큐.md에서 줄이 사라진 주제입니다. 줄을 되살리거나 새로 생긴 행으로 실행하세요.';
+
+/**
+ * 이 주제의 실행 버튼을 끌 사유(없으면 undefined). 실행 진입점 셋(행 ⋮·큐 상단 맨 위 실행·홈 다음 실행)이 같은 판정을
+ * 쓴다. 사라짐이 먼저 — 그 줄은 지금 파일에 없으니 어떤 실행도 승인되지 않는다.
+ */
+export function topicRunDisabledReason(topic: {
+  series: { alreadyPublished: boolean } | null;
+  missing: MissingMark | null;
+}): string | undefined {
+  if (topic.missing !== null) return MISSING_FROM_FILE_REASON;
+  if (topic.series?.alreadyPublished) return ALREADY_PUBLISHED_REASON;
+  return undefined;
+}
 
 export interface QueueRowMenuOptions {
-  /** 시리즈 `(기존 글)` 편 — "지금 실행" 비활성 + 사유. */
-  alreadyPublished?: boolean;
+  /** "지금 실행"을 끌 사유(`topicRunDisabledReason`). 없으면 활성. */
+  runDisabledReason?: string;
 }
 
 export function queueRowMenuEntries(
@@ -39,9 +58,10 @@ export function queueRowMenuEntries(
     id: `${MOVE_PREFIX}${target.status}`,
     label: target.label,
   }));
-  const runNow = options.alreadyPublished
-    ? { ...RUN_NOW, disabled: true, disabledReason: ALREADY_PUBLISHED_REASON }
-    : RUN_NOW;
+  const runNow =
+    options.runDisabledReason === undefined
+      ? RUN_NOW
+      : { ...RUN_NOW, disabled: true, disabledReason: options.runDisabledReason };
   return [...moves, { type: 'separator' }, runNow];
 }
 

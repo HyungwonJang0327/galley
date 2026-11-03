@@ -9,6 +9,7 @@ import {
   parseQueueTab,
   type QueueTab,
 } from './queue-tabs';
+import { topicRunDisabledReason } from './queue-row-menu';
 
 type SearchParamValue = string | string[] | undefined;
 
@@ -37,6 +38,8 @@ export interface QueueRowView {
   /** 섹션 안에서의 0기반 위치(카테고리 필터 전 기준). 행 ⋮ 이동이 파일에서 항목을 찾는 키. */
   index: number;
   series: QueueRowSeriesView | undefined;
+  /** 행 ⋮ "지금 실행"을 끌 사유(사라짐·`(기존 글)`). 없으면 실행 가능. 판정은 여기(서버) — 클라이언트는 문구만 받는다. */
+  runDisabledReason: string | undefined;
 }
 
 /** 후보 탭의 시리즈 정의 줄 — 그룹 헤더. 편이 후보를 떠나도 정의 줄은 남는다(decisions/series.md). */
@@ -86,6 +89,7 @@ export function buildQueueView(
     meta: rowMeta(active, topic),
     index: topic.index,
     series: rowSeries(topic, byKey),
+    runDisabledReason: topicRunDisabledReason(topic),
   }));
 
   return {

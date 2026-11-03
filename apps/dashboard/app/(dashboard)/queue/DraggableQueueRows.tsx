@@ -157,7 +157,7 @@ function DraggableRow({
           title={row.title}
           status={status}
           index={row.index}
-          alreadyPublished={row.series?.alreadyPublished ?? false}
+          runDisabledReason={row.runDisabledReason}
           move={move}
         />
       }

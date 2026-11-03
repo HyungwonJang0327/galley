@@ -37,8 +37,22 @@ describe('buildQueueView', () => {
     const view = buildQueueView(sections, {});
     expect(view.active.status).toBe('대기');
     expect(view.rows).toEqual([
-      { id: 'id-대기1', title: '대기1', meta: undefined, index: 0, series: undefined },
-      { id: 'id-대기2', title: '대기2', meta: '프론트', index: 1, series: undefined },
+      {
+        id: 'id-대기1',
+        title: '대기1',
+        meta: undefined,
+        index: 0,
+        series: undefined,
+        runDisabledReason: undefined,
+      },
+      {
+        id: 'id-대기2',
+        title: '대기2',
+        meta: '프론트',
+        index: 1,
+        series: undefined,
+        runDisabledReason: undefined,
+      },
     ]);
     expect(view.items).toEqual(view.rows.map((row) => ({ kind: 'row', row })));
   });
@@ -76,7 +90,14 @@ describe('buildQueueView', () => {
 
   it('완료 탭 보조 텍스트는 완료일', () => {
     expect(buildQueueView(sections, { tab: 'done' }).rows).toEqual([
-      { id: 'id-완료1', title: '완료1', meta: '2026-09-01', index: 0, series: undefined },
+      {
+        id: 'id-완료1',
+        title: '완료1',
+        meta: '2026-09-01',
+        index: 0,
+        series: undefined,
+        runDisabledReason: undefined,
+      },
     ]);
   });
 });
@@ -131,6 +152,28 @@ describe('buildQueueView — 시리즈', () => {
       ['D 편', { label: 'D-1', tooltip: '정의만 남음 · 1/1편', alreadyPublished: false }],
       ['일반', undefined],
     ]);
+  });
+
+  it('파일에서 사라진 주제·(기존 글) 편은 행에 실행 불가 사유가 붙는다(행 ⋮이 문구만 받는다)', () => {
+    const view = buildQueueView(
+      {
+        ...sections,
+        보류: [
+          { ...entry('내려온 것'), missing: 'auto-held' },
+          { ...entry('확인 대기'), missing: 'pending' },
+          entry('직접 옮긴 것'),
+        ],
+      },
+      { tab: 'hold' },
+    );
+    expect(view.rows.map((row) => [row.title, row.runDisabledReason !== undefined])).toEqual([
+      ['내려온 것', true],
+      ['확인 대기', true],
+      ['직접 옮긴 것', false],
+    ]);
+    expect(buildQueueView(withSeries, { tab: 'candidates' }).rows[2]?.runDisabledReason).toBe(
+      '이미 발행된 글입니다.',
+    );
   });
 
   it('정의 줄이 없는 태그는 배지만, 툴팁은 없다(이름을 지어내지 않음)', () => {
