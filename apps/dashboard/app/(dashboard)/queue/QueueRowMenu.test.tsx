@@ -70,8 +70,10 @@ describe('QueueRowMenu', () => {
     expect(move).not.toHaveBeenCalled();
   });
 
-  it('(기존 글) 편이면 "지금 실행" 사유가 이미 발행된 글(title 속성)', async () => {
-    renderInPage(<QueueRowMenu {...props} alreadyPublished move={vi.fn()} />);
+  it('사유가 오면 "지금 실행"이 비활성 + 사유(title 속성)', async () => {
+    renderInPage(
+      <QueueRowMenu {...props} runDisabledReason="이미 발행된 글입니다." move={vi.fn()} />,
+    );
     openMenu();
 
     await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());

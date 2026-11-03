@@ -132,7 +132,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                         title={item.row.title}
                         status={view.active.status}
                         index={item.row.index}
-                        alreadyPublished={item.row.series?.alreadyPublished ?? false}
+                        runDisabledReason={item.row.runDisabledReason}
                         move={moveQueueRowAction}
                       />
                     )

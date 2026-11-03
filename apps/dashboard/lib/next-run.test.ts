@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import type { QueueSections } from '@galley/pipeline';
+import type { QueueEntry, QueueSections } from '@galley/pipeline';
 import { buildNextRunView } from './next-run';
 
 const entry = (
   title: string,
   category: string | null = null,
   series: { key: string; episode: number; alreadyPublished: boolean } | null = null,
-) => ({
+): QueueEntry => ({
   id: `id-${title}`,
   title,
   category,
@@ -69,5 +69,11 @@ describe('buildNextRunView', () => {
     );
 
     expect(view.top?.runDisabledReason).toBe('이미 발행된 글입니다.');
+  });
+
+  it('파일에서 사라진 주제(확인 대기)가 맨 위면 실행 불가 사유가 붙는다 — 서버 거절을 버튼에서 먼저', () => {
+    const view = buildNextRunView(sections([{ ...entry('사라짐'), missing: 'pending' }]));
+
+    expect(view.top?.runDisabledReason).toContain('줄이 사라진 주제');
   });
 });

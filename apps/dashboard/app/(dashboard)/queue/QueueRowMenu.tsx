@@ -14,7 +14,7 @@ export function QueueRowMenu({
   title,
   status,
   index,
-  alreadyPublished = false,
+  runDisabledReason,
   move,
 }: {
   /** 주제 키 = QueueItem.id — 실행 시작에 넘긴다. */
@@ -23,8 +23,8 @@ export function QueueRowMenu({
   status: QueueStatus;
   /** 섹션 안에서의 0기반 위치(카테고리 필터 전 기준). */
   index: number;
-  /** 시리즈 `(기존 글)` 편 — "지금 실행" 사유가 "이미 발행된 글"이 된다(판정은 서버, lib/queue-view). */
-  alreadyPublished?: boolean;
+  /** "지금 실행"을 끌 사유(파일에서 사라짐·`(기존 글)` 편). 판정은 서버(lib/queue-view), 여기는 문구만 받는다. */
+  runDisabledReason?: string;
   move: (input: MoveQueueTopicInput) => Promise<QueueMoveResult>;
 }) {
   const [pending, startTransition] = useTransition();
@@ -44,7 +44,7 @@ export function QueueRowMenu({
             ⋮
           </Button>
         }
-        items={queueRowMenuEntries(status, { alreadyPublished })}
+        items={queueRowMenuEntries(status, { runDisabledReason })}
         onSelect={(id) => {
           if (id === RUN_NOW_ID) {
             openRunStart({ id: topicId, title });
