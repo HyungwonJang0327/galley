@@ -17,3 +17,23 @@
   outline: 2px solid var(--ui-color-topbar-fg);
   outline-offset: 2px;
 }
+
+/* 워커 생존 점(BW6). 켜짐은 성공 초록, 꺼짐은 보조 회색 — 글자가 같이 있어 색은 보조 신호다. */
+.worker {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin: 0;
+  font-size: var(--ui-text-sm);
+}
+
+.dot {
+  width: var(--ui-space-2);
+  height: var(--ui-space-2);
+  border-radius: var(--ui-radius-pill);
+  background-color: var(--ui-color-text-muted);
+}
+
+.worker[data-alive='true'] .dot {
+  background-color: var(--ui-color-success-fg);
+}
