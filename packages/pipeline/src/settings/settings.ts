@@ -6,6 +6,8 @@ import type { ModelRegistry } from '../model/ModelRegistry.ts';
 
 export const SETTING_KEY = {
   defaultModelId: 'defaultModelId',
+  /** 워커 프로세스 생존 시각(ISO). 설정이 아니라 상태지만 한 줄이라 여기 둔다 — worker/workerHeartbeat.ts. */
+  workerHeartbeat: 'workerHeartbeat',
 } as const;
 
 /**

@@ -127,6 +127,11 @@ export { createPrismaWorkerRepo } from './worker/PrismaWorkerRepo.ts';
 export { resolveDataDir } from './worker/resolveDataDir.ts';
 export type { DataDirResult } from './worker/resolveDataDir.ts';
 export type { TickResult, TickOutcome } from './worker/runOnce.ts';
+export {
+  isWorkerAlive,
+  readWorkerHeartbeat,
+  writeWorkerHeartbeat,
+} from './worker/workerHeartbeat.ts';
 export type {
   WorkerDeps,
   WorkerRepo,
