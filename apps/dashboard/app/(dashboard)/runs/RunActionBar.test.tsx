@@ -158,7 +158,10 @@ describe('RunActionBar', () => {
   });
 
   it('승인: 확인 Dialog를 거쳐야 API를 부르고, 성공이면 화면을 다시 그린다', async () => {
-    approveRun.mockResolvedValue({ ok: true, data: { id: 'r1' } });
+    approveRun.mockResolvedValue({
+      ok: true,
+      data: { id: 'r1', postsDir: '/blog/posts/my-post', replaced: [], leftover: [] },
+    });
     renderBar();
 
     fireEvent.click(screen.getByRole('button', { name: '승인' }));
@@ -173,6 +176,24 @@ describe('RunActionBar', () => {
     await waitFor(() => expect(approveRun).toHaveBeenCalledWith('r1'));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByText('승인했습니다. 공개 발행은 일어나지 않았습니다.')).toBeTruthy();
+    expect(screen.getByText('산출물을 썼습니다 → /blog/posts/my-post')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('승인 성공에 옮기지 못한 옛 파일이 있으면 경고(alert)로 알린다', async () => {
+    approveRun.mockResolvedValue({
+      ok: true,
+      data: { id: 'r1', postsDir: '/blog/posts/my-post', replaced: [], leftover: ['old.md'] },
+    });
+    renderBar();
+
+    fireEvent.click(screen.getByRole('button', { name: '승인' }));
+    await screen.findByRole('dialog', { name: '승인할까요?' });
+    await clickDialogButton('승인');
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('posts 폴더에 옛 파일이 남았습니다(옮기지 못함): old.md');
   });
 
   it('승인 Dialog에서 취소하면 API를 부르지 않는다', async () => {
@@ -219,9 +240,14 @@ describe('RunActionBar', () => {
       true,
     );
 
-    finish({ ok: true, data: { id: 'r1' } });
+    finish({
+      ok: true,
+      data: { id: 'r1', postsDir: '/blog/posts/my-post', replaced: [], leftover: [] },
+    });
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole('status').textContent).toBe('');
+    // 성공 안내 상자도 role=status라 바 안의 진행 문구 영역만 본다.
+    const bar = screen.getByRole('group', { name: '수정 지시' });
+    expect(within(bar).getByRole('status').textContent).toBe('');
     expect((screen.getByRole('button', { name: '승인' }) as HTMLButtonElement).disabled).toBe(
       false,
     );

@@ -4,13 +4,16 @@
 // import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler(B2b)로 보낸다.
 // 확인 Dialog 둘은 useConfirm 하나로(decisions/confirm-dialog-usage.md): 확인을 누르면 즉시 닫히고,
 // API가 도는 동안은 바의 컨트롤 비활성 + role=status의 "요청 중" 문구가 진행 표시다.
+// 승인 성공 안내(posts 폴더·옮긴 파일·남은 파일)는 응답 기반이라 이 화면을 떠나면 사라진다.
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ActionBar, Button, Select, Textarea, useConfirm } from 'galley-ui';
+import { ActionBar, Button, InlineAlert, Select, Textarea, useConfirm } from 'galley-ui';
 import { approveRun, planRerun, reviseRun } from '../../../lib/run-api-client';
 import {
+  describeApproval,
   describeRerunPlan,
   validateInstruction,
+  type ApprovalNotice,
   type StepOption,
 } from '../../../lib/run-action-bar';
 import { runsHref } from '../../../lib/run-view';
@@ -36,6 +39,8 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
   const [message, setMessage] = useState<string | null>(null);
   /** API가 도는 동안의 진행 문구. null이면 유휴. */
   const [busy, setBusy] = useState<string | null>(null);
+  /** 승인 성공 안내. refresh 뒤에도 key(runId)가 같아 이 바가 유지되므로 상태로 남는다. */
+  const [approved, setApproved] = useState<ApprovalNotice | null>(null);
   const rerunButton = useRef<HTMLButtonElement | null>(null);
   const approveButton = useRef<HTMLButtonElement | null>(null);
   /** busy가 풀린 다음 렌더에서 포커스를 되돌릴 버튼. Dialog가 닫히며 돌려준 포커스는 버튼이
@@ -164,11 +169,21 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
       setMessage(result.error.message);
       return;
     }
+    setApproved(describeApproval(result.data));
     router.refresh();
   };
 
   return (
     <>
+      {approved !== null ? (
+        <InlineAlert className={styles.notice} tone={approved.tone} title={approved.title}>
+          {approved.lines.map((line) => (
+            <p key={line} className={styles.noticeLine}>
+              {line}
+            </p>
+          ))}
+        </InlineAlert>
+      ) : null}
       <ActionBar
         aria-label="수정 지시"
         actions={

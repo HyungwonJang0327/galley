@@ -2,7 +2,7 @@
 // 아니고, pipeline·run-commands는 **타입만** 가져온다(decisions/server-only-boundary.md).
 // 응답 봉투는 { ok, data } | { ok, error:{ code, message } } 둘뿐(decisions/error-handling.md ③).
 // HTTP 상태가 아니라 `ok`로 판별한다.
-import type { RerunPlanView, RevisedRun, RunRecord } from './run-commands';
+import type { ApprovedRun, RerunPlanView, RevisedRun } from './run-commands';
 import type { StartedRun } from './run-start';
 
 export interface ApiFailure {
@@ -51,7 +51,7 @@ async function post<T>(path: string, body: unknown, what: string): Promise<ApiRe
   }
 }
 
-export function approveRun(runId: string): Promise<ApiResult<RunRecord>> {
+export function approveRun(runId: string): Promise<ApiResult<ApprovedRun>> {
   return post(`/api/runs/${encodeURIComponent(runId)}/approve`, undefined, '승인');
 }
 
