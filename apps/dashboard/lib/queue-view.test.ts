@@ -12,6 +12,7 @@ const entry = (
   category,
   completedOn,
   series: null,
+  missing: null,
 });
 
 const sections: QueueSections = {

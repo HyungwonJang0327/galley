@@ -12,6 +12,7 @@ const entry = (
   category,
   completedOn: null,
   series,
+  missing: null,
 });
 
 const sections = (waiting: ReturnType<typeof entry>[]): QueueSections => ({
