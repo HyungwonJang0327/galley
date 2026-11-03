@@ -299,7 +299,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 - [x] **TS8** (2026-10-05 `e28d8c3`·`3decc85`, PR #153) pl+fe — 재실행(수정 지시) 경로의 주제 가드: 판정을 `topicGuard`로 추출해 `startRun`·`startRerun` 공용, 완료·파일에서 사라진 주제는 `TOPIC_ALREADY_DONE`·`TOPIC_MISSING_FROM_FILE`(409), 대시보드는 수정 지시 직전에 재적재(`QUEUE_RELOAD_FAILED` 500). TS3 리뷰 L6 해소. 커밋: `refactor(run): 주제 실행 가드를 topicGuard로 추출` · `fix(run): 완료·사라진 주제의 재실행 거절`
   - 완료조건 충족: 표시가 있는 주제의 재실행 거절·Run 없음, 수정 지시가 거절돼도 그 실행은 승인 대기(DB 테스트), 재적재가 reviseRun보다 먼저·실패 시 보내지 않음.
   - 이월(기록만): 재실행 미리보기는 상태를 보지 않아 확인 Dialog 뒤에 거절 문구가 뜬다(decisions/queue-sync-direction.md) · B2d-2(실패 실행 재실행)가 `startRerun`을 쓰면 이 가드를 그대로 받는다(적재는 그 진입점이 해야 함).
-- [x] **TS6** (2026-11-03 `a3dc9d1`·`c3f69c7`, 로컬 해시 — 머지 후 정정) fe — 승인 결과 안내: 응답의 `postsDir`·`replaced`·`replacedDir`·`leftover`를 실행 상세에 보여 준다(특히 `leftover`가 있으면 "폴더에 옛 파일이 남았다"). 순수 `describeApproval`(lib/run-action-bar) → `RunActionBar`가 승인 성공 시 ActionBar 위 `InlineAlert`(leftover 있으면 warning=role alert). 안내는 응답 기반이라 화면을 떠나면 사라진다(지속 표시는 발행 화면 몫). 커밋: `feat(dashboard): 승인 결과 문구 생성` · `feat(dashboard): 승인 결과 안내`
+- [x] **TS6** (2026-11-03 `b550979`·`93dc652`, PR #155) fe — 승인 결과 안내: 응답의 `postsDir`·`replaced`·`replacedDir`·`leftover`를 실행 상세에 보여 준다(특히 `leftover`가 있으면 "폴더에 옛 파일이 남았다"). 순수 `describeApproval`(lib/run-action-bar) → `RunActionBar`가 승인 성공 시 ActionBar 위 `InlineAlert`(leftover 있으면 warning=role alert). 안내는 응답 기반이라 화면을 떠나면 사라진다(지속 표시는 발행 화면 몫). 커밋: `feat(dashboard): 승인 결과 문구 생성` · `feat(dashboard): 승인 결과 안내`
 - [ ] **TS5** fe — (보류) 완료 탭 행 "다시 쓰기": 파일 줄을 대기로 옮기고 날짜를 뗀다. 수요가 생기면.
 
 ---
