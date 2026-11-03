@@ -33,7 +33,8 @@ import type { StepRunner } from '../src/steps/StepRunner.ts';
 import { LocalFsStorage } from '../src/storage/LocalFsStorage.ts';
 import { createPrismaWorkerRepo } from '../src/worker/PrismaWorkerRepo.ts';
 import { resolveDataDir } from '../src/worker/resolveDataDir.ts';
-import { runOnce } from '../src/worker/runOnce.ts';
+import { HEARTBEAT_INTERVAL_MS, runOnce } from '../src/worker/runOnce.ts';
+import { writeWorkerHeartbeat } from '../src/worker/workerHeartbeat.ts';
 import type { WorkerDeps } from '../src/worker/WorkerDeps.ts';
 
 /** 할 일이 없을 때 쉬는 간격. 진행했으면 쉬지 않고 바로 다음 틱(decisions/run-location.md 폴링 2s). */
@@ -236,6 +237,23 @@ function stop(signal: string): void {
 process.on('SIGTERM', () => stop('SIGTERM'));
 process.on('SIGINT', () => stop('SIGINT'));
 
+/**
+ * 워커 프로세스 생존 heartbeat(TopBar 생존 점, BW6). Run·IndexJob의 heartbeat는 일하는 동안만 쓰여 쉬는 워커를 죽은 것과
+ * 구분하지 못하므로, 루프와 따로 도는 타이머가 Setting 한 줄을 덮어쓴다 — 긴 단계가 틱을 붙잡아도 끊기지 않는다.
+ * 쓰기 실패는 로그만(점이 회색이 될 뿐, 실행은 계속).
+ */
+function startWorkerHeartbeat(): () => void {
+  const beat = () => {
+    writeWorkerHeartbeat(prisma, deps.clock.now()).catch((error: unknown) => {
+      deps.logger.error('워커 heartbeat 쓰기 실패', {
+        detail: error instanceof Error ? error.message : String(error),
+      });
+    });
+  };
+  beat();
+  return deps.timers.every(HEARTBEAT_INTERVAL_MS, beat);
+}
+
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, ms);
@@ -269,6 +287,7 @@ async function main(): Promise<void> {
   const linkDeps = { prisma, clock: deps.clock, logger: deps.logger };
   deps.linker = { tick: (signal) => runAutoLinkTick(linkDeps, signal) };
   deps.logger.info('워커 시작', { workerId: deps.workerId });
+  const stopWorkerHeartbeat = startWorkerHeartbeat();
 
   while (!stopping) {
     try {
@@ -286,6 +305,8 @@ async function main(): Promise<void> {
     }
   }
 
+  // 종료하면 쓰기만 멈춘다 — 점은 30초 공백 뒤 회색(실행 회수와 같은 기준). 줄을 지우지 않는다.
+  stopWorkerHeartbeat();
   await prisma.$disconnect();
   deps.logger.info('워커 종료', { workerId: deps.workerId });
 }
