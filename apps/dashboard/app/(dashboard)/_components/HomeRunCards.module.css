@@ -1,0 +1,37 @@
+/* 홈 "지금 할 일"·"최근 실행" 카드 공통 스타일(layout.md §4 행 2·행 3). 제목은 "다음 실행" 카드와 같은 크기. */
+.title {
+  margin: 0 0 var(--ui-space-4);
+  font-size: var(--ui-text-h2);
+  font-weight: var(--ui-weight-semibold);
+}
+
+/* 제목 줄 우측에 보조 링크("이력 전체 →")가 붙는 헤더. */
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  margin-bottom: var(--ui-space-4);
+}
+
+.header .title {
+  margin: 0;
+}
+
+.headerLink {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+  white-space: nowrap;
+}
+
+/* 상태 배지 옆 "근거 없음 n" — 실행 목록과 같은 색. */
+.flag {
+  color: var(--ui-color-warning-fg);
+  white-space: nowrap;
+}
+
+/* 목록 아래 "n개 더 보기". */
+.more {
+  margin: var(--ui-space-3) 0 0;
+  font-size: var(--ui-text-sm);
+}
