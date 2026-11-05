@@ -6,7 +6,14 @@ import type { RunRecord } from './run-commands';
 
 export interface RunListRow extends RunRecord {
   /** 파이프라인 순서 6행(진행 인디케이터·마지막 단계 미리보기·"근거 없음 n"의 출처 Run 판정용). */
-  steps: { name: string; status: string; origin: string; sourceRunId: string | null }[];
+  steps: {
+    name: string;
+    status: string;
+    origin: string;
+    sourceRunId: string | null;
+    /** 단계 종료 시각(ISO). 홈 "지금 할 일"의 대기 시작 시각 = 마지막으로 끝난 단계의 이 값. */
+    finishedAt: string | null;
+  }[];
 }
 
 export type RunListResult =
@@ -29,6 +36,7 @@ function toRow(item: RunListItem): RunListRow {
       status: s.status,
       origin: s.origin,
       sourceRunId: s.sourceRunId,
+      finishedAt: s.finishedAt === null ? null : s.finishedAt.toISOString(),
     })),
   };
 }
