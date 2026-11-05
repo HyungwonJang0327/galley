@@ -189,10 +189,10 @@
 - [x] **BE10** (2026-09-23 렌더 추출 `0c2e4c6`·상한 `5712bf4`·순수 함수 `70ad500`·단계 `92232dc`·배럴 `516f01b`·decisions `b62f367`, feat/verify-step — 경로·식별자 미발견은 uncertain, 판정 JSON 실패는 단계 실패 아님, flags는 파일이 진실) pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
   - BS2 리뷰에서 넘어온 것(decisions 2026-09-23 BS2 ⑬): 일반화된 식별자·경로는 unsupported가 아니라 uncertain · 본문이 근거 조각을 N줄 이상 그대로 담으면 flag(클린룸 기계 검사) · 본문은 `ArtifactStore`에서, 번들은 `EvidenceStore`에서(`sources.*`).
   - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
-- [ ] **BE11** pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 커밋: `refactor(run): 본문 입력을 근거 묶음으로 제한`
+- [x] **BE11** (2026-11-06 `4ea1540`, 로컬 해시 — 머지 후 정정) pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 구현은 BS2(`VelogInput`·`analyses`·`VELOG_EVIDENCE_EMPTY`·`StepContext.evidence` 자리 제거)·B3a(`renderEvidenceSection`)·BE4 ②(삭제 파일 포인터 = 부모 커밋)에서 끝났고, 이번에 "타입으로 강제"를 `@ts-expect-error` 테스트로 typecheck에 묶었다. 커밋: `test(pipeline): 본문 단계 입력 경계를 타입 테스트로 고정`
   - BE8 리뷰에서 넘어온 것(decisions 2026-09-22 BE8 ⑨): 번들에 `analyses: { id, kind, title, summary }[]` 옵션 필드(version 1 유지) · `StepContext.evidence`에 `EvidenceBundle` 타입 · 0건 번들로 본문을 쓸지(`EVIDENCE_EMPTY`) 결정 · 삭제 파일 포인터의 `date`는 부모 커밋(표기 규칙).
   - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
-  - 상태(2026-09-26): 입력 제한은 BS2(`VelogInput`)에서, `## 근거` 목록은 B3a(`renderEvidenceSection`)에서 이행됐다. 남은 것은 `StepContext.evidence` 자리 정리와 이 항목 마감 확인뿐.
+  - 상태(2026-09-26): 입력 제한은 BS2(`VelogInput`)에서, `## 근거` 목록은 B3a(`renderEvidenceSection`)에서 이행됐다. `StepContext.evidence` 자리는 BS2 ①에서 제거(단계가 `sources.evidence ?? runId`로 EvidenceStore를 직접 읽는다) → 2026-11-06 마감.
 - [ ] **BE12** fe — 큐 행 ⋮ "근거 편집" Dialog(연결 목록·추가·제거·인덱스 검색) + 실행 Dialog(BM6) 근거 목록·0건 경고. 커밋: `feat(dashboard): 주제 근거 편집 Dialog 추가`
   - BE7 리뷰에서 넘어온 것(decisions 2026-09-22 BE7 ⑪): auto 연결 "제거" = `source=dismissed`(계산 결과에 있어도 안 붙임, 목록엔 안 보임, `LINK_SOURCE`에 값 추가·마이그레이션 없음) · "추가"가 이미 auto면 create가 아니라 source 갱신(승격) · 연결 이유는 `matchTopic` 재계산으로 표시(재인덱싱 뒤 어긋날 수 있음, 필요하면 `reason` 컬럼) · 큐 행 "근거 n건"은 `_count`.
   - 완료조건: 편집 결과가 `TopicAnalysisLink(manual)`로 저장, 큐 행 "근거 n건" 갱신.

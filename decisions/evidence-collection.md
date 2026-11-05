@@ -178,3 +178,4 @@
 - 2026-09-26 B3a: 발행정보 `## 근거` 형식 이행(위 "링크드인·Zenn·발행정보"). **posts의 `evidence.json`은 포인터만 — snippet뿐 아니라 `analyses`(분석 글 요약)도 뺀다**(`toPostsEvidence`, 리뷰 M2 사용자 결정; 요약은 DATA_DIR 원본에). `verification.json`은 그대로 복사(본문 텍스트·포인터·줄 번호뿐). 산출물 위치·승인 절차는 run-execution-model §1.
 - 2026-09-26 BS5 배선: BE8 ⑩(`DATA_DIR` 비었거나 BLOG_DIR 안이면 기동 거부 — `resolveDataDir`, 상대경로도 거부·`~` 미확장)과 BS2 ⑭(어댑터 `maxRetries` 1 + 워커 재시도 대기)를 이행. 규칙과 조합표는 run-execution-model §2·§3. 이월: 심볼릭 링크·대소문자 다른 경로는 BLOG_DIR 안으로 못 잡는다(macOS, 기록만).
 - 2026-09-26 BX6: 파서 확장 절에 시리즈 태그·`(기존 글)`·줄 끝 URL이 힌트가 아님을 명시(구현은 BX1, 근거는 decisions/series.md). 결정 변경 없음.
+- 2026-11-06 BE11 마감: 본문 입력 원칙(위 "벨로그 본문" 줄)은 BS2·B3a에서 이미 이행. "타입으로 강제"를 `@ts-expect-error` 테스트로 typecheck에 묶음(`velogStep.test.ts`). 결정 변경 없음.
