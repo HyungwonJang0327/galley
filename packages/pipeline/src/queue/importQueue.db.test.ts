@@ -245,6 +245,41 @@ describe('importQueueFromFile', () => {
     expect(after).toMatchObject({ status: '대기', holdReason: null, missingSince: null });
   });
 
+  test('이미 자동 보류된 행은 재적재해도 다시 update하지 않는다(updatedAt 그대로 — 자동 연결이 매 틱 재계산되지 않게)', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['A', 'B']), prisma });
+    await importQueueFromFile({ storage: WAITING_ONLY(['A']), prisma });
+    const held = await prisma.queueItem.findFirst({ where: { title: 'B' } });
+    if (!held) throw new Error('항목이 있어야 한다');
+    expect(held.holdReason).toBe(HOLD_REASON_REMOVED);
+
+    await new Promise((r) => setTimeout(r, 5));
+    await importQueueFromFile({ storage: WAITING_ONLY(['A']), prisma });
+
+    const again = await prisma.queueItem.findUnique({ where: { id: held.id } });
+    expect(again?.updatedAt.getTime()).toBe(held.updatedAt.getTime());
+    expect(again).toMatchObject({
+      status: '보류',
+      order: held.order,
+      holdReason: HOLD_REASON_REMOVED,
+    });
+  });
+
+  test('자동 보류된 행도 파일의 보류 줄이 늘어 자리가 밀리면 order만 갱신된다', async () => {
+    await importQueueFromFile({ storage: WAITING_ONLY(['A', 'B']), prisma });
+    await importQueueFromFile({ storage: WAITING_ONLY(['A']), prisma });
+    const held = await prisma.queueItem.findFirst({ where: { title: 'B' } });
+    if (!held) throw new Error('항목이 있어야 한다');
+    expect(held.order).toBe(0);
+
+    await importQueueFromFile({
+      storage: fakeStorage('## 대기\n\n- A\n\n## 후보\n\n## 보류\n\n- H\n\n## 완료\n'),
+      prisma,
+    });
+
+    const after = await prisma.queueItem.findUnique({ where: { id: held.id } });
+    expect(after).toMatchObject({ status: '보류', order: 1, holdReason: HOLD_REASON_REMOVED });
+  });
+
   test('줄이 돌아오면 사라짐 표시와 자동 보류 사유를 지운다', async () => {
     await importQueueFromFile({ storage: WAITING_ONLY(['A', 'B']), prisma });
     await importQueueFromFile({ storage: WAITING_ONLY(['A']), prisma });

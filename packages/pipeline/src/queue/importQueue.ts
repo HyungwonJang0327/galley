@@ -242,17 +242,39 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
       }
       // 확인 없이 내린 것이므로 missingSince(= 확인 대기 표시)는 남기지 않는다.
       // 왜 보류가 됐는지는 holdReason이 말한다.
-      await tx.queueItem.update({
-        where: { id: item.id },
-        data: {
-          status: '보류',
-          order: holdOrder++,
-          category: null,
-          completedOn: null,
-          holdReason: HOLD_REASON_REMOVED,
-          missingSince: null,
-        },
-      });
+      const held = {
+        status: '보류' as const,
+        order: holdOrder++,
+        category: null,
+        completedOn: null,
+        holdReason: HOLD_REASON_REMOVED,
+        missingSince: null,
+      };
+      // 지난 적재가 이미 같은 값으로 내렸으면 건너뛴다 — 사라진 줄은 매 적재마다 여기로 오는데,
+      // 같은 값이라도 update하면 @updatedAt이 올라가 자동 연결이 매 틱 다시 계산된다(BX2 리뷰 14).
+      if (isAlreadyHeld(item, held)) continue;
+      await tx.queueItem.update({ where: { id: item.id }, data: held });
     }
   });
+}
+
+/** 사라진 행이 이미 지난 적재가 내린 그대로인가(보류·자리·사유까지). 같으면 update하지 않는다. */
+export function isAlreadyHeld(
+  item: Pick<
+    ExistingItem,
+    'status' | 'order' | 'category' | 'completedOn' | 'holdReason' | 'missingSince'
+  >,
+  held: Pick<
+    ExistingItem,
+    'status' | 'order' | 'category' | 'completedOn' | 'holdReason' | 'missingSince'
+  >,
+): boolean {
+  return (
+    item.status === held.status &&
+    item.order === held.order &&
+    item.category === held.category &&
+    item.completedOn === held.completedOn &&
+    item.holdReason === held.holdReason &&
+    item.missingSince === held.missingSince
+  );
 }
