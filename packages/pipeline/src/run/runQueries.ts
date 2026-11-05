@@ -93,6 +93,8 @@ export interface RunListStep {
   origin: string;
   /** carried면 그 결과를 만든 Run — 목록 행의 "근거 없음 n"이 출처 Run의 verification.json을 읽는다(BE13). */
   sourceRunId: string | null;
+  /** 단계 종료 시각. 승인 대기 실행의 "대기 시작 시각"은 마지막으로 끝난 단계의 이 값이다(홈 "지금 할 일", AH5). */
+  finishedAt: Date | null;
 }
 
 /** 목록 한 줄. 단계 6개의 상태·출처를 같이 준다 — 원형 진행 인디케이터·마지막 단계 미리보기용. */
@@ -134,7 +136,7 @@ export async function listRuns(
       ...RUN_SUMMARY_SELECT,
       steps: {
         orderBy: { order: 'asc' },
-        select: { name: true, status: true, origin: true, sourceRunId: true },
+        select: { name: true, status: true, origin: true, sourceRunId: true, finishedAt: true },
       },
     },
   });

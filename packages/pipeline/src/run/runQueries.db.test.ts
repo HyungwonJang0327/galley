@@ -153,14 +153,16 @@ describe('listRuns — 실행 목록', () => {
     expect(rows.map((r) => r.topicSlug)).toEqual(['new', 'old']);
   });
 
-  test('행의 단계에는 이름·상태·출처·sourceRunId가 온다(목록의 "근거 없음 n"이 출처 파일을 찾는다)', async () => {
+  test('행의 단계에는 이름·상태·출처·sourceRunId·종료 시각이 온다(목록의 "근거 없음 n"이 출처 파일을 찾고, 홈이 대기 시작 시각을 읽는다)', async () => {
     const first = await createRun({ status: RUN_STATUS.revised, finishedAt: new Date() });
     const second = await createRun({ attempt: 2, startStep: 'velog' });
+    const finished = new Date('2026-11-06T01:02:03.000Z');
     await seedSteps(second.id, {
       evidence: {
         status: STEP_STATUS.succeeded,
         origin: STEP_ORIGIN.carried,
         sourceRunId: first.id,
+        finishedAt: finished,
       },
     });
 
@@ -171,12 +173,14 @@ describe('listRuns — 실행 목록', () => {
       status: 'succeeded',
       origin: 'carried',
       sourceRunId: first.id,
+      finishedAt: finished,
     });
     expect(rows[0]?.steps[1]).toEqual({
       name: 'velog',
       status: 'pending',
       origin: 'fresh',
       sourceRunId: null,
+      finishedAt: null,
     });
   });
 
