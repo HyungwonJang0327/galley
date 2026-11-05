@@ -5,9 +5,18 @@
   gap: var(--ui-space-4);
 }
 
-/* 행 2 — 지금은 "다음 실행" 카드만 전체 폭(사용자 결정). 좌 "지금 할 일"은 AH5(B1e 뒤). */
-.cards {
+/* 행 2 — 좌 "지금 할 일" 60% / 우 "다음 실행" 40%(layout.md §4). 카드 높이는 각자(위 맞춤). */
+.row2 {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--ui-space-4);
+  align-items: start;
   margin-top: var(--ui-space-5);
+}
+
+/* 행 3 — "최근 실행". 우 "발행 대기"(AH6, Phase 2 데이터) 전까지 전체 폭(AH4와 같은 선례). */
+.row3 {
+  margin-top: var(--ui-space-4);
 }
 
 /* h1 우측 보조 텍스트: 다음 자동 실행 시각. */
