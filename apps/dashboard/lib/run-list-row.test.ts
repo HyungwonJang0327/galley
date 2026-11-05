@@ -38,8 +38,20 @@ describe('runListRowView', () => {
     const view = runListRowView(
       row({
         steps: [
-          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
-          { name: 'velog', status: 'running', origin: 'fresh', sourceRunId: null },
+          {
+            name: 'evidence',
+            status: 'succeeded',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
+          {
+            name: 'velog',
+            status: 'running',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
         ],
       }),
     );
@@ -53,8 +65,14 @@ describe('runListRowView', () => {
       row({
         status: 'failed',
         steps: [
-          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
-          { name: 'velog', status: 'failed', origin: 'fresh', sourceRunId: null },
+          {
+            name: 'evidence',
+            status: 'succeeded',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
+          { name: 'velog', status: 'failed', origin: 'fresh', sourceRunId: null, finishedAt: null },
         ],
       }),
     );
@@ -66,7 +84,15 @@ describe('runListRowView', () => {
   it('carried 단계는 done 점에 "이전 결과" 라벨', () => {
     const view = runListRowView(
       row({
-        steps: [{ name: 'evidence', status: 'succeeded', origin: 'carried', sourceRunId: null }],
+        steps: [
+          {
+            name: 'evidence',
+            status: 'succeeded',
+            origin: 'carried',
+            sourceRunId: null,
+            finishedAt: null,
+          },
+        ],
       }),
     );
 
@@ -81,9 +107,27 @@ describe('runListRowView', () => {
     const view = runListRowView(
       row({
         steps: [
-          { name: 'verify', status: 'succeeded', origin: 'fresh', sourceRunId: null },
-          { name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null },
-          { name: 'velog', status: 'succeeded', origin: 'fresh', sourceRunId: null },
+          {
+            name: 'verify',
+            status: 'succeeded',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
+          {
+            name: 'evidence',
+            status: 'succeeded',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
+          {
+            name: 'velog',
+            status: 'succeeded',
+            origin: 'fresh',
+            sourceRunId: null,
+            finishedAt: null,
+          },
         ],
       }),
     );

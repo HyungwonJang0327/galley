@@ -94,8 +94,9 @@
   - 구현 메모(사용자 결정): 사이드바 배지도 함께 채움(레이아웃 서버에서 조회 → `Sidebar`에 경로별 배지 맵, 0은 미표시) · 시간대 키 `TZ=Asia/Seoul`(.env.example 추가) · 데이터 없는 타일은 **`0`**(에이전트는 "—" 추천, 사용자가 0 선택) · 스케줄 계산은 시간대 인자를 받는 앱 유틸 `lib/schedule.ts`.
 - [x] **AH4** (2026-09-12 `b801ac4`·`7b6b92e`·`eb1e36b`·`5b310a2`, feat/dashboard-next-run, PR #68) fe — "다음 실행" 카드(대기 큐 A4d 데이터 연결: 맨 위 1개 크게 + 2~4위 작은 행, `지금 실행`은 비활성+사유(BM6 전), 빈 상태 EmptyState + `후보 보기`). 작은 행은 A5a `ListRow` 재사용. 사용자 결정: 전체 폭(좌우 분할은 AH5) · 보조 정보는 카테고리만. 곁들여 ui `Button`에 `render`(버튼 모양 링크) 추가 + 갤러리 예시, 셸 정적 프리렌더 `fix`. 커밋: `feat(dashboard): 홈에 다음 실행 카드 추가`
   - 완료조건: 주제_큐.md 대기 맨 위 항목이 카드에 뜨고, 큐 순서를 바꾸면 홈도 바뀐다.
-- [ ] **AH5** fe — "지금 할 일"·"최근 실행" 카드. **의존: B1e(Run 스키마)** — 그 전까지 두 카드 모두 EmptyState. **B1e 뒤로 보류**(지금 만들면 행 구조 재작업). 커밋: `feat(dashboard): 홈에 승인 대기·최근 실행 카드 추가`
-  - 완료조건: 실행 0건에서 두 카드 빈 상태, 레이아웃 안 무너짐.
+- [x] **AH5** (2026-11-06 `e8ee4be`·`bf8f475`·`5f9a337`, 로컬 해시 — 머지 후 정정) fe — "지금 할 일"·"최근 실행" 카드(B1e 뒤). 행 2를 좌 "지금 할 일" 60% / 우 "다음 실행" 40%로 나누고 행 3에 "최근 실행"(우 "발행 대기"는 AH6까지 전체 폭 — AH4 선례). 데이터는 `lib/home-runs.getHomeRuns`(server-only, 실패=봉투): 승인 대기는 실행 목록과 같은 조회(`listRuns` pendingOnly 5) + `countPendingApproval`로 "n개 더 보기", "근거 없음 n"은 목록과 같은 `getRunVerificationFlags`(최대 5행), 최근 실행은 `listRecentRuns` 5 + 레지스트리 label. 대기 시작 시각 = 마지막으로 끝난 단계의 종료 시각(`RunListStep.finishedAt` 추가). 커밋: `feat(run): 실행 목록 단계에 종료 시각 포함` · `feat(dashboard): 홈 카드용 실행 조회 어댑터 추가` · `feat(dashboard): 홈에 승인 대기·최근 실행 카드 추가`
+  - 완료조건 충족: 실행 0건에서 두 카드 빈 상태(테스트), 조회 실패 시 카드 안 alert(홈은 산다), 실제 서버에서 승인 대기 2건 렌더 확인.
+  - 이월(기록만): BE13 M1(목록 행마다 verification.json 읽기 상한 없음)은 홈에서 5행으로 자연히 묶여 RunStep에 수를 기록하는 결정은 하지 않았다 · 홈은 요청마다 렌더라 승인 대기가 늘어도 머무는 동안은 안 바뀐다(배지와 같은 규칙).
 - [ ] **AH6** fe — "발행 대기" 카드 빈 상태 + Phase 2 TODO. **Phase 2 데이터 의존, 뒤로 보류.** 커밋: `feat(dashboard): 홈에 발행 대기 카드 자리 추가`
 
 ### A5. 큐 목록 화면 (패턴 A) — [B] Phase 1-A #3
@@ -189,7 +190,7 @@
 - [x] **BE10** (2026-09-23 렌더 추출 `0c2e4c6`·상한 `5712bf4`·순수 함수 `70ad500`·단계 `92232dc`·배럴 `516f01b`·decisions `b62f367`, feat/verify-step — 경로·식별자 미발견은 uncertain, 판정 JSON 실패는 단계 실패 아님, flags는 파일이 진실) pl — 근거 검증 단계: 주장 추출(숫자·경로·식별자·백틱 코드는 정규식, "~했다" 서술은 모델) → EvidenceBundle 대조(기계 항목은 문자열 대조, 서술은 모델 판정) → `verification.json`. 본문 불변. unsupported여도 단계 성공. 커밋: `feat(run): 근거 검증 단계 추가`
   - BS2 리뷰에서 넘어온 것(decisions 2026-09-23 BS2 ⑬): 일반화된 식별자·경로는 unsupported가 아니라 uncertain · 본문이 근거 조각을 N줄 이상 그대로 담으면 flag(클린룸 기계 검사) · 본문은 `ArtifactStore`에서, 번들은 `EvidenceStore`에서(`sources.*`).
   - 완료조건: 픽스처 초안(근거 있는 숫자 2 + 없는 숫자 1)에서 **supported 2 · unsupported 1**(Mock 어댑터, 테스트).
-- [x] **BE11** (2026-11-06 `4ea1540`, 로컬 해시 — 머지 후 정정) pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 구현은 BS2(`VelogInput`·`analyses`·`VELOG_EVIDENCE_EMPTY`·`StepContext.evidence` 자리 제거)·B3a(`renderEvidenceSection`)·BE4 ②(삭제 파일 포인터 = 부모 커밋)에서 끝났고, 이번에 "타입으로 강제"를 `@ts-expect-error` 테스트로 typecheck에 묶었다. 커밋: `test(pipeline): 본문 단계 입력 경계를 타입 테스트로 고정`
+- [x] **BE11** (2026-11-06 `f9b4c44`, PR #159) pl — 본문 단계 입력을 EvidenceBundle로 제한 + 발행정보 `## 근거` 목록 생성(커밋 해시·경로·날짜). 구현은 BS2(`VelogInput`·`analyses`·`VELOG_EVIDENCE_EMPTY`·`StepContext.evidence` 자리 제거)·B3a(`renderEvidenceSection`)·BE4 ②(삭제 파일 포인터 = 부모 커밋)에서 끝났고, 이번에 "타입으로 강제"를 `@ts-expect-error` 테스트로 typecheck에 묶었다. 커밋: `test(pipeline): 본문 단계 입력 경계를 타입 테스트로 고정`
   - BE8 리뷰에서 넘어온 것(decisions 2026-09-22 BE8 ⑨): 번들에 `analyses: { id, kind, title, summary }[]` 옵션 필드(version 1 유지) · `StepContext.evidence`에 `EvidenceBundle` 타입 · 0건 번들로 본문을 쓸지(`EVIDENCE_EMPTY`) 결정 · 삭제 파일 포인터의 `date`는 부모 커밋(표기 규칙).
   - 완료조건: 본문 단계 함수 입력 타입에 **리포 경로·분석 글 원문 자리가 없다**(타입으로 강제). 발행정보 픽스처에 근거 섹션.
   - 상태(2026-09-26): 입력 제한은 BS2(`VelogInput`)에서, `## 근거` 목록은 B3a(`renderEvidenceSection`)에서 이행됐다. `StepContext.evidence` 자리는 BS2 ①에서 제거(단계가 `sources.evidence ?? runId`로 EvidenceStore를 직접 읽는다) → 2026-11-06 마감.

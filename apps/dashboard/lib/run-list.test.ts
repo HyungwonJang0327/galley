@@ -19,7 +19,15 @@ const ITEM = {
   modelId: 'mock',
   startedAt: new Date('2026-09-13T03:00:00.000Z'),
   finishedAt: null,
-  steps: [{ name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null }],
+  steps: [
+    {
+      name: 'evidence',
+      status: 'succeeded',
+      origin: 'fresh',
+      sourceRunId: null,
+      finishedAt: new Date('2026-09-13T03:05:00.000Z'),
+    },
+  ],
 };
 
 describe('getRunList', () => {
@@ -39,7 +47,15 @@ describe('getRunList', () => {
           id: 'run_1',
           startedAt: '2026-09-13T03:00:00.000Z',
           finishedAt: null,
-          steps: [{ name: 'evidence', status: 'succeeded', origin: 'fresh', sourceRunId: null }],
+          steps: [
+            {
+              name: 'evidence',
+              status: 'succeeded',
+              origin: 'fresh',
+              sourceRunId: null,
+              finishedAt: '2026-09-13T03:05:00.000Z',
+            },
+          ],
         }),
       ],
     });
