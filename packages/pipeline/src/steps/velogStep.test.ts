@@ -131,6 +131,29 @@ describe('buildVelogPrompt', () => {
   });
 });
 
+describe('VelogInput — 본문 단계 입력 경계(BE11)', () => {
+  test('리포 경로·분석 글 원문·요약 묶음은 입력 타입에 자리가 없고(typecheck가 지킨다), 넘겨도 프롬프트에 나오지 않는다', () => {
+    const base = {
+      topic: { title: 't', slug: 's' },
+      bundle: BUNDLE,
+      tone: { step: 'velog' as const, text: TONE, hash: 'h' },
+    };
+    // 아래 세 줄은 타입 오류여야 한다 — 자리가 생기면 `@ts-expect-error`가 "쓰이지 않은 지시"로 typecheck를 깨뜨린다.
+    // @ts-expect-error 리포 경로는 본문 단계 입력에 없다(decisions/evidence-collection.md).
+    const withRepo = buildVelogPrompt({ ...base, repoPath: '/Users/me/Desktop/private-repo' });
+    // @ts-expect-error 분석 글 원문도 없다 — 본문은 EvidenceBundle(조각 + analyses 요약)만 본다.
+    const withAnalysis = buildVelogPrompt({ ...base, analysisText: '분석 글 원문 전체' });
+    // @ts-expect-error 리포 전체 요약 같은 별도 입력도 없다.
+    const withSummary = buildVelogPrompt({ ...base, repoSummary: '리포 전체 요약' });
+
+    for (const { system, prompt } of [withRepo, withAnalysis, withSummary]) {
+      expect(system + prompt).not.toContain('private-repo');
+      expect(system + prompt).not.toContain('분석 글 원문 전체');
+      expect(system + prompt).not.toContain('리포 전체 요약');
+    }
+  });
+});
+
 describe('createVelogStepRunner', () => {
   test('번들·어투로 모델을 부르고 velog.md·토큰·비용·모델·promptHash를 돌려준다', async () => {
     const a = adapters();
