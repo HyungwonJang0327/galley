@@ -19,7 +19,7 @@
 - [x] B1g — 주제 키 topicId 전환 + 큐 적재 매칭 upsert (2026-09-12, PR #85)
 - BW2 — 워커 루프(runOnce + bin 껍데기) ← 다음
 - BE14c — 워커가 범위 밖 앞 단계를 carried로 이어받기 (선행 BW2)
-- TD1 — QueueItem.status 한국어 → 영어 (fe와 함께)
+- TD1 — QueueItem.status 한국어 → 영어 (fe와 함께) — 완료 2026-11-08
 - 🔒 BM1 — 모델 어댑터 **인터페이스만** 사용자 작성 ← 구현 금지. **Mock·레지스트리·Claude 어댑터·비용은 AI가 구현**(인터페이스만 🔒 — decisions/core-modules·model-selection)
 - BM2 — ModelRegistry(list/get/default·available)
 - BM3 — 어댑터 7개(Claude 4 + GPT 3) + 단가 상수(model-selection 표) + usage→cost 테스트. SDK `@anthropic-ai/sdk`·`openai` 설치
