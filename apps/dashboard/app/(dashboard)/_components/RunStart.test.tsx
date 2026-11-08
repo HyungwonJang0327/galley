@@ -3,7 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { RunModelChoices } from '../../../lib/run-model-options';
 import { RunStartButton, RunStartProvider, useRunStart } from './RunStart';
 
-const { push, startRun } = vi.hoisted(() => ({ push: vi.fn(), startRun: vi.fn() }));
+const { push, startRun, loadEvidence } = vi.hoisted(() => ({
+  push: vi.fn(),
+  startRun: vi.fn(),
+  loadEvidence: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 vi.mock('../../../lib/run-api-client', () => ({ startRun }));
@@ -30,7 +34,7 @@ function Opener({ id = 't1', title = '무한 스크롤' }: { id?: string; title?
 
 function renderWith(value: RunModelChoices = choices) {
   render(
-    <RunStartProvider choices={value}>
+    <RunStartProvider choices={value} loadEvidence={loadEvidence}>
       <Opener />
       <Opener id="t2" title="다른 주제" />
     </RunStartProvider>,
@@ -48,9 +52,21 @@ async function openDialog(name = '무한 스크롤 실행') {
   return waitFor(() => screen.getByRole('dialog'));
 }
 
+const evidenceLink = (analysisId: string, title: string) => ({
+  analysisId,
+  title,
+  summary: '요약',
+  meta: '영역 · spacehome',
+  source: 'auto' as const,
+  sourceLabel: '자동',
+  reason: undefined,
+});
+
 beforeEach(() => {
   push.mockReset();
   startRun.mockReset();
+  loadEvidence.mockReset();
+  loadEvidence.mockResolvedValue({ ok: true, data: { links: [evidenceLink('a1', '목록 화면')] } });
 });
 
 describe('RunStartProvider / 실행 시작 Dialog', () => {
@@ -143,10 +159,67 @@ describe('RunStartProvider / 실행 시작 Dialog', () => {
   });
 });
 
+describe('실행 시작 Dialog — 연결된 근거', () => {
+  it('열리면 그 주제의 근거를 읽어 건수와 제목(최대 5 + 외 n건)을 보인다', async () => {
+    loadEvidence.mockResolvedValue({
+      ok: true,
+      data: { links: Array.from({ length: 7 }, (_, i) => evidenceLink(`a${i}`, `글 ${i}`)) },
+    });
+    renderWith();
+    const dialog = await openDialog();
+
+    expect(loadEvidence).toHaveBeenCalledWith('t1');
+    const list = await screen.findByRole('list', { name: '연결된 근거' });
+    expect(list.querySelectorAll('li')).toHaveLength(6); // 5 + "외 2건"
+    expect(list.textContent).toContain('글 0');
+    expect(list.textContent).toContain('외 2건');
+    expect(dialog.textContent).toContain('연결된 근거 7건');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('0건이면 경고를 보이되 실행 버튼은 살아 있다', async () => {
+    loadEvidence.mockResolvedValue({ ok: true, data: { links: [] } });
+    renderWith();
+    await openDialog();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('연결된 근거가 없습니다');
+    expect(alert.textContent).toContain('본문 단계에서 멈춥니다');
+    expect((screen.getByRole('button', { name: '실행' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('근거 목록을 못 읽어도 실행은 막지 않는다(안내만)', async () => {
+    loadEvidence.mockResolvedValue({
+      ok: false,
+      error: { code: 'TOPIC_EVIDENCE_FAILED', message: '근거 목록을 읽지 못했습니다: busy' },
+    });
+    renderWith();
+    const dialog = await openDialog();
+
+    await waitFor(() => expect(dialog.textContent).toContain('실행은 할 수 있습니다'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect((screen.getByRole('button', { name: '실행' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
+  it('다른 주제로 다시 열면 그 주제의 근거를 새로 읽는다', async () => {
+    renderWith();
+    await openDialog();
+    fireEvent.click(screen.getByRole('button', { name: '취소' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    await openDialog('다른 주제 실행');
+    await waitFor(() => expect(loadEvidence).toHaveBeenLastCalledWith('t2'));
+  });
+});
+
 describe('RunStartButton', () => {
   it('누르면 그 주제로 Dialog를 연다', async () => {
     render(
-      <RunStartProvider choices={choices}>
+      <RunStartProvider choices={choices} loadEvidence={loadEvidence}>
         <RunStartButton topic={{ id: 't9', title: '맨 위 주제' }} disabledReason={undefined}>
           맨 위 실행
         </RunStartButton>
@@ -160,7 +233,7 @@ describe('RunStartButton', () => {
 
   it('사유가 있으면 비활성 + title', () => {
     render(
-      <RunStartProvider choices={choices}>
+      <RunStartProvider choices={choices} loadEvidence={loadEvidence}>
         <RunStartButton topic={{ id: 't9', title: '기존' }} disabledReason="이미 발행된 글입니다.">
           맨 위 실행
         </RunStartButton>
@@ -174,7 +247,7 @@ describe('RunStartButton', () => {
 
   it('주제가 없으면 비활성', () => {
     render(
-      <RunStartProvider choices={choices}>
+      <RunStartProvider choices={choices} loadEvidence={loadEvidence}>
         <RunStartButton topic={undefined} disabledReason="대기 중인 주제가 없습니다.">
           맨 위 실행
         </RunStartButton>

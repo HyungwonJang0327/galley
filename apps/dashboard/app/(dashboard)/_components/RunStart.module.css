@@ -18,3 +18,15 @@
 .error {
   color: var(--ui-color-danger-fg);
 }
+
+/* 근거 제목 목록 — 짧게, 들여쓰기만. 전체 편집은 큐 행 ⋮ "근거 편집". */
+.evidence {
+  margin: var(--ui-space-1) 0 0;
+  padding-inline-start: var(--ui-space-4);
+  font-size: var(--ui-text-sm);
+}
+
+.evidenceMeta {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+}
