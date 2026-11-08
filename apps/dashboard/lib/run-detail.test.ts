@@ -2,7 +2,14 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 
 const { getRunWithSteps } = vi.hoisted(() => ({ getRunWithSteps: vi.fn() }));
 
-vi.mock('@galley/pipeline', () => ({ prisma: {}, getRunWithSteps }));
+vi.mock('@galley/pipeline', () => ({
+  prisma: {},
+  getRunWithSteps,
+  // 레지스트리에 'mock'만 있다 — 모르는 id는 id 그대로 label이 되는지도 본다.
+  createModelRegistryFromEnv: () => ({
+    get: (id: string) => (id === 'mock' ? { label: 'Mock' } : undefined),
+  }),
+}));
 
 import { getRunDetail } from './run-detail';
 
@@ -18,7 +25,7 @@ const STEP = {
   errorCode: null,
   errorMessage: null,
   attemptCount: 1,
-  modelId: null,
+  modelId: 'legacy:gone',
   inputTokens: null,
   outputTokens: null,
   costUsd: null,
@@ -45,7 +52,7 @@ const RUN = {
 };
 
 describe('getRunDetail', () => {
-  it('실행·단계의 Date를 전부 ISO 문자열로', async () => {
+  it('실행·단계의 Date를 전부 ISO 문자열로, 모델 id에 label을 붙인다', async () => {
     getRunWithSteps.mockResolvedValue(RUN);
 
     const result = await getRunDetail('run_1');
@@ -55,6 +62,7 @@ describe('getRunDetail', () => {
       ok: true,
       data: expect.objectContaining({
         id: 'run_1',
+        modelLabel: 'Mock',
         heartbeat: '2026-09-13T03:05:00.000Z',
         instruction: '어투를 부드럽게',
         steps: [
@@ -63,6 +71,8 @@ describe('getRunDetail', () => {
             origin: 'carried',
             sourceFinishedAt: '2026-09-12T01:00:00.000Z',
             startedAt: null,
+            // 레지스트리에 없는 모델 id는 id 그대로
+            modelLabel: 'legacy:gone',
           }),
         ],
       }),

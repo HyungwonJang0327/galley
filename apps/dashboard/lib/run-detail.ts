@@ -2,6 +2,7 @@
 // 없는 id는 RUN_NOT_FOUND(화면이 "선택된 실행 없음" 안내), 그 밖은 RUN_DETAIL_FAILED.
 import 'server-only';
 import { getRunWithSteps, prisma, type RunDetail, type RunStepDetail } from '@galley/pipeline';
+import { createModelLabeler } from './model-label';
 import type { RunRecord } from './run-commands';
 
 export interface RunStepView {
@@ -16,6 +17,8 @@ export interface RunStepView {
   errorMessage: string | null;
   attemptCount: number;
   modelId: string | null;
+  /** 단계 모델의 label(없는 id는 id). 타임라인은 Run 모델과 다를 때만 보여 준다(decisions/model-selection.md). */
+  modelLabel: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
   costUsd: number | null;
@@ -25,6 +28,8 @@ export interface RunStepView {
 }
 
 export interface RunDetailView extends RunRecord {
+  /** Run 모델의 label — 헤더 상태 배지 옆(작은 회색). */
+  modelLabel: string;
   workerState: string;
   heartbeat: string | null;
   instruction: string | null;
@@ -39,16 +44,17 @@ export type RunDetailResult =
 
 const iso = (value: Date | null) => (value === null ? null : value.toISOString());
 
-function toStepView(step: RunStepDetail): RunStepView {
+function toStepView(step: RunStepDetail, label: (id: string) => string): RunStepView {
   return {
     ...step,
+    modelLabel: step.modelId === null ? null : label(step.modelId),
     sourceFinishedAt: iso(step.sourceFinishedAt),
     startedAt: iso(step.startedAt),
     finishedAt: iso(step.finishedAt),
   };
 }
 
-function toView(run: RunDetail): RunDetailView {
+function toView(run: RunDetail, label: (id: string) => string): RunDetailView {
   return {
     id: run.id,
     topicId: run.topicId,
@@ -57,13 +63,14 @@ function toView(run: RunDetail): RunDetailView {
     topicTitle: run.topicTitle,
     status: run.status,
     modelId: run.modelId,
+    modelLabel: label(run.modelId),
     startedAt: run.startedAt.toISOString(),
     finishedAt: iso(run.finishedAt),
     workerState: run.workerState,
     heartbeat: iso(run.heartbeat),
     instruction: run.instruction,
     startStep: run.startStep,
-    steps: run.steps.map(toStepView),
+    steps: run.steps.map((step) => toStepView(step, label)),
   };
 }
 
@@ -73,7 +80,7 @@ export async function getRunDetail(runId: string): Promise<RunDetailResult> {
     if (!run) {
       return { ok: false, error: { code: 'RUN_NOT_FOUND', message: '실행을 찾을 수 없습니다.' } };
     }
-    return { ok: true, data: toView(run) };
+    return { ok: true, data: toView(run, createModelLabeler()) };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     return {
