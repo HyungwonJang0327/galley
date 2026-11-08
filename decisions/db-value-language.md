@@ -33,3 +33,4 @@
 ## 갱신 이력
 
 - 2026-09-12 최초 결정. 계기는 `RunStep`에 `origin`을 추가하며 `status` 값을 영어로 바꿀지 물은 것 — 사용자가 프로젝트 전체 규칙으로 확정. 기존 위반 1건(`QueueItem.status`가 한국어 `대기|후보|보류|완료`)은 별도 작업으로 옮긴다.
+- 2026-11-08 TD1: 마지막 위반(`QueueItem.status`)을 영어(`waiting|candidate|hold|done`, `QUEUE_STATUS`)로 옮김. 파일 어휘는 `QueueSection`('대기'…)으로 이름을 갈라 타입이 섞이지 않게 했고, 변환은 `queue/queueStatus.ts`의 `statusOf`·`sectionOf`로만. 표시 한국어의 소스는 `apps/dashboard/lib/queue-tabs.ts`의 `label`. 마이그레이션 `queue_item_status_english`(값 변환 + 기본값). 이로써 "DB 값은 영어" 규칙에 알려진 예외가 없다. 결정 변경 없음.
