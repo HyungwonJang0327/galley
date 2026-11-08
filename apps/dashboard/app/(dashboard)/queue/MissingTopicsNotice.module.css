@@ -16,10 +16,8 @@
   font-size: var(--ui-text-xs);
 }
 
-.error {
-  margin: var(--ui-space-2) 0 0;
-  color: var(--ui-color-danger-fg);
-  font-size: var(--ui-text-xs);
+.alert {
+  margin-top: var(--ui-space-2);
 }
 
 .list {

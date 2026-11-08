@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { Button, Menu } from 'galley-ui';
+import { Button, InlineAlert, Menu } from 'galley-ui';
 import type { MoveQueueTopicInput, QueueStatus } from '@galley/pipeline';
 import type { QueueMoveResult } from '../../../lib/queue-move';
 import {
@@ -41,9 +41,10 @@ export function QueueRowMenu({
   return (
     <div className={styles.menu}>
       {error !== null ? (
-        <span role="alert" className={styles.error}>
+        // 목록 행 안이라 상자 없이(plain). danger라 role=alert.
+        <InlineAlert tone="danger" variant="plain">
           {error}
-        </span>
+        </InlineAlert>
       ) : null}
       <Menu
         trigger={
