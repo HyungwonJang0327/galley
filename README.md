@@ -76,6 +76,7 @@ pnpm install
 cp .env.example .env          # 루트 하나만(decisions/env-location.md). BLOG_DIR·DATABASE_URL 등 채우기
 pnpm --filter @galley/pipeline db migrate deploy  # SQLite 스키마 적용(루트 .env의 DATABASE_URL)
 pnpm --filter dashboard dev    # 대시보드 로컬 실행
+pnpm --filter @galley/pipeline worker  # 워커(파이프라인 실행 프로세스). 상시 기동은 docs/worker-setup.md(launchd)
 pnpm lint && pnpm typecheck && pnpm test
 pnpm --filter galley-ui build # 디자인 시스템 단독 빌드
 pnpm --filter dashboard verify:layout # 레이아웃 실측(설치된 Chrome headless, GALLEY_CHROME로 경로 지정 가능)

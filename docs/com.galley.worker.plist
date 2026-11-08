@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Galley 워커 launchd 템플릿 (docs/worker-setup.md). 세 자리를 바꿔 ~/Library/LaunchAgents/com.galley.worker.plist로 둔다.
+    __REPO__  Galley 리포 절대경로           예: /Users/<이름>/Desktop/projects/Galley
+    __NODE__  Node 24 실행 파일 절대경로      예: /Users/<이름>/.nvm/versions/node/v24.21.0/bin/node  (`which node`)
+    __NODE_DIR__  그 파일이 든 폴더            예: /Users/<이름>/.nvm/versions/node/v24.21.0/bin       (`dirname "$(which node)"`)
+    __HOME__  홈 폴더 절대경로               예: /Users/<이름>
+  NODE_ENV는 두지 않는다 — test·development면 Mock 단계로 돈다(실제 모델 호출 없음). 잠자기 방지는 하지 않는다.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.galley.worker</string>
+
+  <!-- pnpm --filter @galley/pipeline worker 와 같은 명령. 루트 .env 하나를 읽는다(decisions/env-location.md). -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE__</string>
+    <string>--env-file=__REPO__/.env</string>
+    <string>bin/worker.ts</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO__/packages/pipeline</string>
+
+  <!-- launchd의 PATH는 비어 있다시피 하다. git(리포 읽기)·Chrome 보조 도구가 보이게 Node 폴더와 기본 경로를 준다.
+       Chrome 자체는 .env GALLEY_CHROME(절대경로)로 지정한다. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__NODE_DIR__:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+  </dict>
+
+  <!-- 로그인하면 띄우고, 죽거나 끝나면 다시 띄운다(decisions/run-location.md "로그 · 설치").
+       기동 거부(설정 오류, exit 1)도 다시 띄우므로 반복되면 err 로그를 본다. 재시도 간격은 ThrottleInterval. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <!-- 종료 신호(SIGTERM) 뒤 기다리는 초. 워커는 돌던 단계를 반환하고 나간다(정상 종료 = 반환, run-location.md). -->
+  <key>ExitTimeOut</key>
+  <integer>60</integer>
+
+  <!-- 원시 로그는 파일(JSON 한 줄씩). 구조화된 결과(토큰·비용)는 DB RunStep에. 폴더는 미리 만든다. -->
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/galley/worker.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/galley/worker.err.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
