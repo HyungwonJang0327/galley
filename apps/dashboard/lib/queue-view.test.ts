@@ -13,6 +13,7 @@ const entry = (
   completedOn,
   series: null,
   missing: null,
+  evidenceCount: 0,
 });
 
 const sections: QueueSections = {

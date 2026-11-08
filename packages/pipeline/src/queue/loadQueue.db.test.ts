@@ -73,7 +73,15 @@ describe('loadQueueSections', () => {
     const id = expect.any(String) as unknown as string;
     expect(sections).toEqual({
       대기: [
-        { id, title: '대기1', category: null, completedOn: null, series: null, missing: null },
+        {
+          id,
+          title: '대기1',
+          category: null,
+          completedOn: null,
+          series: null,
+          missing: null,
+          evidenceCount: 0,
+        },
         {
           id,
           title: '대기2',
@@ -81,10 +89,19 @@ describe('loadQueueSections', () => {
           completedOn: null,
           series: { key: 'A', episode: 2, alreadyPublished: false },
           missing: null,
+          evidenceCount: 0,
         },
       ],
       후보: [
-        { id, title: '후보1', category: '프론트', completedOn: null, series: null, missing: null },
+        {
+          id,
+          title: '후보1',
+          category: '프론트',
+          completedOn: null,
+          series: null,
+          missing: null,
+          evidenceCount: 0,
+        },
         {
           id,
           title: '(기존 글) 후보 편',
@@ -92,10 +109,19 @@ describe('loadQueueSections', () => {
           completedOn: null,
           series: { key: 'A', episode: 3, alreadyPublished: true },
           missing: null,
+          evidenceCount: 0,
         },
       ],
       보류: [
-        { id, title: '보류1', category: null, completedOn: null, series: null, missing: null },
+        {
+          id,
+          title: '보류1',
+          category: null,
+          completedOn: null,
+          series: null,
+          missing: null,
+          evidenceCount: 0,
+        },
       ],
       완료: [
         {
@@ -105,12 +131,50 @@ describe('loadQueueSections', () => {
           completedOn: '2026-09-01',
           series: null,
           missing: null,
+          evidenceCount: 0,
         },
       ],
     });
     // id는 QueueItem.id — 실행 시작·상세 연결 키. 적재된 행과 같아야 한다.
     const row = await prisma.queueItem.findFirstOrThrow({ where: { title: '대기1' } });
     expect(sections.대기[0]?.id).toBe(row.id);
+  });
+
+  test('evidenceCount는 manual·auto 연결 수 — dismissed는 세지 않는다', async () => {
+    const first = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
+    const topicId = first.대기[0]!.id;
+    const repo = await prisma.repo.create({ data: { name: 'r', path: join(dbDir, 'r') } });
+    const analysis = (key: string) =>
+      prisma.repoAnalysis.create({
+        data: {
+          repoId: repo.id,
+          kind: 'area',
+          key,
+          title: key,
+          summary: 's',
+          pointers: JSON.stringify([{ commit: 'abc1234', path: 'x' }]),
+          modelId: 'mock',
+        },
+      });
+    const [a, b, c] = await Promise.all([
+      analysis('area:a'),
+      analysis('area:b'),
+      analysis('area:c'),
+    ]);
+    await prisma.topicAnalysisLink.createMany({
+      data: [
+        { topicId, analysisId: a.id, source: 'manual' },
+        { topicId, analysisId: b.id, source: 'auto' },
+        { topicId, analysisId: c.id, source: 'dismissed' },
+      ],
+    });
+    const next = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
+    expect(next.대기.map((t) => [t.title, t.evidenceCount])).toEqual([
+      ['대기1', 2],
+      ['대기2', 0],
+    ]);
+    await prisma.topicAnalysisLink.deleteMany();
+    await prisma.repo.deleteMany();
   });
 
   test('로드할 때마다 파일을 다시 읽는다(파일이 진실)', async () => {
