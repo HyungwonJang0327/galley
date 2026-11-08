@@ -29,8 +29,11 @@ export function isAnalysisKind(value: string): value is AnalysisKind {
   return valuesOf(ANALYSIS_KIND).includes(value);
 }
 
-/** TopicAnalysisLink.source — auto(키워드·기간 매칭) | manual(사용자 편집). */
-export const LINK_SOURCE = { auto: 'auto', manual: 'manual' } as const;
+/**
+ * TopicAnalysisLink.source — auto(키워드·기간 매칭) | manual(사용자 편집) | dismissed(사람이 뗀 연결 — 계산 결과에 있어도
+ * 다시 붙이지 않고 목록에도 안 보인다, decisions/evidence-collection.md 2026-09-22 BE7 ⑪). 문자열 컬럼이라 마이그레이션 없음.
+ */
+export const LINK_SOURCE = { auto: 'auto', manual: 'manual', dismissed: 'dismissed' } as const;
 export type LinkSource = (typeof LINK_SOURCE)[keyof typeof LINK_SOURCE];
 export function isLinkSource(value: string): value is LinkSource {
   return valuesOf(LINK_SOURCE).includes(value);

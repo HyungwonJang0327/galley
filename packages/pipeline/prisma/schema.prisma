@@ -264,7 +264,8 @@ model TopicAnalysisLink {
   analysisId String
   analysis   RepoAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
 
-  // auto | manual — LINK_SOURCE. auto → manual 승격은 source 갱신(updatedAt이 시각).
+  // auto | manual | dismissed — LINK_SOURCE. auto → manual 승격·제거(→ dismissed)는 source 갱신(updatedAt이 시각).
+  // dismissed = 사람이 뗀 연결: 자동 연결이 다시 붙이지 않고 근거 수집·목록에서도 뺀다.
   source String
 
   createdAt DateTime @default(now())
