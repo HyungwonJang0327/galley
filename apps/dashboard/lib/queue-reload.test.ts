@@ -15,6 +15,7 @@ const topic = (title: string) => ({
   completedOn: null,
   series: null,
   missing: null,
+  evidenceCount: 0,
 });
 
 const SECTIONS: QueueSections = {

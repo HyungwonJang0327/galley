@@ -1,6 +1,7 @@
 // 큐 화면용 로드: 파일(SoT)을 DB에 재적재한 뒤 DB에서 섹션별로 읽는다.
 // decisions/queue-sync-direction.md "로드 시 파일을 다시 읽어 DB 갱신".
 import type { PrismaClient } from '@prisma/client';
+import { LINK_SOURCE } from '../index/schema.ts';
 import type { Storage } from '../storage/Storage.ts';
 import { importQueueFromFile } from './importQueue.ts';
 import { missingMark, type MissingMark } from './missingMark.ts';
@@ -29,6 +30,8 @@ export interface QueueEntry {
    * 같은 판정) 보류 탭에서 사유를 보인다 — decisions/queue-sync-direction.md "사라진 줄 처리".
    */
   missing: MissingMark | null;
+  /** 연결된 분석 글 수(manual·auto, dismissed 제외) — 큐 행 보조 텍스트 "근거 n건"(decisions/evidence-collection.md). */
+  evidenceCount: number;
 }
 
 export type QueueSections = Record<QueueStatus, QueueEntry[]>;
@@ -56,6 +59,11 @@ export async function loadQueueSections(deps: {
       episodeNo: true,
       holdReason: true,
       missingSince: true,
+      _count: {
+        select: {
+          analysisLinks: { where: { source: { in: [LINK_SOURCE.manual, LINK_SOURCE.auto] } } },
+        },
+      },
     },
   });
 
@@ -76,6 +84,7 @@ export async function loadQueueSections(deps: {
       completedOn,
       series,
       missing: missingMark(item),
+      evidenceCount: item._count.analysisLinks,
     });
   }
   return sections;

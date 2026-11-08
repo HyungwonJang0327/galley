@@ -13,6 +13,7 @@ const entry = (
   completedOn: null,
   series,
   missing: null,
+  evidenceCount: 0,
 });
 
 const sections = (waiting: ReturnType<typeof entry>[]): QueueSections => ({
