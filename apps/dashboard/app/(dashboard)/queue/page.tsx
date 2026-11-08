@@ -63,7 +63,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const top = buildNextRunView(result.data).top;
 
   return (
-    <RunStartProvider choices={runChoices}>
+    <RunStartProvider choices={runChoices} loadEvidence={loadTopicEvidenceAction}>
       <TopicEvidenceProvider
         actions={{
           load: loadTopicEvidenceAction,

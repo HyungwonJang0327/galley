@@ -9,6 +9,7 @@ import { nextSchedule } from '../../lib/schedule';
 import { NextRunCard } from './_components/NextRunCard';
 import { RecentRunsCard } from './_components/RecentRunsCard';
 import { RunStartProvider } from './_components/RunStart';
+import { loadTopicEvidenceAction } from './queue/actions';
 import { TodoCard } from './_components/TodoCard';
 import styles from './page.module.css';
 
@@ -59,7 +60,7 @@ export default async function HomePage() {
       </div>
       <div className={styles.row2}>
         <TodoCard view={homeRuns.ok ? homeRuns.data.todo : undefined} error={runsError} />
-        <RunStartProvider choices={runChoices}>
+        <RunStartProvider choices={runChoices} loadEvidence={loadTopicEvidenceAction}>
           <NextRunCard view={nextRun} />
         </RunStartProvider>
       </div>

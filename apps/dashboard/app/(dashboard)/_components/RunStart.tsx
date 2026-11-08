@@ -2,11 +2,14 @@
 // 실행 시작 Dialog — "지금 실행"이 눌리는 모든 진입점(큐 행 ⋮·큐 상단 맨 위 실행·홈 다음 실행)이 **같은 Dialog**를 연다
 // (decisions/model-selection.md "화면"). 페이지가 Provider 하나를 두고, 진입점은 useRunStart()로 주제를 넘겨 연다.
 // 선택지·초기값은 서버(lib/run-model-options)가 만든다 — 클라이언트는 pipeline을 모른다. 예상 비용은 보이지 않는다.
+// 연결된 근거 목록·0건 경고(BE12): 열릴 때 서버 액션(loadEvidence)으로 읽는다. 0건이어도 실행은 된다 — 근거 수집까지
+// 돌고 본문 단계에서 멈춘다(decisions/evidence-collection.md "벨로그 본문").
 import { useRouter } from 'next/navigation';
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Button, Dialog, FormField, Select } from 'galley-ui';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Button, Dialog, FormField, InlineAlert, Select } from 'galley-ui';
 import { startRun } from '../../../lib/run-api-client';
 import type { RunModelChoices } from '../../../lib/run-model-options';
+import type { TopicEvidenceLinkView, TopicEvidenceListResult } from '../../../lib/topic-evidence';
 import { runsHref } from '../../../lib/run-view';
 import styles from './RunStart.module.css';
 
@@ -53,11 +56,16 @@ export function RunStartButton({
   );
 }
 
+export type LoadTopicEvidence = (topicId: string) => Promise<TopicEvidenceListResult>;
+
 export function RunStartProvider({
   choices,
+  loadEvidence,
   children,
 }: {
   choices: RunModelChoices;
+  /** 연결된 근거 목록(서버 액션). Dialog가 열릴 때 읽는다. */
+  loadEvidence: LoadTopicEvidence;
   children: ReactNode;
 }) {
   const [topic, setTopic] = useState<RunStartTopic | null>(null);
@@ -79,6 +87,7 @@ export function RunStartProvider({
           key={session}
           topic={topic}
           choices={choices}
+          loadEvidence={loadEvidence}
           open={open}
           onOpenChange={setOpen}
         />
@@ -87,14 +96,24 @@ export function RunStartProvider({
   );
 }
 
+/** Dialog에 나열하는 근거 제목 수 — 그 이상은 "외 n건". 전체 편집은 큐 행 ⋮ "근거 편집". */
+const EVIDENCE_PREVIEW = 5;
+
+type EvidenceState =
+  | { kind: 'loading' }
+  | { kind: 'loaded'; links: TopicEvidenceLinkView[] }
+  | { kind: 'failed'; message: string };
+
 function RunStartDialog({
   topic,
   choices,
+  loadEvidence,
   open,
   onOpenChange,
 }: {
   topic: RunStartTopic;
   choices: RunModelChoices;
+  loadEvidence: LoadTopicEvidence;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -102,6 +121,31 @@ function RunStartDialog({
   const [modelId, setModelId] = useState<string | null>(choices.initialId ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceState>({ kind: 'loading' });
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadEvidence(topic.id).then(
+      (result) => {
+        if (cancelled) return;
+        setEvidence(
+          result.ok
+            ? { kind: 'loaded', links: result.data.links }
+            : { kind: 'failed', message: result.error.message },
+        );
+      },
+      () => {
+        if (!cancelled)
+          setEvidence({
+            kind: 'failed',
+            message: '근거 목록을 읽지 못했습니다. 다시 시도해 주세요.',
+          });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [loadEvidence, topic.id]);
 
   const selected = choices.options.find((option) => option.value === modelId);
   const canRun = selected !== undefined && !selected.disabled && !busy;
@@ -160,6 +204,7 @@ function RunStartDialog({
             주세요.
           </p>
         ) : null}
+        <RunStartEvidence state={evidence} />
         {/* live 영역은 비어 있어도 트리에 남긴다 — 문구가 생기기 전에 있어야 낭독이 안정적이다(RunActionBar와 같은 규칙). */}
         <p role="status" className={styles.note}>
           {busy ? '실행을 요청하는 중…' : null}
@@ -171,5 +216,38 @@ function RunStartDialog({
         ) : null}
       </div>
     </Dialog>
+  );
+}
+
+/** 연결된 근거 요약 — 제목 몇 개 + 0건이면 경고(실행은 막지 않는다 — 결정: "0건 경고(실행은 가능)"). */
+function RunStartEvidence({ state }: { state: EvidenceState }) {
+  if (state.kind === 'loading') return <p className={styles.note}>근거 목록을 읽는 중…</p>;
+  if (state.kind === 'failed')
+    return (
+      <p className={styles.note}>
+        근거 목록을 읽지 못했습니다({state.message}). 실행은 할 수 있습니다.
+      </p>
+    );
+  if (state.links.length === 0)
+    return (
+      <InlineAlert tone="warning" variant="plain">
+        연결된 근거가 없습니다. 실행하면 추가 탐색으로 찾은 근거만 쓰고, 그것도 없으면 본문 단계에서
+        멈춥니다. 큐 행 ⋮ &quot;근거 편집&quot;에서 먼저 연결할 수 있습니다.
+      </InlineAlert>
+    );
+  const shown = state.links.slice(0, EVIDENCE_PREVIEW);
+  const rest = state.links.length - shown.length;
+  return (
+    <div>
+      <p className={styles.note}>연결된 근거 {state.links.length}건</p>
+      <ul className={styles.evidence} aria-label="연결된 근거">
+        {shown.map((link) => (
+          <li key={link.analysisId}>
+            {link.title} <span className={styles.evidenceMeta}>{link.meta}</span>
+          </li>
+        ))}
+        {rest > 0 ? <li className={styles.evidenceMeta}>외 {rest}건</li> : null}
+      </ul>
+    </div>
   );
 }

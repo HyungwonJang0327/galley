@@ -11,7 +11,12 @@ vi.mock('../../../lib/run-api-client', () => ({ startRun: vi.fn() }));
 /** 홈 페이지처럼 실행 시작 Dialog(Provider) 안에서 그린다. */
 const render = (ui: ReactElement) =>
   baseRender(
-    <RunStartProvider choices={{ options: [], initialId: undefined }}>{ui}</RunStartProvider>,
+    <RunStartProvider
+      choices={{ options: [], initialId: undefined }}
+      loadEvidence={vi.fn().mockResolvedValue({ ok: true, data: { links: [] } })}
+    >
+      {ui}
+    </RunStartProvider>,
   );
 
 const topic = (title: string, category?: string): NextRunTopic => ({

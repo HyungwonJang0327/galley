@@ -32,7 +32,7 @@ const evidenceActions = {
 /** 행 메뉴는 페이지의 실행 시작·근거 편집 Dialog(Provider 둘) 안에서만 쓰인다. */
 function renderInPage(ui: ReactElement) {
   return render(
-    <RunStartProvider choices={choices}>
+    <RunStartProvider choices={choices} loadEvidence={evidenceActions.load}>
       <TopicEvidenceProvider actions={evidenceActions}>{ui}</TopicEvidenceProvider>
     </RunStartProvider>,
   );
