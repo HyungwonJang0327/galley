@@ -34,14 +34,14 @@ describe('buildQueueView', () => {
     ]);
   });
 
-  it('탭이 없으면 대기 섹션을 파일 순서대로, 보조 텍스트는 카테고리', () => {
+  it('탭이 없으면 대기 섹션을 파일 순서대로, 보조 텍스트는 카테고리 · 근거 n건', () => {
     const view = buildQueueView(sections, {});
     expect(view.active.status).toBe('대기');
     expect(view.rows).toEqual([
       {
         id: 'id-대기1',
         title: '대기1',
-        meta: undefined,
+        meta: '근거 0건',
         index: 0,
         series: undefined,
         runDisabledReason: undefined,
@@ -49,7 +49,7 @@ describe('buildQueueView', () => {
       {
         id: 'id-대기2',
         title: '대기2',
-        meta: '프론트',
+        meta: '프론트 · 근거 0건',
         index: 1,
         series: undefined,
         runDisabledReason: undefined,
@@ -168,9 +168,9 @@ describe('buildQueueView — 시리즈', () => {
       { tab: 'hold' },
     );
     expect(view.rows.map((row) => [row.title, row.meta])).toEqual([
-      ['내려온 것', '파일에서 사라짐 · 자동 보류'],
-      ['확인 대기', '파일에서 사라짐 · 확인 대기'],
-      ['직접 옮긴 것', undefined],
+      ['내려온 것', '파일에서 사라짐 · 자동 보류 · 근거 0건'],
+      ['확인 대기', '파일에서 사라짐 · 확인 대기 · 근거 0건'],
+      ['직접 옮긴 것', '근거 0건'],
     ]);
   });
 
@@ -179,7 +179,20 @@ describe('buildQueueView — 시리즈', () => {
       { ...sections, 대기: [{ ...entry('확인 대기', '프론트'), missing: 'pending' }] },
       {},
     );
-    expect(view.rows[0]?.meta).toBe('프론트');
+    expect(view.rows[0]?.meta).toBe('프론트 · 근거 0건');
+  });
+
+  it('근거 수는 보조 텍스트 끝에 — 완료 탭은 완료일만', () => {
+    const view = buildQueueView(
+      { ...sections, 대기: [{ ...entry('대기1', '프론트'), evidenceCount: 3 }] },
+      {},
+    );
+    expect(view.rows[0]?.meta).toBe('프론트 · 근거 3건');
+    const done = buildQueueView(
+      { ...sections, 완료: [{ ...entry('완료1', null, '2026-09-01'), evidenceCount: 3 }] },
+      { tab: 'done' },
+    );
+    expect(done.rows[0]?.meta).toBe('2026-09-01');
   });
 
   it('파일에서 사라진 주제·(기존 글) 편은 행에 실행 불가 사유가 붙는다(행 ⋮이 문구만 받는다)', () => {

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { RunStartProvider } from '../_components/RunStart';
 import { QueueRowMenu } from './QueueRowMenu';
+import { TopicEvidenceProvider } from './TopicEvidenceEdit';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('../../../lib/run-api-client', () => ({ startRun: vi.fn() }));
@@ -21,9 +22,20 @@ const choices = {
   initialId: 'mock',
 };
 
-/** 행 메뉴는 페이지의 실행 시작 Dialog(Provider) 안에서만 쓰인다. */
+const evidenceActions = {
+  load: vi.fn().mockResolvedValue({ ok: true, data: { links: [] } }),
+  search: vi.fn(),
+  add: vi.fn(),
+  remove: vi.fn(),
+};
+
+/** 행 메뉴는 페이지의 실행 시작·근거 편집 Dialog(Provider 둘) 안에서만 쓰인다. */
 function renderInPage(ui: ReactElement) {
-  return render(<RunStartProvider choices={choices}>{ui}</RunStartProvider>);
+  return render(
+    <RunStartProvider choices={choices}>
+      <TopicEvidenceProvider actions={evidenceActions}>{ui}</TopicEvidenceProvider>
+    </RunStartProvider>,
+  );
 }
 
 function openMenu(name = '첫 주제 메뉴') {
@@ -50,6 +62,7 @@ describe('QueueRowMenu', () => {
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
       '후보로',
       '보류로',
+      '근거 편집',
       '지금 실행',
     ]);
     expect(
@@ -67,6 +80,20 @@ describe('QueueRowMenu', () => {
 
     await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
     expect(screen.getByRole('heading', { name: '첫 주제' })).toBeTruthy();
+    expect(move).not.toHaveBeenCalled();
+  });
+
+  it('"근거 편집"을 고르면 그 주제의 근거 편집 Dialog를 연다(목록을 읽는다)', async () => {
+    const move = vi.fn();
+    renderInPage(<QueueRowMenu {...props} move={move} />);
+    openMenu();
+    await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
+
+    press(screen.getByRole('menuitem', { name: '근거 편집' }));
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
+    expect(screen.getByRole('heading', { name: '첫 주제 — 근거 편집' })).toBeTruthy();
+    expect(evidenceActions.load).toHaveBeenCalledWith('topic-1');
     expect(move).not.toHaveBeenCalled();
   });
 

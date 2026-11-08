@@ -33,7 +33,7 @@ export interface QueueRowView {
   /** QueueItem.id — 실행 시작·실행 상세 연결 키. */
   id: string;
   title: string;
-  /** 보조 텍스트: 완료 탭은 완료일, 나머지는 카테고리. */
+  /** 보조 텍스트: 완료 탭은 완료일, 나머지는 `카테고리(또는 보류 사유) · 근거 n건`. */
   meta: string | undefined;
   /** 섹션 안에서의 0기반 위치(카테고리 필터 전 기준). 행 ⋮ 이동이 파일에서 항목을 찾는 키. */
   index: number;
@@ -117,8 +117,12 @@ const HOLD_REASON_LABEL: Record<NonNullable<QueueEntry['missing']>, string> = {
 
 function rowMeta(tab: QueueTab, topic: QueueEntry): string | undefined {
   if (tab.id === 'done') return topic.completedOn ?? undefined;
-  if (tab.id === 'hold' && topic.missing !== null) return HOLD_REASON_LABEL[topic.missing];
-  return topic.category ?? undefined;
+  const lead =
+    tab.id === 'hold' && topic.missing !== null
+      ? HOLD_REASON_LABEL[topic.missing]
+      : (topic.category ?? undefined);
+  // "근거 n건"은 실행 전에 볼 신호라 완료 탭 밖에서는 항상 보인다(0건도 — 본문 단계가 멈추는 조건이다).
+  return [lead, `근거 ${topic.evidenceCount}건`].filter((p) => p !== undefined).join(' · ');
 }
 
 function rowSeries(
