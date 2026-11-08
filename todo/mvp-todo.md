@@ -148,7 +148,7 @@
   - 완료조건: 세 진입점 모두 같은 Dialog, 선택 modelId가 Run에 저장, available=false는 선택 불가.
 - [x] **BM7** (2026-11-08 `7eccd11`·`d343ce8`, PR #161) fe — 실행 상세 헤더 상태 배지 옆 Run 모델 label(작은 회색) + 타임라인 성공 줄 "소요 · 토큰"에 비용(USD 소수 4자리) + 단계 모델이 Run과 다를 때만 그 줄에 모델 label(label 없는 id는 id). `lib/model-label`(server-only: `createModelLabeler` 레지스트리 id→label, 없는 id는 id 그대로 · `formatCostUsd`) — 홈 최근 실행도 같은 헬퍼. `RunDetailView.modelLabel`·`RunStepView.modelLabel`은 어댑터가 붙인다(컴포넌트는 pipeline을 모른다). 커밋: `feat(dashboard): 모델 label·비용 표기 헬퍼 추가` · `feat(dashboard): 실행 상세에 모델과 비용 표시`
   - 이월(기록만): Run 총비용(단계 합산)은 헤더에 두지 않았다(결정은 이력 화면의 비용 컬럼) — 수요가 생기면 헤더 한 줄.
-- [x] **BM8** (2026-11-08 `8d21081`, 로컬 해시 — 머지 후 정정, feat/rerun-model-select — 새 시도 Run.modelId = 고른 모델(pipeline 기존 동작), 같은 모델이면 안 실음, 계획 요청엔 없음, 키 없음·미등록 초기값은 화면이 먼저 막음) fe — 재실행 ActionBar에 모델 Select(초기값=원래 모델) → 다시 도는 단계가 그 모델로. 커밋: `feat(dashboard): 단계 재실행 시 모델 변경 지원`
+- [x] **BM8** (2026-11-08 `786bb3f`, PR #164, feat/rerun-model-select — 새 시도 Run.modelId = 고른 모델(pipeline 기존 동작), 같은 모델이면 안 실음, 계획 요청엔 없음, 키 없음·미등록 초기값은 화면이 먼저 막음) fe — 재실행 ActionBar에 모델 Select(초기값=원래 모델) → 다시 도는 단계가 그 모델로. 커밋: `feat(dashboard): 단계 재실행 시 모델 변경 지원`
   - 완료조건(해석 갱신 2026-11-08, decisions/model-selection.md 갱신 이력): 다른 모델로 재실행하면 **새 시도**의 Run.modelId·다시 도는 단계가 그 모델, 직전 Run.modelId는 그대로, 이어받는 단계는 출처 모델(타임라인 label). 같은 Run 안 단계별 오버라이드는 Phase 2.
 - [x] **BM9** (2026-10-04 `701ac97`·`97c79c6`, PR #151) fe — (2026-10-04 변경: TopBar 칩 제거) 설정 > 모델·비용(`/settings/model`)에 기본 모델 Select(`setDefaultModelId`, 키 없는 모델 비활성+사유, "실행 중인 실행에는 영향 없음" 안내). 어댑터 목록·비용 표는 Phase 2. 커밋: `feat(dashboard): 설정 화면에서 기본 모델 변경`
 
