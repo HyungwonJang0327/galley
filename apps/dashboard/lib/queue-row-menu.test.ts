@@ -6,6 +6,7 @@ import {
   parseMoveTarget,
   topicRunDisabledReason,
   RUN_NOW_ID,
+  EDIT_EVIDENCE_ID,
 } from './queue-row-menu';
 
 const labels = (status: '대기' | '후보' | '보류') =>
@@ -13,9 +14,9 @@ const labels = (status: '대기' | '후보' | '보류') =>
 
 describe('queueRowMenuEntries', () => {
   it('현재 섹션으로 가는 항목은 빼고 나머지 이동 2개를 준다', () => {
-    expect(labels('대기')).toEqual(['후보로', '보류로', '—', '지금 실행']);
-    expect(labels('후보')).toEqual(['대기로', '보류로', '—', '지금 실행']);
-    expect(labels('보류')).toEqual(['대기로', '후보로', '—', '지금 실행']);
+    expect(labels('대기')).toEqual(['후보로', '보류로', '—', '근거 편집', '지금 실행']);
+    expect(labels('후보')).toEqual(['대기로', '보류로', '—', '근거 편집', '지금 실행']);
+    expect(labels('보류')).toEqual(['대기로', '후보로', '—', '근거 편집', '지금 실행']);
   });
 
   it('"지금 실행"은 활성(실행 시작 Dialog를 연다)', () => {
@@ -32,8 +33,11 @@ describe('queueRowMenuEntries', () => {
       '대기로',
       '보류로',
       '—',
+      '근거 편집',
       '지금 실행',
     ]);
+    // "근거 편집"은 사유와 무관하게 활성 — 실행 못 하는 주제도 근거는 손볼 수 있다
+    expect(entries.at(-2)).toEqual({ id: EDIT_EVIDENCE_ID, label: '근거 편집' });
     expect(entries.at(-1)).toMatchObject({
       id: RUN_NOW_ID,
       disabled: true,

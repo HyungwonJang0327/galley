@@ -8,11 +8,15 @@ import { queueStatusBadgeTone } from '../../../lib/queue-status-badge';
 import { queueHref } from '../../../lib/queue-tabs';
 import { buildQueueView } from '../../../lib/queue-view';
 import {
+  addTopicEvidenceAction,
   keepMissingTopicAction,
+  loadTopicEvidenceAction,
   moveMissingTopicToHoldAction,
   moveQueueRowAction,
   reloadQueueAction,
+  removeTopicEvidenceAction,
   reorderQueueRowAction,
+  searchTopicEvidenceAction,
 } from './actions';
 import { MissingTopicsNotice } from './MissingTopicsNotice';
 import { CategoryFilter } from './CategoryFilter';
@@ -21,6 +25,7 @@ import { QueueGroupHeader } from './QueueGroupHeader';
 import { QueueRowMenu } from './QueueRowMenu';
 import { QueueRowTitle } from './QueueRowTitle';
 import { ReloadQueueButton } from './ReloadQueueButton';
+import { TopicEvidenceProvider } from './TopicEvidenceEdit';
 import { RunStartButton, RunStartProvider } from '../_components/RunStart';
 import styles from './page.module.css';
 
@@ -59,92 +64,101 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   return (
     <RunStartProvider choices={runChoices}>
-      <PageHeader
-        title="큐"
-        actions={
-          <>
-            <RunStartButton
-              topic={top}
-              disabledReason={top === undefined ? EMPTY_WAITING_REASON : top.runDisabledReason}
-            >
-              맨 위 실행
-            </RunStartButton>
-            <ReloadQueueButton reload={reloadQueueAction} />
-          </>
-        }
-      />
-      {missing.ok ? (
-        <MissingTopicsNotice
-          topics={missing.data}
-          moveToHold={moveMissingTopicToHoldAction}
-          keep={keepMissingTopicAction}
-        />
-      ) : null}
-      <Card>
-        <ListToolbar
-          aria-label="큐 섹션"
-          tabs={view.tabs.map((tab) => (
-            <ListToolbarTab
-              key={tab.id}
-              label={tab.status}
-              count={tab.count}
-              isActive={tab.isActive}
-              render={<Link href={queueHref(tab.id)} />}
-            />
-          ))}
-          filters={
-            view.categories.length > 0 ? (
-              <div className={styles.filter}>
-                <CategoryFilter categories={view.categories} value={view.category} />
-              </div>
-            ) : undefined
+      <TopicEvidenceProvider
+        actions={{
+          load: loadTopicEvidenceAction,
+          search: searchTopicEvidenceAction,
+          add: addTopicEvidenceAction,
+          remove: removeTopicEvidenceAction,
+        }}
+      >
+        <PageHeader
+          title="큐"
+          actions={
+            <>
+              <RunStartButton
+                topic={top}
+                disabledReason={top === undefined ? EMPTY_WAITING_REASON : top.runDisabledReason}
+              >
+                맨 위 실행
+              </RunStartButton>
+              <ReloadQueueButton reload={reloadQueueAction} />
+            </>
           }
         />
-        {view.rows.length > 0 && view.active.status === '대기' ? (
-          // 대기 탭만 드래그로 순서 변경(사용자 결정 2026-09-12). 후보는 ### 소제목 때문에 불가.
-          <DraggableQueueRows
-            rows={view.rows}
-            status={view.active.status}
-            badgeTone={badgeTone}
-            move={moveQueueRowAction}
-            reorder={reorderQueueRowAction}
+        {missing.ok ? (
+          <MissingTopicsNotice
+            topics={missing.data}
+            moveToHold={moveMissingTopicToHoldAction}
+            keep={keepMissingTopicAction}
           />
-        ) : view.items.length > 0 ? (
-          // 편이 전부 대기로 가고 정의 줄만 남아도 헤더("편 없음 · 대기 N편")는 보인다(BX5 리뷰 L2).
-          <ListRows>
-            {view.items.map((item) =>
-              item.kind === 'group' ? (
-                <QueueGroupHeader
-                  key={`group-${item.group.key}-${item.group.position}`}
-                  group={item.group}
-                />
-              ) : (
-                <ListRow
-                  key={`${item.row.index}-${item.row.title}`}
-                  title={<QueueRowTitle title={item.row.title} series={item.row.series} />}
-                  meta={item.row.meta}
-                  trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
-                  // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
-                  actions={
-                    view.active.status === '완료' ? undefined : (
-                      <QueueRowMenu
-                        topicId={item.row.id}
-                        title={item.row.title}
-                        status={view.active.status}
-                        index={item.row.index}
-                        runDisabledReason={item.row.runDisabledReason}
-                        move={moveQueueRowAction}
-                      />
-                    )
-                  }
-                />
-              ),
-            )}
-          </ListRows>
-        ) : (
-          <p className={styles.note}>{view.active.status} 섹션에 주제가 없습니다.</p>
-        )}
-      </Card>
+        ) : null}
+        <Card>
+          <ListToolbar
+            aria-label="큐 섹션"
+            tabs={view.tabs.map((tab) => (
+              <ListToolbarTab
+                key={tab.id}
+                label={tab.status}
+                count={tab.count}
+                isActive={tab.isActive}
+                render={<Link href={queueHref(tab.id)} />}
+              />
+            ))}
+            filters={
+              view.categories.length > 0 ? (
+                <div className={styles.filter}>
+                  <CategoryFilter categories={view.categories} value={view.category} />
+                </div>
+              ) : undefined
+            }
+          />
+          {view.rows.length > 0 && view.active.status === '대기' ? (
+            // 대기 탭만 드래그로 순서 변경(사용자 결정 2026-09-12). 후보는 ### 소제목 때문에 불가.
+            <DraggableQueueRows
+              rows={view.rows}
+              status={view.active.status}
+              badgeTone={badgeTone}
+              move={moveQueueRowAction}
+              reorder={reorderQueueRowAction}
+            />
+          ) : view.items.length > 0 ? (
+            // 편이 전부 대기로 가고 정의 줄만 남아도 헤더("편 없음 · 대기 N편")는 보인다(BX5 리뷰 L2).
+            <ListRows>
+              {view.items.map((item) =>
+                item.kind === 'group' ? (
+                  <QueueGroupHeader
+                    key={`group-${item.group.key}-${item.group.position}`}
+                    group={item.group}
+                  />
+                ) : (
+                  <ListRow
+                    key={`${item.row.index}-${item.row.title}`}
+                    title={<QueueRowTitle title={item.row.title} series={item.row.series} />}
+                    meta={item.row.meta}
+                    trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
+                    // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
+                    actions={
+                      view.active.status === '완료' ? undefined : (
+                        <QueueRowMenu
+                          topicId={item.row.id}
+                          title={item.row.title}
+                          status={view.active.status}
+                          index={item.row.index}
+                          runDisabledReason={item.row.runDisabledReason}
+                          move={moveQueueRowAction}
+                        />
+                      )
+                    }
+                  />
+                ),
+              )}
+            </ListRows>
+          ) : (
+            <p className={styles.note}>{view.active.status} 섹션에 주제가 없습니다.</p>
+          )}
+        </Card>
+      </TopicEvidenceProvider>
     </RunStartProvider>
   );
 }
