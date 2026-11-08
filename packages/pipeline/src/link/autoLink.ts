@@ -1,6 +1,7 @@
 // 주제 ↔ 분석 글 자동 연결(source=auto) — 워커가 백그라운드로, 모델 없이. 큐 적재(힌트 갱신)·리포 재인덱싱(새 글) 뒤에
 // `QueueItem.autoLinkedAt`이 오래된 주제만 다시 계산한다(대시보드는 신호를 보내지 않는다 — decisions/run-location.md).
-// manual 연결은 **절대 건드리지 않는다**(추가·삭제·강등 없음). auto는 계산 결과와 같아지도록 추가·삭제한다.
+// manual·dismissed 연결은 **절대 건드리지 않는다**(추가·삭제·강등 없음) — dismissed는 사람이 뗀 것이라 계산 결과에 있어도
+// 다시 붙이지 않는다(BE7 ⑪). auto는 계산 결과와 같아지도록 추가·삭제한다.
 import type { PrismaClient } from '@prisma/client';
 import { LINK_SOURCE, parseStringArray, isAnalysisKind } from '../index/schema.ts';
 import type { Clock, Logger } from '../worker/WorkerDeps.ts';
@@ -105,11 +106,16 @@ export async function linkTopicAuto(
       const manual = new Set(
         existing.filter((l) => l.source === LINK_SOURCE.manual).map((l) => l.analysisId),
       );
+      const dismissed = new Set(
+        existing.filter((l) => l.source === LINK_SOURCE.dismissed).map((l) => l.analysisId),
+      );
       const auto = new Set(
         existing.filter((l) => l.source === LINK_SOURCE.auto).map((l) => l.analysisId),
       );
-      const desired = matched.map((m) => m.id).filter((id) => !manual.has(id));
-      const keptManual = matched.length - desired.length;
+      const keptManual = matched.filter((m) => manual.has(m.id)).length;
+      const desired = matched
+        .map((m) => m.id)
+        .filter((id) => !manual.has(id) && !dismissed.has(id));
       const add = desired.filter((id) => !auto.has(id));
       const desiredSet = new Set(desired);
       const remove = [...auto].filter((id) => !desiredSet.has(id));

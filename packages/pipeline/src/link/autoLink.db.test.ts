@@ -161,6 +161,24 @@ describe('linkTopicAuto', () => {
     });
   });
 
+  test('dismissed(사람이 뗀 연결)는 계산 결과에 있어도 다시 붙이지 않고 지우지도 않는다', async () => {
+    const sh = await seedRepo('spacehome');
+    const area = await seedAnalysis(sh.id, 'area:src', 'area', ['react-router']);
+    const chg3 = await seedAnalysis(sh.id, 'change:2024-03', 'change', ['react-router'], '2024-03');
+    const topic = await seedTopic('무한 스크롤', { keywords: ['react-router'], period: '2024-03' });
+    await prisma.topicAnalysisLink.create({
+      data: { topicId: topic.id, analysisId: area.id, source: LINK_SOURCE.dismissed },
+    });
+
+    const r = await linkTopicAuto(prisma, topic.id, await loadAnalysisCandidates(prisma), at(1));
+    // area는 계산 결과(2건)에 있지만 dismissed라 auto로 만들지 않는다 — keptManual에도 세지 않는다
+    expect(r).toEqual({
+      ok: true,
+      result: { topicId: topic.id, linked: 1, added: 1, removed: 0, keptManual: 0 },
+    });
+    expect(await linksOf(topic.id)).toEqual([`${area.id}:dismissed`, `${chg3.id}:auto`].sort());
+  });
+
   test('재적재(힌트 그대로)해도 manual·auto 연결이 유지되고, 힌트를 고치면 다음 계산이 auto만 바꾼다', async () => {
     const sh = await seedRepo('spacehome');
     const area = await seedAnalysis(sh.id, 'area:src', 'area', ['react-router']);
