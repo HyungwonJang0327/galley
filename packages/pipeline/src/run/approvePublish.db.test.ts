@@ -108,7 +108,8 @@ beforeEach(async () => {
   await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
   storage = new LocalFsStorage(blogDir);
   await importQueueFromFile({ storage, prisma });
-  topicId = (await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } })).id;
+  topicId = (await prisma.queueItem.findFirstOrThrow({ where: { status: 'waiting', order: 0 } }))
+    .id;
   artifacts = new LocalFsArtifactStore(dataDir);
   evidence = new LocalFsEvidenceStore(dataDir);
   deps = {
@@ -256,7 +257,7 @@ describe('approveAndPublishRun', () => {
 
     // DB: 같은 QueueItem 행이 완료가 됐고(재적재로 갈라지지 않음), Run은 done.
     const item = await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } });
-    expect(item).toMatchObject({ status: '완료', completedOn: TODAY, missingSince: null });
+    expect(item).toMatchObject({ status: 'done', completedOn: TODAY, missingSince: null });
     expect(await prisma.queueItem.count()).toBe(3);
     const after = await prisma.run.findUniqueOrThrow({ where: { id: run.id } });
     expect(after).toMatchObject({ status: RUN_STATUS.done, finishedAt: NOW, workerId: null });
@@ -328,7 +329,7 @@ describe('approveAndPublishRun', () => {
       await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
       await prisma.queueItem.update({
         where: { id: topicId },
-        data: { title: '무한 스크롤 (spacehome)', status: '대기', completedOn: null, order: 0 },
+        data: { title: '무한 스크롤 (spacehome)', status: 'waiting', completedOn: null, order: 0 },
       });
     }
 
@@ -468,7 +469,7 @@ describe('approveAndPublishRun', () => {
     await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
     await prisma.queueItem.update({
       where: { id: topicId },
-      data: { title: '무한 스크롤 (spacehome)', status: '대기', completedOn: null, order: 0 },
+      data: { title: '무한 스크롤 (spacehome)', status: 'waiting', completedOn: null, order: 0 },
     });
     const second = await finishedRun();
     await artifacts.write(
@@ -533,17 +534,17 @@ describe('approveAndPublishRun', () => {
     expect(await approveAndPublishRun(deps, run.id)).toEqual({
       ok: false,
       code: 'TOPIC_NOT_IN_QUEUE',
-      detail: '대기',
+      detail: 'waiting',
     });
     await expect(readdir(join(blogDir, 'posts'))).rejects.toThrow();
   });
 
   test('주제가 이미 완료면 TOPIC_NOT_IN_QUEUE(완료)', async () => {
     const run = await finishedRun();
-    await prisma.queueItem.update({ where: { id: topicId }, data: { status: '완료' } });
+    await prisma.queueItem.update({ where: { id: topicId }, data: { status: 'done' } });
     expect(await approveAndPublishRun(deps, run.id)).toMatchObject({
       code: 'TOPIC_NOT_IN_QUEUE',
-      detail: '완료',
+      detail: 'done',
     });
   });
 
@@ -563,7 +564,7 @@ describe('approveAndPublishRun', () => {
       RUN_STATUS.pendingApproval,
     );
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
-      status: '대기',
+      status: 'waiting',
       title: '무한 스크롤 (spacehome)',
     });
     expect(await readFile(join(blogDir, '주제_큐.md'), 'utf8')).toBe(QUEUE);
@@ -588,7 +589,7 @@ describe('approveAndPublishRun', () => {
       code: 'NOT_PENDING_APPROVAL',
     });
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
-      status: '대기',
+      status: 'waiting',
     });
     expect(await readFile(join(blogDir, '주제_큐.md'), 'utf8')).toBe(QUEUE);
   });
@@ -630,7 +631,7 @@ describe('approveAndPublishRun', () => {
     const queue = await readFile(join(blogDir, '주제_큐.md'), 'utf8');
     expect(queue).toContain(`- ${TODAY} [A-2] 무한 스크롤 미리 불러오기 (posts/${SLUG})\n`);
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topicId } })).toMatchObject({
-      status: '완료',
+      status: 'done',
       seriesKey: 'A',
       episodeNo: 2,
     });

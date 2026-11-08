@@ -138,7 +138,9 @@ async function runToPendingApproval(runId: string, instruction?: string) {
 
 describe('되돌리기 → 재승인 흐름', () => {
   test('완료 줄을 대기로 옮기고 날짜만 떼면 같은 주제·같은 슬러그로 다시 쓰고 같은 폴더를 덮어쓴다', async () => {
-    const topic = await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } });
+    const topic = await prisma.queueItem.findFirstOrThrow({
+      where: { status: 'waiting', order: 0 },
+    });
 
     // 1) 첫 실행 → 승인. 슬러그는 힌트를 뗀 제목에서.
     const first = await startRun({ prisma, registry }, { topicId: topic.id });
@@ -159,7 +161,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     await writeFile(queuePath, queue(`- 무한 스크롤 (posts/${SLUG}, spacehome)\n`, ''), 'utf8');
     await importQueueFromFile({ storage, prisma });
     const reverted = await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } });
-    expect(reverted).toMatchObject({ status: '대기', completedOn: null });
+    expect(reverted).toMatchObject({ status: 'waiting', completedOn: null });
     // 같은 주제로 붙었다(새 행이 생기지 않았다) — 되돌린 줄의 힌트는 키워드로, posts 표기는 키워드가 아니다.
     expect(await prisma.queueItem.count({ where: { title: { contains: '무한 스크롤' } } })).toBe(1);
     expect(reverted.keywords).toBe('["spacehome"]');
@@ -186,7 +188,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     expect(after).toContain(completedLine);
     expect(after.match(/무한 스크롤/g)).toHaveLength(1);
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } })).toMatchObject({
-      status: '완료',
+      status: 'done',
     });
   });
 
@@ -214,7 +216,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     );
     await importQueueFromFile({ storage, prisma });
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id: topic.id } })).toMatchObject({
-      status: '대기',
+      status: 'waiting',
       seriesKey: 'A',
       episodeNo: 1,
     });
@@ -232,7 +234,9 @@ describe('되돌리기 → 재승인 흐름', () => {
   });
 
   test('날짜를 떼지 않고 옮기면 새 주제가 되고, 실행 전에 SLUG_TAKEN으로 막힌다', async () => {
-    const topic = await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } });
+    const topic = await prisma.queueItem.findFirstOrThrow({
+      where: { status: 'waiting', order: 0 },
+    });
     const first = await startRun({ prisma, registry }, { topicId: topic.id });
     if (!first.ok) throw new Error(first.code);
     await runToPendingApproval(first.run.id);
@@ -241,7 +245,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     await writeFile(queuePath, queue(`- ${TODAY} 무한 스크롤 (posts/${SLUG})\n`, ''), 'utf8');
     await importQueueFromFile({ storage, prisma });
     const fresh = await prisma.queueItem.findFirstOrThrow({
-      where: { status: '대기', title: { startsWith: TODAY } },
+      where: { status: 'waiting', title: { startsWith: TODAY } },
     });
     expect(fresh.id).not.toBe(topic.id);
 
@@ -253,7 +257,9 @@ describe('되돌리기 → 재승인 흐름', () => {
   });
 
   test('되돌리면서 제목을 고치면 새 주제가 되고, 실행 전에 SLUG_TAKEN으로 막힌다(절차 3을 지켜야 하는 이유)', async () => {
-    const topic = await prisma.queueItem.findFirstOrThrow({ where: { status: '대기', order: 0 } });
+    const topic = await prisma.queueItem.findFirstOrThrow({
+      where: { status: 'waiting', order: 0 },
+    });
     const first = await startRun({ prisma, registry }, { topicId: topic.id });
     if (!first.ok) throw new Error(first.code);
     await runToPendingApproval(first.run.id);
@@ -263,7 +269,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     await writeFile(queuePath, queue(`- 무한 스크롤 다시 (posts/${SLUG})\n`, ''), 'utf8');
     await importQueueFromFile({ storage, prisma });
     const fresh = await prisma.queueItem.findFirstOrThrow({
-      where: { status: '대기', title: { contains: '다시' } },
+      where: { status: 'waiting', title: { contains: '다시' } },
     });
     expect(fresh.id).not.toBe(topic.id);
 

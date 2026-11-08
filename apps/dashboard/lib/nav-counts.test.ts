@@ -40,11 +40,11 @@ describe('getNavCounts', () => {
       publishPending: 0,
       monthlyCostUsd: 0,
     });
-    expect(countTopicsByStatus.mock.calls[0]?.[1]).toBe('대기');
+    expect(countTopicsByStatus.mock.calls[0]?.[1]).toBe('waiting');
   });
 
   it('이미 읽은 섹션을 주면 DB를 세지 않는다(화면과 같은 순간의 값)', async () => {
-    const sections = { 대기: [topic('가')], 후보: [], 보류: [], 완료: [] };
+    const sections = { waiting: [topic('가')], candidate: [], hold: [], done: [] };
 
     expect((await getNavCounts(sections)).waiting).toBe(1);
     expect(countTopicsByStatus).not.toHaveBeenCalled();

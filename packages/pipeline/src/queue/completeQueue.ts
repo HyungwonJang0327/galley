@@ -3,14 +3,15 @@
 // 주의(BX4 리뷰 M2): 완료 줄 제목이 큐 제목과 다르면 매칭 키(normalizeTopicTitle)가 달라져, 그대로 재적재하면 완료 줄이 새 행이
 // 되고 원래 행은 "사라진 줄"로 남는다(Run 이력·seriesKey가 새 행에 안 붙음). 호출부가 파일을 쓰기 전에 그 QueueItem 행의
 // title·status·completedOn을 먼저 맞춰야 한다 — 처리 방식은 B3a 설계에서 정한다.
-import type { ParsedQueue, QueueStatus } from './queueFile.ts';
+import type { ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS, sectionOf, type QueueStatus } from './queueStatus.ts';
 import { SERIES_TAG } from './normalizeTitle.ts';
 import { isAlreadyPublished } from './topicHints.ts';
 import { POSTS_SLUG_SHAPE } from './postsPointer.ts';
 
 export interface CompleteTopicInput {
   /** 지금 섹션(완료 제외). */
-  from: Exclude<QueueStatus, '완료'>;
+  from: Exclude<QueueStatus, 'done'>;
   /** from 섹션 안 0기반 위치(카테고리 필터 전 기준). */
   index: number;
   /** 그 위치에 있어야 할 제목(태그 없는 원문). 다르면 파일이 그새 바뀐 것으로 보고 옮기지 않는다. */
@@ -82,7 +83,7 @@ export function completeTopic(
   input: CompleteTopicInput,
 ): { ok: true; queue: ParsedQueue } | { ok: false; code: CompleteTopicFailure } {
   const { from, index, title } = input;
-  const source = queue.sections[from];
+  const source = queue.sections[sectionOf(from)];
   const topic = source[index];
   if (!topic || topic.title !== title) return { ok: false, code: 'TOPIC_MISMATCH' };
   if (
@@ -101,11 +102,11 @@ export function completeTopic(
   };
   const sections = {
     ...queue.sections,
-    [from]: source.filter((_, i) => i !== index),
+    [sectionOf(from)]: source.filter((_, i) => i !== index),
     완료: [...queue.sections.완료, done],
   };
   const seriesDefs =
-    from === '후보'
+    from === QUEUE_STATUS.candidate
       ? queue.seriesDefs.map((def) =>
           def.position > index ? { ...def, position: def.position - 1 } : def,
         )

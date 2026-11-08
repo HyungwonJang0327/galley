@@ -376,7 +376,7 @@ describe('startRerun', () => {
 
     test('완료 섹션으로 간 주제는 다시 돌리지 않는다', async () => {
       const run = await finishedRun();
-      await prisma.queueItem.update({ where: { id: topicId }, data: { status: '완료' } });
+      await prisma.queueItem.update({ where: { id: topicId }, data: { status: 'done' } });
 
       expect(await rerun(run.id)).toEqual({ ok: false, code: 'TOPIC_ALREADY_DONE' });
       expect(await prisma.run.count()).toBe(1);

@@ -115,7 +115,7 @@ describe('importQueueFromFile', () => {
   test('태그째 적재된 옛 행은 태그 뗀 새 줄에 매칭돼 id가 유지된다(제목만 갱신)', async () => {
     // BX1 전에는 파서가 태그를 떼지 않아 제목 컬럼에 `[A-1] …`이 들어가 있다.
     const legacy = await prisma.queueItem.create({
-      data: { title: '[A-1] 첫 편 (메모)', status: '대기', order: 0 },
+      data: { title: '[A-1] 첫 편 (메모)', status: 'waiting', order: 0 },
     });
     await addRun(legacy.id, RUN_STATUS.pendingApproval);
 
@@ -170,7 +170,7 @@ describe('importQueueFromFile', () => {
     await importQueueFromFile({ storage: WAITING_ONLY([]), prisma });
 
     expect(await prisma.queueItem.findFirstOrThrow()).toMatchObject({
-      status: '보류',
+      status: 'hold',
       holdReason: HOLD_REASON_REMOVED,
       seriesKey: 'B',
       episodeNo: 3,
@@ -184,15 +184,15 @@ describe('importQueueFromFile', () => {
     );
     await importQueueFromFile({ storage: both, prisma });
     const before = await prisma.queueItem.findMany({ orderBy: { status: 'asc' } });
-    const waitingId = before.find((i) => i.status === '대기')?.id;
-    const candidateId = before.find((i) => i.status === '후보')?.id;
+    const waitingId = before.find((i) => i.status === 'waiting')?.id;
+    const candidateId = before.find((i) => i.status === 'candidate')?.id;
 
     await importQueueFromFile({ storage: both, prisma });
 
     const after = await prisma.queueItem.findMany();
     expect(after).toHaveLength(2);
-    expect(after.find((i) => i.status === '대기')?.id).toBe(waitingId);
-    expect(after.find((i) => i.status === '후보')?.id).toBe(candidateId);
+    expect(after.find((i) => i.status === 'waiting')?.id).toBe(waitingId);
+    expect(after.find((i) => i.status === 'candidate')?.id).toBe(candidateId);
   });
 
   test('새 줄만 새로 만든다', async () => {
@@ -214,7 +214,7 @@ describe('importQueueFromFile', () => {
     const gone = await prisma.queueItem.findFirst({ where: { title: 'B' } });
     // 확인 없이 내렸으므로 missingSince(= 확인 대기 표시)는 남기지 않는다. 이유는 holdReason이 말한다.
     expect(gone).toMatchObject({
-      status: '보류',
+      status: 'hold',
       holdReason: HOLD_REASON_REMOVED,
       missingSince: null,
     });
@@ -229,7 +229,7 @@ describe('importQueueFromFile', () => {
     await importQueueFromFile({ storage: WAITING_ONLY([]), prisma });
 
     const after = await prisma.queueItem.findUnique({ where: { id: item.id } });
-    expect(after).toMatchObject({ status: '대기', holdReason: null });
+    expect(after).toMatchObject({ status: 'waiting', holdReason: null });
     expect(after?.missingSince).not.toBeNull();
   });
 
@@ -242,7 +242,7 @@ describe('importQueueFromFile', () => {
     await importQueueFromFile({ storage: WAITING_ONLY([]), prisma });
 
     const after = await prisma.queueItem.findUnique({ where: { id: item.id } });
-    expect(after).toMatchObject({ status: '대기', holdReason: null, missingSince: null });
+    expect(after).toMatchObject({ status: 'waiting', holdReason: null, missingSince: null });
   });
 
   test('이미 자동 보류된 행은 재적재해도 다시 update하지 않는다(updatedAt 그대로 — 자동 연결이 매 틱 재계산되지 않게)', async () => {
@@ -258,7 +258,7 @@ describe('importQueueFromFile', () => {
     const again = await prisma.queueItem.findUnique({ where: { id: held.id } });
     expect(again?.updatedAt.getTime()).toBe(held.updatedAt.getTime());
     expect(again).toMatchObject({
-      status: '보류',
+      status: 'hold',
       order: held.order,
       holdReason: HOLD_REASON_REMOVED,
     });
@@ -277,7 +277,7 @@ describe('importQueueFromFile', () => {
     });
 
     const after = await prisma.queueItem.findUnique({ where: { id: held.id } });
-    expect(after).toMatchObject({ status: '보류', order: 1, holdReason: HOLD_REASON_REMOVED });
+    expect(after).toMatchObject({ status: 'hold', order: 1, holdReason: HOLD_REASON_REMOVED });
   });
 
   test('줄이 돌아오면 사라짐 표시와 자동 보류 사유를 지운다', async () => {
@@ -287,7 +287,7 @@ describe('importQueueFromFile', () => {
     await importQueueFromFile({ storage: WAITING_ONLY(['A', 'B']), prisma });
 
     const back = await prisma.queueItem.findFirst({ where: { title: 'B' } });
-    expect(back).toMatchObject({ status: '대기', holdReason: null, missingSince: null });
+    expect(back).toMatchObject({ status: 'waiting', holdReason: null, missingSince: null });
   });
 
   test('괄호 힌트를 repoNames·keywords·period에 채우고, 힌트를 고치거나 리포를 등록하면 재적재가 다시 만든다', async () => {
@@ -369,8 +369,8 @@ describe('importQueueFromFile', () => {
     );
     await importQueueFromFile({ storage, prisma });
 
-    const 후보 = await prisma.queueItem.findFirst({ where: { status: '후보' } });
-    const 완료 = await prisma.queueItem.findFirst({ where: { status: '완료' } });
+    const 후보 = await prisma.queueItem.findFirst({ where: { status: 'candidate' } });
+    const 완료 = await prisma.queueItem.findFirst({ where: { status: 'done' } });
     expect(후보).toMatchObject({ title: '후보글', category: '카테고리1', completedOn: null });
     expect(완료).toMatchObject({ title: '완료글', category: null, completedOn: '2026-09-01' });
   });
@@ -395,10 +395,10 @@ describe('getSeriesContext', () => {
     if (!result.ok) return;
     expect(result.series).toMatchObject({ name: '앱 만들기', nameJa: 'アプリ' });
     expect(result.series.episodes.map((e) => [e.episodeNo, e.status, e.slug, e.velogUrl])).toEqual([
-      [1, '완료', 'first', 'https://velog.io/@x/first'],
-      [2, '대기', undefined, undefined],
-      [3, '후보', undefined, undefined],
-      [4, '후보', undefined, undefined],
+      [1, 'done', 'first', 'https://velog.io/@x/first'],
+      [2, 'waiting', undefined, undefined],
+      [3, 'candidate', undefined, undefined],
+      [4, 'candidate', undefined, undefined],
     ]);
     const first = before.find((i) => i.episodeNo === 1);
     expect(result.series.episodes[0]?.topicId).toBe(first?.id);

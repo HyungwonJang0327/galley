@@ -33,7 +33,7 @@ async function safePendingApproval(): Promise<number> {
 
 async function safeWaiting(): Promise<number> {
   try {
-    return await countTopicsByStatus(prisma, '대기');
+    return await countTopicsByStatus(prisma, 'waiting');
   } catch {
     return 0;
   }
@@ -50,7 +50,7 @@ async function safeWaiting(): Promise<number> {
  */
 export async function getNavCounts(preloaded?: QueueSections): Promise<NavCounts> {
   return {
-    waiting: preloaded !== undefined ? preloaded.대기.length : await safeWaiting(),
+    waiting: preloaded !== undefined ? preloaded.waiting.length : await safeWaiting(),
     pendingApproval: await safePendingApproval(),
     // TODO(Phase 2): 승인됐지만 채널 미발행 수
     publishPending: 0,

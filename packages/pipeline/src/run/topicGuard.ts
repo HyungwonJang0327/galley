@@ -2,10 +2,10 @@
 // 둘 다 "승인이 거절할 것을 비용을 쓰기 전에 안다"가 목적이다(decisions/topic-slug.md 규칙 3,
 // decisions/queue-sync-direction.md "사라진 줄 처리").
 import { missingMark } from '../queue/missingMark.ts';
-import type { QueueStatus } from '../queue/queueFile.ts';
+import { QUEUE_STATUS } from '../queue/queueStatus.ts';
 
-/** QueueItem.status의 완료 값 — 큐 상태는 아직 파일 어휘(한국어)로 저장된다(todo TD1). */
-const DONE_STATUS: QueueStatus = '완료';
+/** QueueItem.status의 완료 값(DB 어휘 — decisions/db-value-language.md). */
+const DONE_STATUS: string = QUEUE_STATUS.done;
 
 export type TopicRunBlock =
   /** 이미 완료된 주제 — 다시 쓰려면 먼저 큐에서 되돌린다(decisions/topic-slug.md 규칙 3) */

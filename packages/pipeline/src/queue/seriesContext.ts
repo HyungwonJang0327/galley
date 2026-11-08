@@ -6,7 +6,8 @@ import type { PrismaClient } from '@prisma/client';
 import type { Storage } from '../storage/Storage.ts';
 import { indexByTitle, takeMatch } from './importQueue.ts';
 import { normalizeTopicTitle, stripTopicHints, trailingUrl } from './normalizeTitle.ts';
-import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, type ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS, QUEUE_STATUS_ORDER, sectionOf, type QueueStatus } from './queueStatus.ts';
 import { isAlreadyPublished } from './topicHints.ts';
 import { POSTS_POINTER_IN_TITLE } from './postsPointer.ts';
 
@@ -48,7 +49,6 @@ export interface SeriesTopicRow {
   status: string;
 }
 
-const STATUS_ORDER: readonly QueueStatus[] = ['대기', '후보', '보류', '완료'];
 const POSTS_SLUG = POSTS_POINTER_IN_TITLE;
 /** 이전 편 링크로 쓰는 URL은 벨로그만 — 다른 링크면 자리표시자로 떨어진다. */
 const VELOG_URL = /^https?:\/\/(?:www\.)?velog\.io\//;
@@ -77,14 +77,14 @@ export function buildSeriesContext(
 
   const byTitle = indexByTitle(rows);
   const episodes: SeriesEpisode[] = [];
-  for (const status of STATUS_ORDER) {
-    for (const topic of queue.sections[status]) {
+  for (const status of QUEUE_STATUS_ORDER) {
+    for (const topic of queue.sections[sectionOf(status)]) {
       // 매칭은 모든 줄에 대해 파일 순서로 소비해야 적재와 같은 짝이 나온다(같은 제목이 여러 줄일 때).
       const row = takeMatch(byTitle.get(normalizeTopicTitle(topic.title)), status);
       if (topic.series?.key !== key) continue;
       // 발행된 편(완료 줄, 또는 어느 섹션이든 `(기존 글)` 편)만 슬러그·URL을 읽는다.
       const alreadyPublished = isAlreadyPublished(topic.title);
-      const published = status === '완료' || alreadyPublished;
+      const published = status === QUEUE_STATUS.done || alreadyPublished;
       const slug = published ? POSTS_SLUG.exec(topic.title)?.[1] : undefined;
       const url = published ? trailingUrl(topic.title) : undefined;
       const velogUrl = url !== undefined && VELOG_URL.test(url) ? url : undefined;

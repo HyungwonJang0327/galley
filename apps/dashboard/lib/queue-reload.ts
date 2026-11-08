@@ -9,7 +9,7 @@ export type QueueReloadResult =
 
 /** 탭 순서(= 파일 섹션 순서)대로 섹션별 개수. */
 export function queueReloadSummary(sections: QueueSections): string {
-  const counts = QUEUE_TABS.map(({ status }) => `${status} ${sections[status].length}`);
+  const counts = QUEUE_TABS.map(({ status, label }) => `${label} ${sections[status].length}`);
   return `주제_큐.md 기준으로 맞췄습니다: ${counts.join(' · ')}`;
 }
 

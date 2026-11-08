@@ -16,7 +16,7 @@ vi.mock('@galley/pipeline', () => ({
 
 import { moveQueueRow } from './queue-move';
 
-const INPUT = { from: '대기', to: '보류', index: 1, title: '주제' } as const;
+const INPUT = { from: 'waiting', to: 'hold', index: 1, title: '주제' } as const;
 
 afterEach(() => {
   vi.unstubAllEnvs();

@@ -35,7 +35,7 @@ describe('dropToIndex', () => {
 
 describe('buildReorderInput', () => {
   const context = {
-    status: '대기' as const,
+    status: 'waiting' as const,
     source: { index: 0, title: '끌린 주제' },
     over: { index: 2 },
     edge: 'bottom' as const,
@@ -44,7 +44,7 @@ describe('buildReorderInput', () => {
   // 2026-09-12 실제 버그: 대상 행 제목을 보내 서버가 TOPIC_MISMATCH로 거부했다.
   it('제목은 끌린 행의 것이다(대상 행 제목이 아니다)', () => {
     expect(buildReorderInput(context)).toEqual({
-      status: '대기',
+      status: 'waiting',
       from: 0,
       to: 2,
       title: '끌린 주제',
@@ -70,6 +70,6 @@ describe('buildReorderInput', () => {
   });
 
   it('섹션은 그대로 전달한다', () => {
-    expect(buildReorderInput({ ...context, status: '보류' })?.status).toBe('보류');
+    expect(buildReorderInput({ ...context, status: 'hold' })?.status).toBe('hold');
   });
 });

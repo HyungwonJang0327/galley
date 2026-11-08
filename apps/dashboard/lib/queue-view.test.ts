@@ -17,10 +17,10 @@ const entry = (
 });
 
 const sections: QueueSections = {
-  대기: [entry('대기1'), entry('대기2', '프론트')],
-  후보: [entry('후보1', '프론트'), entry('후보2', '백엔드'), entry('후보3', '프론트')],
-  보류: [entry('보류1')],
-  완료: [entry('완료1', null, '2026-09-01')],
+  waiting: [entry('대기1'), entry('대기2', '프론트')],
+  candidate: [entry('후보1', '프론트'), entry('후보2', '백엔드'), entry('후보3', '프론트')],
+  hold: [entry('보류1')],
+  done: [entry('완료1', null, '2026-09-01')],
 };
 
 describe('buildQueueView', () => {
@@ -36,7 +36,7 @@ describe('buildQueueView', () => {
 
   it('탭이 없으면 대기 섹션을 파일 순서대로, 보조 텍스트는 카테고리 · 근거 n건', () => {
     const view = buildQueueView(sections, {});
-    expect(view.active.status).toBe('대기');
+    expect(view.active.status).toBe('waiting');
     expect(view.rows).toEqual([
       {
         id: 'id-대기1',
@@ -115,35 +115,39 @@ const summary = (
   key: string,
   name: string,
   position: number,
-  byStatus: Partial<Record<'대기' | '후보' | '보류' | '완료', number>>,
+  byStatus: Partial<Record<'waiting' | 'candidate' | 'hold' | 'done', number>>,
 ): QueueSeriesSummary => {
-  const counts = { 대기: 0, 후보: 0, 보류: 0, 완료: 0, ...byStatus };
+  const counts = { waiting: 0, candidate: 0, hold: 0, done: 0, ...byStatus };
   return {
     key,
     name,
     category: '시리즈',
     position,
-    episodeCount: counts.대기 + counts.후보 + counts.보류 + counts.완료,
+    episodeCount: counts.waiting + counts.candidate + counts.hold + counts.done,
     byStatus: counts,
   };
 };
 
 describe('buildQueueView — 시리즈', () => {
-  // 후보: [프론트] 후보1 / [시리즈] 정의 A → A-3, 정의 D(편 없음), 정의 E → E-1 (기존 글)
+  // candidate: [프론트] 후보1 / [시리즈] 정의 A → A-3, 정의 D(편 없음), 정의 E → E-1 (기존 글)
   const withSeries: QueueSections = {
-    대기: [seriesEntry('둘째 편', 'A', 2, null), seriesEntry('D 편', 'D', 1, null), entry('일반')],
-    후보: [
+    waiting: [
+      seriesEntry('둘째 편', 'A', 2, null),
+      seriesEntry('D 편', 'D', 1, null),
+      entry('일반'),
+    ],
+    candidate: [
       entry('후보1', '프론트'),
       seriesEntry('셋째 편', 'A', 3),
       seriesEntry('(기존 글) 옛 글', 'E', 1, '시리즈', true),
     ],
-    보류: [],
-    완료: [],
+    hold: [],
+    done: [],
   };
   const defs = [
-    summary('A', '앱 만들기', 1, { 대기: 1, 후보: 1 }),
-    summary('D', '정의만 남음', 2, { 대기: 1 }),
-    summary('E', '기존 글 시리즈', 2, { 후보: 1 }),
+    summary('A', '앱 만들기', 1, { waiting: 1, candidate: 1 }),
+    summary('D', '정의만 남음', 2, { waiting: 1 }),
+    summary('E', '기존 글 시리즈', 2, { candidate: 1 }),
   ];
 
   it('시리즈 편 행은 배지 글자와 툴팁(시리즈명 · N/M편), 태그는 제목에 없다', () => {
@@ -159,7 +163,7 @@ describe('buildQueueView — 시리즈', () => {
     const view = buildQueueView(
       {
         ...sections,
-        보류: [
+        hold: [
           { ...entry('내려온 것'), missing: 'auto-held' },
           { ...entry('확인 대기'), missing: 'pending' },
           entry('직접 옮긴 것'),
@@ -176,7 +180,7 @@ describe('buildQueueView — 시리즈', () => {
 
   it('사라짐 표시는 보류 탭 밖에서는 보조 텍스트를 바꾸지 않는다(대기·후보는 카테고리)', () => {
     const view = buildQueueView(
-      { ...sections, 대기: [{ ...entry('확인 대기', '프론트'), missing: 'pending' }] },
+      { ...sections, waiting: [{ ...entry('확인 대기', '프론트'), missing: 'pending' }] },
       {},
     );
     expect(view.rows[0]?.meta).toBe('프론트 · 근거 0건');
@@ -184,12 +188,12 @@ describe('buildQueueView — 시리즈', () => {
 
   it('근거 수는 보조 텍스트 끝에 — 완료 탭은 완료일만', () => {
     const view = buildQueueView(
-      { ...sections, 대기: [{ ...entry('대기1', '프론트'), evidenceCount: 3 }] },
+      { ...sections, waiting: [{ ...entry('대기1', '프론트'), evidenceCount: 3 }] },
       {},
     );
     expect(view.rows[0]?.meta).toBe('프론트 · 근거 3건');
     const done = buildQueueView(
-      { ...sections, 완료: [{ ...entry('완료1', null, '2026-09-01'), evidenceCount: 3 }] },
+      { ...sections, done: [{ ...entry('완료1', null, '2026-09-01'), evidenceCount: 3 }] },
       { tab: 'done' },
     );
     expect(done.rows[0]?.meta).toBe('2026-09-01');
@@ -199,7 +203,7 @@ describe('buildQueueView — 시리즈', () => {
     const view = buildQueueView(
       {
         ...sections,
-        보류: [
+        hold: [
           { ...entry('내려온 것'), missing: 'auto-held' },
           { ...entry('확인 대기'), missing: 'pending' },
           entry('직접 옮긴 것'),
@@ -247,7 +251,7 @@ describe('buildQueueView — 시리즈', () => {
 
   it('정의 줄이 맨 끝(뒤에 항목 없음)이면 헤더도 맨 끝', () => {
     const view = buildQueueView(
-      { ...withSeries, 후보: [entry('후보1', '프론트')] },
+      { ...withSeries, candidate: [entry('후보1', '프론트')] },
       { tab: 'candidates' },
       [summary('G', '예정', 1, {})],
     );
@@ -256,8 +260,8 @@ describe('buildQueueView — 시리즈', () => {
   });
 
   it('후보에 항목이 하나도 없고 정의 줄만 남아도 헤더는 items에 남는다(화면이 안내를 보인다)', () => {
-    const view = buildQueueView({ ...withSeries, 후보: [] }, { tab: 'candidates' }, [
-      summary('D', '정의만 남음', 0, { 대기: 3 }),
+    const view = buildQueueView({ ...withSeries, candidate: [] }, { tab: 'candidates' }, [
+      summary('D', '정의만 남음', 0, { waiting: 3 }),
     ]);
     expect(view.rows).toEqual([]);
     expect(view.items).toEqual([

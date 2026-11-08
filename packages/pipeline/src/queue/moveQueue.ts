@@ -3,10 +3,15 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Storage } from '../storage/Storage.ts';
 import { importQueueFromFile } from './importQueue.ts';
-import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, serializeQueue, type ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS, sectionOf, type QueueStatus } from './queueStatus.ts';
 
 /** 이동할 수 있는 섹션. 완료는 발행까지 끝난 기록이라 이동 대상이 아니다(완료일이 사라진다). */
-export const MOVABLE_STATUSES = ['대기', '후보', '보류'] as const;
+export const MOVABLE_STATUSES = [
+  QUEUE_STATUS.waiting,
+  QUEUE_STATUS.candidate,
+  QUEUE_STATUS.hold,
+] as const;
 export type MovableStatus = (typeof MOVABLE_STATUSES)[number];
 
 export interface MoveQueueTopicInput {
@@ -45,27 +50,33 @@ export function moveTopic(
   if (from === to || !isMovable(from) || !isMovable(to))
     return { ok: false, code: 'INVALID_SECTION' };
 
-  const source = queue.sections[from];
+  // 입력은 DB 어휘(영어), 파일은 섹션 머리글 — 여기서 한 번 바꾼다.
+  const fromSection = sectionOf(from);
+  const toSection = sectionOf(to);
+  const source = queue.sections[fromSection];
   const topic = source[index];
   if (!topic || topic.title !== title) return { ok: false, code: 'TOPIC_MISMATCH' };
 
   const sections = { ...queue.sections };
-  sections[from] = source.filter((_, i) => i !== index);
+  sections[fromSection] = source.filter((_, i) => i !== index);
   // 카테고리는 후보 섹션의 ### 소제목이라 섹션을 옮기면 유지할 수 없다(파일 형식).
   // 시리즈 태그는 줄이 들고 다닌다(decisions/series.md).
   const moved = topic.series
     ? { title: topic.title, series: topic.series }
     : { title: topic.title };
-  const target = [...sections[to]];
-  const found = to === '후보' ? target.findIndex((item) => item.category !== undefined) : -1;
+  const target = [...sections[toSection]];
+  const found =
+    to === QUEUE_STATUS.candidate ? target.findIndex((item) => item.category !== undefined) : -1;
   const at = found === -1 ? target.length : found;
   target.splice(at, 0, moved);
-  sections[to] = target;
+  sections[toSection] = target;
 
   // 정의 줄은 후보 위치에 묶여 있다 — 후보에서 빠지거나 끼워진 만큼 뒤쪽 정의 줄의 위치를 민다.
   const seriesDefs = queue.seriesDefs.map((def) => {
-    if (from === '후보' && def.position > index) return { ...def, position: def.position - 1 };
-    if (to === '후보' && def.position >= at) return { ...def, position: def.position + 1 };
+    if (from === QUEUE_STATUS.candidate && def.position > index)
+      return { ...def, position: def.position - 1 };
+    if (to === QUEUE_STATUS.candidate && def.position >= at)
+      return { ...def, position: def.position + 1 };
     return def;
   });
 

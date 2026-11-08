@@ -23,7 +23,7 @@ export interface NextRunView {
 const REST_LIMIT = 3;
 
 export function buildNextRunView(sections: QueueSections): NextRunView {
-  const [first, ...others] = sections.대기;
+  const [first, ...others] = sections.waiting;
   const toTopic = (topic: QueueEntry): NextRunTopic => ({
     id: topic.id,
     title: topic.title,

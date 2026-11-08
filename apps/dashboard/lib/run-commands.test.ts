@@ -64,7 +64,7 @@ const PLAN = { startStep: 'velog', fresh: ['velog', 'verify'], carried: ['eviden
 beforeEach(() => {
   getQueueSections.mockResolvedValue({
     ok: true,
-    data: { 대기: [], 후보: [], 보류: [], 완료: [] },
+    data: { waiting: [], candidate: [], hold: [], done: [] },
   });
 });
 
@@ -169,7 +169,7 @@ describe('approveRunById', () => {
     approveAndPublishRun.mockResolvedValue({
       ok: false,
       code: 'TOPIC_NOT_IN_QUEUE',
-      detail: '완료',
+      detail: 'done',
     });
     expect(await approveRunById('run_1')).toMatchObject({
       error: { message: expect.stringContaining('이미 완료') },

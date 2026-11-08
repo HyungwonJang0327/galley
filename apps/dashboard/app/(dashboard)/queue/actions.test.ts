@@ -41,9 +41,9 @@ import {
   searchTopicEvidenceAction,
 } from './actions';
 
-const INPUT = { from: '대기', to: '보류', index: 1, title: '주제' } as const;
+const INPUT = { from: 'waiting', to: 'hold', index: 1, title: '주제' } as const;
 
-const REORDER_INPUT = { status: '대기', from: 2, to: 0, title: '주제' } as const;
+const REORDER_INPUT = { status: 'waiting', from: 2, to: 0, title: '주제' } as const;
 
 afterEach(() => {
   reloadQueue.mockReset();

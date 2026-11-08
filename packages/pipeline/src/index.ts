@@ -2,13 +2,22 @@
 // 골격만. 구현은 Phase 1-B (핵심 모듈 a·b는 사용자 직접 작성 — decisions/core-modules.md).
 export { prisma } from './db.ts';
 export { parseQueue, serializeQueue } from './queue/queueFile.ts';
+export { QUEUE_SECTION_ORDER } from './queue/queueFile.ts';
 export type {
-  QueueStatus,
+  QueueSection,
   QueueTopic,
   ParsedQueue,
   SeriesTag,
   SeriesDef,
 } from './queue/queueFile.ts';
+export {
+  QUEUE_STATUS,
+  QUEUE_STATUS_ORDER,
+  isQueueStatus,
+  sectionOf,
+  statusOf,
+} from './queue/queueStatus.ts';
+export type { QueueStatus } from './queue/queueStatus.ts';
 export {
   parsedQueueToRows,
   importQueueFromFile,

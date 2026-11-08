@@ -157,7 +157,7 @@ describe('startRun', () => {
   test('완료된 주제는 실행하지 않는다(승인에서야 막히기 전에 — 비용)', async () => {
     await prisma.queueItem.update({
       where: { id: topicId },
-      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '완료' },
+      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: 'done' },
     });
 
     expect(await startRun(deps(), { topicId })).toEqual({ ok: false, code: 'TOPIC_ALREADY_DONE' });
@@ -168,7 +168,7 @@ describe('startRun', () => {
     test('자동으로 보류로 내려간 주제(실행 이력 없음)는 실행하지 않는다', async () => {
       await prisma.queueItem.update({
         where: { id: topicId },
-        data: { status: '보류', holdReason: 'removed-from-file' },
+        data: { status: 'hold', holdReason: 'removed-from-file' },
       });
 
       expect(await startRun(deps(), { topicId })).toEqual({
@@ -249,7 +249,7 @@ describe('startRun', () => {
     test('사람이 보류로 옮긴 주제(manual)는 실행할 수 있다', async () => {
       await prisma.queueItem.update({
         where: { id: topicId },
-        data: { status: '보류', holdReason: 'manual' },
+        data: { status: 'hold', holdReason: 'manual' },
       });
 
       expect((await startRun(deps(), { topicId })).ok).toBe(true);
@@ -258,7 +258,7 @@ describe('startRun', () => {
     test('완료 주제는 사라졌어도 TOPIC_ALREADY_DONE이 먼저다(되돌리는 방법을 안내하는 쪽)', async () => {
       await prisma.queueItem.update({
         where: { id: topicId },
-        data: { status: '완료', missingSince: new Date() },
+        data: { status: 'done', missingSince: new Date() },
       });
 
       expect(await startRun(deps(), { topicId })).toEqual({
@@ -279,7 +279,7 @@ describe('startRun', () => {
   describe('SLUG_TAKEN — 첫 실행의 슬러그를 다른 주제의 승인된 실행이 쓰고 있다', () => {
     const otherTopicRun = async (status: string, topicSlug = '무한-스크롤') => {
       const other = await prisma.queueItem.create({
-        data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '완료', order: 9 },
+        data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: 'done', order: 9 },
       });
       await prisma.run.create({
         data: {
@@ -402,7 +402,7 @@ describe('startRun', () => {
     // 승인이 바꾼 제목(completedTitle) 그대로 대기로 되돌린 상태.
     await prisma.queueItem.update({
       where: { id: topicId },
-      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: '대기' },
+      data: { title: '무한 스크롤 미리 불러오기 (posts/무한-스크롤)', status: 'waiting' },
     });
 
     expect(await startRun(deps(), { topicId })).toMatchObject({

@@ -12,9 +12,9 @@ export interface QueueRowMenuItem {
 export type QueueRowMenuEntry = QueueRowMenuItem | { type: 'separator' };
 
 const MOVE_TARGETS: readonly { status: MovableStatus; label: string }[] = [
-  { status: '대기', label: '대기로' },
-  { status: '후보', label: '후보로' },
-  { status: '보류', label: '보류로' },
+  { status: 'waiting', label: '대기로' },
+  { status: 'candidate', label: '후보로' },
+  { status: 'hold', label: '보류로' },
 ];
 
 const MOVE_PREFIX = 'move:';

@@ -26,7 +26,7 @@ export default async function HomePage() {
   const runsError = homeRuns.ok ? undefined : homeRuns.error.message;
   const counts = await getNavCounts(queue.ok ? queue.data : undefined);
   const nextRun = buildNextRunView(
-    queue.ok ? queue.data : { 대기: [], 후보: [], 보류: [], 완료: [] },
+    queue.ok ? queue.data : { waiting: [], candidate: [], hold: [], done: [] },
   );
   const schedule = nextSchedule(new Date(), process.env.TZ ?? 'Asia/Seoul');
 

@@ -9,18 +9,18 @@ import {
   EDIT_EVIDENCE_ID,
 } from './queue-row-menu';
 
-const labels = (status: '대기' | '후보' | '보류') =>
+const labels = (status: 'waiting' | 'candidate' | 'hold') =>
   queueRowMenuEntries(status).map((entry) => ('type' in entry ? '—' : entry.label));
 
 describe('queueRowMenuEntries', () => {
   it('현재 섹션으로 가는 항목은 빼고 나머지 이동 2개를 준다', () => {
-    expect(labels('대기')).toEqual(['후보로', '보류로', '—', '근거 편집', '지금 실행']);
-    expect(labels('후보')).toEqual(['대기로', '보류로', '—', '근거 편집', '지금 실행']);
-    expect(labels('보류')).toEqual(['대기로', '후보로', '—', '근거 편집', '지금 실행']);
+    expect(labels('waiting')).toEqual(['후보로', '보류로', '—', '근거 편집', '지금 실행']);
+    expect(labels('candidate')).toEqual(['대기로', '보류로', '—', '근거 편집', '지금 실행']);
+    expect(labels('hold')).toEqual(['대기로', '후보로', '—', '근거 편집', '지금 실행']);
   });
 
   it('"지금 실행"은 활성(실행 시작 Dialog를 연다)', () => {
-    const runNow = queueRowMenuEntries('대기').find(
+    const runNow = queueRowMenuEntries('waiting').find(
       (entry) => !('type' in entry) && entry.id === RUN_NOW_ID,
     );
 
@@ -28,7 +28,9 @@ describe('queueRowMenuEntries', () => {
   });
 
   it('사유가 있으면 "지금 실행"만 비활성 + 사유(title)', () => {
-    const entries = queueRowMenuEntries('후보', { runDisabledReason: ALREADY_PUBLISHED_REASON });
+    const entries = queueRowMenuEntries('candidate', {
+      runDisabledReason: ALREADY_PUBLISHED_REASON,
+    });
     expect(entries.map((entry) => ('type' in entry ? '—' : entry.label))).toEqual([
       '대기로',
       '보류로',
@@ -78,13 +80,14 @@ describe('topicRunDisabledReason', () => {
 
 describe('parseMoveTarget', () => {
   it('이동 항목 id에서 섹션을 뽑는다', () => {
-    expect(parseMoveTarget('move:대기')).toBe('대기');
-    expect(parseMoveTarget('move:보류')).toBe('보류');
+    expect(parseMoveTarget('move:waiting')).toBe('waiting');
+    expect(parseMoveTarget('move:hold')).toBe('hold');
   });
 
   it('이동 항목이 아니거나 모르는 섹션이면 null', () => {
     expect(parseMoveTarget(RUN_NOW_ID)).toBeNull();
-    expect(parseMoveTarget('move:완료')).toBeNull();
+    expect(parseMoveTarget('move:done')).toBeNull();
+    expect(parseMoveTarget('move:대기')).toBeNull(); // 파일 어휘(한국어)는 메뉴 id가 아니다
     expect(parseMoveTarget('move:없는섹션')).toBeNull();
   });
 });

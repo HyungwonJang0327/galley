@@ -72,7 +72,7 @@ describe('loadQueueSections', () => {
 
     const id = expect.any(String) as unknown as string;
     expect(sections).toEqual({
-      대기: [
+      waiting: [
         {
           id,
           title: '대기1',
@@ -92,7 +92,7 @@ describe('loadQueueSections', () => {
           evidenceCount: 0,
         },
       ],
-      후보: [
+      candidate: [
         {
           id,
           title: '후보1',
@@ -112,7 +112,7 @@ describe('loadQueueSections', () => {
           evidenceCount: 0,
         },
       ],
-      보류: [
+      hold: [
         {
           id,
           title: '보류1',
@@ -123,7 +123,7 @@ describe('loadQueueSections', () => {
           evidenceCount: 0,
         },
       ],
-      완료: [
+      done: [
         {
           id,
           title: '완료1',
@@ -137,12 +137,12 @@ describe('loadQueueSections', () => {
     });
     // id는 QueueItem.id — 실행 시작·상세 연결 키. 적재된 행과 같아야 한다.
     const row = await prisma.queueItem.findFirstOrThrow({ where: { title: '대기1' } });
-    expect(sections.대기[0]?.id).toBe(row.id);
+    expect(sections.waiting[0]?.id).toBe(row.id);
   });
 
   test('evidenceCount는 manual·auto 연결 수 — dismissed는 세지 않는다', async () => {
     const first = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
-    const topicId = first.대기[0]!.id;
+    const topicId = first.waiting[0]!.id;
     const repo = await prisma.repo.create({ data: { name: 'r', path: join(dbDir, 'r') } });
     const analysis = (key: string) =>
       prisma.repoAnalysis.create({
@@ -169,7 +169,7 @@ describe('loadQueueSections', () => {
       ],
     });
     const next = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
-    expect(next.대기.map((t) => [t.title, t.evidenceCount])).toEqual([
+    expect(next.waiting.map((t) => [t.title, t.evidenceCount])).toEqual([
       ['대기1', 2],
       ['대기2', 0],
     ]);
@@ -184,9 +184,9 @@ describe('loadQueueSections', () => {
       prisma,
     });
 
-    expect(next.대기.map((topic) => topic.title)).toEqual(['새글']);
-    expect(next.후보).toEqual([]);
-    expect(next.완료).toEqual([]);
+    expect(next.waiting.map((topic) => topic.title)).toEqual(['새글']);
+    expect(next.candidate).toEqual([]);
+    expect(next.done).toEqual([]);
   });
 });
 
@@ -204,8 +204,8 @@ describe('loadQueueSections — 사라진 줄 표시', () => {
       prisma,
     });
 
-    expect(next.대기.map((topic) => [topic.title, topic.missing])).toEqual([['대기1', null]]);
-    expect(next.보류.map((topic) => [topic.title, topic.missing])).toEqual([
+    expect(next.waiting.map((topic) => [topic.title, topic.missing])).toEqual([['대기1', null]]);
+    expect(next.hold.map((topic) => [topic.title, topic.missing])).toEqual([
       ['대기2', 'auto-held'],
       ['후보1', 'auto-held'],
       ['(기존 글) 후보 편', 'auto-held'],
@@ -217,7 +217,7 @@ describe('loadQueueSections — 사라진 줄 표시', () => {
 
   test('실행 이력이 있는 줄이 사라지면 제자리에 pending으로 남는다(확인 대기)', async () => {
     const first = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
-    const topicId = first.대기[0]?.id ?? '';
+    const topicId = first.waiting[0]?.id ?? '';
     await prisma.run.create({
       data: { topicId, topicSlug: 'slug', topicTitle: 't', modelId: 'mock', status: 'failed' },
     });
@@ -227,7 +227,7 @@ describe('loadQueueSections — 사라진 줄 표시', () => {
         prisma,
       });
 
-      expect(next.대기.map((topic) => [topic.title, topic.missing])).toEqual([
+      expect(next.waiting.map((topic) => [topic.title, topic.missing])).toEqual([
         ['대기1', 'pending'],
         ['대기2', null],
       ]);
@@ -244,7 +244,7 @@ describe('loadQueueSections — 사라진 줄 표시', () => {
     });
     const back = await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
 
-    expect(back.보류.map((topic) => [topic.title, topic.missing])).toEqual([['보류1', null]]);
+    expect(back.hold.map((topic) => [topic.title, topic.missing])).toEqual([['보류1', null]]);
   });
 });
 
@@ -253,8 +253,8 @@ describe('countTopicsByStatus', () => {
     await loadQueueSections({ storage: fakeStorage(QUEUE_FILE), prisma });
 
     // 파일이 바뀌어도 다시 적재하기 전까지는 마지막 적재 기준이다.
-    expect(await countTopicsByStatus(prisma, '대기')).toBe(2);
-    expect(await countTopicsByStatus(prisma, '후보')).toBe(2);
-    expect(await countTopicsByStatus(prisma, '완료')).toBe(1);
+    expect(await countTopicsByStatus(prisma, 'waiting')).toBe(2);
+    expect(await countTopicsByStatus(prisma, 'candidate')).toBe(2);
+    expect(await countTopicsByStatus(prisma, 'done')).toBe(1);
   });
 });

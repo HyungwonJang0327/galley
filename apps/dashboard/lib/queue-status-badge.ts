@@ -4,10 +4,10 @@ import type { BadgeTone } from 'galley-ui';
 import type { QueueStatus } from '@galley/pipeline';
 
 const QUEUE_STATUS_TONE: Record<QueueStatus, BadgeTone> = {
-  대기: 'info',
-  후보: 'neutral',
-  보류: 'neutral',
-  완료: 'success',
+  waiting: 'info',
+  candidate: 'neutral',
+  hold: 'neutral',
+  done: 'success',
 };
 
 export function queueStatusBadgeTone(status: QueueStatus): BadgeTone {

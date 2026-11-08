@@ -82,7 +82,8 @@ const APPROVE_MESSAGE: Record<ApprovePublishFailure, (detail?: string) => string
   PUBLISH_TITLE_MISSING: () =>
     '발행정보에서 글 제목을 읽지 못했습니다. 발행정보 단계부터 다시 실행하세요.',
   TOPIC_NOT_IN_QUEUE: (detail) =>
-    detail === '완료'
+    // detail은 QueueItem.status 저장값(영어).
+    detail === 'done'
       ? '이 주제는 이미 완료 섹션에 있습니다.'
       : '주제_큐.md에서 이 주제를 찾지 못했습니다. 큐 파일을 확인하세요.',
   INVALID_COMPLETION: () => '완료 줄을 만들 수 없는 제목이나 슬러그입니다.',

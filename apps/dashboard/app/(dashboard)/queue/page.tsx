@@ -99,7 +99,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             tabs={view.tabs.map((tab) => (
               <ListToolbarTab
                 key={tab.id}
-                label={tab.status}
+                label={tab.label}
                 count={tab.count}
                 isActive={tab.isActive}
                 render={<Link href={queueHref(tab.id)} />}
@@ -113,11 +113,12 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               ) : undefined
             }
           />
-          {view.rows.length > 0 && view.active.status === '대기' ? (
+          {view.rows.length > 0 && view.active.status === 'waiting' ? (
             // 대기 탭만 드래그로 순서 변경(사용자 결정 2026-09-12). 후보는 ### 소제목 때문에 불가.
             <DraggableQueueRows
               rows={view.rows}
               status={view.active.status}
+              statusLabel={view.active.label}
               badgeTone={badgeTone}
               move={moveQueueRowAction}
               reorder={reorderQueueRowAction}
@@ -136,10 +137,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                     key={`${item.row.index}-${item.row.title}`}
                     title={<QueueRowTitle title={item.row.title} series={item.row.series} />}
                     meta={item.row.meta}
-                    trailing={<Badge tone={badgeTone}>{view.active.status}</Badge>}
+                    trailing={<Badge tone={badgeTone}>{view.active.label}</Badge>}
                     // 완료는 발행까지 끝난 기록이라 이동 메뉴를 두지 않는다(사용자 결정 2026-09-12).
                     actions={
-                      view.active.status === '완료' ? undefined : (
+                      view.active.status === 'done' ? undefined : (
                         <QueueRowMenu
                           topicId={item.row.id}
                           title={item.row.title}
@@ -155,7 +156,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               )}
             </ListRows>
           ) : (
-            <p className={styles.note}>{view.active.status} 섹션에 주제가 없습니다.</p>
+            <p className={styles.note}>{view.active.label} 섹션에 주제가 없습니다.</p>
           )}
         </Card>
       </TopicEvidenceProvider>

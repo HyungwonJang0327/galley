@@ -19,10 +19,10 @@ const topic = (title: string) => ({
 });
 
 const SECTIONS: QueueSections = {
-  대기: [topic('가'), topic('나')],
-  후보: [topic('다')],
-  보류: [],
-  완료: [topic('라'), topic('마'), topic('바')],
+  waiting: [topic('가'), topic('나')],
+  candidate: [topic('다')],
+  hold: [],
+  done: [topic('라'), topic('마'), topic('바')],
 };
 
 afterEach(() => {

@@ -16,8 +16,8 @@ datasource db {
 model QueueItem {
   id         String  @id @default(cuid())
   title      String
-  // 대기 | 후보 | 보류 | 완료 — 값 검증은 애플리케이션 레벨.
-  status     String  @default("대기")
+  // waiting | candidate | hold | done — QUEUE_STATUS(src/queue/queueStatus.ts). 파일 섹션 머리글(대기·후보·보류·완료)은 적재가 변환한다.
+  status     String  @default("waiting")
   order      Int
   // 보류로 내린 사유: removed-from-file | manual — 보류 탭에서 구분해 보여준다.
   // (decisions/queue-sync-direction.md 사라진 줄 처리)

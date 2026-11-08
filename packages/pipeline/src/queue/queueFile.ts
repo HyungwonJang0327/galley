@@ -3,7 +3,10 @@
 // 시리즈 표기(편 줄 태그 `[A-1]`·후보 `### 시리즈` 아래 정의 줄)도 되돌린다 — decisions/series.md.
 import { SERIES_TAG } from './normalizeTitle.ts';
 
-export type QueueStatus = '대기' | '후보' | '보류' | '완료';
+/** 파일 섹션 머리글(`## 대기` …) — **파일 어휘**. DB 저장값(`QueueSection`, 영어)은 queueStatus.ts에서 변환한다. */
+export type QueueSection = '대기' | '후보' | '보류' | '완료';
+/** 파일 순서. */
+export const QUEUE_SECTION_ORDER: readonly QueueSection[] = ['대기', '후보', '보류', '완료'];
 
 export interface QueueTopic {
   title: string;
@@ -37,12 +40,12 @@ export interface SeriesDef {
 export interface ParsedQueue {
   /** 첫 '## ' 헤더 이전 원문(H1+안내). 그대로 보존. */
   preamble: string;
-  sections: Record<QueueStatus, QueueTopic[]>;
+  sections: Record<QueueSection, QueueTopic[]>;
   /** 시리즈 정의 줄(파일 순서). 파일을 다시 쓸 때 같은 자리로 돌아간다 — 빠뜨리면 되쓰기 한 번에 사라진다. */
   seriesDefs: SeriesDef[];
 }
 
-const STATUS_ORDER: QueueStatus[] = ['대기', '후보', '보류', '완료'];
+const STATUS_ORDER = QUEUE_SECTION_ORDER;
 const H2 = /^##\s+(대기|후보|보류|완료)\s*$/;
 const H3 = /^###\s+(.*\S)\s*$/;
 const ITEM = /^-\s+(.*)$/;
@@ -72,16 +75,16 @@ function seriesDefLine(def: SeriesDef): string {
 }
 
 export function parseQueue(raw: string): ParsedQueue {
-  const sections: Record<QueueStatus, QueueTopic[]> = { 대기: [], 후보: [], 보류: [], 완료: [] };
+  const sections: Record<QueueSection, QueueTopic[]> = { 대기: [], 후보: [], 보류: [], 완료: [] };
   const seriesDefs: SeriesDef[] = [];
   const preambleLines: string[] = [];
-  let current: QueueStatus | null = null;
+  let current: QueueSection | null = null;
   let category: string | undefined;
 
   for (const line of raw.split('\n')) {
     const h2 = line.match(H2);
     if (h2) {
-      current = h2[1] as QueueStatus;
+      current = h2[1] as QueueSection;
       category = undefined;
       continue;
     }
@@ -134,7 +137,7 @@ type SectionEntry =
   | { kind: 'def'; def: SeriesDef; category: string };
 
 /** 섹션의 줄 순서 — 후보는 정의 줄을 `position` 앞에 끼운다(범위 밖이면 끝). */
-function sectionEntries(queue: ParsedQueue, status: QueueStatus): SectionEntry[] {
+function sectionEntries(queue: ParsedQueue, status: QueueSection): SectionEntry[] {
   const topics = queue.sections[status];
   const defs = status === '후보' ? queue.seriesDefs : [];
   const entries: SectionEntry[] = [];

@@ -105,7 +105,7 @@ describe('listMissingTopics', () => {
 
     expect(await listMissingTopics(prisma)).toEqual([]);
     expect(await prisma.queueItem.findFirst({ where: { title: 'A' } })).toMatchObject({
-      status: '보류',
+      status: 'hold',
     });
   });
 });
@@ -117,7 +117,7 @@ describe('restoreMissingTopicToHold', () => {
     expect(await restoreMissingTopicToHold({ storage, prisma }, id)).toEqual({ ok: true });
     expect(storage.content).toContain('## 보류\n\n- [A-2] 둘째 편 (메모)');
     expect(await prisma.queueItem.findUniqueOrThrow({ where: { id } })).toMatchObject({
-      status: '보류',
+      status: 'hold',
       seriesKey: 'A',
       episodeNo: 2,
       missingSince: null,
@@ -170,7 +170,7 @@ describe('restoreMissingTopicToHold', () => {
     expect(await listMissingTopics(prisma)).toEqual([]);
     const item = await prisma.queueItem.findUnique({ where: { id } });
     // 줄이 돌아왔으므로 매칭돼 표시가 저절로 비워진다 — 같은 id가 유지된다.
-    expect(item).toMatchObject({ status: '보류', missingSince: null, missingAck: null });
+    expect(item).toMatchObject({ status: 'hold', missingSince: null, missingAck: null });
   });
 
   test('이미 있던 보류 줄 뒤에 붙인다', async () => {
@@ -229,7 +229,7 @@ describe('acknowledgeMissingTopic', () => {
     expect(storage.content).toBe(before);
     const item = await prisma.queueItem.findUnique({ where: { id } });
     // 상태는 그대로 두고 확인 기록만 남는다 — 사라진 시각은 보존한다.
-    expect(item).toMatchObject({ status: '대기', holdReason: null });
+    expect(item).toMatchObject({ status: 'waiting', holdReason: null });
     expect(item?.missingAck).toBeInstanceOf(Date);
     expect(item?.missingSince).toBeInstanceOf(Date);
   });
