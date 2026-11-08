@@ -5,7 +5,7 @@ import { LINK_SOURCE } from '../index/schema.ts';
 import type { Storage } from '../storage/Storage.ts';
 import { importQueueFromFile } from './importQueue.ts';
 import { missingMark, type MissingMark } from './missingMark.ts';
-import type { QueueStatus } from './queueFile.ts';
+import { isQueueStatus, type QueueStatus } from './queueStatus.ts';
 import { isAlreadyPublished } from './topicHints.ts';
 
 /** 편 줄 태그(DB 캐시 seriesKey·episodeNo)에서 온 시리즈 표시 정보. 이름·편 수는 파일에서(`loadQueueSeries`). */
@@ -36,12 +36,6 @@ export interface QueueEntry {
 
 export type QueueSections = Record<QueueStatus, QueueEntry[]>;
 
-const STATUSES: readonly string[] = ['대기', '후보', '보류', '완료'];
-
-function isQueueStatus(value: string): value is QueueStatus {
-  return STATUSES.includes(value);
-}
-
 export async function loadQueueSections(deps: {
   storage: Storage;
   prisma: PrismaClient;
@@ -67,10 +61,10 @@ export async function loadQueueSections(deps: {
     },
   });
 
-  const sections: QueueSections = { 대기: [], 후보: [], 보류: [], 완료: [] };
+  const sections: QueueSections = { waiting: [], candidate: [], hold: [], done: [] };
   for (const item of items) {
     const { id, status, title, category, completedOn, seriesKey, episodeNo } = item;
-    // status는 DB에서 문자열(스키마에 enum 없음). 방금 파일에서 적재했으므로 네 값뿐이다.
+    // status는 DB에서 문자열(스키마에 enum 없음). 방금 파일에서 적재했으므로 네 값(영어)뿐이다.
     if (!isQueueStatus(status)) continue;
     // 두 컬럼은 적재가 항상 같이 채운다 — 한쪽만 있으면 시리즈로 보지 않는다.
     const series: QueueEntrySeries | null =

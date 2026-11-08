@@ -23,11 +23,11 @@ describe('parsedQueueToRows', () => {
       period: null,
     };
     expect(parsedQueueToRows(parsed)).toEqual([
-      { title: 'A', status: '대기', order: 0, category: null, completedOn: null, ...noHints },
-      { title: 'B', status: '대기', order: 1, category: null, completedOn: null, ...noHints },
+      { title: 'A', status: 'waiting', order: 0, category: null, completedOn: null, ...noHints },
+      { title: 'B', status: 'waiting', order: 1, category: null, completedOn: null, ...noHints },
       {
         title: 'C',
-        status: '후보',
+        status: 'candidate',
         order: 0,
         category: '카테고리1',
         completedOn: null,
@@ -35,7 +35,7 @@ describe('parsedQueueToRows', () => {
       },
       {
         title: 'D',
-        status: '완료',
+        status: 'done',
         order: 0,
         category: null,
         completedOn: '2026-09-01',

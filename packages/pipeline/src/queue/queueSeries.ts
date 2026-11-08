@@ -1,7 +1,8 @@
 // 큐 화면용 시리즈 요약 — 정의 줄(이름·자리)과 편 수. 시리즈명·편 목록은 DB에 없고 파일에서 매번 만든다(decisions/series.md).
 // 순수 함수 + 파일 한 번 읽는 로더. 적재하지 않는다(loadQueueSections가 이미 했다).
 import type { Storage } from '../storage/Storage.ts';
-import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, type ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS_ORDER, sectionOf, type QueueStatus } from './queueStatus.ts';
 
 export interface QueueSeriesSummary {
   key: string;
@@ -19,12 +20,13 @@ export interface QueueSeriesSummary {
 /** 파싱한 큐 → 정의 줄 순서대로 요약(순수). 같은 키 정의 줄이 둘이면(사람 실수) 첫 것만 — 편 툴팁 이름과 헤더가 같은 정의를 본다. */
 export function summarizeQueueSeries(queue: ParsedQueue): QueueSeriesSummary[] {
   const counts = new Map<string, Record<QueueStatus, number>>();
-  for (const status of ['대기', '후보', '보류', '완료'] as const)
-    for (const topic of queue.sections[status]) {
+  const empty = (): Record<QueueStatus, number> => ({ waiting: 0, candidate: 0, hold: 0, done: 0 });
+  for (const status of QUEUE_STATUS_ORDER)
+    for (const topic of queue.sections[sectionOf(status)]) {
       if (topic.series === undefined) continue;
       let record = counts.get(topic.series.key);
       if (record === undefined) {
-        record = { 대기: 0, 후보: 0, 보류: 0, 완료: 0 };
+        record = empty();
         counts.set(topic.series.key, record);
       }
       record[status] += 1;
@@ -35,13 +37,13 @@ export function summarizeQueueSeries(queue: ParsedQueue): QueueSeriesSummary[] {
     (def) => !seen.has(def.key) && seen.add(def.key) !== undefined,
   );
   return defs.map((def) => {
-    const byStatus = counts.get(def.key) ?? { 대기: 0, 후보: 0, 보류: 0, 완료: 0 };
+    const byStatus = counts.get(def.key) ?? empty();
     return {
       key: def.key,
       name: def.name,
       category: def.category,
       position: def.position,
-      episodeCount: byStatus.대기 + byStatus.후보 + byStatus.보류 + byStatus.완료,
+      episodeCount: byStatus.waiting + byStatus.candidate + byStatus.hold + byStatus.done,
       byStatus,
     };
   });

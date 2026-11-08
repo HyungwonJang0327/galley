@@ -118,7 +118,7 @@ async function seed(readOnly: boolean) {
     },
   });
   const topic = await prisma.queueItem.create({
-    data: { title: '무한 스크롤', status: '대기', order: 0 },
+    data: { title: '무한 스크롤', status: 'waiting', order: 0 },
   });
   await prisma.topicAnalysisLink.createMany({
     data: [

@@ -22,12 +22,14 @@ import styles from './DraggableQueueRows.module.css';
 interface Props {
   rows: QueueRowView[];
   status: QueueStatus;
+  /** 상태 배지 글자(한국어) — 저장값(status)과 분리(decisions/db-value-language.md). */
+  statusLabel: string;
   badgeTone: BadgeTone;
   move: (input: MoveQueueTopicInput) => Promise<QueueMoveResult>;
   reorder: (input: ReorderQueueTopicInput) => Promise<QueueReorderResult>;
 }
 
-export function DraggableQueueRows({ rows, status, badgeTone, move, reorder }: Props) {
+export function DraggableQueueRows({ rows, status, statusLabel, badgeTone, move, reorder }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
 
@@ -44,6 +46,7 @@ export function DraggableQueueRows({ rows, status, badgeTone, move, reorder }: P
             key={`${row.index}-${row.title}`}
             row={row}
             status={status}
+            statusLabel={statusLabel}
             badgeTone={badgeTone}
             isDragging={dragging === row.index}
             onDragStateChange={(active) => setDragging(active ? row.index : null)}
@@ -66,6 +69,7 @@ export function DraggableQueueRows({ rows, status, badgeTone, move, reorder }: P
 function DraggableRow({
   row,
   status,
+  statusLabel,
   badgeTone,
   isDragging,
   onDragStateChange,
@@ -74,6 +78,7 @@ function DraggableRow({
 }: {
   row: QueueRowView;
   status: QueueStatus;
+  statusLabel: string;
   badgeTone: Props['badgeTone'];
   isDragging: boolean;
   onDragStateChange: (active: boolean) => void;
@@ -150,7 +155,7 @@ function DraggableRow({
       }
       title={<QueueRowTitle title={row.title} series={row.series} />}
       meta={row.meta}
-      trailing={<Badge tone={badgeTone}>{status}</Badge>}
+      trailing={<Badge tone={badgeTone}>{statusLabel}</Badge>}
       actions={
         <QueueRowMenu
           topicId={row.id}

@@ -29,7 +29,7 @@ const RUN = {
 beforeEach(() => {
   getQueueSections.mockResolvedValue({
     ok: true,
-    data: { 대기: [], 후보: [], 보류: [], 완료: [] },
+    data: { waiting: [], candidate: [], hold: [], done: [] },
   });
 });
 

@@ -18,7 +18,8 @@ import type { PostsWriter } from '../publish/PostsWriter.ts';
 import { completeTopic, completedTitle } from '../queue/completeQueue.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
 import { normalizeTopicTitle, trailingUrl } from '../queue/normalizeTitle.ts';
-import { parseQueue, serializeQueue, type QueueStatus } from '../queue/queueFile.ts';
+import { parseQueue, serializeQueue } from '../queue/queueFile.ts';
+import { QUEUE_STATUS, isQueueStatus, sectionOf } from '../queue/queueStatus.ts';
 import type { Storage } from '../storage/Storage.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
 import { parsePublishTitle } from '../steps/publishInfo.ts';
@@ -70,8 +71,6 @@ export type ApprovePublishResult =
       leftover: string[];
     }
   | { ok: false; code: ApprovePublishFailure; detail?: string };
-
-const ACTIVE_SECTIONS: readonly QueueStatus[] = ['대기', '후보', '보류'];
 
 /**
  * posts/<슬러그>/evidence.json 내용 — **포인터만**(CLAUDE.md §5). 조각(snippet)뿐 아니라 분석 글 요약(`analyses`)도 뺀다 —
@@ -162,10 +161,12 @@ export async function approveAndPublishRun(
 
   // 3. 큐 완료 이동을 메모리에서 먼저 — 파일이 그새 바뀌었거나 주제가 없으면 아무것도 쓰지 않는다.
   const parsed = parseQueue(await deps.storage.readQueueFile());
+  // 주제 상태는 DB 어휘(영어) — 파일 섹션은 sectionOf로. detail에는 저장값을 그대로 돌려준다(문구는 앱 어댑터가).
   const from = run.topic.status;
-  if (!ACTIVE_SECTIONS.includes(from as QueueStatus))
+  // 승인할 수 있는 주제 상태는 완료가 아닌 셋 — 좁히면 completeTopic의 from 타입(Exclude<…, 'done'>)이 된다.
+  if (!isQueueStatus(from) || from === QUEUE_STATUS.done)
     return { ok: false, code: 'TOPIC_NOT_IN_QUEUE', detail: from };
-  const section = parsed.sections[from as QueueStatus];
+  const section = parsed.sections[sectionOf(from)];
   const key = normalizeTopicTitle(run.topic.title);
   const index = section.findIndex((topic) => normalizeTopicTitle(topic.title) === key);
   if (index === -1) return { ok: false, code: 'TOPIC_NOT_IN_QUEUE', detail: from };
@@ -178,7 +179,7 @@ export async function approveAndPublishRun(
     ...(url === undefined ? {} : { url }),
   };
   const moved = completeTopic(parsed, {
-    from: from as Exclude<QueueStatus, '완료'>,
+    from,
     index,
     title: section[index]!.title,
     ...completion,
@@ -234,7 +235,7 @@ export async function approveAndPublishRun(
         where: { id: run.topic.id },
         data: {
           title: completedTitle(completion),
-          status: '완료',
+          status: QUEUE_STATUS.done,
           order: moved.queue.sections.완료.length - 1,
           category: null,
           completedOn: completion.completedOn,

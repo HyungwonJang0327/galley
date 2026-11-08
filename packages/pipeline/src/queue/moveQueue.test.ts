@@ -29,7 +29,7 @@ const queue = () => parseQueue(SAMPLE);
 
 describe('moveTopic', () => {
   test('대기로 옮기면 대기 맨 아래에 붙는다(기존 순서 유지)', () => {
-    const result = moveTopic(queue(), { from: '보류', to: '대기', index: 0, title: '보류 A' });
+    const result = moveTopic(queue(), { from: 'hold', to: 'waiting', index: 0, title: '보류 A' });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -38,7 +38,7 @@ describe('moveTopic', () => {
   });
 
   test('보류로 옮기면 보류 맨 아래에 붙는다', () => {
-    const result = moveTopic(queue(), { from: '대기', to: '보류', index: 0, title: '대기 A' });
+    const result = moveTopic(queue(), { from: 'waiting', to: 'hold', index: 0, title: '대기 A' });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -46,7 +46,12 @@ describe('moveTopic', () => {
   });
 
   test('후보로 옮기면 카테고리 없는 구간(첫 ### 앞) 끝에 넣어 카테고리가 붙지 않는다', () => {
-    const result = moveTopic(queue(), { from: '대기', to: '후보', index: 1, title: '대기 B' });
+    const result = moveTopic(queue(), {
+      from: 'waiting',
+      to: 'candidate',
+      index: 1,
+      title: '대기 B',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -61,7 +66,12 @@ describe('moveTopic', () => {
   });
 
   test('후보에서 나가면 카테고리를 잃는다(파일 형식상 후보 ### 소제목)', () => {
-    const result = moveTopic(queue(), { from: '후보', to: '대기', index: 1, title: '프론트 후보' });
+    const result = moveTopic(queue(), {
+      from: 'candidate',
+      to: 'waiting',
+      index: 1,
+      title: '프론트 후보',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -70,37 +80,52 @@ describe('moveTopic', () => {
 
   test('입력 큐를 바꾸지 않는다', () => {
     const original = queue();
-    moveTopic(original, { from: '대기', to: '보류', index: 0, title: '대기 A' });
+    moveTopic(original, { from: 'waiting', to: 'hold', index: 0, title: '대기 A' });
 
     expect(original.sections.대기.map((t) => t.title)).toEqual(['대기 A', '대기 B']);
   });
 
   test('그 위치의 제목이 다르면 TOPIC_MISMATCH', () => {
-    const result = moveTopic(queue(), { from: '대기', to: '보류', index: 0, title: '다른 제목' });
+    const result = moveTopic(queue(), {
+      from: 'waiting',
+      to: 'hold',
+      index: 0,
+      title: '다른 제목',
+    });
 
     expect(result).toEqual({ ok: false, code: 'TOPIC_MISMATCH' });
   });
 
   test('없는 위치면 TOPIC_MISMATCH', () => {
-    const result = moveTopic(queue(), { from: '보류', to: '대기', index: 9, title: '보류 A' });
+    const result = moveTopic(queue(), { from: 'hold', to: 'waiting', index: 9, title: '보류 A' });
 
     expect(result).toEqual({ ok: false, code: 'TOPIC_MISMATCH' });
   });
 
   test('같은 섹션이면 INVALID_SECTION', () => {
-    const result = moveTopic(queue(), { from: '대기', to: '대기', index: 0, title: '대기 A' });
+    const result = moveTopic(queue(), {
+      from: 'waiting',
+      to: 'waiting',
+      index: 0,
+      title: '대기 A',
+    });
 
     expect(result).toEqual({ ok: false, code: 'INVALID_SECTION' });
   });
 
   test('완료에서 옮기지 않는다(완료일이 사라진다)', () => {
-    const result = moveTopic(queue(), { from: '완료', to: '대기', index: 0, title: '완료 A' });
+    const result = moveTopic(queue(), { from: 'done', to: 'waiting', index: 0, title: '완료 A' });
 
     expect(result).toEqual({ ok: false, code: 'INVALID_SECTION' });
   });
 
   test('완료 섹션과 preamble은 그대로 둔다', () => {
-    const result = moveTopic(queue(), { from: '대기', to: '후보', index: 0, title: '대기 A' });
+    const result = moveTopic(queue(), {
+      from: 'waiting',
+      to: 'candidate',
+      index: 0,
+      title: '대기 A',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -134,7 +159,7 @@ const SERIES_SAMPLE = `## 대기
 describe('moveTopic — 시리즈', () => {
   test('태그를 들고 가고, 정의 줄은 후보 제자리에 남는다', () => {
     const q = parseQueue(SERIES_SAMPLE);
-    const result = moveTopic(q, { from: '후보', to: '대기', index: 1, title: '첫 편' });
+    const result = moveTopic(q, { from: 'candidate', to: 'waiting', index: 1, title: '첫 편' });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -152,7 +177,12 @@ describe('moveTopic — 시리즈', () => {
 
   test('후보로 되돌려도 뒤쪽 정의 줄이 제 편 앞에 남는다', () => {
     const q = parseQueue(SERIES_SAMPLE.replace('- 대기 A', '- [B-2] 둘째 다른 편'));
-    const result = moveTopic(q, { from: '대기', to: '후보', index: 0, title: '둘째 다른 편' });
+    const result = moveTopic(q, {
+      from: 'waiting',
+      to: 'candidate',
+      index: 0,
+      title: '둘째 다른 편',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -179,7 +209,7 @@ describe('moveTopic — 시리즈 정의 줄 경계', () => {
   test('편 없이 정의 줄만 있는 후보에 넣으면 소제목 앞에 들어간다', () => {
     const md =
       '## 대기\n\n- 대기 A\n\n## 후보\n\n### 시리즈\n\n시리즈 A. 앱\n\n## 보류\n\n## 완료\n';
-    expect(move(md, { from: '대기', to: '후보', index: 0, title: '대기 A' })).toBe(
+    expect(move(md, { from: 'waiting', to: 'candidate', index: 0, title: '대기 A' })).toBe(
       '## 대기\n\n## 후보\n\n- 대기 A\n\n### 시리즈\n\n시리즈 A. 앱\n\n## 보류\n\n## 완료\n',
     );
   });
@@ -187,7 +217,7 @@ describe('moveTopic — 시리즈 정의 줄 경계', () => {
   test('첫 카테고리 항목이 정의 줄 뒤 다른 소제목에 있어도 정의 줄은 제 소제목에 남는다', () => {
     const md =
       '## 대기\n\n- 대기 A\n\n## 후보\n\n- 무카테고리\n\n### 시리즈\n\n시리즈 A. 앱\n\n### 개인\n\n- 개인 주제\n\n## 보류\n\n## 완료\n';
-    expect(move(md, { from: '대기', to: '후보', index: 0, title: '대기 A' })).toBe(
+    expect(move(md, { from: 'waiting', to: 'candidate', index: 0, title: '대기 A' })).toBe(
       md
         .replace('- 대기 A\n\n## 후보', '## 후보')
         .replace('- 무카테고리\n', '- 무카테고리\n- 대기 A\n'),
@@ -195,7 +225,12 @@ describe('moveTopic — 시리즈 정의 줄 경계', () => {
   });
 
   test('후보 마지막 편을 빼도 그 정의 줄은 후보 끝에 남는다', () => {
-    const out = move(SERIES_SAMPLE, { from: '후보', to: '대기', index: 3, title: '다른 첫 편' });
+    const out = move(SERIES_SAMPLE, {
+      from: 'candidate',
+      to: 'waiting',
+      index: 3,
+      title: '다른 첫 편',
+    });
     expect(out).toContain('- [A-2] 둘째 편\n\n시리즈 B. 다른 앱\n\n## 보류');
     expect(parseQueue(out).seriesDefs.map((d) => [d.key, d.position])).toEqual([
       ['A', 1],

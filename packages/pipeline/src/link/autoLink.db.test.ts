@@ -85,7 +85,7 @@ async function seedTopic(
   return prisma.queueItem.create({
     data: {
       title,
-      status: '대기',
+      status: 'waiting',
       order: 0,
       repoNames: serializeStringArray(hints.repoNames ?? []),
       keywords: serializeStringArray(hints.keywords ?? []),

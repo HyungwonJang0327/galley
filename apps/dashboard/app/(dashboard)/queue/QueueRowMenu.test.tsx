@@ -51,7 +51,7 @@ function press(element: HTMLElement) {
   fireEvent.click(element);
 }
 
-const props = { topicId: 'topic-1', title: '첫 주제', status: '대기' as const, index: 2 };
+const props = { topicId: 'topic-1', title: '첫 주제', status: 'waiting' as const, index: 2 };
 
 describe('QueueRowMenu', () => {
   it('현재 섹션을 뺀 이동 항목과 "지금 실행"을 보여 준다', async () => {
@@ -118,7 +118,12 @@ describe('QueueRowMenu', () => {
     press(screen.getByRole('menuitem', { name: '보류로' }));
 
     await waitFor(() =>
-      expect(move).toHaveBeenCalledWith({ from: '대기', to: '보류', index: 2, title: '첫 주제' }),
+      expect(move).toHaveBeenCalledWith({
+        from: 'waiting',
+        to: 'hold',
+        index: 2,
+        title: '첫 주제',
+      }),
     );
   });
 

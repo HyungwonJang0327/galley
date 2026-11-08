@@ -16,7 +16,7 @@ vi.mock('@galley/pipeline', () => ({
 
 import { reorderQueueRow } from './queue-reorder';
 
-const INPUT = { status: '대기', from: 2, to: 0, title: '주제' } as const;
+const INPUT = { status: 'waiting', from: 2, to: 0, title: '주제' } as const;
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -57,7 +57,7 @@ describe('reorderQueueRow', () => {
     vi.stubEnv('BLOG_DIR', 'blog-dir');
     reorderQueueTopic.mockResolvedValue({ ok: false, code: 'UNSUPPORTED_SECTION' });
 
-    expect(await reorderQueueRow({ ...INPUT, status: '후보' })).toEqual({
+    expect(await reorderQueueRow({ ...INPUT, status: 'candidate' })).toEqual({
       ok: false,
       error: { code: 'UNSUPPORTED_SECTION', message: expect.stringContaining('후보') },
     });

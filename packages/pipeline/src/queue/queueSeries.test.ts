@@ -42,7 +42,7 @@ describe('summarizeQueueSeries', () => {
         category: '시리즈',
         position: 1,
         episodeCount: 4,
-        byStatus: { 대기: 1, 후보: 1, 보류: 1, 완료: 1 },
+        byStatus: { waiting: 1, candidate: 1, hold: 1, done: 1 },
       },
       {
         key: 'D',
@@ -50,7 +50,7 @@ describe('summarizeQueueSeries', () => {
         category: '시리즈',
         position: 2,
         episodeCount: 1,
-        byStatus: { 대기: 1, 후보: 0, 보류: 0, 완료: 0 },
+        byStatus: { waiting: 1, candidate: 0, hold: 0, done: 0 },
       },
       {
         key: 'E',
@@ -58,7 +58,7 @@ describe('summarizeQueueSeries', () => {
         category: '시리즈',
         position: 2,
         episodeCount: 0,
-        byStatus: { 대기: 0, 후보: 0, 보류: 0, 완료: 0 },
+        byStatus: { waiting: 0, candidate: 0, hold: 0, done: 0 },
       },
     ]);
   });
@@ -83,8 +83,8 @@ describe('summarizeQueueSeries', () => {
     expect(summary.map((s) => s.key)).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
     const d = summary.find((s) => s.key === 'D');
     const e = summary.find((s) => s.key === 'E');
-    expect(d?.byStatus.후보).toBe(0);
-    expect(d?.byStatus.대기).toBe(3);
+    expect(d?.byStatus.candidate).toBe(0);
+    expect(d?.byStatus.waiting).toBe(3);
     expect(d?.position).toBe(e?.position);
     expect(summary.reduce((n, s) => n + s.episodeCount, 0)).toBe(18);
   });

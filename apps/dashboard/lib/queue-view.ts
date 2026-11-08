@@ -174,8 +174,12 @@ function interleaveGroups(
 }
 
 function groupView(def: QueueSeriesSummary): QueueGroupView {
-  const waiting = def.byStatus.대기;
+  const waiting = def.byStatus.waiting;
   const hint =
-    def.byStatus.후보 > 0 ? undefined : waiting > 0 ? `편 없음 · 대기 ${waiting}편` : '편 없음';
+    def.byStatus.candidate > 0
+      ? undefined
+      : waiting > 0
+        ? `편 없음 · 대기 ${waiting}편`
+        : '편 없음';
   return { key: def.key, name: def.name, hint, position: def.position };
 }

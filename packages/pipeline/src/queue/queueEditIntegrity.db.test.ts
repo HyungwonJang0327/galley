@@ -9,12 +9,12 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import { importQueueFromFile } from './importQueue.ts';
 import { moveQueueTopic } from './moveQueue.ts';
-import { parseQueue, serializeQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, serializeQueue, QUEUE_SECTION_ORDER, type QueueSection } from './queueFile.ts';
+import { statusOf } from './queueStatus.ts';
 import { reorderQueueTopic } from './reorderQueue.ts';
 import type { Storage } from '../storage/Storage.ts';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
-const STATUSES: QueueStatus[] = ['대기', '후보', '보류', '완료'];
 
 const SAMPLE = `# 블로그 주제 큐
 
@@ -81,10 +81,11 @@ afterAll(async () => {
 /** 파일을 파싱한 결과와 DB 행이 완전히 같은지(섹션·순서·제목·카테고리·완료일). */
 async function expectFileAndDbInSync() {
   const parsed = parseQueue(storage.content);
-  const fromFile = STATUSES.flatMap((status) =>
-    parsed.sections[status].map((topic, order) => ({
+  // 파일 섹션(한국어) → DB 저장값(영어)으로 옮겨 비교한다(파일 → DB 경계와 같은 변환).
+  const fromFile = QUEUE_SECTION_ORDER.flatMap((section) =>
+    parsed.sections[section].map((topic, order) => ({
       title: topic.title,
-      status,
+      status: statusOf(section),
       order,
       category: topic.category ?? null,
       completedOn: topic.completedOn ?? null,
@@ -106,8 +107,8 @@ async function expectFileAndDbInSync() {
   expect(sorted(fromDb)).toEqual(sorted(fromFile));
 }
 
-const titles = (status: QueueStatus) =>
-  parseQueue(storage.content).sections[status].map((t) => t.title);
+const titles = (section: QueueSection) =>
+  parseQueue(storage.content).sections[section].map((t) => t.title);
 
 describe('큐 편집 무결성(연속 편집)', () => {
   test('이동·순서 변경을 번갈아 해도 매 단계 파일과 DB가 같다', async () => {
@@ -118,7 +119,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await moveQueueTopic(
         { storage, prisma },
-        { from: '보류', to: '대기', index: 0, title: '보류 하나' },
+        { from: 'hold', to: 'waiting', index: 0, title: '보류 하나' },
       ),
     ).toEqual({ ok: true });
     expect(titles('대기')).toEqual(['대기 A', '대기 B', '보류 하나']);
@@ -128,7 +129,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await reorderQueueTopic(
         { storage, prisma },
-        { status: '대기', from: 2, to: 0, title: '보류 하나' },
+        { status: 'waiting', from: 2, to: 0, title: '보류 하나' },
       ),
     ).toEqual({ ok: true });
     expect(titles('대기')).toEqual(['보류 하나', '대기 A', '대기 B']);
@@ -138,7 +139,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await moveQueueTopic(
         { storage, prisma },
-        { from: '대기', to: '보류', index: 1, title: '대기 A' },
+        { from: 'waiting', to: 'hold', index: 1, title: '대기 A' },
       ),
     ).toEqual({ ok: true });
     expect(titles('대기')).toEqual(['보류 하나', '대기 B']);
@@ -149,7 +150,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await moveQueueTopic(
         { storage, prisma },
-        { from: '후보', to: '대기', index: 1, title: '프론트 후보' },
+        { from: 'candidate', to: 'waiting', index: 1, title: '프론트 후보' },
       ),
     ).toEqual({ ok: true });
     expect(titles('대기')).toEqual(['보류 하나', '대기 B', '프론트 후보']);
@@ -161,15 +162,15 @@ describe('큐 편집 무결성(연속 편집)', () => {
 
     await moveQueueTopic(
       { storage, prisma },
-      { from: '보류', to: '대기', index: 0, title: '보류 하나' },
+      { from: 'hold', to: 'waiting', index: 0, title: '보류 하나' },
     );
     await reorderQueueTopic(
       { storage, prisma },
-      { status: '대기', from: 2, to: 0, title: '보류 하나' },
+      { status: 'waiting', from: 2, to: 0, title: '보류 하나' },
     );
     await moveQueueTopic(
       { storage, prisma },
-      { from: '대기', to: '후보', index: 1, title: '대기 A' },
+      { from: 'waiting', to: 'candidate', index: 1, title: '대기 A' },
     );
 
     const parsed = parseQueue(storage.content);
@@ -188,15 +189,15 @@ describe('큐 편집 무결성(연속 편집)', () => {
 
     await moveQueueTopic(
       { storage, prisma },
-      { from: '보류', to: '대기', index: 0, title: '보류 하나' },
+      { from: 'hold', to: 'waiting', index: 0, title: '보류 하나' },
     );
     await reorderQueueTopic(
       { storage, prisma },
-      { status: '대기', from: 0, to: 2, title: '대기 A' },
+      { status: 'waiting', from: 0, to: 2, title: '대기 A' },
     );
     await moveQueueTopic(
       { storage, prisma },
-      { from: '대기', to: '보류', index: 0, title: '대기 B' },
+      { from: 'waiting', to: 'hold', index: 0, title: '대기 B' },
     );
 
     expect(serializeQueue(parseQueue(storage.content))).toBe(storage.content);
@@ -212,7 +213,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await moveQueueTopic(
         { storage, prisma },
-        { from: '대기', to: '보류', index: 0, title: '대기 A' },
+        { from: 'waiting', to: 'hold', index: 0, title: '대기 A' },
       ),
     ).toEqual({ ok: false, code: 'TOPIC_MISMATCH' });
     expect(titles('대기')).toEqual(['밖에서 추가', '대기 A', '대기 B']);
@@ -225,7 +226,7 @@ describe('큐 편집 무결성(연속 편집)', () => {
     expect(
       await reorderQueueTopic(
         { storage, prisma },
-        { status: '대기', from: 0, to: 2, title: '밖에서 추가' },
+        { status: 'waiting', from: 0, to: 2, title: '밖에서 추가' },
       ),
     ).toEqual({ ok: true });
     expect(titles('대기')).toEqual(['대기 A', '대기 B', '밖에서 추가']);

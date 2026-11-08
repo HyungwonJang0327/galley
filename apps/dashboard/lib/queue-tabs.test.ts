@@ -10,19 +10,19 @@ import {
 
 describe('QUEUE_TABS', () => {
   it('주제_큐.md 섹션 4개와 1:1, 파일 순서 그대로', () => {
-    expect(QUEUE_TABS.map((t) => [t.id, t.status])).toEqual([
-      ['waiting', '대기'],
-      ['candidates', '후보'],
-      ['hold', '보류'],
-      ['done', '완료'],
+    expect(QUEUE_TABS.map((t) => [t.id, t.status, t.label])).toEqual([
+      ['waiting', 'waiting', '대기'],
+      ['candidates', 'candidate', '후보'],
+      ['hold', 'hold', '보류'],
+      ['done', 'done', '완료'],
     ]);
   });
 });
 
 describe('parseQueueTab', () => {
   it('?tab= 값에 맞는 탭', () => {
-    expect(parseQueueTab('candidates').status).toBe('후보');
-    expect(parseQueueTab('done').status).toBe('완료');
+    expect(parseQueueTab('candidates').status).toBe('candidate');
+    expect(parseQueueTab('done').status).toBe('done');
   });
 
   it('없거나 모르는 값이면 대기', () => {

@@ -18,7 +18,7 @@ vi.mock('@galley/pipeline', () => ({
 
 import { getQueueSections, getQueueSeries } from './queue-data';
 
-const EMPTY = { 대기: [], 후보: [], 보류: [], 완료: [] };
+const EMPTY = { waiting: [], candidate: [], hold: [], done: [] };
 
 afterEach(() => {
   vi.unstubAllEnvs();

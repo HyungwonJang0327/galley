@@ -76,7 +76,7 @@ async function seed() {
   const topic = await prisma.queueItem.create({
     data: {
       title: '무한 스크롤',
-      status: '대기',
+      status: 'waiting',
       order: 0,
       repoNames: serializeStringArray(['spacehome']),
       keywords: serializeStringArray(['react-router']),

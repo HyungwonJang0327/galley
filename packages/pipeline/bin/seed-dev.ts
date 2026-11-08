@@ -9,7 +9,7 @@ import { prisma } from '../src/db.ts';
 import { calculateCostUsd } from '../src/model/cost.ts';
 import { createModelRegistryFromEnv, DEFAULT_MODEL_ID } from '../src/model/ModelRegistry.ts';
 import { RUN_STATUS, STEP_ORDER, STEP_ORIGIN, STEP_STATUS } from '../src/run/stateMachine.ts';
-import type { QueueStatus } from '../src/queue/queueFile.ts';
+import { QUEUE_STATUS, type QueueStatus } from '../src/queue/queueStatus.ts';
 import { slugForTopicTitle } from '../src/queue/topicSlug.ts';
 
 if (process.env.NODE_ENV === 'production') {
@@ -83,9 +83,8 @@ const ALL_OK: Partial<Record<StepName, StepSeed>> = Object.fromEntries(
 
 type Topic = { id: string; title: string };
 
-// 큐 상태값은 주제_큐.md 섹션 머리글 그대로(decisions/db-value-language.md 예외). 파서 타입에
-// 묶어 두어 섹션 이름이 바뀌면 여기서 컴파일이 깨진다.
-const SEED_TOPIC_STATUSES: readonly QueueStatus[] = ['대기', '후보'];
+// 큐 상태값은 DB 어휘(영어, decisions/db-value-language.md) — queueStatus.ts에 묶어 두어 어휘가 바뀌면 여기서 컴파일이 깨진다.
+const SEED_TOPIC_STATUSES: readonly QueueStatus[] = [QUEUE_STATUS.waiting, QUEUE_STATUS.candidate];
 
 function pickTopics(count: number): Promise<Topic[]> {
   return prisma.queueItem.findMany({

@@ -3,14 +3,13 @@
 // 정규화 제목으로 기존 항목을 찾아 갱신하고, 못 찾은 줄만 새로 만든다.
 // 파일에서 사라진 줄은 지우지 않는다. (decisions/queue-sync-direction.md)
 import type { PrismaClient } from '@prisma/client';
-import { parseQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, QUEUE_SECTION_ORDER, type ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS, statusOf, type QueueStatus } from './queueStatus.ts';
 import { normalizeTopicTitle } from './normalizeTitle.ts';
 import { parseTopicHints, resolveTopicHints, type RepoNameSource } from './topicHints.ts';
 import { parseStringArray, serializeStringArray } from '../index/schema.ts';
 import { RUN_STATUS } from '../run/stateMachine.ts';
 import type { Storage } from '../storage/Storage.ts';
-
-const STATUS_ORDER: QueueStatus[] = ['대기', '후보', '보류', '완료'];
 
 /** 파일에서 사라져 자동으로 내린 항목의 보류 사유. 보류 탭이 `manual`과 구분해 보여준다. */
 export const HOLD_REASON_REMOVED = 'removed-from-file';
@@ -40,8 +39,10 @@ export function parsedQueueToRows(
   repos: readonly RepoNameSource[] = [],
 ): QueueItemRow[] {
   const rows: QueueItemRow[] = [];
-  for (const status of STATUS_ORDER) {
-    parsed.sections[status].forEach((topic, order) => {
+  for (const section of QUEUE_SECTION_ORDER) {
+    // 파일 → DB 경계: 섹션 머리글(한국어)을 저장값(영어)으로(decisions/db-value-language.md).
+    const status = statusOf(section);
+    parsed.sections[section].forEach((topic, order) => {
       const hints = resolveTopicHints(parseTopicHints(topic.title), repos);
       rows.push({
         title: topic.title,
@@ -216,7 +217,7 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
   }
 
   // 사라진 줄이 보류로 갈 자리 — 파일의 보류 줄 뒤에 붙인다(파일 순서를 밀지 않는다).
-  let holdOrder = rows.filter((row) => row.status === '보류').length;
+  let holdOrder = rows.filter((row) => row.status === QUEUE_STATUS.hold).length;
   const now = new Date();
 
   await deps.prisma.$transaction(async (tx) => {
@@ -243,7 +244,7 @@ async function runImport(deps: { storage: Storage; prisma: PrismaClient }): Prom
       // 확인 없이 내린 것이므로 missingSince(= 확인 대기 표시)는 남기지 않는다.
       // 왜 보류가 됐는지는 holdReason이 말한다.
       const held = {
-        status: '보류' as const,
+        status: QUEUE_STATUS.hold,
         order: holdOrder++,
         category: null,
         completedOn: null,

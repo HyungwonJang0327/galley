@@ -27,8 +27,8 @@ const QUEUE = `## 대기
 `;
 
 const rows: SeriesTopicRow[] = [
-  { id: 'id-first', title: '첫 편 (posts/first)', status: '완료' },
-  { id: 'id-second', title: '둘째 편 (linklet)', status: '후보' },
+  { id: 'id-first', title: '첫 편 (posts/first)', status: 'done' },
+  { id: 'id-second', title: '둘째 편 (linklet)', status: 'candidate' },
 ];
 
 describe('seriesNameJa', () => {
@@ -65,7 +65,7 @@ describe('buildSeriesContext', () => {
             topicId: 'id-first',
             episodeNo: 1,
             title: '첫 편',
-            status: '완료',
+            status: 'done',
             slug: 'first',
             alreadyPublished: false,
           },
@@ -73,15 +73,15 @@ describe('buildSeriesContext', () => {
             topicId: 'id-second',
             episodeNo: 2,
             title: '둘째 편',
-            status: '후보',
+            status: 'candidate',
             alreadyPublished: false,
           },
-          { episodeNo: 3, title: '대기 편', status: '대기', alreadyPublished: false },
-          { episodeNo: 4, title: '직접 보류한 편', status: '보류', alreadyPublished: false },
+          { episodeNo: 3, title: '대기 편', status: 'waiting', alreadyPublished: false },
+          { episodeNo: 4, title: '직접 보류한 편', status: 'hold', alreadyPublished: false },
           {
             episodeNo: 6,
             title: '세션 다시 보기',
-            status: '완료',
+            status: 'done',
             slug: 'session-later',
             velogUrl: 'https://velog.io/@x/session',
             alreadyPublished: true,
@@ -94,8 +94,8 @@ describe('buildSeriesContext', () => {
   test('파일에 없는 DB 행(사라진 줄·완료 Run으로 남은 행)은 편으로 세지 않는다', () => {
     const stale: SeriesTopicRow[] = [
       ...rows,
-      { id: 'id-old', title: '첫 편 옛 제목', status: '완료' },
-      { id: 'id-gone', title: '지운 편', status: '보류' },
+      { id: 'id-old', title: '첫 편 옛 제목', status: 'done' },
+      { id: 'id-gone', title: '지운 편', status: 'hold' },
     ];
     const result = buildSeriesContext('B', parseQueue(QUEUE), stale);
     expect(result.ok && result.series.episodes.map((e) => e.episodeNo)).toEqual([1, 2, 3, 4, 6]);
@@ -106,8 +106,8 @@ describe('buildSeriesContext', () => {
       '## 대기\n\n- [A-2] 같은 제목\n\n## 후보\n\n- 같은 제목\n\n### 시리즈\n\n시리즈 A. 앱\n',
     );
     const result = buildSeriesContext('A', q, [
-      { id: 'id-cand', title: '같은 제목', status: '후보' },
-      { id: 'id-wait', title: '[A-2] 같은 제목', status: '대기' },
+      { id: 'id-cand', title: '같은 제목', status: 'candidate' },
+      { id: 'id-wait', title: '[A-2] 같은 제목', status: 'waiting' },
     ]);
     expect(result.ok && result.series.episodes.map((e) => e.topicId)).toEqual(['id-wait']);
   });
@@ -153,14 +153,14 @@ describe('buildSeriesContext', () => {
       {
         episodeNo: 1,
         title: '옛 편',
-        status: '후보',
+        status: 'candidate',
         slug: 'old',
         velogUrl: 'https://velog.io/@x/old',
         alreadyPublished: true,
       },
-      { episodeNo: 2, title: '깃허브 링크 편', status: '후보', alreadyPublished: true },
-      { episodeNo: 3, title: '새 편', status: '후보', alreadyPublished: false },
-      { episodeNo: 4, title: '경로 편', status: '완료', alreadyPublished: false },
+      { episodeNo: 2, title: '깃허브 링크 편', status: 'candidate', alreadyPublished: true },
+      { episodeNo: 3, title: '새 편', status: 'candidate', alreadyPublished: false },
+      { episodeNo: 4, title: '경로 편', status: 'done', alreadyPublished: false },
     ]);
   });
 });

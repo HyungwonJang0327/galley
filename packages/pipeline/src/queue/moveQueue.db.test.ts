@@ -74,7 +74,7 @@ describe('moveQueueTopic', () => {
 
     const result = await moveQueueTopic(
       { storage, prisma },
-      { from: '후보', to: '대기', index: 0, title: '무카테고리 후보' },
+      { from: 'candidate', to: 'waiting', index: 0, title: '무카테고리 후보' },
     );
 
     expect(result).toEqual({ ok: true });
@@ -88,11 +88,13 @@ describe('moveQueueTopic', () => {
     const rows = await prisma.queueItem.findMany({
       orderBy: [{ status: 'asc' }, { order: 'asc' }],
     });
-    expect(rows.filter((r) => r.status === '대기').map((r) => r.title)).toEqual([
+    expect(rows.filter((r) => r.status === 'waiting').map((r) => r.title)).toEqual([
       '대기 A',
       '무카테고리 후보',
     ]);
-    expect(rows.filter((r) => r.status === '후보').map((r) => r.title)).toEqual(['프론트 후보']);
+    expect(rows.filter((r) => r.status === 'candidate').map((r) => r.title)).toEqual([
+      '프론트 후보',
+    ]);
   });
 
   test('옮길 수 없으면 파일도 DB도 건드리지 않는다', async () => {
@@ -100,7 +102,7 @@ describe('moveQueueTopic', () => {
 
     const result = await moveQueueTopic(
       { storage, prisma },
-      { from: '대기', to: '보류', index: 0, title: '그새 바뀐 제목' },
+      { from: 'waiting', to: 'hold', index: 0, title: '그새 바뀐 제목' },
     );
 
     expect(result).toEqual({ ok: false, code: 'TOPIC_MISMATCH' });

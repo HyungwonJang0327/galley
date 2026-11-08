@@ -3,7 +3,8 @@
 import type { PrismaClient } from '@prisma/client';
 import type { Storage } from '../storage/Storage.ts';
 import { importQueueFromFile } from './importQueue.ts';
-import { parseQueue, serializeQueue, type ParsedQueue, type QueueStatus } from './queueFile.ts';
+import { parseQueue, serializeQueue, type ParsedQueue } from './queueFile.ts';
+import { QUEUE_STATUS, sectionOf, type QueueStatus } from './queueStatus.ts';
 
 export interface ReorderQueueTopicInput {
   /** 순서를 바꿀 섹션. */
@@ -35,11 +36,12 @@ export function reorderTopic(
   input: ReorderQueueTopicInput,
 ): { ok: true; queue: ParsedQueue } | { ok: false; code: ReorderQueueFailure } {
   const { status, from, to, title } = input;
-  const source = queue.sections[status];
+  const section = sectionOf(status);
+  const source = queue.sections[section];
 
   // 후보는 카테고리가 ### 소제목으로 표현된다 — 줄 순서만 바꾸면 무카테고리 항목이 직전 소제목
   // 아래로 들어가 없던 카테고리가 생긴다(파일 형식). 순서 변경은 대기 탭만(사용자 결정 2026-09-12).
-  if (status === '후보') return { ok: false, code: 'UNSUPPORTED_SECTION' };
+  if (status === QUEUE_STATUS.candidate) return { ok: false, code: 'UNSUPPORTED_SECTION' };
   if (from === to) return { ok: false, code: 'INVALID_POSITION' };
   if (from < 0 || from >= source.length || to < 0 || to >= source.length) {
     return { ok: false, code: 'INVALID_POSITION' };
@@ -53,7 +55,7 @@ export function reorderTopic(
 
   return {
     ok: true,
-    queue: { ...queue, sections: { ...queue.sections, [status]: next } },
+    queue: { ...queue, sections: { ...queue.sections, [section]: next } },
   };
 }
 

@@ -6,21 +6,29 @@ export type QueueTabId = 'waiting' | 'candidates' | 'hold' | 'done';
 
 export interface QueueTab {
   id: QueueTabId;
+  /** DB 저장값(영어, decisions/db-value-language.md). */
   status: QueueStatus;
+  /** 표시 한국어 — 탭 이름·상태 배지·적재 요약 문구. 파일 섹션 머리글과 같다. */
+  label: string;
   /** 탭 옆 개수 표시(대기·후보만 — layout.md §4). */
   showCount: boolean;
 }
 
 type SearchParamValue = string | string[] | undefined;
 
-const WAITING: QueueTab = { id: 'waiting', status: '대기', showCount: true };
+const WAITING: QueueTab = { id: 'waiting', status: 'waiting', label: '대기', showCount: true };
 
 export const QUEUE_TABS: readonly QueueTab[] = [
   WAITING,
-  { id: 'candidates', status: '후보', showCount: true },
-  { id: 'hold', status: '보류', showCount: false },
-  { id: 'done', status: '완료', showCount: false },
+  { id: 'candidates', status: 'candidate', label: '후보', showCount: true },
+  { id: 'hold', status: 'hold', label: '보류', showCount: false },
+  { id: 'done', status: 'done', label: '완료', showCount: false },
 ];
+
+/** 상태 → 표시 한국어(탭 정의와 같은 소스). */
+export function queueStatusLabel(status: QueueStatus): string {
+  return QUEUE_TABS.find((tab) => tab.status === status)?.label ?? status;
+}
 
 function first(value: SearchParamValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;

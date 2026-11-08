@@ -26,7 +26,7 @@ const QUEUE = `## 대기
 `;
 
 const input = (over: Partial<CompleteTopicInput> = {}): CompleteTopicInput => ({
-  from: '대기',
+  from: 'waiting',
   index: 0,
   title: '둘째 편 (pono-web)',
   completedOn: '2026-09-25',
@@ -96,7 +96,7 @@ describe('completeTopic', () => {
 
     const fromCandidate = completeTopic(
       parseQueue(QUEUE),
-      input({ from: '후보', index: 0, title: '셋째 편' }),
+      input({ from: 'candidate', index: 0, title: '셋째 편' }),
     );
     if (!fromCandidate.ok) throw new Error(fromCandidate.code);
     const md = serializeQueue(fromCandidate.queue);
@@ -108,14 +108,14 @@ describe('completeTopic', () => {
 
   test('보류에서도 옮기고, 후보 마지막 편을 빼면 뒤 정의 줄 위치가 그만큼 당겨진다', () => {
     const held = parseQueue(QUEUE.replace('## 보류\n', '## 보류\n\n- 보류 주제\n'));
-    const fromHold = completeTopic(held, input({ from: '보류', index: 0, title: '보류 주제' }));
+    const fromHold = completeTopic(held, input({ from: 'hold', index: 0, title: '보류 주제' }));
     if (!fromHold.ok) throw new Error(fromHold.code);
     expect(fromHold.queue.sections.보류).toEqual([]);
     expect(serializeQueue(fromHold.queue)).toContain('## 보류\n\n## 완료\n');
 
     const last = completeTopic(
       parseQueue(QUEUE),
-      input({ from: '후보', index: 1, title: '다른 첫 편' }),
+      input({ from: 'candidate', index: 1, title: '다른 첫 편' }),
     );
     if (!last.ok) throw new Error(last.code);
     expect(last.queue.sections.후보).toHaveLength(1);

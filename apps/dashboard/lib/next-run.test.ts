@@ -17,10 +17,10 @@ const entry = (
 });
 
 const sections = (waiting: ReturnType<typeof entry>[]): QueueSections => ({
-  대기: waiting,
-  후보: [],
-  보류: [],
-  완료: [],
+  waiting,
+  candidate: [],
+  hold: [],
+  done: [],
 });
 
 describe('buildNextRunView', () => {

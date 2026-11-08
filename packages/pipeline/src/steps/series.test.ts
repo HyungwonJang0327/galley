@@ -22,12 +22,12 @@ const context: SeriesContext = {
       topicId: 't1',
       episodeNo: 1,
       title: '첫 편',
-      status: '완료',
+      status: 'done',
       velogUrl: 'https://velog.io/@x/first',
       alreadyPublished: false,
     },
-    { topicId: 't2', episodeNo: 2, title: '둘째 편', status: '대기', alreadyPublished: false },
-    { episodeNo: 3, title: '셋째 편', status: '후보', alreadyPublished: false },
+    { topicId: 't2', episodeNo: 2, title: '둘째 편', status: 'waiting', alreadyPublished: false },
+    { episodeNo: 3, title: '셋째 편', status: 'candidate', alreadyPublished: false },
   ],
 };
 
@@ -85,11 +85,17 @@ describe('renderSeriesHeader', () => {
           topicId: 'old',
           episodeNo: 6,
           title: '세션 다시 보기',
-          status: '후보',
+          status: 'candidate',
           velogUrl: 'https://velog.io/@x/session',
           alreadyPublished: true,
         },
-        { topicId: 'new', episodeNo: 7, title: '마무리', status: '대기', alreadyPublished: false },
+        {
+          topicId: 'new',
+          episodeNo: 7,
+          title: '마무리',
+          status: 'waiting',
+          alreadyPublished: false,
+        },
       ],
     };
     const got = toSeriesStepInfo(prevPublished, 'new');

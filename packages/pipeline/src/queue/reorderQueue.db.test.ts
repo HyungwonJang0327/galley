@@ -70,7 +70,7 @@ describe('reorderQueueTopic', () => {
 
     const result = await reorderQueueTopic(
       { storage, prisma },
-      { status: '대기', from: 2, to: 0, title: '대기 C' },
+      { status: 'waiting', from: 2, to: 0, title: '대기 C' },
     );
 
     expect(result).toEqual({ ok: true });
@@ -80,7 +80,7 @@ describe('reorderQueueTopic', () => {
       '대기 B',
     ]);
     const rows = await prisma.queueItem.findMany({
-      where: { status: '대기' },
+      where: { status: 'waiting' },
       orderBy: { order: 'asc' },
     });
     expect(rows.map((r) => r.title)).toEqual(['대기 C', '대기 A', '대기 B']);
@@ -91,7 +91,7 @@ describe('reorderQueueTopic', () => {
 
     const result = await reorderQueueTopic(
       { storage, prisma },
-      { status: '대기', from: 0, to: 1, title: '그새 바뀐 제목' },
+      { status: 'waiting', from: 0, to: 1, title: '그새 바뀐 제목' },
     );
 
     expect(result).toEqual({ ok: false, code: 'TOPIC_MISMATCH' });
