@@ -12,7 +12,7 @@ import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
 import type { EvidencePointers } from '../evidence/bundle.ts';
 import { gitShowFile } from '../index/gitRead.ts';
-import { LINK_SOURCE, serializePointers } from '../index/schema.ts';
+import { LINK_SOURCE, serializePointers, serializeStringArray } from '../index/schema.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
 import { StepFailure } from './StepRunner.ts';
 
@@ -50,6 +50,7 @@ beforeAll(async () => {
     'export const a = 1; // Example Corp\nexport const b = 2;\nexport const c = 3;\n',
   );
   await writeFile(join(repoPath, 'src', 'b.ts'), 'export const secret = "Example Corp";\n');
+  await writeFile(join(repoPath, 'src', 'c.ts'), 'export const scroll = true;\n');
   execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: repoPath, env: GIT_ENV });
   g('add', '.');
   g('-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'init');
@@ -134,6 +135,61 @@ async function seed(readOnly: boolean) {
     },
   });
   return { repo, area, change, topic, run };
+}
+const pointersText = (pointers: unknown[]) =>
+  (serializePointers(pointers) as { ok: true; text: string }).text;
+
+/**
+ * seed + 주제 힌트(키워드 scroll · 기간 2024-03) + 연결에 없는 글 셋. 연결된 글(area·change)에도 같은 키워드를 둬
+ * "이미 연결된 글은 discovered로 다시 고르지 않는다"를 본다.
+ */
+async function seedDiscover(readOnly: boolean) {
+  const s = await seed(readOnly);
+  await prisma.queueItem.update({
+    where: { id: s.topic.id },
+    data: { keywords: serializeStringArray(['scroll']), period: '2024-03' },
+  });
+  await prisma.repoAnalysis.updateMany({
+    where: { id: { in: [s.area.id, s.change.id] } },
+    data: { keywords: serializeStringArray(['scroll']) },
+  });
+  const base = { repoId: s.repo.id, summary: 's', modelId: 'mock' };
+  // 겹침 1(scroll) + 기간 거리 1(2024-04 vs 2024-03) → 1.667: discArea(1)보다 앞. c.ts는 discArea와 같은 조각 → 한 번만.
+  const discChange = await prisma.repoAnalysis.create({
+    data: {
+      ...base,
+      kind: 'change',
+      key: 'change:2024-04',
+      title: 'dc',
+      period: '2024-04',
+      keywords: serializeStringArray(['scroll', 'infinite']),
+      pointers: pointersText([
+        { commit: head, path: 'src/a.ts', lineStart: 3, lineEnd: 3 },
+        { commit: head, path: 'src/c.ts' },
+      ]),
+    },
+  });
+  const discArea = await prisma.repoAnalysis.create({
+    data: {
+      ...base,
+      kind: 'area',
+      key: 'area:src/c',
+      title: 'da',
+      keywords: serializeStringArray(['scroll']),
+      pointers: pointersText([{ commit: head, path: 'src/c.ts' }]),
+    },
+  });
+  const noMatch = await prisma.repoAnalysis.create({
+    data: {
+      ...base,
+      kind: 'area',
+      key: 'area:other',
+      title: 'nm',
+      keywords: serializeStringArray(['vue']),
+      pointers: pointersText([{ commit: head, path: 'src/b.ts' }]),
+    },
+  });
+  return { ...s, discChange, discArea, noMatch };
 }
 const ctxFor = (
   run: { id: string },
@@ -318,5 +374,59 @@ describe('evidence 단계', () => {
     await expect(
       createEvidenceStepRunner(deps(null)).run({ ...ctxFor(run, topic), step: 'velog' }),
     ).rejects.toThrow('라우팅');
+  });
+
+  test('discovered — 연결에 없던 글이 키워드 점수 순으로 linked 뒤에 들어오고, 연결된 글·겹치지 않는 글은 안 고른다', async () => {
+    const { change, discChange, topic, run } = await seedDiscover(true);
+    const result = await createEvidenceStepRunner(deps(REDACT)).run(ctxFor(run, topic));
+    const pointers = JSON.parse(result.artifacts[EVIDENCE_ARTIFACT]!) as EvidencePointers;
+    expect(result.artifacts[EVIDENCE_ARTIFACT]).not.toContain('snippet');
+    // linked(change: b.ts, a.ts 1~2) → discovered(discChange: a.ts 3, c.ts). discArea의 c.ts는 중복, noMatch는 점수 0.
+    expect(pointers.items.map((i) => [i.source, i.analysisId, i.path, i.lineRange.start])).toEqual([
+      ['linked', change.id, 'src/b.ts', 1],
+      ['linked', change.id, 'src/a.ts', 1],
+      ['discovered', discChange.id, 'src/a.ts', 3],
+      ['discovered', discChange.id, 'src/c.ts', 1],
+    ]);
+    const stored = await store.read('무한-스크롤', run.id);
+    expect(stored.ok).toBe(true);
+    if (!stored.ok) return;
+    // discovered 조각도 커밋의 파일 내용과 일치한다
+    expect(stored.bundle.items[2]!.snippet).toBe('export const c = 3;');
+    expect(stored.bundle.items[3]!.snippet).toBe('export const scroll = true;');
+    // 항목이 담긴 글만, linked 글 → discovered 글 순
+    expect(stored.bundle.analyses?.map((a) => [a.id, a.title])).toEqual([
+      [change.id, 'c'],
+      [discChange.id, 'dc'],
+    ]);
+    expect(g('status', '--porcelain')).toBe('');
+  });
+
+  test('discovered 상한 — maxDiscoveredItems는 담긴 조각, maxDiscovered는 고르는 글, rerank 훅은 상한 전에', async () => {
+    const { discChange, discArea, topic, run } = await seedDiscover(false);
+    const only1 = await createEvidenceStepRunner(
+      deps(null, { ...EVIDENCE_LIMITS, maxDiscoveredItems: 1 }),
+    ).run(ctxFor(run, topic));
+    const discoveredOf = (r: { artifacts: Record<string, string> }) =>
+      (JSON.parse(r.artifacts[EVIDENCE_ARTIFACT]!) as EvidencePointers).items
+        .filter((i) => i.source === 'discovered')
+        .map((i) => [i.analysisId, i.path]);
+    expect(discoveredOf(only1)).toEqual([[discChange.id, 'src/a.ts']]);
+
+    // 글 상한 1 + 순서를 뒤집는 훅 → 점수가 낮은 discArea 하나만
+    const reversed = await createEvidenceStepRunner({
+      ...deps(null, { ...EVIDENCE_LIMITS, maxDiscovered: 1 }),
+      rerankDiscovered: (ranked) => [...ranked].reverse(),
+    }).run(ctxFor(run, topic));
+    expect(discoveredOf(reversed)).toEqual([[discArea.id, 'src/c.ts']]);
+  });
+
+  test('연결이 없어도 discovered가 readOnly 리포를 가리키면 필터 없이는 EVIDENCE_REDACT_CONFIG_REQUIRED', async () => {
+    const { topic, run } = await seedDiscover(true);
+    await prisma.topicAnalysisLink.deleteMany();
+    await expect(
+      createEvidenceStepRunner(deps(null)).run(ctxFor(run, topic)),
+    ).rejects.toMatchObject({ code: 'EVIDENCE_REDACT_CONFIG_REQUIRED', retryable: false });
+    expect(await store.read('무한-스크롤', run.id)).toMatchObject({ ok: false });
   });
 });
