@@ -1,5 +1,6 @@
 import { Badge, TimelineItem, TimelineItems } from 'galley-ui';
 import { STEP_OPTIONS, stepTimeline } from '../../../lib/run-labels';
+import { formatCostUsd } from '../../../lib/model-label';
 import type { RunStepView } from '../../../lib/run-detail';
 import type { RunArtifactViews, StepArtifactView } from '../../../lib/run-artifacts';
 import { ArtifactMarkdown } from './ArtifactMarkdown';
@@ -12,8 +13,18 @@ const tokens = (step: RunStepView) =>
   step.inputTokens === null || step.outputTokens === null
     ? null
     : `${(step.inputTokens + step.outputTokens).toLocaleString('ko-KR')} 토큰`;
+const cost = (step: RunStepView) => (step.costUsd === null ? null : formatCostUsd(step.costUsd));
+/** 단계 모델이 Run 모델과 다를 때만 label(decisions/model-selection.md "실행 상세") — 같으면 헤더의 label이 대신한다. */
+const modelOf = (step: RunStepView, runModelId: string | undefined) =>
+  step.modelId !== null && runModelId !== undefined && step.modelId !== runModelId
+    ? (step.modelLabel ?? step.modelId)
+    : null;
 
-function metaOf(step: RunStepView | undefined, carried: boolean): string {
+function metaOf(
+  step: RunStepView | undefined,
+  carried: boolean,
+  runModelId: string | undefined,
+): string {
   if (!step || step.status === 'pending') return '대기';
   // 출처 단계의 시각을 못 찾으면(출처 Run 삭제 등) "이전 결과"만 — 꼬리 구분자를 남기지 않는다.
   if (carried) return ['이전 결과', time(step.sourceFinishedAt)].filter(Boolean).join(' · ');
@@ -23,7 +34,9 @@ function metaOf(step: RunStepView | undefined, carried: boolean): string {
     const reason = step.errorMessage ?? step.errorCode;
     return [reason, `${step.attemptCount}회 시도`].filter(Boolean).join(' · ');
   }
-  return [seconds(step.durationMs), tokens(step)].filter(Boolean).join(' · ');
+  return [seconds(step.durationMs), tokens(step), cost(step), modelOf(step, runModelId)]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /**
@@ -105,9 +118,12 @@ function artifactPanel(view: StepArtifactView) {
 export function RunTimeline({
   steps,
   artifacts = {},
+  runModelId,
 }: {
   steps: RunStepView[];
   artifacts?: RunArtifactViews;
+  /** Run 모델 id — 단계 모델이 이것과 다를 때만 그 줄에 모델 label을 붙인다. */
+  runModelId?: string;
 }) {
   const byName = new Map(steps.map((s) => [s.name, s]));
   return (
@@ -122,7 +138,9 @@ export function RunTimeline({
             status={line.status}
             statusLabel={line.statusLabel}
             title={label}
-            meta={[metaOf(step, line.carried), view && hintOf(view)].filter(Boolean).join(' · ')}
+            meta={[metaOf(step, line.carried, runModelId), view && hintOf(view)]
+              .filter(Boolean)
+              .join(' · ')}
             trailing={verifyBadge(view)}
             isLast={idx === STEP_OPTIONS.length - 1}
           >

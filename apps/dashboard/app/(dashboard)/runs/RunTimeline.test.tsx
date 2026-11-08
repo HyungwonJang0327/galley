@@ -22,6 +22,7 @@ function step(overrides: Partial<RunStepView> & { name: string; order: number })
     errorMessage: null,
     attemptCount: 0,
     modelId: null,
+    modelLabel: null,
     inputTokens: null,
     outputTokens: null,
     costUsd: null,
@@ -86,6 +87,85 @@ describe('RunTimeline', () => {
     expect(row.dataset.status).toBe('done');
     expect(markerLabel(row)).toBe('완료');
     expect(row.textContent).toContain('12초 · 1,500 토큰');
+  });
+
+  it('비용이 있으면 소수 4자리 USD로 덧붙인다', () => {
+    render(
+      <RunTimeline
+        steps={[
+          step({
+            name: 'velog',
+            order: 2,
+            status: 'succeeded',
+            durationMs: 12000,
+            inputTokens: 1000,
+            outputTokens: 500,
+            costUsd: 0.01234567,
+          }),
+        ]}
+      />,
+    );
+
+    expect(rows()[1]!.textContent).toContain('12초 · 1,500 토큰 · $0.0123');
+  });
+
+  it('단계 모델이 Run 모델과 다를 때만 그 줄에 모델 label(같으면 없음, label이 없으면 id)', () => {
+    render(
+      <RunTimeline
+        runModelId="anthropic:opus"
+        steps={[
+          step({
+            name: 'evidence',
+            order: 1,
+            status: 'succeeded',
+            durationMs: 1000,
+            modelId: 'anthropic:opus',
+            modelLabel: 'Claude Opus',
+          }),
+          step({
+            name: 'velog',
+            order: 2,
+            status: 'succeeded',
+            durationMs: 2000,
+            modelId: 'anthropic:haiku',
+            modelLabel: 'Claude Haiku',
+            costUsd: 0.5,
+          }),
+          step({
+            name: 'verify',
+            order: 3,
+            status: 'succeeded',
+            durationMs: 3000,
+            modelId: 'legacy:gone',
+            modelLabel: null,
+          }),
+        ]}
+      />,
+    );
+
+    const [evidence, velog, verify] = rows();
+    expect(evidence!.textContent).not.toContain('Claude Opus');
+    expect(velog!.textContent).toContain('2초 · $0.5000 · Claude Haiku');
+    expect(verify!.textContent).toContain('3초 · legacy:gone');
+  });
+
+  it('runModelId가 없으면 단계 모델 label을 붙이지 않는다', () => {
+    render(
+      <RunTimeline
+        steps={[
+          step({
+            name: 'velog',
+            order: 2,
+            status: 'succeeded',
+            durationMs: 2000,
+            modelId: 'anthropic:haiku',
+            modelLabel: 'Claude Haiku',
+          }),
+        ]}
+      />,
+    );
+
+    expect(rows()[1]!.textContent).not.toContain('Claude Haiku');
   });
 
   it('토큰이 없으면 소요 시간만 보여준다', () => {
