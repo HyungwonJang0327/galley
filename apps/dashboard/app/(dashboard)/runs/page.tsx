@@ -111,6 +111,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                   <Badge tone={headerBadge.tone} pulse={headerBadge.pulse}>
                     {headerBadge.label}
                   </Badge>
+                  {/* 이 Run의 모델(decisions/model-selection.md "실행 상세"). 단계가 다른 모델이면 타임라인 줄에 따로 붙는다. */}
+                  <span className={styles.model}>{selected.modelLabel}</span>
                 </div>
                 {series ? (
                   <p className={styles.series}>
@@ -142,7 +144,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               {/* 다른 실행을 고르면 폴러를 새로 만든다 — 같은 인스턴스가 "running → 아님" 전환으로
                   오인해 refresh를 한 번 더 부르지 않도록. */}
               <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
-              <RunTimeline steps={selected.steps} artifacts={artifacts} />
+              <RunTimeline
+                steps={selected.steps}
+                artifacts={artifacts}
+                runModelId={selected.modelId}
+              />
             </>
           ) : pane.kind === 'failed' ? (
             <p className={styles.note} role="alert">
