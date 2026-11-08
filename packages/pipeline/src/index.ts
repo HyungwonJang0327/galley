@@ -231,6 +231,8 @@ export type {
 } from './evidence/redact.ts';
 export { EVIDENCE_LIMITS } from './evidence/limits.ts';
 export type { EvidenceLimits } from './evidence/limits.ts';
+export { discoverAnalyses, periodDistance, periodWeight } from './evidence/discover.ts';
+export type { DiscoveredAnalysis, DiscoverRerank, DiscoverOptions } from './evidence/discover.ts';
 export { stripSnippets, parseEvidenceBundle } from './evidence/bundle.ts';
 export type {
   EvidenceBundle,
