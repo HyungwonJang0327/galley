@@ -2,13 +2,8 @@
 // 카운트는 타일·배지와 같은 소스(countPendingApproval), 행은 실행 목록과 같은 조회(listRuns)를 쓴다.
 // 홈 전용 API는 없다 — 서버 컴포넌트가 직접 부르고, 실패는 값으로 돌려 홈 전체가 죽지 않게 한다.
 import 'server-only';
-import {
-  countPendingApproval,
-  createModelRegistryFromEnv,
-  listRecentRuns,
-  prisma,
-  type RunSummary,
-} from '@galley/pipeline';
+import { countPendingApproval, listRecentRuns, prisma, type RunSummary } from '@galley/pipeline';
+import { createModelLabeler } from './model-label';
 import { getRunVerificationFlags, type VerificationFlags } from './run-artifacts';
 import { runStatusBadge, type RunStatusBadge } from './run-labels';
 import { getRunList, type RunListRow } from './run-list';
@@ -111,7 +106,7 @@ export async function getHomeRuns(): Promise<HomeRunsResult> {
       return { ok: false, error: { code: 'HOME_RUNS_FAILED', message: pending.error.message } };
     // "근거 없음 n"은 각 Run의 verification.json(DATA_DIR)에서 — 못 읽는 행은 조용히 빠진다(실행 목록과 같다).
     const flags = await getRunVerificationFlags(pending.data);
-    const registry = createModelRegistryFromEnv(process.env);
+    const label = createModelLabeler();
     return {
       ok: true,
       data: {
@@ -120,7 +115,7 @@ export async function getHomeRuns(): Promise<HomeRunsResult> {
           moreCount: Math.max(0, pendingCount - pending.data.length),
           moreHref: runsHref({ pendingOnly: true }),
         },
-        recent: buildRecentRows(recent, (id) => registry.get(id)?.label ?? id),
+        recent: buildRecentRows(recent, label),
       },
     };
   } catch (error) {
