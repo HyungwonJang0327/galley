@@ -449,6 +449,21 @@ export {
   runAutoLinkTick,
 } from './link/autoLink.ts';
 export type { AutoLinkResult, AutoLinkTickDeps, AutoLinkTickResult } from './link/autoLink.ts';
+export {
+  listTopicLinks,
+  searchAnalyses,
+  addTopicLink,
+  removeTopicLink,
+} from './link/topicLinks.ts';
+export type {
+  TopicLinkAnalysis,
+  TopicLinkEntry,
+  ListTopicLinksResult,
+  SearchAnalysesInput,
+  AnalysisSearchHit,
+  AddTopicLinkResult,
+  RemoveTopicLinkResult,
+} from './link/topicLinks.ts';
 export type {
   EnqueueIndexJobInput,
   EnqueuedIndexJob,
