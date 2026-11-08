@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
 import { getRunArtifacts, getRunVerificationFlags } from '../../../lib/run-artifacts';
 import { getRunSeries } from '../../../lib/run-series';
+import { getRunModelChoices } from '../../../lib/run-model-options';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
 import { RunPoller } from './RunPoller';
@@ -46,9 +47,11 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const { data: lists } = result;
   const activeId = pickActiveId(lists, selectedId);
   // 목록 행의 "근거 없음 n"은 각 Run의 verification.json(DATA_DIR)에서 — 못 읽는 행은 조용히 빠진다.
-  const [detail, flags] = await Promise.all([
+  // 모델 Select 항목(재실행 ActionBar)은 실행 시작 Dialog와 같은 목록 — 던지지 않는다.
+  const [detail, flags, modelChoices] = await Promise.all([
     preselected ?? (activeId ? getRunDetail(activeId) : undefined),
     getRunVerificationFlags(lists),
+    getRunModelChoices(),
   ]);
   const pane = resolveRunPane(detail);
   const selected = pane.kind === 'selected' ? pane.run : undefined;
@@ -136,6 +139,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               enabled={selected !== undefined && isPendingApproval(selected.status)}
               steps={STEP_OPTIONS}
               maxLength={INSTRUCTION_MAX_LENGTH}
+              modelOptions={modelChoices.options}
+              runModelId={selected?.modelId}
             />
           }
         >
