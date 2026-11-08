@@ -1,5 +1,14 @@
 import Link from 'next/link';
-import { Badge, Card, ListRow, ListRows, ListToolbar, ListToolbarTab, PageHeader } from 'galley-ui';
+import {
+  Badge,
+  Card,
+  InlineAlert,
+  ListRow,
+  ListRows,
+  ListToolbar,
+  ListToolbarTab,
+  PageHeader,
+} from 'galley-ui';
 import { getQueueSections, getQueueSeries } from '../../../lib/queue-data';
 import { getMissingTopics } from '../../../lib/queue-missing';
 import { buildNextRunView } from '../../../lib/next-run';
@@ -46,9 +55,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       <>
         <PageHeader title="큐" actions={<ReloadQueueButton reload={reloadQueueAction} />} />
         <Card>
-          <p className={styles.note} role="alert">
-            {result.error.message}
-          </p>
+          {/* 실패 표시는 galley-ui InlineAlert 하나로(decisions/error-handling.md). danger면 role=alert. */}
+          <InlineAlert tone="danger">{result.error.message}</InlineAlert>
         </Card>
       </>
     );

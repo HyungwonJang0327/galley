@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { Button, Card } from 'galley-ui';
+import { Button, Card, InlineAlert } from 'galley-ui';
 import type { MissingResolveResult, MissingTopicView } from '../../../lib/queue-missing';
 import styles from './MissingTopicsNotice.module.css';
 
@@ -38,9 +38,10 @@ export function MissingTopicsNotice({
         새 주제로 잡혀 이력이 갈라집니다.
       </p>
       {error !== null ? (
-        <p role="alert" className={styles.error}>
+        // 이미 카드 안이라 상자 없이(plain). danger라 role=alert.
+        <InlineAlert tone="danger" variant="plain" className={styles.alert}>
           {error}
-        </p>
+        </InlineAlert>
       ) : null}
       <ul className={styles.list}>
         {topics.map((topic) => (

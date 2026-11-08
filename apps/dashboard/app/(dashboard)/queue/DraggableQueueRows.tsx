@@ -5,7 +5,7 @@ import {
   dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { GripVertical } from 'lucide-react';
-import { Badge, ListRow, ListRows } from 'galley-ui';
+import { Badge, InlineAlert, ListRow, ListRows } from 'galley-ui';
 import type { BadgeTone } from 'galley-ui';
 import type { MoveQueueTopicInput, QueueStatus, ReorderQueueTopicInput } from '@galley/pipeline';
 import { buildReorderInput, type DropEdge } from '../../../lib/queue-drag';
@@ -36,9 +36,9 @@ export function DraggableQueueRows({ rows, status, statusLabel, badgeTone, move,
   return (
     <>
       {error !== null ? (
-        <p role="alert" className={styles.error}>
+        <InlineAlert tone="danger" className={styles.alert}>
           {error}
-        </p>
+        </InlineAlert>
       ) : null}
       <ListRows>
         {rows.map((row) => (
