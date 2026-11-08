@@ -19,6 +19,13 @@
   max-width: 40%;
 }
 
+/* 모델 Select — 단계와 같은 폭(모델 label + provider 보조). 둘 합쳐 절반을 넘지 않게. */
+.model {
+  flex-shrink: 0;
+  width: var(--ui-splitpane-list-width);
+  max-width: 30%;
+}
+
 .instruction {
   flex: 1;
 }

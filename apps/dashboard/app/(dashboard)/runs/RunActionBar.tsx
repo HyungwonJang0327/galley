@@ -1,5 +1,7 @@
 'use client';
-// 실행 상세 하단 바: 단계 Select + 수정 지시 Textarea + 재실행(확인) / 승인(확인).
+// 실행 상세 하단 바: 단계 Select + 모델 Select(초기값 = 이 실행의 모델, BM8) + 수정 지시 Textarea + 재실행(확인) / 승인(확인).
+// 다른 모델을 고르면 revise 요청에만 modelId를 실어 새 시도의 다시 도는 단계가 그 모델로 돈다(이전 결과를 잇는 단계는
+// 원래 모델 그대로 — 타임라인이 Run 모델과 다른 줄에만 label을 붙인다). 같은 모델이면 보내지 않는다(서버가 잇는다).
 // 판정("승인 대기인가")·단계 라벨은 서버가 props로 넘긴다 — 클라이언트는 pipeline·run-labels를
 // import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler(B2b)로 보낸다.
 // 확인 Dialog 둘은 useConfirm 하나로(decisions/confirm-dialog-usage.md): 확인을 누르면 즉시 닫히고,
@@ -16,6 +18,7 @@ import {
   type ApprovalNotice,
   type StepOption,
 } from '../../../lib/run-action-bar';
+import type { RunModelOption } from '../../../lib/run-model-options';
 import { runsHref } from '../../../lib/run-view';
 import styles from './RunActionBar.module.css';
 
@@ -26,15 +29,27 @@ export interface RunActionBarProps {
   /** 파이프라인 순서의 (이름, 라벨). Select 항목과 확인 Dialog 문구에 쓴다. */
   steps: readonly StepOption[];
   maxLength: number;
+  /** 모델 Select 항목(서버 lib/run-model-options가 만든다 — 실행 시작 Dialog와 같은 목록). */
+  modelOptions: readonly RunModelOption[];
+  /** 이 실행의 모델 id — 모델 Select 초기값. 실행이 없으면 undefined. */
+  runModelId: string | undefined;
 }
 
 const AUTO_STEP = '__auto__';
 
-export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarProps) {
+export function RunActionBar({
+  runId,
+  enabled,
+  steps,
+  maxLength,
+  modelOptions,
+  runModelId,
+}: RunActionBarProps) {
   const router = useRouter();
   const { confirm, element: confirmElement } = useConfirm();
   const [instruction, setInstruction] = useState('');
   const [startStep, setStartStep] = useState<string>(AUTO_STEP);
+  const [modelId, setModelId] = useState<string | null>(runModelId ?? null);
   /** 오류·안내 한 줄. */
   const [message, setMessage] = useState<string | null>(null);
   /** API가 도는 동안의 진행 문구. null이면 유휴. */
@@ -82,6 +97,27 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
     instruction: instruction.trim(),
     ...(startStep === AUTO_STEP ? {} : { startStep }),
   });
+  /** 원래 모델과 다를 때만 실어 보낸다 — 같으면 서버가 직전 실행의 모델을 잇는다(기본 경로 불변). */
+  const modelChanged = modelId !== null && modelId !== runModelId;
+  const reviseRequest = () => ({
+    ...request(),
+    ...(modelChanged ? { modelId: modelId } : {}),
+  });
+
+  /** 모델 Select 항목 — 이 실행의 모델이 목록에 없으면(레지스트리에서 빠진 옛 모델) 그 id를 비활성 항목으로 끼운다. */
+  const modelItems =
+    runModelId === undefined || modelOptions.some((option) => option.value === runModelId)
+      ? modelOptions
+      : [
+          {
+            value: runModelId,
+            label: runModelId,
+            disabled: true,
+            disabledReason: '등록되지 않은 모델입니다. 다른 모델을 고르세요.',
+          },
+          ...modelOptions,
+        ];
+  const selectedModel = modelItems.find((option) => option.value === modelId);
 
   const stepItems = [
     {
@@ -97,6 +133,15 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
     const invalid = validateInstruction(instruction, maxLength);
     if (invalid !== null) {
       setMessage(invalid);
+      return;
+    }
+    // 모델은 계획과 무관하지만 왕복 전에 거른다 — 비활성(키 없음)·미등록 모델로는 서버가 어차피 거절한다.
+    if (modelId === null || selectedModel === undefined) {
+      setMessage('다시 돌릴 모델을 고르세요.');
+      return;
+    }
+    if (selectedModel.disabled) {
+      setMessage(selectedModel.disabledReason ?? '이 모델은 지금 쓸 수 없습니다.');
       return;
     }
     setMessage(null);
@@ -127,13 +172,19 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
               <dd>{planText.carried}</dd>
             </>
           ) : null}
+          {modelChanged ? (
+            <>
+              <dt>모델</dt>
+              <dd>{selectedModel.label}</dd>
+            </>
+          ) : null}
         </dl>
       ),
     });
     if (!ok) return;
     const result = await runBusy(
       '재실행을 요청하는 중…',
-      () => reviseRun(runId, request()),
+      () => reviseRun(runId, reviseRequest()),
       rerunButton.current,
     );
     if (result === null) return;
@@ -217,6 +268,19 @@ export function RunActionBar({ runId, enabled, steps, maxLength }: RunActionBarP
                 items={stepItems}
                 disabled={disabled}
                 aria-label="시작 단계"
+              />
+            </div>
+            <div className={styles.model}>
+              <Select
+                value={modelId}
+                onValueChange={(value) => {
+                  setModelId(value);
+                  setMessage(null);
+                }}
+                items={modelItems}
+                placeholder="모델"
+                disabled={disabled}
+                aria-label="모델"
               />
             </div>
             <Textarea

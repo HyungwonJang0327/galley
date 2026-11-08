@@ -26,8 +26,34 @@ const PLAN = {
   sources: {},
 };
 
-function renderBar(enabled = true) {
-  return render(<RunActionBar runId="r1" enabled={enabled} steps={STEPS} maxLength={2000} />);
+const model = (value: string, disabled = false) => ({
+  value,
+  label: `${value} 이름`,
+  description: 'Anthropic',
+  meta: '$5 / $25',
+  disabled,
+  disabledReason: disabled ? 'API 키 없음 (.env ANTHROPIC_API_KEY)' : undefined,
+});
+const MODELS = [model('anthropic:a'), model('anthropic:b'), model('openai:c', true)];
+
+function renderBar(enabled = true, runModelId: string | undefined = 'anthropic:a') {
+  return render(
+    <RunActionBar
+      runId="r1"
+      enabled={enabled}
+      steps={STEPS}
+      maxLength={2000}
+      modelOptions={MODELS}
+      runModelId={runModelId}
+    />,
+  );
+}
+
+/** Select 트리거·항목은 pointer 이벤트로 연다(Base UI). */
+function press(element: HTMLElement) {
+  fireEvent.pointerDown(element, { pointerType: 'mouse', button: 0 });
+  fireEvent.mouseDown(element, { button: 0 });
+  fireEvent.click(element);
 }
 
 /** Dialog 안 버튼을 이름으로 찾아 누른다. */
@@ -68,6 +94,84 @@ describe('RunActionBar', () => {
         'data-disabled',
       ),
     ).not.toBeNull();
+  });
+
+  it('모델 Select 초기값은 이 실행의 모델이고, 바꾸지 않으면 요청에 modelId를 싣지 않는다', async () => {
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    reviseRun.mockResolvedValue({
+      ok: true,
+      data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN },
+    });
+    renderBar();
+    expect(screen.getByRole('combobox', { name: '모델' }).textContent).toContain(
+      'anthropic:a 이름',
+    );
+
+    type('어투를 부드럽게');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await clickDialogButton('재실행');
+
+    await waitFor(() =>
+      expect(reviseRun).toHaveBeenCalledWith('r1', { instruction: '어투를 부드럽게' }),
+    );
+    expect(planRerun).toHaveBeenCalledWith('r1', { instruction: '어투를 부드럽게' });
+  });
+
+  it('다른 모델을 고르면 Dialog에 모델을 보여주고 revise에만 modelId를 싣는다(계획에는 없다)', async () => {
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    reviseRun.mockResolvedValue({
+      ok: true,
+      data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN },
+    });
+    renderBar();
+
+    press(screen.getByRole('combobox', { name: '모델' }));
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(3));
+    press(screen.getByRole('option', { name: /anthropic:b 이름/ }));
+    type('본문만 상위 모델로');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+
+    const dialog = await screen.findByRole('dialog', { name: '다시 실행할까요?' });
+    expect(dialog.textContent).toContain('모델');
+    expect(dialog.textContent).toContain('anthropic:b 이름');
+    expect(planRerun).toHaveBeenCalledWith('r1', { instruction: '본문만 상위 모델로' });
+
+    await clickDialogButton('재실행');
+
+    await waitFor(() =>
+      expect(reviseRun).toHaveBeenCalledWith('r1', {
+        instruction: '본문만 상위 모델로',
+        modelId: 'anthropic:b',
+      }),
+    );
+  });
+
+  it('이 실행의 모델에 키가 없으면(비활성 항목이 초기값) 재실행 전에 사유를 보이고 API를 부르지 않는다', () => {
+    renderBar(true, 'openai:c');
+    type('다시');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+
+    expect(screen.getByRole('status').textContent).toContain('API 키 없음');
+    expect(planRerun).not.toHaveBeenCalled();
+  });
+
+  it('이 실행의 모델이 목록에 없으면(미등록) 그 id를 비활성 항목으로 보이고 재실행을 막는다', async () => {
+    renderBar(true, 'legacy:gone');
+    expect(screen.getByRole('combobox', { name: '모델' }).textContent).toContain('legacy:gone');
+
+    type('다시');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    expect(screen.getByRole('status').textContent).toContain('등록되지 않은 모델');
+    expect(planRerun).not.toHaveBeenCalled();
+
+    // 다른 모델을 고르면 그 모델로 간다
+    press(screen.getByRole('combobox', { name: '모델' }));
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(4));
+    press(screen.getByRole('option', { name: /anthropic:a 이름/ }));
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await screen.findByRole('dialog');
+    expect(planRerun).toHaveBeenCalledWith('r1', { instruction: '다시' });
   });
 
   it('빈 지시로 재실행을 누르면 API를 부르지 않고 안내만', () => {

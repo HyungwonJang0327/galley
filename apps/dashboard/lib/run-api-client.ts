@@ -20,6 +20,8 @@ export interface StartRunRequest {
 export interface RerunRequest {
   instruction: string;
   startStep?: string;
+  /** 다시 도는 단계가 쓸 모델(revise만). 없으면 직전 실행의 모델을 잇는다. 계획(plan)에는 보내지 않는다. */
+  modelId?: string;
 }
 
 const REQUEST_FAILED = (what: string): ApiFailure => ({
