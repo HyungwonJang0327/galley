@@ -8,10 +8,17 @@ export interface StepOption {
   label: string;
 }
 
-/** 빈 지시는 보내지 않는다. 길이 상한은 서버(pipeline)가 같은 상수로 거절하지만 왕복 전에 한 번 막는다. */
-export function validateInstruction(text: string, maxLength: number): string | null {
+/**
+ * 빈 지시는 보내지 않는다 — 단, 실패 실행의 재실행은 비워도 된다(`optional`, 원인을 밖에서 고친 뒤 "그냥 다시",
+ * decisions/failed-run-rerun.md). 길이 상한은 서버(pipeline)가 같은 상수로 거절하지만 왕복 전에 한 번 막는다.
+ */
+export function validateInstruction(
+  text: string,
+  maxLength: number,
+  options: { optional?: boolean } = {},
+): string | null {
   const trimmed = text.trim();
-  if (trimmed.length === 0) return '수정 지시를 입력해 주세요.';
+  if (trimmed.length === 0 && options.optional !== true) return '수정 지시를 입력해 주세요.';
   if (trimmed.length > maxLength) return `수정 지시는 ${maxLength}자 이하로 써 주세요.`;
   return null;
 }
