@@ -7,6 +7,7 @@ import {
   STEP_ORIGIN,
   STEP_STATUS,
   applyCommand,
+  firstUnfinishedStep,
   isStepName,
   nextAction,
   planRerun,
@@ -205,6 +206,32 @@ describe('applyCommand — 승인 게이트', () => {
       });
     },
   );
+
+  it('실패한 실행에 수정 지시하면 이 Run은 failed 그대로 + 재실행 계획(decisions/failed-run-rerun.md)', () => {
+    expect(
+      applyCommand(RUN_STATUS.failed, { type: 'revise', startStep: 'zenn', instruction: '' }),
+    ).toEqual({
+      ok: true,
+      status: RUN_STATUS.failed,
+      rerun: {
+        startStep: 'zenn',
+        fresh: ['zenn', 'publishInfo'],
+        carried: ['evidence', 'velog', 'verify', 'linkedin'],
+      },
+    });
+  });
+
+  it('firstUnfinishedStep — 순서상 첫 번째 succeeded가 아닌 단계, 전부 성공이면 undefined', () => {
+    const rows = (statuses: string[]) =>
+      STEP_ORDER.map((name, order) => ({ name, order, status: statuses[order] ?? 'succeeded' }));
+    expect(firstUnfinishedStep(rows(['succeeded', 'succeeded', 'failed', 'pending']))).toBe(
+      'verify',
+    );
+    // order로 정렬한다 — 배열 순서가 섞여 있어도
+    expect(firstUnfinishedStep([...rows(['succeeded', 'failed'])].reverse())).toBe('velog');
+    expect(firstUnfinishedStep(rows([]))).toBeUndefined();
+    expect(firstUnfinishedStep([])).toBeUndefined();
+  });
 
   it('완료된 실행에는 수정 지시도 통하지 않는다', () => {
     expect(
