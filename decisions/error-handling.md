@@ -162,3 +162,4 @@ CLAUDE.md §4의 한 줄("던지지 말고 형태로 반환")을 층별로 푼�
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
 - 2026-09-17 미결 "화면 실패 표시" 갱신: 자리 수 4→5 정정, `InlineAlert` ui 완료(P4-6), 앱 치환은 P7e. 결정 변경 없음.
 - 2026-11-08 TD2/P7e: 미결 "화면 실패 표시" 닫음 — 앱 치환 4곳 완료, `.error` CSS 삭제(여백만 `.alert`). 규칙: **조건부로 나타나는 실패 문구는 `InlineAlert tone="danger"`**(행·카드 안은 `variant="plain"`), **상시 live 영역에 문구를 바꿔 끼우는 곳은 `role="status"` `<p>` 그대로**. 결정 변경 없음.
+- 2026-11-11: TD2 이월 6곳(`RunStart`·`TopicEvidenceEdit`·`DefaultModelSelect`·`TodoCard`·`RecentRunsCard`·`runs/page`)도 InlineAlert로 — 앱에 `role="alert"` 직접 마크업이 없다. 규칙 변경 없음.
