@@ -7,7 +7,7 @@
 - 자리: `createStepRunner`가 라우팅 전에 `redactStepContext(ctx, config)`를 적용한다 — 단계 구현(velog·linkedin·zenn·발행정보·시리즈 렌더러)은 바뀌지 않고, 받은 제목이 이미 걸러진 것이라고 믿는다.
 - 걸러지는 필드: `topic.title`, `series.name`, `series.nameJa`, `series.previous.title`, `series.next.title`. `topic.slug`·id·URL은 그대로(슬러그는 매칭·폴더 키라 바꾸면 산출물 폴더가 어긋난다).
 - 적중하면 **치환**한다(`[COMPANY]` 등). 실패시키지 않는다 — 발행 제목에 토큰이 보이면 사람이 큐 줄을 고치고 재실행한다.
-- `stripTopicHints`는 **닫히지 않은 괄호**(`제목 (spacehome`)도 힌트로 보고 줄 끝까지 뗀다 — 별칭이 힌트 자리에서 새는 구멍(BX3 리뷰 L8).
+- `stripTopicHints`는 **닫히지 않은 괄호**(`제목 (spacehome`)도 힌트로 보고 줄 끝까지 뗀다 — 별칭이 힌트 자리에서 새는 구멍(BX3 리뷰 L8). 매칭 키(`normalizeTopicTitle`)도 같은 함수라 그런 줄의 키가 바뀐다 — 힌트는 원래 키에 없는 것이라 일관되고, 이미 적재된 깨진 줄은 다음 적재가 "사라진 줄"로 사람에게 묻는다(삭제 없음).
 
 ## 이유
 
