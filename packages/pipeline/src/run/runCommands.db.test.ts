@@ -85,6 +85,37 @@ async function finishedRun(status: RunStatus = RUN_STATUS.pendingApproval) {
   });
 }
 
+/** 워커가 `failedAt` 단계에서 실패한 Run — 그 앞은 성공, 뒤는 pending. 종결(finishedAt=NOW). */
+async function failedRun(failedAt: (typeof STEP_ORDER)[number]) {
+  const attempts = await prisma.run.count({ where: { topicId } });
+  const at = STEP_ORDER.indexOf(failedAt);
+  return prisma.run.create({
+    data: {
+      topicId,
+      attempt: attempts + 1,
+      topicSlug: '무한-스크롤',
+      topicTitle: '무한 스크롤',
+      modelId: 'mock:default',
+      status: RUN_STATUS.failed,
+      finishedAt: NOW,
+      steps: {
+        createMany: {
+          data: STEP_ORDER.map((name, order) => ({
+            name,
+            order,
+            status:
+              order < at
+                ? STEP_STATUS.succeeded
+                : order === at
+                  ? STEP_STATUS.failed
+                  : STEP_STATUS.pending,
+          })),
+        },
+      },
+    },
+  });
+}
+
 describe('approveRun', () => {
   test('승인 대기 Run을 done으로 끝낸다', async () => {
     const run = await finishedRun();
@@ -184,6 +215,54 @@ describe('reviseRun', () => {
       ok: false,
       code: 'NOT_PENDING_APPROVAL',
     });
+    expect(await prisma.run.count()).toBe(2);
+  });
+
+  test('실패 Run: 시작 단계 기본값 = 실패한 단계, 이 Run은 failed·finishedAt 그대로, 새 Run은 앞 단계를 이어받는다', async () => {
+    const run = await failedRun('zenn');
+    const later = new Date(NOW.getTime() + 60_000);
+
+    const result = await reviseRun(deps(), { runId: run.id, instruction: '' }, later);
+
+    expect(result).toMatchObject({
+      ok: true,
+      previous: { id: run.id, status: RUN_STATUS.failed, finishedAt: NOW },
+      run: { attempt: 2, status: RUN_STATUS.running },
+      plan: { startStep: 'zenn', carried: ['evidence', 'velog', 'verify', 'linkedin'] },
+    });
+    if (!result.ok) return;
+    const created = await prisma.run.findUniqueOrThrow({
+      where: { id: result.run.id },
+      include: { steps: { orderBy: { order: 'asc' } } },
+    });
+    expect(created.steps.slice(0, 4).every((s) => s.origin === STEP_ORIGIN.carried)).toBe(true);
+    expect(created.steps.slice(4).every((s) => s.status === STEP_STATUS.pending)).toBe(true);
+    // 실패 Run은 손대지 않았다(workerId만 비움)
+    const previous = await prisma.run.findUniqueOrThrow({ where: { id: run.id } });
+    expect(previous).toMatchObject({ status: RUN_STATUS.failed, finishedAt: NOW });
+  });
+
+  test('실패 Run: 더 앞 단계는 고를 수 있고, 실패한 단계보다 뒤는 CARRIED_STEP_NOT_SUCCEEDED(아무것도 안 만든다)', async () => {
+    const run = await failedRun('verify');
+
+    expect(
+      await reviseRun(deps(), { runId: run.id, startStep: 'evidence', instruction: '근거부터' }),
+    ).toMatchObject({ ok: true, plan: { startStep: 'evidence', carried: [] } });
+    expect(await prisma.run.count()).toBe(2);
+
+    const next = await prisma.run.findFirstOrThrow({ where: { attempt: 2 } });
+    await prisma.run.update({
+      where: { id: next.id },
+      data: { status: RUN_STATUS.failed, finishedAt: NOW },
+    });
+    await prisma.runStep.updateMany({
+      where: { runId: next.id },
+      data: { status: STEP_STATUS.failed },
+    });
+    // attempt 2는 evidence부터 실패 — zenn을 고르면 이어받을 성공 결과가 없다
+    expect(await reviseRun(deps(), { runId: next.id, startStep: 'zenn', instruction: '' })).toEqual(
+      { ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' },
+    );
     expect(await prisma.run.count()).toBe(2);
   });
 
@@ -300,6 +379,28 @@ describe('previewRerun', () => {
       velog: first.id,
       verify: second.run.id,
     });
+  });
+
+  test('실패 Run의 미리보기는 실패한 단계가 기본값이고, 뒤 단계 지정은 거절한다(수정 지시와 같은 규칙)', async () => {
+    const run = await failedRun('linkedin');
+
+    expect(await previewRerun(prisma, { runId: run.id, instruction: '' })).toMatchObject({
+      ok: true,
+      preview: { plan: { startStep: 'linkedin', carried: ['evidence', 'velog', 'verify'] } },
+    });
+    // 지시에 근거 키워드가 있어도 실패에서는 자동 규칙을 쓰지 않는다 — 기본값은 실패한 단계
+    expect(
+      await previewRerun(prisma, { runId: run.id, instruction: '커밋을 다시 봐' }),
+    ).toMatchObject({
+      ok: true,
+      preview: { plan: { startStep: 'linkedin' } },
+    });
+    expect(
+      await previewRerun(prisma, { runId: run.id, startStep: 'publishInfo', instruction: '' }),
+    ).toEqual({ ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' });
+    expect(
+      await previewRerun(prisma, { runId: run.id, startStep: 'velog', instruction: '' }),
+    ).toMatchObject({ ok: true, preview: { plan: { startStep: 'velog', carried: ['evidence'] } } });
   });
 
   test('없는 Run·너무 긴 지시는 거절한다', async () => {

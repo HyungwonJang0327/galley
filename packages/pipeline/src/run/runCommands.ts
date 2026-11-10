@@ -9,7 +9,10 @@ import type { RunSummary } from './runQueries.ts';
 import { startRerunIn, type StartRerunFailure } from './startRerun.ts';
 import {
   INSTRUCTION_MAX_LENGTH,
+  RUN_STATUS,
+  STEP_ORDER,
   applyCommand,
+  firstUnfinishedStep,
   isRunStatus,
   planRerun,
   type CommandFailure,
@@ -17,6 +20,28 @@ import {
   type RerunPlan,
   type StepName,
 } from './stateMachine.ts';
+
+/**
+ * 실패한 Run의 시작 단계를 정한다(decisions/failed-run-rerun.md): 지정이 없으면 실패한 단계, 지정이 실패한 단계보다
+ * **뒤**면 거절(이어받을 성공 결과가 없다 — `startRerun`의 가드와 같은 코드). 승인 대기·그 밖은 입력 그대로.
+ */
+function resolveStartStep(
+  status: string,
+  steps: readonly { name: string; status: string; order: number }[],
+  startStep: StepName | undefined,
+):
+  | { ok: true; startStep: StepName | undefined }
+  | { ok: false; code: 'CARRIED_STEP_NOT_SUCCEEDED' } {
+  if (status !== RUN_STATUS.failed) return { ok: true, startStep };
+  const failedStep = firstUnfinishedStep(steps);
+  if (failedStep === undefined) return { ok: true, startStep };
+  if (startStep === undefined) return { ok: true, startStep: failedStep };
+  if (STEP_ORDER.indexOf(startStep) > STEP_ORDER.indexOf(failedStep))
+    return { ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' };
+  return { ok: true, startStep };
+}
+
+const STEP_ROWS_SELECT = { steps: { select: { name: true, status: true, order: true } } } as const;
 
 export const RUN_SUMMARY_SELECT = {
   id: true,
@@ -120,14 +145,16 @@ export async function reviseRun(
     return await deps.prisma.$transaction(async (tx) => {
       const current = await tx.run.findUnique({
         where: { id: input.runId },
-        select: { status: true },
+        select: { status: true, ...STEP_ROWS_SELECT },
       });
       if (!current) return { ok: false, code: 'RUN_NOT_FOUND' };
       if (!isRunStatus(current.status)) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
 
+      const start = resolveStartStep(current.status, current.steps, input.startStep);
+      if (!start.ok) return start;
       const decision = applyCommand(current.status, {
         type: 'revise',
-        startStep: input.startStep,
+        startStep: start.startStep,
         instruction: input.instruction,
       });
       if (!decision.ok) return decision;
@@ -146,9 +173,14 @@ export async function reviseRun(
         return { ok: false, code: created.code as ReviseRunFailure };
       }
 
+      // 승인 대기 → revised는 지금 종결(finishedAt). 실패 Run은 이미 종결돼 있어 상태·finishedAt을 그대로 둔다.
       const { count } = await tx.run.updateMany({
         where: { id: input.runId, status: current.status },
-        data: { status: decision.status, finishedAt: now, workerId: null },
+        data: {
+          status: decision.status,
+          workerId: null,
+          ...(decision.status === RUN_STATUS.revised ? { finishedAt: now } : {}),
+        },
       });
       if (count === 0) throw new Rollback('NOT_PENDING_APPROVAL');
 
@@ -170,7 +202,8 @@ export interface PreviewRerunInput extends RerunInput {
   runId: string;
 }
 
-export type PreviewRerunFailure = 'RUN_NOT_FOUND' | InstructionFailure;
+export type PreviewRerunFailure =
+  'RUN_NOT_FOUND' | InstructionFailure | 'CARRIED_STEP_NOT_SUCCEEDED';
 
 export interface RerunPreview {
   plan: RerunPlan;
@@ -186,7 +219,8 @@ export type PreviewRerunResult =
  * **`reviseRun`과 같은 `planRerun`·`resolveCarriedSources`를 부른다** — 같은 입력이면 실제로
  * 만들어질 행과 정확히 일치해야 한다(테스트가 고정). 부작용이 없다.
  *
- * 상태는 보지 않는다 — 계산일 뿐이고, 실제 거절은 `reviseRun`이 한다.
+ * 상태는 거의 보지 않는다 — 실제 거절은 `reviseRun`이 한다. 예외 하나: 실패 Run은 시작 단계 기본값(실패한 단계)과
+ * "뒤 단계 불가"를 여기서도 같은 규칙으로 적용한다(확인 Dialog가 실제로 만들어질 계획을 보여야 한다).
  */
 export async function previewRerun(
   prisma: PrismaClient | Prisma.TransactionClient,
@@ -194,10 +228,15 @@ export async function previewRerun(
 ): Promise<PreviewRerunResult> {
   if (instructionTooLong(input.instruction)) return { ok: false, code: 'INSTRUCTION_TOO_LONG' };
 
-  const run = await prisma.run.findUnique({ where: { id: input.runId }, select: { id: true } });
+  const run = await prisma.run.findUnique({
+    where: { id: input.runId },
+    select: { id: true, status: true, ...STEP_ROWS_SELECT },
+  });
   if (!run) return { ok: false, code: 'RUN_NOT_FOUND' };
 
-  const plan = planRerun({ startStep: input.startStep, instruction: input.instruction });
+  const start = resolveStartStep(run.status, run.steps, input.startStep);
+  if (!start.ok) return start;
+  const plan = planRerun({ startStep: start.startStep, instruction: input.instruction });
   const sources = await resolveCarriedSources(prisma, run.id, plan.carried);
   return { ok: true, preview: { plan, sources: Object.fromEntries(sources) } };
 }

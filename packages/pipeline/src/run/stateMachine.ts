@@ -168,7 +168,7 @@ export type RunCommand =
   /** 사람이 수정 지시 — 이 Run은 `revised`로 끝나고 **새 Run**이 시작 단계부터 돈다. */
   | ({ type: 'revise' } & RerunInput);
 
-/** 승인 대기가 아닌 실행에 승인·수정 지시가 온 경우(이미 끝났거나 아직 도는 중). */
+/** 승인은 승인 대기가 아닌 실행에, 수정 지시는 승인 대기·실패가 아닌 실행에 온 경우(이미 끝났거나 아직 도는 중). */
 export type CommandFailure = 'NOT_PENDING_APPROVAL';
 
 /**
@@ -179,18 +179,35 @@ export type CommandResult =
   { ok: true; status: RunStatus; rerun?: RerunPlan } | { ok: false; code: CommandFailure };
 
 /**
- * 승인 게이트. 승인·수정 지시는 `승인 대기`에서만 받는다.
+ * 승인 게이트. 승인은 `승인 대기`에서만, 수정 지시는 `승인 대기`·`실패`에서 받는다(decisions/failed-run-rerun.md).
  * `flags`(근거 없음 수 등)는 보지 않는다 — unsupported가 있어도 승인할 수 있다(요구사항 5).
  * 던지지 않고 형태로 돌려준다(CLAUDE.md §4).
  */
 export function applyCommand(status: RunStatus, command: RunCommand): CommandResult {
-  if (status !== RUN_STATUS.pendingApproval) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
-
-  if (command.type === 'approve') return { ok: true, status: RUN_STATUS.done };
-
+  if (command.type === 'approve') {
+    if (status !== RUN_STATUS.pendingApproval) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
+    return { ok: true, status: RUN_STATUS.done };
+  }
+  // 수정 지시는 승인 대기와 **실패**에서 받는다(decisions/failed-run-rerun.md). 실패 Run은 종결 상태 그대로 두고
+  // 새 Run만 만든다 — "다음 시도가 있는가"는 같은 주제의 더 큰 attempt로 본다. 실패의 시작 단계 기본값(실패한 단계)은
+  // 단계 행을 아는 호출자(reviseRun·previewRerun)가 `startStep`으로 넣어 준다 — 여기는 상태 전이만.
+  if (status !== RUN_STATUS.pendingApproval && status !== RUN_STATUS.failed)
+    return { ok: false, code: 'NOT_PENDING_APPROVAL' };
   return {
     ok: true,
-    status: RUN_STATUS.revised,
+    status: status === RUN_STATUS.failed ? RUN_STATUS.failed : RUN_STATUS.revised,
     rerun: planRerun({ startStep: command.startStep, instruction: command.instruction }),
   };
+}
+
+/**
+ * 실패한 실행의 재실행 시작 단계 기본값 — 순서상 첫 번째 `succeeded`가 아닌 단계(실패·pending·running). 전부 성공했으면
+ * undefined(그럴 일은 없지만 호출자가 평소 규칙으로 돌아간다). 그 앞 단계까지만 이어받을 수 있다.
+ */
+export function firstUnfinishedStep(
+  steps: readonly { name: string; status: string; order: number }[],
+): StepName | undefined {
+  const sorted = [...steps].sort((a, b) => a.order - b.order);
+  const found = sorted.find((s) => s.status !== STEP_STATUS.succeeded);
+  return found !== undefined && isStepName(found.name) ? found.name : undefined;
 }
