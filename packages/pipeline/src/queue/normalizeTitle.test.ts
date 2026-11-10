@@ -72,6 +72,15 @@ describe('stripTopicHints', () => {
     expect(stripTopicHints('  Hello  ')).toBe('Hello');
   });
 
+  it('닫히지 않은 괄호는 줄 끝까지 힌트로 본다(별칭이 새지 않게) — 매칭 키도 같은 규칙', () => {
+    expect(stripTopicHints('무한 스크롤 (spacehome')).toBe('무한 스크롤');
+    expect(stripTopicHints('무한 스크롤 （spacehome, react-router')).toBe('무한 스크롤');
+    // 닫힌 괄호 뒤의 여는 괄호도 같은 규칙
+    expect(stripTopicHints('제목 (a) 뒤 (b')).toBe('제목 뒤');
+    // 매칭 키도 힌트를 뺀 본문 — 힌트(닫혔든 아니든)는 키에 들어가지 않는다
+    expect(normalizeTopicTitle('무한 스크롤 (spacehome')).toBe('무한 스크롤');
+  });
+
   it('시리즈 태그와 줄 끝 URL도 뗀다', () => {
     expect(stripTopicHints('[A-1] 스냅과 아티클 (후보의 항목을 1편으로)')).toBe('스냅과 아티클');
     expect(stripTopicHints('[B-6] (기존 글) DB 세션 https://velog.io/@x/y')).toBe('DB 세션');

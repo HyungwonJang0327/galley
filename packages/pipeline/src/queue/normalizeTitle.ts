@@ -4,6 +4,12 @@
 /** 괄호 힌트 묶음(반각·전각) — 매칭 키와 프롬프트용 제목이 같은 범위를 뗀다. */
 const HINT_GROUPS = /[(（][^)）]*[)）]/g;
 /**
+ * 닫히지 않은 괄호 힌트(`제목 (spacehome`) — 여는 괄호부터 줄 끝까지를 힌트로 본다(별칭이 프롬프트로 새지 않게,
+ * decisions/title-redact.md · BX3 리뷰 L8). 매칭 키도 같은 함수에서 나오므로 그런 줄은 키가 `제목`으로 바뀐다 — 힌트는
+ * 원래 키에 안 들어가는 것이라 일관되고, 이미 적재된 깨진 줄은 다음 적재에서 "사라진 줄"로 사람에게 묻는다(지우지 않는다).
+ */
+const UNCLOSED_HINT = /[(（][^)）]*$/;
+/**
  * 편 줄 맨 앞의 시리즈 태그 `[A-1]` — 제목 맨 앞에만 인정(decisions/series.md). 편 번호는 1~99, 앞자리 0은 태그가
  * 아니다(`[A-01]`을 받으면 되쓰기에서 `[A-1]`로 바뀐다).
  */
@@ -28,6 +34,7 @@ export function stripTopicHints(title: string): string {
     .replace(SERIES_TAG, '')
     .replace(TRAILING_URL, '')
     .replace(HINT_GROUPS, ' ')
+    .replace(UNCLOSED_HINT, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
