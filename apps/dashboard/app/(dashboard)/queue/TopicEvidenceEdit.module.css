@@ -54,8 +54,7 @@
 
 .meta,
 .summary,
-.note,
-.error {
+.note {
   margin: 0;
   font-size: var(--ui-text-xs);
 }
@@ -74,11 +73,6 @@
 
 .note {
   color: var(--ui-color-text-muted);
-  font-size: var(--ui-text-sm);
-}
-
-.error {
-  color: var(--ui-color-danger-fg);
   font-size: var(--ui-text-sm);
 }
 

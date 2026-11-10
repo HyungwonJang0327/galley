@@ -210,9 +210,10 @@ function RunStartDialog({
           {busy ? '실행을 요청하는 중…' : null}
         </p>
         {error !== null ? (
-          <p role="alert" className={styles.error}>
+          // Dialog 안이라 상자 없이(plain). danger라 role=alert(decisions/error-handling.md 2026-11-08 규칙).
+          <InlineAlert tone="danger" variant="plain">
             {error}
-          </p>
+          </InlineAlert>
         ) : null}
       </div>
     </Dialog>

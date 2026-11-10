@@ -5,7 +5,16 @@ import { getRunList } from '../../../lib/run-list';
 import { evidenceFlagText, runListRowView } from '../../../lib/run-list-row';
 import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
 import { INSTRUCTION_MAX_LENGTH, RUN_STATUS, firstUnfinishedStep } from '@galley/pipeline';
-import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from 'galley-ui';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  InlineAlert,
+  ListRow,
+  ListRows,
+  PageHeader,
+  SplitPane,
+} from 'galley-ui';
 import {
   canRevise,
   isPendingApproval,
@@ -40,7 +49,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
       <>
         <PageHeader title="실행" />
         <Card>
-          <p role="alert">{result.error.message}</p>
+          <InlineAlert tone="danger">{result.error.message}</InlineAlert>
         </Card>
       </>
     );
@@ -163,9 +172,9 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               />
             </>
           ) : pane.kind === 'failed' ? (
-            <p className={styles.note} role="alert">
+            <InlineAlert tone="danger" variant="plain">
               {pane.message}
-            </p>
+            </InlineAlert>
           ) : (
             <EmptyState message="선택된 실행이 없습니다." />
           )}

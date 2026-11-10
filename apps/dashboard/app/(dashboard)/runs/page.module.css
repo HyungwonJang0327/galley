@@ -54,12 +54,6 @@
   white-space: nowrap;
 }
 
-.note {
-  margin: 0;
-  padding-block: var(--ui-space-5);
-  color: var(--ui-color-text-muted);
-}
-
 /* 목록 행 상태 배지 옆 "근거 없음 n" — 검증 배지와 같은 주황 계열, 한 줄. */
 .flag {
   color: var(--ui-color-warning-fg);

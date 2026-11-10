@@ -3,7 +3,7 @@
 // 이유)·제거, 인덱스 검색·추가. 데이터는 전부 서버 액션(props) — 클라이언트는 pipeline을 모르고 표시 문자열만 받는다.
 // 페이지가 Provider 하나를 두고 행 메뉴는 useTopicEvidenceEdit()로 주제를 넘겨 연다(RunStartProvider와 같은 구조).
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Badge, Button, Dialog, FormField, Input } from 'galley-ui';
+import { Badge, Button, Dialog, FormField, InlineAlert, Input } from 'galley-ui';
 import type {
   TopicEvidenceEditResult,
   TopicEvidenceLinkView,
@@ -295,9 +295,9 @@ export function TopicEvidenceDialog({
           {busy}
         </p>
         {error !== null ? (
-          <p role="alert" className={styles.error}>
+          <InlineAlert tone="danger" variant="plain">
             {error}
-          </p>
+          </InlineAlert>
         ) : null}
       </div>
     </Dialog>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, Button, Card, EmptyState, ListRow, ListRows } from 'galley-ui';
+import { Badge, Button, Card, EmptyState, InlineAlert, ListRow, ListRows } from 'galley-ui';
 import type { TodoRunsView } from '../../../lib/home-runs';
 import styles from './HomeRunCards.module.css';
 
@@ -18,7 +18,9 @@ export function TodoCard({
     <Card>
       <h2 className={styles.title}>지금 할 일</h2>
       {error !== undefined ? (
-        <p role="alert">{error}</p>
+        <InlineAlert tone="danger" variant="plain">
+          {error}
+        </InlineAlert>
       ) : view === undefined || view.rows.length === 0 ? (
         <EmptyState message="검수할 초안이 없습니다." />
       ) : (
