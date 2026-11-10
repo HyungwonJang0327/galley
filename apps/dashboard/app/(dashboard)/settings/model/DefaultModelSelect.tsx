@@ -2,7 +2,7 @@
 // 기본 모델 Select — 고르자마자 저장한다(저장 버튼 없음). 선택지·현재 값은 서버가 props로 넘기고,
 // change는 Server Action(테스트에선 가짜). 클라이언트는 pipeline을 모른다(decisions/server-only-boundary.md).
 import { useState, useTransition } from 'react';
-import { FormField, Select } from 'galley-ui';
+import { FormField, InlineAlert, Select } from 'galley-ui';
 import type { DefaultModelChangeResult } from '../../../../lib/default-model-setting';
 import type { RunModelOption } from '../../../../lib/run-model-options';
 import styles from './DefaultModelSelect.module.css';
@@ -63,9 +63,9 @@ export function DefaultModelSelect({
         {pending ? '저장하는 중…' : saved ? '저장했습니다.' : null}
       </p>
       {error !== null ? (
-        <p role="alert" className={styles.error}>
+        <InlineAlert tone="danger" variant="plain">
           {error}
-        </p>
+        </InlineAlert>
       ) : null}
     </div>
   );

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Badge, Card, EmptyState, ListRow, ListRows } from 'galley-ui';
+import { Badge, Card, EmptyState, InlineAlert, ListRow, ListRows } from 'galley-ui';
 import type { RecentRunRow } from '../../../lib/home-runs';
 import styles from './HomeRunCards.module.css';
 
@@ -23,7 +23,9 @@ export function RecentRunsCard({
         </Link>
       </div>
       {error !== undefined ? (
-        <p role="alert">{error}</p>
+        <InlineAlert tone="danger" variant="plain">
+          {error}
+        </InlineAlert>
       ) : rows === undefined || rows.length === 0 ? (
         <EmptyState message="아직 실행한 기록이 없습니다." />
       ) : (
