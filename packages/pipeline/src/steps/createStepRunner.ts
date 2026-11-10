@@ -15,6 +15,7 @@ import type { WritingLimits } from './limits.ts';
 import { createLinkedinStepRunner } from './linkedinStep.ts';
 import { createPublishInfoStepRunner } from './publishInfoStep.ts';
 import type { StepContext, StepResult, StepRunner } from './StepRunner.ts';
+import { redactStepContext } from './redactContext.ts';
 import { createVelogStepRunner } from './velogStep.ts';
 import { createVerifyStepRunner } from './verifyStep.ts';
 import { createZennStepRunner } from './zennStep.ts';
@@ -61,8 +62,23 @@ export function routeStepRunner(runners: Record<StepName, StepRunner>): StepRunn
   };
 }
 
-/** 조립 루트용 — deps 하나로 6단계 러너를 만들어 라우팅한다. */
+/**
+ * 조립 루트용 — deps 하나로 6단계 러너를 만들어 라우팅한다. 라우팅 전에 **식별 정보 필터를 제목 경로에 한 번** 건다
+ * (`redactStepContext`, decisions/title-redact.md) — 단계 구현은 걸러진 제목만 본다. discard는 제목을 쓰지 않아 그대로.
+ */
 export function createStepRunner(deps: StepRunnerDeps): StepRunner {
+  const routed = createRoutedStepRunner(deps);
+  return {
+    async run(ctx: StepContext): Promise<StepResult> {
+      return routed.run(redactStepContext(ctx, deps.redactConfig).ctx);
+    },
+    async discard(ctx) {
+      await routed.discard?.(ctx);
+    },
+  };
+}
+
+function createRoutedStepRunner(deps: StepRunnerDeps): StepRunner {
   const writing = {
     artifacts: deps.artifactStore,
     promptsDir: deps.promptsDir,
