@@ -132,4 +132,53 @@ describe('createStepRunner', () => {
     });
     expect(custom).toHaveBeenCalledTimes(1);
   });
+
+  test('라우팅 전에 제목·시리즈명·편 제목에 식별 정보 필터를 건다(TD8) — 단계는 걸러진 컨텍스트만 본다', async () => {
+    const seen: StepContext[] = [];
+    const capture = createStepRunner({
+      prisma: {} as unknown as PrismaClient,
+      evidenceStore: new LocalFsEvidenceStore(join(dir, 'data')),
+      artifactStore: new LocalFsArtifactStore(join(dir, 'data')),
+      promptsDir: join(dir, 'prompts'),
+      adapters: { get: () => undefined },
+      redactConfig: {
+        version: 1,
+        rules: [
+          { id: 'company', kind: 'literal', values: ['Example Corp'], replacement: '[COMPANY]' },
+        ],
+      },
+      thumbnails: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
+      clock: { now: () => new Date() },
+      publishInfo: {
+        run: async (c) => {
+          seen.push(c);
+          return { artifacts: {} };
+        },
+      },
+    });
+    await capture.run(
+      ctx('publishInfo', {
+        topic: { id: 't1', title: 'Example Corp 전환기 (spacehome)', slug: 'example-corp' },
+        series: {
+          name: 'Example Corp 시리즈',
+          episodeNo: 2,
+          total: 2,
+          previous: { title: 'Example Corp 1편' },
+          alreadyPublished: false,
+        },
+      }),
+    );
+    expect(seen[0]?.topic).toEqual({
+      id: 't1',
+      title: '[COMPANY] 전환기 (spacehome)', // 괄호 힌트는 단계가 stripTopicHints로 뗀다 — 여기는 필터만
+      slug: 'example-corp',
+    });
+    expect(seen[0]?.series).toMatchObject({
+      name: '[COMPANY] 시리즈',
+      previous: { title: '[COMPANY] 1편' },
+    });
+  });
 });

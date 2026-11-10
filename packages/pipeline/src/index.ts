@@ -256,6 +256,8 @@ export type { EvidenceStore, EvidenceReadResult } from './evidence/EvidenceStore
 export { readPointerSnippet } from './evidence/readSnippet.ts';
 export type { SnippetRead, ReadSnippetResult } from './evidence/readSnippet.ts';
 export { createEvidenceStepRunner, EVIDENCE_ARTIFACT } from './steps/evidenceStep.ts';
+export { redactStepContext } from './steps/redactContext.ts';
+export type { RedactedContext } from './steps/redactContext.ts';
 export type { EvidenceStepDeps } from './steps/evidenceStep.ts';
 export { LocalFsArtifactStore } from './artifacts/ArtifactStore.ts';
 export { LocalFsReplacedStore } from './artifacts/ReplacedStore.ts';
