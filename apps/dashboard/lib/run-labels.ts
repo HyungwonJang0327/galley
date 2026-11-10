@@ -58,9 +58,14 @@ export function isRunInProgress(status: string): boolean {
   return status === RUN_STATUS.running;
 }
 
-/** 사람이 손댈 차례인가 — ActionBar(수정 지시·승인)는 이 값이 true일 때만 산다. 실패 실행의 재실행 진입은 별도 항목. */
+/** 승인할 수 있는가 — 승인 대기만. */
 export function isPendingApproval(status: string): boolean {
   return status === RUN_STATUS.pendingApproval;
+}
+
+/** 수정 지시(재실행)를 내릴 수 있는가 — 승인 대기와 실패(decisions/failed-run-rerun.md). ActionBar의 재실행 쪽 활성 조건. */
+export function canRevise(status: string): boolean {
+  return status === RUN_STATUS.pendingApproval || status === RUN_STATUS.failed;
 }
 
 // ── 단계 ─────────────────────────────────────────────────────────────────────

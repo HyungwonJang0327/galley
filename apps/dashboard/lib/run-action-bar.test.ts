@@ -12,6 +12,13 @@ describe('validateInstruction', () => {
     expect(validateInstruction('   ', 2000)).toBe('수정 지시를 입력해 주세요.');
   });
 
+  it('optional이면 빈 지시도 통과한다(실패 실행의 재실행) — 상한은 그대로', () => {
+    expect(validateInstruction('   ', 2000, { optional: true })).toBeNull();
+    expect(validateInstruction('가'.repeat(11), 10, { optional: true })).toBe(
+      '수정 지시는 10자 이하로 써 주세요.',
+    );
+  });
+
   it('상한을 넘으면 길이 안내', () => {
     expect(validateInstruction('가'.repeat(11), 10)).toBe('수정 지시는 10자 이하로 써 주세요.');
   });

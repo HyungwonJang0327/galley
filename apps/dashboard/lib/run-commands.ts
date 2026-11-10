@@ -162,7 +162,7 @@ export type RunReviseResult = { ok: true; data: RevisedRun } | Failure<RunRevise
 
 const REVISE_MESSAGE: Record<ReviseRunFailure, string> = {
   RUN_NOT_FOUND: '실행을 찾을 수 없습니다.',
-  NOT_PENDING_APPROVAL: '승인 대기 상태의 실행에만 수정 지시를 내릴 수 있습니다.',
+  NOT_PENDING_APPROVAL: '승인 대기 또는 실패 상태의 실행에만 수정 지시를 내릴 수 있습니다.',
   INSTRUCTION_TOO_LONG: '수정 지시가 너무 깁니다.',
   NOT_LATEST_ATTEMPT: '이 주제의 최신 시도에서만 다시 실행할 수 있습니다.',
   TOPIC_ALREADY_DONE:
@@ -242,6 +242,8 @@ export type RunRerunPlanResult = { ok: true; data: RerunPlanView } | Failure<Run
 const PLAN_MESSAGE: Record<PreviewRerunFailure, string> = {
   RUN_NOT_FOUND: '실행을 찾을 수 없습니다.',
   INSTRUCTION_TOO_LONG: '수정 지시가 너무 깁니다.',
+  CARRIED_STEP_NOT_SUCCEEDED:
+    '실패한 단계보다 뒤에서는 시작할 수 없습니다(이어받을 성공 결과가 없습니다). 실패한 단계나 그 앞을 고르세요.',
 };
 
 function toPlanView(preview: RerunPreview): RerunPlanView {

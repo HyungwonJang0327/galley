@@ -24,8 +24,15 @@ import styles from './RunActionBar.module.css';
 
 export interface RunActionBarProps {
   runId: string;
-  /** 승인 대기일 때만 true. 아니면 컨트롤 전부 비활성. */
+  /** 재실행(수정 지시)을 내릴 수 있는가 — 승인 대기·실패(서버 canRevise). 아니면 컨트롤 전부 비활성. */
   enabled: boolean;
+  /** 승인할 수 있는가 — 승인 대기만. 실패에서는 재실행만 산다(decisions/failed-run-rerun.md). */
+  approveEnabled: boolean;
+  /**
+   * 실패한 실행이면 실패한 단계 이름(서버 firstUnfinishedStep). 있으면 시작 단계 기본값이 이것이고 그 뒤 단계는 고를 수
+   * 없으며("단계 자동" 없음), 수정 지시는 비워도 된다. 승인 대기면 undefined.
+   */
+  failedStep?: string;
   /** 파이프라인 순서의 (이름, 라벨). Select 항목과 확인 Dialog 문구에 쓴다. */
   steps: readonly StepOption[];
   maxLength: number;
@@ -40,6 +47,8 @@ const AUTO_STEP = '__auto__';
 export function RunActionBar({
   runId,
   enabled,
+  approveEnabled,
+  failedStep,
   steps,
   maxLength,
   modelOptions,
@@ -48,7 +57,8 @@ export function RunActionBar({
   const router = useRouter();
   const { confirm, element: confirmElement } = useConfirm();
   const [instruction, setInstruction] = useState('');
-  const [startStep, setStartStep] = useState<string>(AUTO_STEP);
+  const failedMode = failedStep !== undefined;
+  const [startStep, setStartStep] = useState<string>(failedStep ?? AUTO_STEP);
   const [modelId, setModelId] = useState<string | null>(runModelId ?? null);
   /** 오류·안내 한 줄. */
   const [message, setMessage] = useState<string | null>(null);
@@ -119,18 +129,28 @@ export function RunActionBar({
         ];
   const selectedModel = modelItems.find((option) => option.value === modelId);
 
-  const stepItems = [
-    {
-      value: AUTO_STEP,
-      label: '단계 자동',
-      description: '지시에 근거·커밋·코드가 있으면 근거 수집부터',
-    },
-    ...steps.map((s) => ({ value: s.name, label: s.label })),
-  ];
+  // 실패 실행: "단계 자동" 없이 실패한 단계가 기본값, 그 뒤는 이어받을 성공 결과가 없어 비활성(서버도 같은 규칙으로 거절).
+  const failedIndex = failedMode ? steps.findIndex((s) => s.name === failedStep) : -1;
+  const stepItems = failedMode
+    ? steps.map((s, index) => ({
+        value: s.name,
+        label: s.label,
+        ...(failedIndex !== -1 && index > failedIndex
+          ? { disabled: true, disabledReason: '실패한 단계 뒤는 이어받을 결과가 없습니다.' }
+          : {}),
+      }))
+    : [
+        {
+          value: AUTO_STEP,
+          label: '단계 자동',
+          description: '지시에 근거·커밋·코드가 있으면 근거 수집부터',
+        },
+        ...steps.map((s) => ({ value: s.name, label: s.label })),
+      ];
 
   // 재실행: 먼저 계획(다시 도는 단계)을 받아 확인 Dialog로 보여주고, 확인해야 실제로 보낸다.
   const onRerunClick = async () => {
-    const invalid = validateInstruction(instruction, maxLength);
+    const invalid = validateInstruction(instruction, maxLength, { optional: failedMode });
     if (invalid !== null) {
       setMessage(invalid);
       return;
@@ -251,7 +271,10 @@ export function RunActionBar({
             <Button
               ref={approveButton}
               size="sm"
-              disabled={disabled}
+              disabled={disabled || !approveEnabled}
+              title={
+                enabled && !approveEnabled ? '승인 대기 상태에서만 승인할 수 있습니다.' : undefined
+              }
               onClick={() => void onApproveClick()}
             >
               승인
@@ -287,9 +310,11 @@ export function RunActionBar({
               className={styles.instruction}
               aria-label="수정 지시 입력"
               placeholder={
-                enabled
-                  ? '수정 지시를 입력하세요.'
-                  : '승인 대기 상태에서만 지시·승인할 수 있습니다.'
+                !enabled
+                  ? '승인 대기(지시·승인) 또는 실패(재실행) 상태에서만 쓸 수 있습니다.'
+                  : failedMode
+                    ? '수정 지시(선택). 비우면 실패한 단계부터 그대로 다시 돌립니다.'
+                    : '수정 지시를 입력하세요.'
               }
               rows={2}
               maxLength={maxLength}

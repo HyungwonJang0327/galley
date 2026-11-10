@@ -4,9 +4,10 @@ import { parseRunView, runsHref } from '../../../lib/run-view';
 import { getRunList } from '../../../lib/run-list';
 import { evidenceFlagText, runListRowView } from '../../../lib/run-list-row';
 import { pickActiveId, resolveRunPane } from '../../../lib/run-page';
-import { INSTRUCTION_MAX_LENGTH } from '@galley/pipeline';
+import { INSTRUCTION_MAX_LENGTH, RUN_STATUS, firstUnfinishedStep } from '@galley/pipeline';
 import { Badge, Card, EmptyState, ListRow, ListRows, PageHeader, SplitPane } from 'galley-ui';
 import {
+  canRevise,
   isPendingApproval,
   isRunInProgress,
   runStatusBadge,
@@ -132,11 +133,17 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             )
           }
           footer={
-            // 실행이 바뀌면 입력·Dialog 상태를 버린다. 판정(승인 대기인가)은 서버가 한다.
+            // 실행이 바뀌면 입력·Dialog 상태를 버린다. 판정(재실행·승인 가능한가, 실패한 단계)은 서버가 한다.
             <RunActionBar
               key={selected?.id ?? 'none'}
               runId={selected?.id ?? ''}
-              enabled={selected !== undefined && isPendingApproval(selected.status)}
+              enabled={selected !== undefined && canRevise(selected.status)}
+              approveEnabled={selected !== undefined && isPendingApproval(selected.status)}
+              failedStep={
+                selected !== undefined && selected.status === RUN_STATUS.failed
+                  ? firstUnfinishedStep(selected.steps)
+                  : undefined
+              }
               steps={STEP_OPTIONS}
               maxLength={INSTRUCTION_MAX_LENGTH}
               modelOptions={modelChoices.options}

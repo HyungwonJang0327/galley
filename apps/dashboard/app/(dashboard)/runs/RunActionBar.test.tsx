@@ -36,11 +36,17 @@ const model = (value: string, disabled = false) => ({
 });
 const MODELS = [model('anthropic:a'), model('anthropic:b'), model('openai:c', true)];
 
-function renderBar(enabled = true, runModelId: string | undefined = 'anthropic:a') {
+function renderBar(
+  enabled = true,
+  runModelId: string | undefined = 'anthropic:a',
+  extra: { approveEnabled?: boolean; failedStep?: string } = {},
+) {
   return render(
     <RunActionBar
       runId="r1"
       enabled={enabled}
+      approveEnabled={extra.approveEnabled ?? enabled}
+      failedStep={extra.failedStep}
       steps={STEPS}
       maxLength={2000}
       modelOptions={MODELS}
@@ -84,7 +90,9 @@ describe('RunActionBar', () => {
 
     const textarea = screen.getByRole('textbox', { name: '수정 지시 입력' }) as HTMLTextAreaElement;
     expect(textarea.disabled).toBe(true);
-    expect(textarea.getAttribute('placeholder')).toContain('승인 대기 상태에서만');
+    expect(textarea.getAttribute('placeholder')).toContain(
+      '승인 대기(지시·승인) 또는 실패(재실행)',
+    );
     expect((screen.getByRole('button', { name: '재실행' }) as HTMLButtonElement).disabled).toBe(
       true,
     );
@@ -172,6 +180,50 @@ describe('RunActionBar', () => {
     fireEvent.click(screen.getByRole('button', { name: '재실행' }));
     await screen.findByRole('dialog');
     expect(planRerun).toHaveBeenCalledWith('r1', { instruction: '다시' });
+  });
+
+  it('실패 실행: 시작 단계 기본값 = 실패한 단계, 그 뒤는 비활성, "단계 자동" 없음, 승인은 비활성 + 사유', async () => {
+    renderBar(true, 'anthropic:a', { approveEnabled: false, failedStep: 'velog' });
+
+    expect(screen.getByRole('combobox', { name: '시작 단계' }).textContent).toContain(
+      '벨로그 본문',
+    );
+    const approve = screen.getByRole('button', { name: '승인' }) as HTMLButtonElement;
+    expect(approve.disabled).toBe(true);
+    expect(approve.title).toBe('승인 대기 상태에서만 승인할 수 있습니다.');
+    expect(isDisabled('재실행')).toBe(false);
+    expect(
+      (screen.getByRole('textbox', { name: '수정 지시 입력' }) as HTMLTextAreaElement).getAttribute(
+        'placeholder',
+      ),
+    ).toContain('비우면');
+
+    press(screen.getByRole('combobox', { name: '시작 단계' }));
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(3));
+    expect(screen.queryByRole('option', { name: /단계 자동/ })).toBeNull();
+    expect(screen.getByRole('option', { name: /근거 검증/ }).getAttribute('aria-disabled')).toBe(
+      'true',
+    );
+    expect(
+      screen.getByRole('option', { name: /근거 수집/ }).getAttribute('aria-disabled'),
+    ).toBeNull();
+  });
+
+  it('실패 실행: 빈 지시로도 재실행 — 계획·revise에 실패한 단계를 startStep으로 싣는다', async () => {
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    reviseRun.mockResolvedValue({
+      ok: true,
+      data: { run: { id: 'r2' }, previous: { id: 'r1' }, plan: PLAN },
+    });
+    renderBar(true, 'anthropic:a', { approveEnabled: false, failedStep: 'velog' });
+
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await screen.findByRole('dialog', { name: '다시 실행할까요?' });
+    expect(planRerun).toHaveBeenCalledWith('r1', { instruction: '', startStep: 'velog' });
+    await clickDialogButton('재실행');
+    await waitFor(() =>
+      expect(reviseRun).toHaveBeenCalledWith('r1', { instruction: '', startStep: 'velog' }),
+    );
   });
 
   it('빈 지시로 재실행을 누르면 API를 부르지 않고 안내만', () => {
