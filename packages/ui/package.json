@@ -57,20 +57,27 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build -o storybook-static"
   },
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "10.6.7",
+    "@storybook/addon-docs": "10.6.7",
+    "@storybook/react-vite": "10.6.7",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "6.3.0",
     "happy-dom": "^20.14.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "storybook": "10.6.7",
     "vite": "^8.2.2",
     "vite-plugin-dts": "^5.1.0"
   },

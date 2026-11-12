@@ -11,3 +11,4 @@ next-env.d.ts
 
 # 큐 픽스처는 파일 형식 그대로가 테스트 대상(줄 끝 탭·빈 줄 — 바이트 동일 라운드트립)
 packages/pipeline/src/queue/__fixtures__/*.md
+storybook-static
