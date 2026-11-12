@@ -1,0 +1,43 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Introduction" />
+
+# galley-ui
+
+A small React design system for desktop admin tools: design tokens (light + dark), headless wrapper
+primitives on top of [Base UI](https://base-ui.com), layout patterns, and promise-based dialog hooks.
+Styling is CSS Modules plus CSS custom properties only — no runtime CSS-in-JS, no Tailwind.
+
+- npm: [galley-ui](https://www.npmjs.com/package/galley-ui)
+- Source: [HyungwonJang0327/galley · packages/ui](https://github.com/HyungwonJang0327/galley/tree/main/packages/ui)
+- README in [English](https://github.com/HyungwonJang0327/galley/blob/main/packages/ui/README.md) ·
+  [한국어](https://github.com/HyungwonJang0327/galley/blob/main/packages/ui/README.ko.md) ·
+  [日本語](https://github.com/HyungwonJang0327/galley/blob/main/packages/ui/README.ja.md)
+
+## Install
+
+```bash
+pnpm add galley-ui @base-ui/react lucide-react
+```
+
+```tsx
+import 'galley-ui/styles.css';
+import { Button, Dialog, useConfirm } from 'galley-ui';
+```
+
+## Principles
+
+- **Controlled only.** Inputs take `value` / `checked` and `onValueChange` / `onCheckedChange`; the
+  component never owns form state.
+- **Tokens, not literals.** Colors, spacing, type, radii, shadows, motion and dimensions are `--ui-*`
+  custom properties. Override them on `:root` to retheme; switch dark mode with
+  `<html data-theme="dark">` — try the **Theme** toolbar above.
+- **Thin wrappers.** Primitives keep Base UI's prop names and document the behavior you might trip on.
+- **Domain-agnostic.** No business words in props, defaults or docs.
+- **Accessible by default.** Live regions, focus handling and names are part of each component; the
+  **Accessibility** panel below each story runs axe.
+
+## How to read these pages
+
+Each component has a **Docs** page (props table + every story) and one story per state. Stories use
+sample text only — the shape of the component is what matters.
