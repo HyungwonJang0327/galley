@@ -2,6 +2,8 @@
 
 [English](https://github.com/HyungwonJang0327/galley/blob/main/packages/ui/README.md) · [한국어](https://github.com/HyungwonJang0327/galley/blob/main/packages/ui/README.ko.md) · **日本語**
 
+**[Storybook →](https://hyungwonjang0327.github.io/galley/)** — すべてのコンポーネントを状態ごとに、ライト・ダーク、props 表とアクセシビリティパネル付きで。
+
 デスクトップ向け管理ツールのための小さな React デザインシステムです。[Base UI](https://base-ui.com) の上に、デザイントークン（ライト + ダーク）、ヘッドレスをラップしたプリミティブ、レイアウトパターン、Promise で待てるダイアログフックを載せています。スタイルは CSS Modules と CSS カスタムプロパティのみ。ランタイム CSS-in-JS も Tailwind もありません。
 
 ドメインを知りません。コンポーネントは `tone`、`variant`、`status` でだけ語り、あなたの業務用語は使いません。
