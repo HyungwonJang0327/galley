@@ -1,4 +1,4 @@
-// Storybook 스토리(CSF3). Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
+// Storybook 스토리(CSF3) — `pnpm --filter galley-ui storybook`. 샘플 문구는 도메인 무지(decisions/docs-site.md).
 import { SidebarItem } from './SidebarItem';
 
 const meta = {
@@ -7,7 +7,7 @@ const meta = {
 };
 export default meta;
 
-export const Default = { args: { label: '큐' } };
-export const Active = { args: { label: '큐', isActive: true } };
-export const WithBadge = { args: { label: '큐', badge: '3' } };
-export const Collapsed = { args: { label: '큐', collapsed: true } };
+export const Default = { args: { label: '문서' } };
+export const Active = { args: { label: '문서', isActive: true } };
+export const WithBadge = { args: { label: '문서', badge: '3' } };
+export const Collapsed = { args: { label: '문서', collapsed: true } };
