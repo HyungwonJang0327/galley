@@ -6,6 +6,18 @@
   margin-bottom: var(--ui-space-5);
 }
 
+.lead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+}
+
 .title {
   margin: 0;
   font-family: var(--ui-font-sans);
