@@ -1,0 +1,49 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ui-avatar-size-md);
+  height: var(--ui-avatar-size-md);
+  border-radius: var(--ui-radius-pill);
+  overflow: hidden;
+  background-color: var(--ui-color-neutral-bg);
+  color: var(--ui-color-neutral-fg);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  font-weight: var(--ui-weight-medium);
+  line-height: 1;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.sm {
+  width: var(--ui-avatar-size-sm);
+  height: var(--ui-avatar-size-sm);
+  font-size: var(--ui-text-xs);
+}
+
+.md {
+  width: var(--ui-avatar-size-md);
+  height: var(--ui-avatar-size-md);
+  font-size: var(--ui-text-sm);
+}
+
+.lg {
+  width: var(--ui-avatar-size-lg);
+  height: var(--ui-avatar-size-lg);
+  font-size: var(--ui-text-body);
+}
+
+/* 이미지는 원을 가득 채우고 잘린다 — 비율이 달라도 찌그러지지 않게. */
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.initials {
+  /* 두 글자 머리글자가 원 안에 들어가게 자간을 살짝 줄인다. */
+  letter-spacing: -0.02em;
+}

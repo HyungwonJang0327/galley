@@ -145,6 +145,8 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 **Skeleton** — `radius` is `sm | md | lg | pill`. `width` / `height` take a number (px) or any CSS length.
 
+**Avatar** — `name` is the accessible name (`role="img"` on the root) and the source of the initials: two Latin words → two uppercase initials, anything else → first grapheme. `src` renders a decorative `<img alt="">` and falls back to initials on load error. `size` is `sm | md | lg` (`--ui-avatar-size-*`). One neutral color; per-name coloring is the app's call. `initialsOf(name)` is exported.
+
 **useAwaitDialog** — Opening from a _child's_ mount effect under React StrictMode (development) resolves the first promise with the cancel value, because StrictMode simulates an unmount before the parent's effect runs. Open from the owning component's effect or an event handler.
 
 ## Accessibility
