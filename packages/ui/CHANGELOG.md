@@ -1,5 +1,13 @@
 # galley-ui
 
+## 0.2.0
+
+### Minor Changes
+
+- 5fe8d11: Add `Avatar` (`name`, `src`, `size: sm | md | lg`) with initials fallback and `--ui-avatar-size-*` tokens. Exports `initialsOf(name)`.
+- 3e95964: Add `Breadcrumb` (`items` with optional `render` link elements, last item `aria-current="page"`) and an `eyebrow` slot on `PageHeader` for it.
+- c6780dd: Add `--ui-font-mono` token (monospace stack: `ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace`) for code, paths and hashes. Apps no longer need to hardcode a monospace stack.
+
 ## 0.1.0
 
 ### Minor Changes
