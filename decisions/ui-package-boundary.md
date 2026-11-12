@@ -40,7 +40,7 @@ packages/ui/
 - `pnpm --filter galley-ui build && test`가 단독 통과.
 - CI에서 별도 잡으로 ui build.
 - 독립 시나리오: `packages/ui`를 새 리포로 옮겨도 build 통과하면 경계 유지. (`/ship` 체크리스트 항목)
-- Storybook: Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
+- Storybook: ~~Phase 1은 스토리 파일만, 실행 환경은 Phase 2~~ → 2026-11-12 구현(`packages/ui/.storybook`, decisions/docs-site.md). 스토리 샘플도 도메인 단어 없이(공개 쇼케이스).
 
 ## 기각된 대안
 

@@ -40,7 +40,7 @@
 - 실행 이력 SQLite 저장·조회
 - 산출물 쓰기: `posts/<슬러그>/` 5개 파일 + 썸네일(설치된 Chrome headless, `ThumbnailRenderer` 뒤 — B3b 결정 변경) + `evidence.json`(포인터)·`verification.json` = 7개 **루트에 최신본**(Run별 이력은 DATA_DIR). **승인 시** 복사·큐 완료 이동(B3a, decisions/run-execution-model.md §1). 파일 이름은 blog 폴더 기존 관례(`<제목>_링크드인.md` 등). 발행정보에 `## 근거` 섹션(EvidenceBundle에서 생성), 소개·태그는 모델 1회
 - 화면: TopBar/Sidebar 셸(사용 흐름 순 IA — decisions/navigation.md), 큐(패턴 A·탭 4개), 실행 상세(패턴 B)
-- 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스(Storybook)는 Phase 2. (decisions/component-gallery.md)
+- 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스는 Storybook → GitHub Pages(P7c 결정 2026-11-12 — decisions/docs-site.md). (decisions/component-gallery.md)
 - **galley-ui npm 배포**(Phase P, 2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선; **0.1.0 2026-09-21 · 0.2.0 2026-11-12** — `--ui-font-mono`·Avatar·Breadcrumb; publish는 태그 push → Actions(npm Trusted Publishing, P7b 결정 2026-11-12 — decisions/ci-publish.md)): 라이트+다크 토큰 · 폼·피드백 최소 구색 8개 + `useAwaitDialog`/`useConfirm`/`useAlert`(decisions/confirm-dialog-usage.md) · README · 배포 메타데이터. 배포명 `galley-ui`(unscoped, decisions/package-name.md). 절차는 todo/mvp-todo.md Phase P. [x] **배포됨(2026-09-21, galley-ui@0.1.0 — https://www.npmjs.com/package/galley-ui, 90파일 141.7 kB)**
 
 ### 제외
@@ -59,7 +59,7 @@
 - 근거 검증 unsupported 본문 밑줄, discovered 후보 모델 재순위 (evidence-collection)
 - **단계별 모델 오버라이드**(스키마는 Phase 1부터 `RunStep.modelId`로 대비 — decisions/model-selection.md)
 - 모델 단가·레지스트리 외부화(설정 파일 / provider 가격 API)
-- Storybook 실행 환경
+- ~~Storybook 실행 환경~~ → 2026-11-12 Storybook 10 + GitHub Pages(decisions/docs-site.md)
 - 스케줄을 DB 연동으로 이전할지 판단
 
 ## 라우트 (decisions/navigation.md)
