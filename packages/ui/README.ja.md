@@ -147,6 +147,8 @@ confirm({ title, confirmLabel: 'OK', cancelLabel: 'キャンセル', closeLabel:
 
 **Skeleton** — `radius` は `sm | md | lg | pill`。`width` / `height` は数値（px）か任意の CSS 長さ。
 
+**Breadcrumb** — `items` は上位 → 現在ページの順で、最後は `render` があっても `aria-current="page"` のテキストとして描きます。リンク要素は `render` で渡し（`Button` と同じ規則）、`render` のない項目はテキストのみ（ページのないグループ）。`aria-label` を渡してください（既定 `Breadcrumb`）。`PageHeader` の `eyebrow` スロットに置きます。
+
 **Avatar** — `name` がアクセシブルネーム（ルートに `role="img"`）兼イニシャルの元です。ラテン文字 2 語なら大文字イニシャル 2 文字、それ以外は最初の 1 文字。`src` は装飾の `<img alt="">` として描き、読み込み失敗時はイニシャルに戻ります。`size` は `sm | md | lg`（`--ui-avatar-size-*`）。色は neutral 1 色 — 名前ごとの色付けはアプリ側。`initialsOf(name)` を export します。
 
 **useAwaitDialog** — React StrictMode（開発時）で*子*のマウント effect から開くと、最初の Promise が cancel 値で終わります。StrictMode が親の effect より前にアンマウントをシミュレートするためです。所有するコンポーネントの effect かイベントハンドラから開いてください。

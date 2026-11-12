@@ -1,0 +1,60 @@
+.nav {
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+
+.separator {
+  flex-shrink: 0;
+  color: var(--ui-color-text-muted);
+}
+
+.text,
+.link,
+.current {
+  white-space: nowrap;
+}
+
+.text {
+  color: var(--ui-color-text-muted);
+}
+
+.link {
+  color: var(--ui-color-text-muted);
+  text-decoration: none;
+  border-radius: var(--ui-radius-sm);
+  transition: color var(--ui-duration-fast) var(--ui-ease);
+}
+
+.link:hover {
+  color: var(--ui-color-text);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+/* 현재 페이지 — 링크가 아니라 글자. 본문 색·중간 굵기로 구분. */
+.current {
+  color: var(--ui-color-text);
+  font-weight: var(--ui-weight-medium);
+}
