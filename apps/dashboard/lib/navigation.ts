@@ -83,3 +83,23 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
   if (item.external) return false;
   return pathname === item.href;
 }
+
+export interface BreadcrumbCrumb {
+  label: string;
+  /** 링크할 경로. 묶음(그룹) 이름처럼 페이지가 없으면 없음. */
+  href?: string;
+}
+
+/**
+ * 경로 → 경로 표시(Breadcrumb) 항목. 메뉴 정의와 같은 소스라 라벨이 어긋나지 않는다. 그룹 이름(설정 등)은 페이지가 없어
+ * 글자만, 마지막은 현재 화면. 메뉴에 없는 경로·홈은 빈 배열(표시 없음).
+ */
+export function breadcrumbFor(pathname: string): BreadcrumbCrumb[] {
+  for (const group of NAV_GROUPS) {
+    const item = group.items.find(
+      (candidate) => !candidate.external && candidate.href === pathname,
+    );
+    if (item !== undefined) return [{ label: group.label }, { label: item.label, href: item.href }];
+  }
+  return [];
+}

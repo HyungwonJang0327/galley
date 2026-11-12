@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Inbox, ExternalLink } from 'lucide-react';
-import { HOME_ITEM, isNavItemActive, type NavItem } from './navigation';
+import { HOME_ITEM, isNavItemActive, type NavItem, breadcrumbFor } from './navigation';
 
 const queue: NavItem = { label: '큐', href: '/queue', icon: Inbox };
 const zenn: NavItem = {
@@ -9,6 +9,25 @@ const zenn: NavItem = {
   icon: ExternalLink,
   external: true,
 };
+
+describe('breadcrumbFor', () => {
+  it('메뉴 항목 경로는 [그룹(링크 없음), 항목(현재)]', () => {
+    expect(breadcrumbFor('/settings/model')).toEqual([
+      { label: '설정' },
+      { label: '모델·비용', href: '/settings/model' },
+    ]);
+    expect(breadcrumbFor('/runs/history')).toEqual([
+      { label: '실행' },
+      { label: '이력', href: '/runs/history' },
+    ]);
+  });
+
+  it('홈·메뉴에 없는 경로·외부 링크는 빈 배열', () => {
+    expect(breadcrumbFor('/')).toEqual([]);
+    expect(breadcrumbFor('/runs/history?x=1')).toEqual([]);
+    expect(breadcrumbFor('https://zenn.dev')).toEqual([]);
+  });
+});
 
 describe('isNavItemActive', () => {
   it('pathname이 href와 같으면 활성', () => {

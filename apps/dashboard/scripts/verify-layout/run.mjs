@@ -10,6 +10,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyAwaitDialog } from './await-dialog.mjs';
 import { verifyAvatar } from './avatar.mjs';
+import { verifyBreadcrumb } from './breadcrumb.mjs';
 import { launchChrome, waitFor } from './cdp.mjs';
 import { verifyFormField } from './form-field.mjs';
 import { verifyInlineAlert } from './inline-alert.mjs';
@@ -122,6 +123,7 @@ async function main() {
         verifyInlineAlert,
         verifySkeleton,
         verifyAvatar,
+        verifyBreadcrumb,
         verifyToast,
         verifyAwaitDialog,
         verifyNotFound,
