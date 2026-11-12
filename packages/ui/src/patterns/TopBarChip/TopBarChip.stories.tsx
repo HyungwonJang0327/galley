@@ -1,4 +1,4 @@
-// Storybook 스토리(CSF3). Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
+// Storybook 스토리(CSF3) — `pnpm --filter galley-ui storybook`. 샘플 문구는 도메인 무지(decisions/docs-site.md).
 import { TopBarChip } from './TopBarChip';
 
 const meta = {

@@ -1,4 +1,4 @@
-// Storybook 스토리(CSF3). Phase 1은 스토리 파일만, 실행 환경은 Phase 2.
+// Storybook 스토리(CSF3) — `pnpm --filter galley-ui storybook`. 샘플 문구는 도메인 무지(decisions/docs-site.md).
 import { Button } from '../Button';
 import { EmptyState } from './EmptyState';
 
@@ -8,11 +8,11 @@ const meta = {
 };
 export default meta;
 
-export const MessageOnly = { args: { message: '검수할 초안이 없습니다.' } };
+export const MessageOnly = { args: { message: '항목이 없습니다.' } };
 
 export const WithAction = {
   args: {
-    message: '대기 중인 주제가 없습니다. 후보에서 골라 주세요.',
+    message: '표시할 항목이 없습니다. 필터를 바꿔 보세요.',
     action: <Button variant="secondary">후보 보기</Button>,
   },
 };

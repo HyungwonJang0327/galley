@@ -1,4 +1,4 @@
-// Storybook 스토리(CSF3). 훅은 소비자 예시로 보인다. 실행 환경은 Phase 2.
+// Storybook 스토리(CSF3) — 훅은 소비자 예시로 보인다. 샘플 문구는 도메인 무지(decisions/docs-site.md).
 import { useState } from 'react';
 import { useAwaitDialog } from './useAwaitDialog';
 import { useConfirm } from './useConfirm';
@@ -43,7 +43,7 @@ export const ConfirmDanger = { render: () => <DeleteButton /> };
 // 이름 입력 후 반환 — 값 있는 결과. 취소·Esc·닫기는 null.
 function RenameButton() {
   const { open, element } = useAwaitDialog<string | null>(null);
-  const [name, setName] = useState('초안');
+  const [name, setName] = useState('문서');
   return (
     <>
       <Button
@@ -106,7 +106,7 @@ function SavedButton() {
       <Button
         variant="secondary"
         onClick={async () => {
-          await alert({ title: '저장했습니다', description: '큐로 돌아갑니다.' });
+          await alert({ title: '저장했습니다', description: '목록으로 돌아갑니다.' });
         }}
       >
         저장 안내

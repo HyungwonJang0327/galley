@@ -1,4 +1,4 @@
-// Storybook 스토리(CSF3). 훅은 Provider 아래 소비자 예시로 보인다. 실행 환경은 Phase 2.
+// Storybook 스토리(CSF3) — 훅은 Provider 아래 소비자 예시로 보인다. 샘플 문구는 도메인 무지(decisions/docs-site.md).
 import { useToast } from './useToast';
 import { ToastProvider } from '../../primitives/ToastProvider';
 import { Button } from '../../components/Button';
