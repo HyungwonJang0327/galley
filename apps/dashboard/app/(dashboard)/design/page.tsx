@@ -1,4 +1,5 @@
 import {
+  Avatar,
   Badge,
   Button,
   Card,
@@ -120,6 +121,29 @@ export default function DesignPage() {
               <Button variant="secondary" render={<a href="/queue?tab=candidates" />}>
                 보조 링크 버튼
               </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Avatar</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>size sm · md · lg (머리글자)</span>
+            <div className={styles.row} data-demo="avatar-sizes">
+              <Avatar name="홍길동" size="sm" />
+              <Avatar name="Ada Lovelace" />
+              <Avatar name="Ada Lovelace" size="lg" />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>이미지 · 깨진 이미지(머리글자로)</span>
+            <div className={styles.row} data-demo="avatar-images">
+              <Avatar
+                name="Ada Lovelace"
+                size="lg"
+                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='40'><rect width='80' height='40' fill='%2360a5fa'/></svg>"
+              />
+              <Avatar name="Ada Lovelace" size="lg" src="/__galley-missing-avatar__.png" />
             </div>
           </div>
         </Card>
