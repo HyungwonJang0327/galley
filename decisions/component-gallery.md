@@ -38,3 +38,4 @@
 - 2026-09-08 최초 결정.
 - 2026-09-10 갤러리를 바꾸는 항목의 완료 조건에 `pnpm --filter dashboard verify:layout` 통과 추가 — 실측 스크립트가 갤러리의 aria-label·구조에 결합되어 있어 갤러리를 바꾸면 스크립트도 같이 맞춘다(decisions/layout-measurement.md).
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
+- 2026-11-12 P7c: Storybook 실행 환경 구현(react-vite + addon-docs·a11y, GitHub Pages — decisions/docs-site.md). "Storybook = Phase 2 정식 쇼케이스" 약속 이행, `/design`은 개발 보조·실측 대상으로 그대로. 결정 변경 없음.

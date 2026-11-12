@@ -94,22 +94,23 @@ Galley/
 
 ## 3. 기술 스택
 
-| 영역          | 선택                                                         | 버전 (2026-09-08 기준)                                |
-| ------------- | ------------------------------------------------------------ | ----------------------------------------------------- |
-| 패키지 매니저 | pnpm (workspace: apps/\*, packages/\*)                       | 10.26.2 (node ≥24)                                    |
-| 앱            | Next.js App Router + React                                   | next 16.3.4 · react 19.2.8                            |
-| 언어          | TypeScript (strict)                                          | 6.0.3 (7.x 보류 — decisions/toolchain-pins.md)        |
-| 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | @base-ui/react 1.8.0 · lucide-react 1.43.0            |
-| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | prisma 6.19.3 (7↑ 보류 — decisions/toolchain-pins.md) |
-| 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                     |
-| 서버 경계     | server-only (pipeline 값을 쓰는 대시보드 파일 마커)          | 0.0.1                                                 |
-| 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                      |
-| DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                    |
-| 마크다운 렌더 | react-markdown + remark-gfm (apps/dashboard, 서버 컴포넌트)  | 10.1.0 · 4.0.1 (decisions/navigation.md 갱신 이력)    |
-| 테스트        | Vitest + happy-dom + testing-library (ui·dashboard 공통)     | 5.0.0 · happy-dom 20.14.0 · testing-library 16.3.3    |
-| 빌드(ui)      | Vite 라이브러리 모드 (ESM+CJS+스코프 CSS+d.ts) + Changesets  | vite 8.2.2 · vite-plugin-dts 5.1.0 · changesets 3.0.2 |
-| 린트/포맷     | ESLint + Prettier + typescript-eslint                        | eslint 10.10.0 · prettier 3.9.6 · tseslint 8.70.0     |
-| 시크릿·훅     | gitleaks + lefthook (pre-commit + CI)                        | gitleaks 8.30.1 · lefthook 2.1.12                     |
+| 영역          | 선택                                                         | 버전 (2026-09-08 기준)                                                 |
+| ------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 패키지 매니저 | pnpm (workspace: apps/\*, packages/\*)                       | 10.26.2 (node ≥24)                                                     |
+| 앱            | Next.js App Router + React                                   | next 16.3.4 · react 19.2.8                                             |
+| 언어          | TypeScript (strict)                                          | 6.0.3 (7.x 보류 — decisions/toolchain-pins.md)                         |
+| 디자인 시스템 | Base UI(헤드리스) + CSS Modules + 토큰 CSS 변수 + lucide     | @base-ui/react 1.8.0 · lucide-react 1.43.0                             |
+| DB            | SQLite + Prisma (접근 계층 뒤, Postgres 전환 대비)           | prisma 6.19.3 (7↑ 보류 — decisions/toolchain-pins.md)                  |
+| 파이프라인    | @galley/pipeline (서버 전용, Storage/모델 어댑터 인터페이스) | —                                                                      |
+| 서버 경계     | server-only (pipeline 값을 쓰는 대시보드 파일 마커)          | 0.0.1                                                                  |
+| 모델 SDK      | @anthropic-ai/sdk · openai (packages/pipeline만)             | 0.124.0 · 7.12.1                                                       |
+| DnD           | pragmatic-drag-and-drop (apps/dashboard)                     | 미설치 (Phase 1-A)                                                     |
+| 마크다운 렌더 | react-markdown + remark-gfm (apps/dashboard, 서버 컴포넌트)  | 10.1.0 · 4.0.1 (decisions/navigation.md 갱신 이력)                     |
+| 테스트        | Vitest + happy-dom + testing-library (ui·dashboard 공통)     | 5.0.0 · happy-dom 20.14.0 · testing-library 16.3.3                     |
+| 빌드(ui)      | Vite 라이브러리 모드 (ESM+CJS+스코프 CSS+d.ts) + Changesets  | vite 8.2.2 · vite-plugin-dts 5.1.0 · changesets 3.0.2                  |
+| 쇼케이스(ui)  | Storybook react-vite + addon-docs·a11y → GitHub Pages        | storybook 10.6.7 · @vitejs/plugin-react 6.3.0 (decisions/docs-site.md) |
+| 린트/포맷     | ESLint + Prettier + typescript-eslint                        | eslint 10.10.0 · prettier 3.9.6 · tseslint 8.70.0                      |
+| 시크릿·훅     | gitleaks + lefthook (pre-commit + CI)                        | gitleaks 8.30.1 · lefthook 2.1.12                                      |
 
 > 미설치 항목은 해당 Phase 작업 시 설치하고 버전을 갱신한다. 버전 핀·빌드 우회 사유는 decisions/toolchain-pins.md.
 
