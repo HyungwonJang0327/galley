@@ -1,0 +1,45 @@
+# galley-ui Storybook → GitHub Pages(decisions/docs-site.md). main에 packages/ui가 바뀌면 정적 빌드를 올린다.
+# 주소: https://hyungwonjang0327.github.io/galley/ . Pages는 Actions 빌드(build_type: workflow)로 켜 둔다.
+name: Pages (galley-ui Storybook)
+
+on:
+  push:
+    branches: [main]
+    paths: ['packages/ui/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 한 번에 하나 — 연속 push면 앞 배포를 취소하고 최신만.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter galley-ui storybook:build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/ui/storybook-static
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
