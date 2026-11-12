@@ -131,3 +131,17 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--ui-space-4);
 }
+
+/* 타이포 토큰 샘플 — 글꼴 토큰만 보인다(색·크기는 본문 토큰 그대로). */
+.typeSample {
+  margin: var(--ui-space-1) 0 0;
+  font-size: var(--ui-text-body);
+}
+
+.mono {
+  padding: 0 var(--ui-space-1);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-neutral-bg);
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-text-sm);
+}

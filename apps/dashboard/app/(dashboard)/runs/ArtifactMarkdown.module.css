@@ -65,12 +65,11 @@
   color: var(--ui-color-text-muted);
 }
 
-/* 코드 글꼴은 토큰이 없어 시스템 고정폭 스택을 쓴다(ui에 --ui-font-mono가 생기면 교체). */
 .markdown code {
   padding: 0 var(--ui-space-1);
   border-radius: var(--ui-radius-sm);
   background-color: var(--ui-color-neutral-bg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   font-size: var(--ui-text-sm);
 }
 

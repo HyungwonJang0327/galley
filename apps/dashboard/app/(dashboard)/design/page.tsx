@@ -68,6 +68,20 @@ export default function DesignPage() {
       />
       <div className={styles.sections}>
         <Card>
+          <h2 className={styles.sectionTitle}>타이포 토큰</h2>
+          <div className={styles.group}>
+            <p className={styles.groupLabel}>--ui-font-sans · --ui-font-mono</p>
+            <p className={styles.typeSample}>
+              본문 글꼴 — 시스템 산세리프 스택(한글 Apple SD Gothic Neo · Noto Sans KR).
+            </p>
+            <p className={styles.typeSample}>
+              고정폭 토큰은 코드·경로·해시에 —{' '}
+              <code className={styles.mono}>packages/ui/src/tokens/tokens.css:52</code>{' '}
+              <code className={styles.mono}>a49d5b6</code>
+            </p>
+          </div>
+        </Card>
+        <Card>
           <h2 className={styles.sectionTitle}>Button</h2>
           <div className={styles.group}>
             <span className={styles.groupLabel}>variant</span>

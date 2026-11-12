@@ -78,7 +78,7 @@
 /* 코드 글꼴은 토큰이 없어 시스템 고정폭 스택(P7m에서 --ui-font-mono로 교체). */
 .code,
 .snippet {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--ui-font-mono);
   font-size: var(--ui-text-xs);
 }
 
