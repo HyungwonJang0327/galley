@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyAwaitDialog } from './await-dialog.mjs';
+import { verifyAvatar } from './avatar.mjs';
 import { launchChrome, waitFor } from './cdp.mjs';
 import { verifyFormField } from './form-field.mjs';
 import { verifyInlineAlert } from './inline-alert.mjs';
@@ -120,6 +121,7 @@ async function main() {
         verifyPopover,
         verifyInlineAlert,
         verifySkeleton,
+        verifyAvatar,
         verifyToast,
         verifyAwaitDialog,
         verifyNotFound,
