@@ -127,7 +127,7 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 - **제어형만.** 입력은 `value` / `checked`와 `onValueChange` / `onCheckedChange`를 받습니다(`Input`과 `Textarea`는 네이티브 `onChange` 유지). 컴포넌트가 폼 상태를 갖지 않습니다. 앱이 상태를 가질 이유가 없는 두 곳만 예외입니다. `Popover`(`open` 선택, `open`을 주면 `onOpenChange` 필수)와 `TimelineItem`의 펼침(`defaultOpen`).
 - **얇은 래퍼.** 프리미티브는 Base UI의 prop 이름을 그대로 씁니다(`onFormSubmit`, `errors`, `onOpenChange`). 밟기 쉬운 동작은 감추지 않고 문서로 알립니다.
-- **리터럴 대신 토큰.** 색, 간격, 타이포, 라운드, 그림자, 모션(`--ui-duration-*`, `--ui-ease`), 포커스 링(`--ui-focus-ring`), 층(`--ui-z-popup`, `--ui-z-toast`), 치수가 `--ui-*` 커스텀 프로퍼티입니다. `:root`에서 덮어써 테마를 바꿉니다.
+- **리터럴 대신 토큰.** 색, 간격, 타이포(`--ui-font-sans`, `--ui-font-mono`), 라운드, 그림자, 모션(`--ui-duration-*`, `--ui-ease`), 포커스 링(`--ui-focus-ring`), 층(`--ui-z-popup`, `--ui-z-toast`), 치수가 `--ui-*` 커스텀 프로퍼티입니다. `:root`에서 덮어써 테마를 바꿉니다.
 - **CSS Modules.** 클래스 이름은 스코프됩니다(`ui_<local>_<hash>`). 모든 컴포넌트가 넘긴 `className`을 병합합니다. 루트에, 또는 플로팅 프리미티브(`Dialog`, `Menu`, `Popover`, `Tooltip`, `Select`)는 popup이나 trigger에.
 - **도메인 무지.** props, 기본값, 문서에 업무 용어가 없습니다.
 - **클라이언트 번들.** 번들 전체에 `"use client"` 배너가 있어 React Server Components에서 import할 수 있습니다. 따라서 모든 export는 클라이언트 컴포넌트입니다. 서버 렌더(SSR)는 그대로 되고, 클라이언트로도 함께 전송될 뿐입니다.

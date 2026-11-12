@@ -127,7 +127,7 @@ confirm({ title, confirmLabel: 'OK', cancelLabel: 'キャンセル', closeLabel:
 
 - **制御コンポーネントのみ。** 入力は `value` / `checked` と `onValueChange` / `onCheckedChange` を受け取ります（`Input` と `Textarea` はネイティブの `onChange` のまま）。コンポーネントがフォームの状態を持つことはありません。アプリが状態を持つ理由のない 2 か所だけ例外です。`Popover`（`open` は任意、渡すなら `onOpenChange` が必須）と `TimelineItem` の展開（`defaultOpen`）。
 - **薄いラッパー。** プリミティブは Base UI の prop 名をそのまま使います（`onFormSubmit`、`errors`、`onOpenChange`）。つまずきやすい挙動は隠さず、文書で伝えます。
-- **リテラルではなくトークン。** 色、間隔、タイポグラフィ、角丸、影、モーション（`--ui-duration-*`、`--ui-ease`）、フォーカスリング（`--ui-focus-ring`）、レイヤー（`--ui-z-popup`、`--ui-z-toast`）、寸法が `--ui-*` カスタムプロパティです。`:root` で上書きしてテーマを変えます。
+- **リテラルではなくトークン。** 色、間隔、タイポ（`--ui-font-sans`、`--ui-font-mono`）グラフィ、角丸、影、モーション（`--ui-duration-*`、`--ui-ease`）、フォーカスリング（`--ui-focus-ring`）、レイヤー（`--ui-z-popup`、`--ui-z-toast`）、寸法が `--ui-*` カスタムプロパティです。`:root` で上書きしてテーマを変えます。
 - **CSS Modules。** クラス名はスコープされます（`ui_<local>_<hash>`）。すべてのコンポーネントが渡された `className` をマージします。ルートに、あるいはフローティングなプリミティブ（`Dialog`、`Menu`、`Popover`、`Tooltip`、`Select`）では popup や trigger に。
 - **ドメイン非依存。** props、既定値、文書に業務用語はありません。
 - **クライアントバンドル。** バンドル全体に `"use client"` バナーが付いているので、React Server Components から import できます。したがってすべての export はクライアントコンポーネントです。サーバーレンダー（SSR）はそのまま行われ、クライアントにも送られるだけです。

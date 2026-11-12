@@ -125,7 +125,7 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 - **Controlled only.** Inputs take `value` / `checked` plus `onValueChange` / `onCheckedChange` (`Input` and `Textarea` keep the native `onChange`); the component never owns form state. Two deliberate exceptions where the app has no reason to hold the state: `Popover` (`open` optional; if you pass `open` you must pass `onOpenChange`) and `TimelineItem` expansion (`defaultOpen`).
 - **Thin wrappers.** Primitives keep Base UI's prop names (`onFormSubmit`, `errors`, `onOpenChange`). Behavior you might trip on is documented, not papered over.
-- **Tokens, not literals.** Colors, spacing, type, radii, shadows, motion (`--ui-duration-*`, `--ui-ease`), focus ring (`--ui-focus-ring`), layers (`--ui-z-popup`, `--ui-z-toast`) and dimensions are `--ui-*` custom properties. Override them on `:root` to retheme.
+- **Tokens, not literals.** Colors, spacing, type (`--ui-font-sans`, `--ui-font-mono`), radii, shadows, motion (`--ui-duration-*`, `--ui-ease`), focus ring (`--ui-focus-ring`), layers (`--ui-z-popup`, `--ui-z-toast`) and dimensions are `--ui-*` custom properties. Override them on `:root` to retheme.
 - **CSS Modules.** Class names are scoped (`ui_<local>_<hash>`); every component merges a `className` you pass — onto its root, or onto the popup / trigger for floating primitives (`Dialog`, `Menu`, `Popover`, `Tooltip`, `Select`).
 - **Domain-agnostic.** No business words in props, defaults or docs.
 - **Client bundle.** The whole bundle carries a `"use client"` banner so it can be imported from React Server Components. Every export is therefore a client component — it still server-renders (SSR), it is just shipped to the client as well.
