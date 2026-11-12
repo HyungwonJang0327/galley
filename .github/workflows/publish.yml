@@ -1,0 +1,39 @@
+# galley-ui npm publish — `galley-ui@<버전>` 태그 push가 트리거(decisions/ci-publish.md).
+# 인증은 npm Trusted Publishing(GitHub Actions OIDC): 토큰·시크릿 없음, provenance 자동. npmjs.com 패키지 설정에
+# Trusted Publisher(리포 HyungwonJang0327/galley · 워크플로 publish.yml)가 등록돼 있어야 한다.
+# 버전 bump(changeset version)·CHANGELOG는 사람이 PR로 머지한 뒤 `pnpm changeset tag` + 태그 push.
+name: Publish galley-ui
+
+on:
+  push:
+    tags: ['galley-ui@*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC — npm Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter galley-ui build
+      - run: pnpm --filter galley-ui test
+      # 태그 버전 = package.json 버전. 어긋나면 잘못된 태그다 — 지우고(git push --delete origin <tag>) 다시 push.
+      - name: Verify tag matches package version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#galley-ui@}"
+          PKG_VERSION="$(node -p "require('./packages/ui/package.json').version")"
+          echo "tag=$TAG_VERSION package.json=$PKG_VERSION"
+          test "$TAG_VERSION" = "$PKG_VERSION"
+      # Trusted Publishing은 npm CLI 11.5+ — Node 24 번들 npm이 충족한다. 확인용으로 찍는다.
+      - run: npm --version
+      - name: Publish
+        working-directory: packages/ui
+        run: npm publish --provenance --access public
