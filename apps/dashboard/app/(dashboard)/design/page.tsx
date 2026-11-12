@@ -1,5 +1,6 @@
 import {
   Avatar,
+  Breadcrumb,
   Badge,
   Button,
   Card,
@@ -144,6 +145,40 @@ export default function DesignPage() {
                 src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='40'><rect width='80' height='40' fill='%2360a5fa'/></svg>"
               />
               <Avatar name="Ada Lovelace" size="lg" src="/__galley-missing-avatar__.png" />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Breadcrumb</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              그룹(링크 없음) › 현재 — 링크 항목은 render로(앱은 Next Link를 넘긴다)
+            </span>
+            <div data-demo="breadcrumb">
+              <Breadcrumb
+                aria-label="현재 위치"
+                items={[
+                  { label: '홈', render: <a href="/" /> },
+                  { label: '설정' },
+                  { label: '모델·비용' },
+                ]}
+              />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>PageHeader eyebrow 슬롯에 둔 모양</span>
+            <div data-demo="breadcrumb-header">
+              <PageHeader
+                title="모델·비용"
+                eyebrow={
+                  <Breadcrumb
+                    aria-label="현재 위치(예시)"
+                    items={[{ label: '설정' }, { label: '모델·비용' }]}
+                  />
+                }
+                actions={<Button size="sm">액션</Button>}
+              />
             </div>
           </div>
         </Card>
