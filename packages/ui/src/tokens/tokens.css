@@ -50,6 +50,8 @@
   /* 타이포 */
   --ui-font-sans:
     system-ui, -apple-system, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  /* 고정폭 — 코드·경로·해시. 시스템 고정폭(ui-monospace)을 먼저, 없는 OS는 generic monospace로. */
+  --ui-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   --ui-text-xs: 12px; /* 배지 */
   --ui-text-sm: 13px;
   --ui-text-body: 14px; /* 본문 13~14 */
