@@ -147,6 +147,8 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 **Skeleton** — `radius`는 `sm | md | lg | pill`. `width` / `height`는 숫자(px) 또는 CSS 길이.
 
+**Avatar** — `name`이 접근성 이름(루트 `role="img"`)이자 머리글자의 출처입니다. 라틴 두 단어면 대문자 머리글자 둘, 그 밖은 첫 글자 하나. `src`는 장식 `<img alt="">`로 그리고 로드 실패 시 머리글자로 돌아갑니다. `size`는 `sm | md | lg`(`--ui-avatar-size-*`). 색은 neutral 하나 — 이름별 색 배정은 앱 몫. `initialsOf(name)`을 export합니다.
+
 **useAwaitDialog** — React StrictMode(개발)에서 *자식*의 마운트 effect에서 열면 첫 Promise가 cancel 값으로 끝납니다. StrictMode가 부모 effect 전에 언마운트를 시뮬레이션하기 때문입니다. 소유 컴포넌트의 effect나 이벤트 핸들러에서 열어 주세요.
 
 ## 접근성
