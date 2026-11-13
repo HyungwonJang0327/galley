@@ -1,5 +1,3 @@
-'use client';
-// 버튼에 onClick을 직접 단다 — 서버 컴포넌트 트리 안에서도 쓰이게 클라이언트 경계를 여기서 긋는다(Tabs와 같음).
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import styles from './Pagination.module.css';
 
