@@ -19,6 +19,12 @@ import {
   Select,
   SplitPane,
   Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Tabs,
   Textarea,
   TimelineItem,
@@ -34,6 +40,7 @@ import type {
   AwaitDialogRenderProps,
   MenuEntry,
   SelectItem,
+  SortDirection,
   TabItem,
   ToastPosition,
 } from 'galley-ui';
@@ -854,6 +861,64 @@ export function PaginationFirstLastDemo() {
       showFirstLast
       aria-label="페이지 이동(처음·끝)"
     />
+  );
+}
+
+// Table 정렬 데모: 정렬 상태·정렬 자체는 앱(여기)이 한다. ui는 aria-sort·버튼만(decisions/table-component.md).
+const TABLE_ROWS = [
+  { name: '첫째 항목', owner: '김', count: 12, updated: '2026-01-04' },
+  { name: '둘째 항목', owner: '이', count: 3, updated: '2026-02-11' },
+  { name: '셋째 항목', owner: '박', count: 48, updated: '2026-03-20' },
+  { name: '넷째 항목', owner: '최', count: 7, updated: '2026-04-02' },
+];
+type TableSortKey = 'name' | 'count';
+
+export function TableSortableDemo() {
+  const [key, setKey] = useState<TableSortKey>('name');
+  const [dir, setDir] = useState<SortDirection>('ascending');
+  const toggle = (next: TableSortKey) => {
+    if (next === key) setDir(dir === 'ascending' ? 'descending' : 'ascending');
+    else {
+      setKey(next);
+      setDir('ascending');
+    }
+  };
+  const rows = [...TABLE_ROWS].sort((a, b) => {
+    const c = key === 'name' ? a.name.localeCompare(b.name, 'ko') : a.count - b.count;
+    return dir === 'ascending' ? c : -c;
+  });
+  return (
+    <Table aria-label="정렬 표">
+      <TableHead>
+        <TableRow>
+          <TableHeaderCell
+            sortDirection={key === 'name' ? dir : null}
+            onSort={() => toggle('name')}
+          >
+            이름
+          </TableHeaderCell>
+          <TableHeaderCell>담당</TableHeaderCell>
+          <TableHeaderCell
+            numeric
+            sortDirection={key === 'count' ? dir : null}
+            onSort={() => toggle('count')}
+          >
+            수
+          </TableHeaderCell>
+          <TableHeaderCell>갱신</TableHeaderCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map((r) => (
+          <TableRow key={r.name} interactive>
+            <TableCell>{r.name}</TableCell>
+            <TableCell>{r.owner}</TableCell>
+            <TableCell numeric>{r.count}</TableCell>
+            <TableCell>{r.updated}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 

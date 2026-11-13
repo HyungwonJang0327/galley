@@ -15,9 +15,24 @@ import {
   Separator,
   Skeleton,
   StatTile,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Textarea,
 } from 'galley-ui';
 import styles from './page.module.css';
+
+// Table 데모 행(서버에서 그리는 정적 표 — 정렬 데모는 PrimitiveDemos).
+const GALLERY_TABLE_ROWS = [
+  { name: '첫째 항목', owner: '김', count: 12, updated: '2026-01-04' },
+  { name: '둘째 항목', owner: '이', count: 3, updated: '2026-02-11' },
+  { name: '셋째 항목', owner: '박', count: 48, updated: '2026-03-20' },
+  { name: '넷째 항목', owner: '최', count: 7, updated: '2026-04-02' },
+];
 import {
   AwaitDialogDemo,
   CheckboxDemo,
@@ -44,6 +59,7 @@ import {
   SelectLabelOnlyDemo,
   SelectLongValueDemo,
   SelectPathLabelDemo,
+  TableSortableDemo,
   SelectLongDemo,
   SelectWithDescriptionDemo,
   SelectWithDescriptionMetaDemo,
@@ -183,6 +199,107 @@ export default function DesignPage() {
                 }
                 actions={<Button size="sm">액션</Button>}
               />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Table</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              기본(md) — 숫자 열은 numeric(오른쪽·tabular), 둘째 행 selected. 정렬·필터는 앱이 한다.
+            </span>
+            <div data-demo="table">
+              <Table aria-label="기본 표">
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>이름</TableHeaderCell>
+                    <TableHeaderCell>담당</TableHeaderCell>
+                    <TableHeaderCell numeric>수</TableHeaderCell>
+                    <TableHeaderCell>갱신</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {GALLERY_TABLE_ROWS.map((r, i) => (
+                    <TableRow key={r.name} selected={i === 1}>
+                      <TableCell>{r.name}</TableCell>
+                      <TableCell>{r.owner}</TableCell>
+                      <TableCell numeric>{r.count}</TableCell>
+                      <TableCell>{r.updated}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              정렬 가능 머리글(이름·수) — aria-sort는 한 열만, 머리글은 버튼. 행 interactive.
+            </span>
+            <div data-demo="table-sortable">
+              <TableSortableDemo />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>밀도 sm</span>
+            <div data-demo="table-compact">
+              <Table aria-label="촘촘한 표" density="sm">
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>이름</TableHeaderCell>
+                    <TableHeaderCell numeric>수</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {GALLERY_TABLE_ROWS.map((r) => (
+                    <TableRow key={r.name}>
+                      <TableCell>{r.name}</TableCell>
+                      <TableCell numeric>{r.count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              stickyHeader — 래퍼(className)에 max-height를 주면 머리글이 위에 남는다
+            </span>
+            <div data-demo="table-sticky">
+              <Table aria-label="고정 머리글 표" stickyHeader className={styles.tableScroll}>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>번호</TableHeaderCell>
+                    <TableHeaderCell>이름</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <TableRow key={i}>
+                      <TableCell numeric>{i + 1}</TableCell>
+                      <TableCell>{`항목 ${i + 1}`}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>빈 표 — 머리글은 남고 TableEmptyRow 한 칸</span>
+            <div data-demo="table-empty">
+              <Table aria-label="빈 표">
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>이름</TableHeaderCell>
+                    <TableHeaderCell>담당</TableHeaderCell>
+                    <TableHeaderCell numeric>수</TableHeaderCell>
+                    <TableHeaderCell>갱신</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableEmptyRow colSpan={4}>아직 항목이 없습니다.</TableEmptyRow>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </Card>
