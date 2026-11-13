@@ -1,0 +1,72 @@
+.nav {
+  font-family: var(--ui-font-sans);
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+}
+
+/* 폼 컨트롤과 같은 높이의 정사각 버튼. 숫자는 tabular로 폭이 흔들리지 않게. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ui-control-height);
+  height: var(--ui-control-height);
+  padding: 0 var(--ui-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  background: none;
+  color: var(--ui-color-text);
+  font-family: inherit;
+  font-size: var(--ui-text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-duration-fast) var(--ui-ease),
+    color var(--ui-duration-fast) var(--ui-ease);
+}
+
+.button:not(:disabled):hover {
+  background-color: var(--ui-color-neutral-bg);
+}
+
+.button:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+.button:disabled {
+  color: var(--ui-color-text-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 현재 페이지 — primary 버튼과 같은 채움(accent + accent-fg, 두 테마 모두 4.5:1). */
+.current,
+.current:not(:disabled):hover {
+  background-color: var(--ui-color-accent);
+  color: var(--ui-color-accent-fg);
+  font-weight: var(--ui-weight-medium);
+}
+
+.ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ui-control-height);
+  height: var(--ui-control-height);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+  user-select: none;
+}

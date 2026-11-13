@@ -10,6 +10,13 @@ export { Avatar, initialsOf } from './components/Avatar';
 export type { AvatarProps, AvatarSize } from './components/Avatar';
 export { Breadcrumb } from './components/Breadcrumb';
 export type { BreadcrumbItem, BreadcrumbProps } from './components/Breadcrumb';
+export { Pagination, paginationRange } from './components/Pagination';
+export type {
+  PaginationItem,
+  PaginationLabels,
+  PaginationProps,
+  PaginationRangeOptions,
+} from './components/Pagination';
 export { Card } from './components/Card';
 export type { CardProps } from './components/Card';
 export { PageHeader } from './components/PageHeader';
