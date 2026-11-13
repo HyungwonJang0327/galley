@@ -13,6 +13,7 @@ import {
   ListRow,
   ListRows,
   Menu,
+  Pagination,
   Popover,
   RadioGroup,
   Select,
@@ -821,6 +822,44 @@ const TAB_ITEMS: TabItem[] = [
   { value: 'b', label: '둘째', count: 0, content: '둘째 탭 내용' },
   { value: 'c', label: '셋째', disabled: true },
 ];
+
+// Pagination: 제어형이라 상태를 여기서 든다(실제 자리는 아직 없다 — 라이브러리 채우기, decisions/component-gallery.md).
+export function PaginationDemo({ initial = 12 }: { initial?: number }) {
+  const [page, setPage] = useState(initial);
+  return (
+    <Pagination
+      page={page}
+      pageCount={24}
+      onPageChange={setPage}
+      aria-label="페이지 이동"
+      labels={{ previous: '이전 페이지', next: '다음 페이지', page: (n) => `${n}페이지` }}
+    />
+  );
+}
+
+export function PaginationShortDemo() {
+  const [page, setPage] = useState(1);
+  return (
+    <Pagination page={page} pageCount={5} onPageChange={setPage} aria-label="페이지 이동(짧음)" />
+  );
+}
+
+export function PaginationFirstLastDemo() {
+  const [page, setPage] = useState(7);
+  return (
+    <Pagination
+      page={page}
+      pageCount={24}
+      onPageChange={setPage}
+      showFirstLast
+      aria-label="페이지 이동(처음·끝)"
+    />
+  );
+}
+
+export function PaginationDisabledDemo() {
+  return <Pagination page={3} pageCount={10} onPageChange={() => {}} disabled />;
+}
 
 export function TabsDemo() {
   const [value, setValue] = useState('a');

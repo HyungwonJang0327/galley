@@ -28,6 +28,10 @@ import {
   FormFieldDemo,
   MenuAtBottomDemo,
   MenuRowsDemo,
+  PaginationDemo,
+  PaginationDisabledDemo,
+  PaginationFirstLastDemo,
+  PaginationShortDemo,
   PopoverAtBottomDemo,
   PopoverDemo,
   RadioGroupDemo,
@@ -179,6 +183,37 @@ export default function DesignPage() {
                 }
                 actions={<Button size="sm">액션</Button>}
               />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className={styles.sectionTitle}>Pagination</h2>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              24쪽 중 12쪽(생략 양쪽) — 클릭하면 이동, 현재만 aria-current. 한국어 라벨은 앱이
+              넘긴다.
+            </span>
+            <div data-demo="pagination">
+              <PaginationDemo />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>5쪽(생략 없음, 첫 쪽이라 이전 비활성)</span>
+            <div data-demo="pagination-short">
+              <PaginationShortDemo />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>처음·끝 버튼(showFirstLast)</span>
+            <div data-demo="pagination-first-last">
+              <PaginationFirstLastDemo />
+            </div>
+          </div>
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>disabled(로딩 중)</span>
+            <div data-demo="pagination-disabled">
+              <PaginationDisabledDemo />
             </div>
           </div>
         </Card>
