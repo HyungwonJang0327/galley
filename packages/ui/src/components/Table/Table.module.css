@@ -1,0 +1,121 @@
+/* 래퍼가 가로 스크롤을 맡는다. stickyHeader일 때 세로 스크롤 컨테이너도 이 래퍼(앱이 max-height를 준다). */
+.wrap {
+  width: 100%;
+  overflow: auto;
+  font-family: var(--ui-font-sans);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-tight);
+  color: var(--ui-color-text);
+}
+
+.th,
+.td {
+  padding: var(--ui-space-3) var(--ui-space-3);
+  text-align: start;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.table[data-density='sm'] .th,
+.table[data-density='sm'] .td {
+  padding: var(--ui-space-1) var(--ui-space-2);
+}
+
+.th {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+  font-weight: var(--ui-weight-medium);
+  white-space: nowrap;
+}
+
+.table[data-sticky-header] .th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ui-color-surface);
+  /* 스크롤 중 border-collapse 경계가 사라지므로 그림자로 선을 대신한다. */
+  box-shadow: inset 0 -1px 0 var(--ui-color-border);
+}
+
+.body .row:last-child .td {
+  border-bottom: 0;
+}
+
+.row[data-interactive] {
+  cursor: pointer;
+}
+
+.row[data-interactive]:hover .td {
+  background: var(--ui-color-neutral-bg);
+}
+
+.row[data-selected] .td {
+  background: var(--ui-color-accent-tint);
+}
+
+.numeric {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.alignEnd {
+  text-align: end;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+/* 정렬 버튼 — 머리글 글자 그대로 + 화살표. 패딩을 셀에 두고 버튼은 글자 크기만 차지한다. */
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--ui-radius-sm);
+}
+
+.numeric .sortButton,
+.alignEnd .sortButton {
+  flex-direction: row-reverse;
+}
+
+.sortButton:hover {
+  color: var(--ui-color-text);
+}
+
+.sortButton:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+.sortIcon {
+  flex: none;
+  opacity: 0.45;
+}
+
+.th[data-sorted] {
+  color: var(--ui-color-text);
+}
+
+.th[data-sorted] .sortIcon {
+  opacity: 1;
+  color: var(--ui-color-accent);
+}
+
+.emptyCell {
+  padding: var(--ui-space-6) var(--ui-space-3);
+  text-align: center;
+  color: var(--ui-color-text-muted);
+}
