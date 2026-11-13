@@ -10,6 +10,27 @@ export { Avatar, initialsOf } from './components/Avatar';
 export type { AvatarProps, AvatarSize } from './components/Avatar';
 export { Breadcrumb } from './components/Breadcrumb';
 export type { BreadcrumbItem, BreadcrumbProps } from './components/Breadcrumb';
+export {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeaderCell,
+  TableCell,
+  TableEmptyRow,
+} from './components/Table';
+export type {
+  SortDirection,
+  TableAlign,
+  TableBodyProps,
+  TableCellProps,
+  TableDensity,
+  TableEmptyRowProps,
+  TableHeadProps,
+  TableHeaderCellProps,
+  TableProps,
+  TableRowProps,
+} from './components/Table';
 export { Pagination, paginationRange } from './components/Pagination';
 export type {
   PaginationItem,
