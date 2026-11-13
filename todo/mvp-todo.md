@@ -308,6 +308,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ## Phase P · galley-ui 0.1.0 npm 배포 (2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선)
 
+- [x] **galley-ui 0.2.1 배포 — CI publish 첫 실전**(2026-11-14 `3caf519`, PR #178, 태그 `galley-ui@0.2.1` → publish.yml run 43525951061 success, provenance, 사용자 Trusted Publisher 등록 뒤 사람 publish 없음). 확인은 curl no-cache(CDN 캐시).
 - [x] **galley-ui 0.2.0 배포**(2026-11-12 `965aa50`, PR #174, 태그 `galley-ui@0.2.0`) — /ship 1~4 통과, changeset minor 3(P7m·Avatar·Breadcrumb) 소비. publish는 사용자 일반 터미널(`npm login` 패스키 → `npm publish`), E401이면 토큰 만료라 재로그인. 확인은 레지스트리 직접 조회(`npm view`는 캐시). 다음 릴리즈 전 P7b(CI publish) /decide.
 
 `packages/ui`를 npm `galley-ui` 0.1.0으로 배포한다. 배포 기준: 라이트+다크 토큰 · 폼·피드백 계열 최소 구색 8개 + `useAwaitDialog`/`useConfirm` 훅 · README · 배포 메타데이터. 패키지명 근거는 decisions/package-name.md. **끝날 때까지 대시보드 기능 항목(B·BM·BE·BS)은 시작하지 않는다.** 항목 하나 = 브랜치 하나 = PR 하나(커밋은 독립 revert 가능 단위로 몇 개). 각 컴포넌트 항목 완료 조건 공통: 폴더 5파일(`index.ts, X.tsx, X.module.css, X.test.tsx, X.stories.tsx`) + 배럴 export(타입 포함) + `/design` 갤러리 섹션 + `pnpm --filter galley-ui build && test` + `verify:layout` + reviewer 리뷰 통과(접근성 기준선: 키보드·포커스·대비·라벨). 제어형만(value+onChange), className 병합, 접근성 이름은 prop. Base UI API는 설치본 타입(`node_modules/@base-ui/react`)으로 확인하고 쓴다. `npm publish`·`git push --force`·`rm -rf`는 사용자 확인 후에만.
