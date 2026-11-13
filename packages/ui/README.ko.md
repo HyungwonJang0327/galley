@@ -151,6 +151,8 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 **Breadcrumb** — `items`는 상위 → 현재 페이지 순이고, 마지막은 `render`가 있어도 `aria-current="page"` 글자로 그립니다. 링크 요소는 `render`로(`Button`과 같은 규칙), `render` 없는 항목은 글자만(페이지 없는 묶음). `aria-label`을 넘기세요(기본 `Breadcrumb`). `PageHeader`의 `eyebrow` 슬롯에 둡니다.
 
+**Pagination** — 제어형: `page`(1부터) / `pageCount` / `onPageChange`. `<nav aria-label>` 안 페이지 버튼이고, 현재만 `aria-current="page"`, 생략 기호는 장식, 이전·다음은 양끝에서 비활성. `siblingCount` / `boundaryCount`가 범위를 정하고(`paginationRange` export), `showFirstLast`가 처음·끝 버튼을 더합니다. 라벨 기본은 영어 — `labels`·`aria-label`을 넘기세요. 라우팅은 모릅니다: `onPageChange`에서 URL로 옮기세요.
+
 **Avatar** — `name`이 접근성 이름(루트 `role="img"`)이자 머리글자의 출처입니다. 라틴 두 단어면 대문자 머리글자 둘, 그 밖은 첫 글자 하나. `src`는 장식 `<img alt="">`로 그리고 로드 실패 시 머리글자로 돌아갑니다. `size`는 `sm | md | lg`(`--ui-avatar-size-*`). 색은 neutral 하나 — 이름별 색 배정은 앱 몫. `initialsOf(name)`을 export합니다.
 
 **useAwaitDialog** — React StrictMode(개발)에서 *자식*의 마운트 effect에서 열면 첫 Promise가 cancel 값으로 끝납니다. StrictMode가 부모 effect 전에 언마운트를 시뮬레이션하기 때문입니다. 소유 컴포넌트의 effect나 이벤트 핸들러에서 열어 주세요.

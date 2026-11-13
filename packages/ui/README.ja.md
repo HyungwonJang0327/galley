@@ -151,6 +151,8 @@ confirm({ title, confirmLabel: 'OK', cancelLabel: 'キャンセル', closeLabel:
 
 **Breadcrumb** — `items` は上位 → 現在ページの順で、最後は `render` があっても `aria-current="page"` のテキストとして描きます。リンク要素は `render` で渡し（`Button` と同じ規則）、`render` のない項目はテキストのみ（ページのないグループ）。`aria-label` を渡してください（既定 `Breadcrumb`）。`PageHeader` の `eyebrow` スロットに置きます。
 
+**Pagination** — 制御のみ: `page`（1 始まり）/ `pageCount` / `onPageChange`。`<nav aria-label>` 内のページボタンで、現在だけ `aria-current="page"`、省略記号は装飾、前後は両端で無効。`siblingCount` / `boundaryCount` が範囲を決め（`paginationRange` を export）、`showFirstLast` が先頭・末尾ボタンを足します。ラベルの既定は英語 — `labels`・`aria-label` を渡してください。ルーティングは知りません: `onPageChange` で URL に反映してください。
+
 **Avatar** — `name` がアクセシブルネーム（ルートに `role="img"`）兼イニシャルの元です。ラテン文字 2 語なら大文字イニシャル 2 文字、それ以外は最初の 1 文字。`src` は装飾の `<img alt="">` として描き、読み込み失敗時はイニシャルに戻ります。`size` は `sm | md | lg`（`--ui-avatar-size-*`）。色は neutral 1 色 — 名前ごとの色付けはアプリ側。`initialsOf(name)` を export します。
 
 **useAwaitDialog** — React StrictMode（開発時）で*子*のマウント effect から開くと、最初の Promise が cancel 値で終わります。StrictMode が親の effect より前にアンマウントをシミュレートするためです。所有するコンポーネントの effect かイベントハンドラから開いてください。
