@@ -151,6 +151,8 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 **Breadcrumb** — `items`는 상위 → 현재 페이지 순이고, 마지막은 `render`가 있어도 `aria-current="page"` 글자로 그립니다. 링크 요소는 `render`로(`Button`과 같은 규칙), `render` 없는 항목은 글자만(페이지 없는 묶음). `aria-label`을 넘기세요(기본 `Breadcrumb`). `PageHeader`의 `eyebrow` 슬롯에 둡니다.
 
+**Table** — 표현 전용: `Table` / `TableHead` / `TableBody` / `TableRow` / `TableHeaderCell` / `TableCell` / `TableEmptyRow`, 네이티브 `<table>` 위(래퍼가 가로 스크롤, `className`은 래퍼에·나머지는 table에). `density="sm"`, `stickyHeader`, 숫자 열 `numeric`(오른쪽 정렬·tabular), 행 `selected` / `interactive`. 정렬은 앱이 합니다: 정렬된 행을 넘기고 정렬 열에 `sortDirection`(→ `aria-sort`)과 `onSort`(머리글이 버튼이 됨)를 주세요. 가상화·그룹화는 없습니다 — 필요하면 헤드리스 표 라이브러리를 앱에 두세요.
+
 **Pagination** — 제어형: `page`(1부터) / `pageCount` / `onPageChange`. `<nav aria-label>` 안 페이지 버튼이고, 현재만 `aria-current="page"`, 생략 기호는 장식, 이전·다음은 양끝에서 비활성. `siblingCount` / `boundaryCount`가 범위를 정하고(`paginationRange` export), `showFirstLast`가 처음·끝 버튼을 더합니다. 라벨 기본은 영어 — `labels`·`aria-label`을 넘기세요. 라우팅은 모릅니다: `onPageChange`에서 URL로 옮기세요.
 
 **Avatar** — `name`이 접근성 이름(루트 `role="img"`)이자 머리글자의 출처입니다. 라틴 두 단어면 대문자 머리글자 둘, 그 밖은 첫 글자 하나. `src`는 장식 `<img alt="">`로 그리고 로드 실패 시 머리글자로 돌아갑니다. `size`는 `sm | md | lg`(`--ui-avatar-size-*`). 색은 neutral 하나 — 이름별 색 배정은 앱 몫. `initialsOf(name)`을 export합니다.
