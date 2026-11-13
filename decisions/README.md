@@ -34,6 +34,7 @@
 - zenn-push — GitHub 연동 리포 커밋
 - ui-style — CSS Modules + 토큰 변수
 - dnd-library — pragmatic-drag-and-drop
+- table-component — Table은 표현 전용 직접 구현, 정렬·필터 로직은 앱(TanStack은 필요 시 앱에)
 - sidebar-collapse-persistence — localStorage
 - turborepo — 미도입
 - secret-scanning — gitleaks
