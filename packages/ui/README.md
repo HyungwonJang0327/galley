@@ -149,6 +149,8 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 **Breadcrumb** — `items` run from the top level to the current page; the last item renders as text with `aria-current="page"` even if it has `render`. Pass link elements via `render` (like `Button`); items without `render` are plain text (a group with no page). Pass `aria-label` (default `Breadcrumb`). `PageHeader` has an `eyebrow` slot for it.
 
+**Pagination** — Controlled: `page` (1-based) / `pageCount` / `onPageChange`. Renders `<nav aria-label>` with page buttons; only the current one has `aria-current="page"`, ellipses are decorative, previous/next disable at the ends. `siblingCount` / `boundaryCount` shape the range (`paginationRange` is exported); `showFirstLast` adds first/last buttons. Labels default to English — pass `labels` and `aria-label` for your language. It knows nothing about routing: push the page to the URL in `onPageChange`.
+
 **Avatar** — `name` is the accessible name (`role="img"` on the root) and the source of the initials: two Latin words → two uppercase initials, anything else → first grapheme. `src` renders a decorative `<img alt="">` and falls back to initials on load error. `size` is `sm | md | lg` (`--ui-avatar-size-*`). One neutral color; per-name coloring is the app's call. `initialsOf(name)` is exported.
 
 **useAwaitDialog** — Opening from a _child's_ mount effect under React StrictMode (development) resolves the first promise with the cancel value, because StrictMode simulates an unmount before the parent's effect runs. Open from the owning component's effect or an event handler.
