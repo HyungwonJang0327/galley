@@ -145,3 +145,8 @@
   font-family: var(--ui-font-mono);
   font-size: var(--ui-text-sm);
 }
+
+/* Table stickyHeader 데모 — 래퍼가 세로 스크롤 컨테이너(컨트롤 높이 5줄). */
+.tableScroll {
+  max-height: calc(var(--ui-control-height) * 5);
+}
