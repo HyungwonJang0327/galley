@@ -40,3 +40,4 @@
 - 2026-09-16 패키지명 치환: 구 스코프 이름 → `galley-ui`(P1b, decisions/package-name.md). 결정 변경 없음.
 - 2026-11-12 P7c: Storybook 실행 환경 구현(react-vite + addon-docs·a11y, GitHub Pages — decisions/docs-site.md). "Storybook = Phase 2 정식 쇼케이스" 약속 이행, `/design`은 개발 보조·실측 대상으로 그대로. 결정 변경 없음.
 - 2026-11-14 P7d Pagination: 갤러리 섹션 4데모 + pagination.mjs. 규칙 확인 — 상태·함수 prop이 필요한 데모는 PrimitiveDemos(클라)에(서버 page.tsx가 클라이언트 컴포넌트에 함수를 넘기면 /design 전체가 깨진다). `'use client'`는 번들 배너로 충분(RF-28·UM1), 소스 배너는 훅·Base UI 파일에만. 색 전환이 있는 요소를 재는 모듈은 `getAnimations` 완료를 기다린 뒤 읽는다. 결정 변경 없음.
+- 2026-11-14 P7d Table: 갤러리 섹션 5데모 + table.mjs(정렬 데모는 PrimitiveDemos — 정렬 상태는 앱). 결정 변경 없음.
