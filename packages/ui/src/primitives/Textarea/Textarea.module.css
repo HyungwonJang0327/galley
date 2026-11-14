@@ -1,36 +1,13 @@
+/* 공통 필드 모양은 internal/field.module.css(RF-21). 여기는 여러 줄 입력의 크기·줄간격·resize만. */
 .textarea {
-  box-sizing: border-box;
+  composes: field from '../../internal/field.module.css';
   display: block;
-  width: 100%;
-  min-width: 0;
   min-height: var(--ui-control-height);
   padding: var(--ui-space-2) var(--ui-space-3);
-  border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-sm);
-  background-color: var(--ui-color-surface);
-  color: var(--ui-color-text);
-  font-family: var(--ui-font-sans);
-  font-size: var(--ui-text-sm);
   line-height: var(--ui-leading-normal);
   resize: vertical;
 }
 
-.textarea::placeholder {
-  color: var(--ui-color-text-muted);
-}
-
-.textarea:focus-visible {
-  outline: var(--ui-focus-ring);
-  outline-offset: var(--ui-focus-ring-offset);
-}
-
 .textarea:disabled {
-  color: var(--ui-color-text-muted);
-  background-color: var(--ui-color-bg);
-  cursor: not-allowed;
   resize: none;
-}
-
-.textarea[aria-invalid='true'] {
-  border-color: var(--ui-color-danger-fg);
 }

@@ -1,33 +1,6 @@
+/* 공통 필드 모양은 internal/field.module.css(RF-21). 여기는 한 줄 입력의 높이·패딩만. */
 .input {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
+  composes: field from '../../internal/field.module.css';
   height: var(--ui-control-height);
   padding: 0 var(--ui-space-3);
-  border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-sm);
-  background-color: var(--ui-color-surface);
-  color: var(--ui-color-text);
-  font-family: var(--ui-font-sans);
-  font-size: var(--ui-text-sm);
-}
-
-.input::placeholder {
-  color: var(--ui-color-text-muted);
-}
-
-.input:focus-visible {
-  outline: var(--ui-focus-ring);
-  outline-offset: var(--ui-focus-ring-offset);
-}
-
-.input[data-disabled],
-.input:disabled {
-  color: var(--ui-color-text-muted);
-  background-color: var(--ui-color-bg);
-  cursor: not-allowed;
-}
-
-.input[aria-invalid='true'] {
-  border-color: var(--ui-color-danger-fg);
 }

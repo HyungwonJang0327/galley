@@ -10,20 +10,13 @@
 
 /* 트리거 폭은 부모가 정한다(width 100%·min-width 0). 내용이 늘리지 않고 값은 ellipsis. */
 .trigger {
+  composes: field from '../../internal/field.module.css';
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--ui-space-2);
-  width: 100%;
-  min-width: 0;
   height: var(--ui-control-height);
   padding: 0 var(--ui-space-2) 0 var(--ui-space-3);
-  border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-sm);
-  background-color: var(--ui-color-surface);
-  color: var(--ui-color-text);
-  font-family: var(--ui-font-sans);
-  font-size: var(--ui-text-sm);
   cursor: pointer;
 }
 
@@ -31,21 +24,7 @@
   background-color: var(--ui-color-bg);
 }
 
-.trigger:focus-visible {
-  outline: var(--ui-focus-ring);
-  outline-offset: var(--ui-focus-ring-offset);
-}
-
 /* FormField(Base UI Field)가 오류 상태를 컨텍스트로 넘긴다 — Input·Textarea의 invalid 테두리와 같은 색. */
-.trigger[aria-invalid='true'] {
-  border-color: var(--ui-color-danger-fg);
-}
-
-.trigger[data-disabled] {
-  color: var(--ui-color-text-muted);
-  cursor: not-allowed;
-}
-
 .value {
   flex: 1;
   min-width: 0;
