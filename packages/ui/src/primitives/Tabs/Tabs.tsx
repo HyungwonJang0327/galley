@@ -26,7 +26,8 @@ export interface TabsProps {
 }
 
 /**
- * 페이지 안 상태 탭(Base UI). 화살표 키 이동·포커스 시 활성화는 Base UI 기본값.
+ * 페이지 안 상태 탭(Base UI). 화살표 키로 옮기면 바로 활성화(자동 활성화 — 패널이 같은 화면의 가벼운 내용이라
+ * WAI-ARIA 권장. Base UI 기본은 수동이라 `activateOnFocus`를 켠다, P7k Chrome 실측 2026-11-14). 끝에서 순환.
  * URL로 이동하는 툴바 탭(ListToolbarTab)과 구분한다 — 이쪽은 같은 화면 안에서 내용을 바꾼다.
  */
 export function Tabs({
@@ -46,7 +47,7 @@ export function Tabs({
         if (typeof next === 'string') onValueChange(next);
       }}
     >
-      <BaseTabs.List className={styles.list} aria-label={ariaLabel}>
+      <BaseTabs.List className={styles.list} aria-label={ariaLabel} activateOnFocus>
         {items.map((item) => (
           <BaseTabs.Tab
             key={item.value}
