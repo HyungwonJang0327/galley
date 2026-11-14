@@ -208,9 +208,24 @@ async function openPage(origin, url) {
       await send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, text });
       await send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
     },
-    async screenshot(file) {
-      const shot = await send('Page.captureScreenshot', { format: 'png' });
+    async screenshot(file, { fullPage = false } = {}) {
+      const params = { format: 'png' };
+      if (fullPage) {
+        const { result } = await send('Page.getLayoutMetrics');
+        const { width, height } = result.cssContentSize;
+        params.captureBeyondViewport = true;
+        params.clip = { x: 0, y: 0, width, height, scale: 1 };
+      }
+      const shot = await send('Page.captureScreenshot', params);
       writeFileSync(file, Buffer.from(shot.result.data, 'base64'));
+    },
+    /**
+     * CSS 미디어 특성 에뮬레이션(DevTools Rendering 패널과 같음). 예: [{ name: 'forced-colors', value: 'active' }].
+     * 빈 배열이면 해제. forced-colors는 렌더링까지 강제 색상으로 바뀌어 getComputedStyle이 시스템 색을 돌려준다.
+     */
+    async emulateMedia(features) {
+      await send('Emulation.setEmulatedMedia', { features });
+      await sleep(150);
     },
     close() {
       ws.close();

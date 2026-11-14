@@ -13,6 +13,7 @@ import { verifyAvatar } from './avatar.mjs';
 import { verifyBreadcrumb } from './breadcrumb.mjs';
 import { verifyPagination } from './pagination.mjs';
 import { verifyTable } from './table.mjs';
+import { verifyForcedColors } from './forced-colors.mjs';
 import { launchChrome, waitFor } from './cdp.mjs';
 import { verifyFormField } from './form-field.mjs';
 import { verifyInlineAlert } from './inline-alert.mjs';
@@ -128,6 +129,7 @@ async function main() {
         verifyBreadcrumb,
         verifyPagination,
         verifyTable,
+        verifyForcedColors,
         verifyToast,
         verifyAwaitDialog,
         verifyNotFound,
