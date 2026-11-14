@@ -762,7 +762,9 @@ export default function DesignPage() {
               페이지 안 상태 탭(화살표 키 이동): count 있음·0·disabled. URL 이동 탭은
               ListToolbarTab.
             </span>
-            <TabsDemo />
+            <div data-demo="tabs">
+              <TabsDemo />
+            </div>
           </div>
         </Card>
 

@@ -201,7 +201,16 @@ async function openPage(origin, url) {
     },
     /** 실제 키 입력. key는 KeyboardEvent.key('Enter'·'Escape'·'Tab' 등). */
     async pressKey(key) {
-      const codes = { Enter: 13, Escape: 27, Tab: 9, ' ': 32 };
+      const codes = {
+        Enter: 13,
+        Escape: 27,
+        Tab: 9,
+        ' ': 32,
+        ArrowLeft: 37,
+        ArrowRight: 39,
+        Home: 36,
+        End: 35,
+      };
       const base = { key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: codes[key] };
       // Enter·Space는 text가 있어야 keypress/click 활성화까지 이어진다.
       const text = key === 'Enter' ? '\r' : key === ' ' ? ' ' : undefined;
