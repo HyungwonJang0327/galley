@@ -72,3 +72,16 @@
   align-items: center;
   flex-shrink: 0;
 }
+
+/* 강제 색상: 활성 틴트는 토큰이 Highlight로 바뀐다 — 그 위 글자는 전부 HighlightText. */
+@media (forced-colors: active) {
+  .active {
+    forced-color-adjust: none;
+  }
+
+  .active,
+  .active .meta,
+  .active .trailing {
+    color: HighlightText;
+  }
+}

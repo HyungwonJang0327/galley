@@ -119,3 +119,11 @@
   text-align: center;
   color: var(--ui-color-text-muted);
 }
+
+/* 강제 색상: 선택 행 배경이 Highlight가 되므로 글자는 HighlightText. hover 배경(neutral-bg → Canvas)은 사라져도 된다. */
+@media (forced-colors: active) {
+  .row[data-selected] .td {
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
+}

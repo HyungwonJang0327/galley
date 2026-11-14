@@ -131,3 +131,16 @@ button.body:focus-visible {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* 강제 색상: 마커 채움이 전부 CanvasText가 된다 — 대기는 속을 비워 구분하고, 그림자 테두리는 사라지므로 윤곽선으로 대신한다. */
+@media (forced-colors: active) {
+  .marker {
+    outline: 2px solid Canvas;
+  }
+
+  .marker[data-status='pending'] {
+    background-color: Canvas;
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}

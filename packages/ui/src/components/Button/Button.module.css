@@ -78,3 +78,11 @@
 .danger:not(:disabled):hover {
   background-color: var(--ui-color-danger-hover);
 }
+
+/* 강제 색상: primary·danger 채움은 토큰이 Highlight로 바뀐다. 저자가 둔 시스템 색 배경 뒤에는 브라우저가 Canvas 백플레이트를 깔아 HighlightText 글자가 묻힌다 — 의도한 Highlight 채움은 강제 조정을 끈다(색은 전부 토큰 = 시스템 색이라 안전). */
+@media (forced-colors: active) {
+  .primary,
+  .danger {
+    forced-color-adjust: none;
+  }
+}

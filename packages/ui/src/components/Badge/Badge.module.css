@@ -52,3 +52,15 @@
     opacity: 0.3;
   }
 }
+
+/* 강제 색상: 배경이 Canvas로 덮여 알약 모양이 사라진다 — 윤곽선으로 모양을 남기고, 펄스 점은 글자색으로 그린다. */
+@media (forced-colors: active) {
+  .badge {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+
+  .pulse::before {
+    background-color: CanvasText;
+  }
+}

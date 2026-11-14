@@ -33,3 +33,15 @@
 .trailing {
   display: inline-flex;
 }
+
+/* 강제 색상: 칩 배경이 Canvas로 덮인다 — 윤곽선으로 pill을 남긴다(활성은 토큰이 Highlight로 채운다). */
+@media (forced-colors: active) {
+  .chip {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+
+  .active {
+    forced-color-adjust: none;
+  }
+}

@@ -18,3 +18,10 @@
   line-height: var(--ui-leading-normal);
   outline: 0;
 }
+
+/* 강제 색상: 어두운 배경이 Canvas가 되어 말풍선 경계가 사라진다 — 윤곽선으로 남긴다. */
+@media (forced-colors: active) {
+  .popup {
+    outline: 1px solid CanvasText;
+  }
+}

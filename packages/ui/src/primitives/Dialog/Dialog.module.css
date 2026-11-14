@@ -81,3 +81,10 @@
   justify-content: flex-end;
   gap: var(--ui-space-2);
 }
+
+/* 강제 색상: 그림자가 사라지고 배경막도 Canvas라 창 가장자리가 없어진다 — 윤곽선으로 창을 구분한다. */
+@media (forced-colors: active) {
+  .popup {
+    outline: 1px solid CanvasText;
+  }
+}
