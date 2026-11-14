@@ -1,0 +1,35 @@
+/*
+ * 폼 필드 공통 모양(RF-21) — Input·Textarea·Select 트리거가 `composes`로 가져간다.
+ * 테두리·라운드·표면·글자·포커스 링·disabled·invalid는 여기 한 곳. 높이·패딩·레이아웃은 각 컴포넌트가 덧붙인다.
+ */
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--ui-color-surface);
+  color: var(--ui-color-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-sm);
+}
+
+.field::placeholder {
+  color: var(--ui-color-text-muted);
+}
+
+.field:focus-visible {
+  outline: var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+.field:disabled,
+.field[data-disabled] {
+  color: var(--ui-color-text-muted);
+  background-color: var(--ui-color-bg);
+  cursor: not-allowed;
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--ui-color-danger-fg);
+}
