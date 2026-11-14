@@ -161,7 +161,7 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 Baseline for every component: keyboard operable, visible `:focus-visible` ring (token), accessible name via label or `aria-label`, text contrast ≥ 4.5:1 in both themes (dark values were chosen against a contrast table). Base UI supplies focus traps, roving tabindex and dismiss behavior; the wrappers add roles and names where Base UI 1.8 leaves them out (`Tooltip` popup, `role="tooltip"`).
 
-Not yet verified: Windows forced-colors (high-contrast) mode — only `Separator` handles it; toggle state and selection rely on color and may need work. Screen-reader announcement of `Form` submit failures and of toasts over a modal are listed as follow-ups.
+Forced-colors (Windows high-contrast) mode is supported: the color tokens are remapped to system colors (`Highlight`/`HighlightText` for selection and toggles, `CanvasText` for borders, `GrayText` for muted text), tabs keep only the active underline, badges and avatars keep their outline, timeline markers and skeletons stay visible. Measured with Chrome's `forced-colors: active` emulation in the layout check. Screen-reader announcement of `Form` submit failures and of toasts over a modal are listed as follow-ups.
 
 ## Motion
 

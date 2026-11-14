@@ -163,7 +163,7 @@ confirm({ title, confirmLabel: '확인', cancelLabel: '취소', closeLabel: '닫
 
 모든 컴포넌트의 기준선: 키보드로 조작 가능, 보이는 `:focus-visible` 링(토큰), 라벨 또는 `aria-label`로 접근성 이름, 두 테마 모두 글자 대비 4.5:1 이상(다크 값은 대비표로 골랐습니다). 포커스 트랩, roving tabindex, dismiss 동작은 Base UI가 제공하고, Base UI 1.8이 빼놓은 role과 이름은 래퍼가 채웁니다(`Tooltip` popup의 `role="tooltip"`).
 
-아직 검증하지 않은 것: Windows forced-colors(고대비) 모드는 `Separator`만 대응합니다. 토글 상태와 선택 표시가 색에 의존해 손볼 곳이 있을 수 있습니다. `Form` 제출 실패와 모달 위 토스트의 스크린리더 낭독은 후속 과제입니다.
+Windows forced-colors(고대비) 모드를 지원합니다: 색 토큰을 시스템 색으로 재정의하고(선택·토글은 `Highlight`/`HighlightText`, 경계선은 `CanvasText`, 보조 글자는 `GrayText`), 탭은 활성 밑줄만 남기며, 배지·아바타는 윤곽선을, 타임라인 마커·스켈레톤은 모양을 유지합니다. Chrome의 `forced-colors: active` 에뮬레이션으로 실측합니다. `Form` 제출 실패와 모달 위 토스트의 스크린리더 낭독은 후속 과제입니다.
 
 ## 모션
 
