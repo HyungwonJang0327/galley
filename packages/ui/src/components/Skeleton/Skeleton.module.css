@@ -50,3 +50,10 @@
     opacity: 0.6;
   }
 }
+
+/* 강제 색상: 배경이 Canvas로 덮여 막대가 사라진다 — 보조 색(GrayText)으로 "아직 없음"을 남긴다. */
+@media (forced-colors: active) {
+  .bar {
+    background: GrayText;
+  }
+}

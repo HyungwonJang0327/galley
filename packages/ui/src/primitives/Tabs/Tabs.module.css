@@ -67,3 +67,16 @@
   padding-top: var(--ui-space-4);
   outline: 0;
 }
+
+/* 강제 색상: 투명 밑줄도 CanvasText로 그려져 활성 구분이 사라진다 — 비활성은 밑줄을 없애고 그 두께만큼 패딩으로 채운다. */
+@media (forced-colors: active) {
+  .tab {
+    border-bottom-width: 0;
+    padding-bottom: calc(var(--ui-space-3) + 2px);
+  }
+
+  .tab[data-active] {
+    border-bottom-width: 2px;
+    padding-bottom: var(--ui-space-3);
+  }
+}

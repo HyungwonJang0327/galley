@@ -97,3 +97,11 @@
 .action {
   flex-shrink: 0;
 }
+
+/* 강제 색상: 채움 배경이 Canvas로 덮인다 — filled는 윤곽선으로 상자를 남긴다(tone은 아이콘이 전한다). */
+@media (forced-colors: active) {
+  .filled {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}

@@ -129,3 +129,15 @@
   flex-shrink: 0;
   color: var(--ui-color-accent);
 }
+
+/* 강제 색상: 강조 배경이 Highlight가 되므로 글자·체크는 HighlightText. */
+@media (forced-colors: active) {
+  .item[data-highlighted] {
+    forced-color-adjust: none;
+  }
+
+  .item[data-highlighted],
+  .item[data-highlighted] .indicator {
+    color: HighlightText;
+  }
+}

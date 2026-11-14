@@ -47,3 +47,11 @@
   /* 두 글자 머리글자가 원 안에 들어가게 자간을 살짝 줄인다. */
   letter-spacing: -0.02em;
 }
+
+/* 강제 색상: 배경이 Canvas로 덮여 원이 사라진다 — 윤곽선으로 모양을 남긴다. */
+@media (forced-colors: active) {
+  .avatar {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}
