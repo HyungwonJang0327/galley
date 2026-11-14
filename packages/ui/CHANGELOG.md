@@ -1,5 +1,17 @@
 # galley-ui
 
+## 0.3.0
+
+### Minor Changes
+
+- 13b3e52: Add `Pagination` (controlled `page` / `pageCount` / `onPageChange`, `siblingCount` / `boundaryCount`, `showFirstLast`, `labels`) and export `paginationRange`.
+- 3b35dba: Add `Table` (presentation only: `Table` / `TableHead` / `TableBody` / `TableRow` / `TableHeaderCell` / `TableCell` / `TableEmptyRow`; `density`, `stickyHeader`, `numeric`, `selected` / `interactive` rows, `sortDirection` → `aria-sort` + `onSort` header button). Sorting and filtering stay in the app.
+
+### Patch Changes
+
+- ba01350: Forced-colors (high-contrast) support: color tokens remap to system colors under `@media (forced-colors: active)`; toggles, selection, tabs, badges, timeline markers, skeletons and popups keep their shape and state. Highlight fills with text opt out of the browser backplate (`forced-color-adjust: none`).
+- c44dade: `Tabs`: arrow keys now activate the focused tab (`activateOnFocus`), as documented — Base UI defaults to manual activation. Internal cleanup with no API change: `Input` / `Textarea` / `Select` trigger share one field style; icon sizes and popup offsets are constants.
+
 ## 0.2.1
 
 ### Patch Changes
