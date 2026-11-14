@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { ItemContent } from '../ItemContent';
 import { useFieldRequired } from '../FormField/FormFieldContext';
 import styles from './Select.module.css';
+import { ICON_SIZE, SIDE_OFFSET } from '../../internal/metrics';
 
 export interface SelectItem {
   value: string;
@@ -68,13 +69,13 @@ export function Select({
         <BaseSelect.Trigger className={triggerClass} aria-label={ariaLabel}>
           <BaseSelect.Value className={styles.value} placeholder={placeholder} />
           <BaseSelect.Icon className={styles.icon}>
-            <ChevronDown size={16} aria-hidden="true" />
+            <ChevronDown size={ICON_SIZE.md} aria-hidden="true" />
           </BaseSelect.Icon>
         </BaseSelect.Trigger>
         <BaseSelect.Portal>
           <BaseSelect.Positioner
             className={styles.positioner}
-            sideOffset={4}
+            sideOffset={SIDE_OFFSET.popup}
             alignItemWithTrigger={false}
           >
             <BaseSelect.Popup className={styles.popup}>
@@ -89,7 +90,7 @@ export function Select({
                     className={styles.item}
                   >
                     <BaseSelect.ItemIndicator className={styles.indicator}>
-                      <Check size={14} aria-hidden="true" />
+                      <Check size={ICON_SIZE.sm} aria-hidden="true" />
                     </BaseSelect.ItemIndicator>
                     <ItemContent
                       label={<BaseSelect.ItemText>{item.label}</BaseSelect.ItemText>}

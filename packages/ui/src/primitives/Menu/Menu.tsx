@@ -3,6 +3,7 @@ import { Menu as BaseMenu } from '@base-ui/react/menu';
 import type { ReactElement, ReactNode } from 'react';
 import { ItemContent } from '../ItemContent';
 import styles from './Menu.module.css';
+import { SIDE_OFFSET } from '../../internal/metrics';
 
 export interface MenuItem {
   /** onSelect에 넘기는 식별자. 목록 안에서 유일해야 한다. */
@@ -56,7 +57,11 @@ export function Menu({ trigger, items, onSelect, align = 'end', className }: Men
     <BaseMenu.Root>
       <BaseMenu.Trigger render={trigger} />
       <BaseMenu.Portal>
-        <BaseMenu.Positioner className={styles.positioner} align={align} sideOffset={4}>
+        <BaseMenu.Positioner
+          className={styles.positioner}
+          align={align}
+          sideOffset={SIDE_OFFSET.popup}
+        >
           <BaseMenu.Popup className={popupClass}>
             {items.map((entry, index) =>
               isSeparator(entry) ? (

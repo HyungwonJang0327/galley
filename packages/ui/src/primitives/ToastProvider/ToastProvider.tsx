@@ -7,6 +7,7 @@ import { isTone, toneIcon } from '../../internal/tone';
 import type { Tone } from '../../internal/tone';
 import styles from './ToastProvider.module.css';
 import { ToastManagerContext, createBufferedToastManager } from './ToastContext';
+import { ICON_SIZE } from '../../internal/metrics';
 
 export type ToastTone = Tone;
 export type ToastPosition = 'top-right' | 'bottom-right';
@@ -67,7 +68,7 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
         className={[styles.toast, styles[tone]].join(' ')}
       >
         <span className={styles.icon}>
-          <Icon size={16} aria-hidden="true" />
+          <Icon size={ICON_SIZE.md} aria-hidden="true" />
         </span>
         <BaseToast.Content className={styles.content}>
           {/* Base UI Title은 h2 — 토스트는 문서 개요에 들어갈 제목이 아니라 div로(Popover와 같은 판단). */}
@@ -75,7 +76,7 @@ function ToastList({ closeLabel }: { closeLabel: string }) {
           <BaseToast.Description className={styles.description} />
         </BaseToast.Content>
         <BaseToast.Close className={styles.close} aria-label={closeLabel}>
-          <X size={14} aria-hidden="true" />
+          <X size={ICON_SIZE.sm} aria-hidden="true" />
         </BaseToast.Close>
       </BaseToast.Root>
     );
