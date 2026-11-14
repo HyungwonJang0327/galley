@@ -67,3 +67,4 @@ packages/ui/
 - 2026-09-21 RF-05 `src/internal/` 추가 — 배럴에 노출하지 않는 공용 모듈 자리(첫 항목 `tone.ts`: Tone 어휘·아이콘 매핑·ConfirmTone→variant). 컴포넌트 둘 이상이 같은 상수·타입·헬퍼를 복제하면 여기로 올린다. 컨텍스트 파일(FormFieldContext·ToastContext)은 소유 컴포넌트 폴더에 그대로. 결정 변경 없음.
 - 2026-09-21 RF-16 "제어형만"의 예외는 둘: **Popover**(`open` 선택)와 **TimelineItem 펼침**(`defaultOpen`, `open` 선택). 둘 다 "열림 상태를 앱이 가질 이유가 없는 순수 표시 상태"라는 같은 논리. 코드는 2026-09-10부터 그랬고 문서가 뒤따른다. 결정 변경 없음(예외 목록 정정).
 - 2026-09-21 RF-10 rest props 규칙: **루트가 단일 DOM 요소인 표현 컴포넌트**(Badge·Button·Card·Separator·Skeleton·InlineAlert·ListRow·ListToolbar·TopBarChip·Input·Textarea 등)는 `...props`를 루트에 스프레드한다. **데이터형 프리미티브**(Select·Menu·Tabs·RadioGroup 등 items를 받는 것)와 **슬롯 조립 컴포넌트**(EmptyState·PageHeader·StatTile·ActionBar·AppShell·SidebarGroup·SplitPane·TimelineItem)는 스프레드하지 않고 필요한 prop만 연다. 지금 안 하는 쪽을 스프레드로 바꾸는 코드 정리는 P7.
+- 2026-11-14 P7g: 강제 색상 모드 대응은 토큰 재정의 + 좁은 `forced-color-adjust: none` + 구조 보정(decisions/forced-colors.md). ui 의존성·공개 API 변화 없음. 결정 변경 없음.
