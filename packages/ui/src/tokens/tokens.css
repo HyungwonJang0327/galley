@@ -155,7 +155,7 @@
  * 표면·배경 = Canvas. 색 밖의 구조(투명 밑줄·배경만 있는 모양·그림자 경계)는 컴포넌트 CSS의 @media 블록이 맡는다.
  * 글자가 있는 Highlight 채움(primary 버튼·현재 쪽·선택 행·강조 항목)은 `forced-color-adjust: none`도 준다 — 저자가 둔
  * 시스템 색 배경 뒤에 브라우저가 Canvas 백플레이트를 깔아 HighlightText 글자가 묻히기 때문(decisions/forced-colors.md).
- * 실측: apps/dashboard verify-layout forced-colors.mjs(Emulation.setEmulatedMedia).
+ * 실측: 소비 앱의 레이아웃 검사가 forced-colors 에뮬레이션(CDP Emulation.setEmulatedMedia)으로 잰다.
  */
 @media (forced-colors: active) {
   :root,
