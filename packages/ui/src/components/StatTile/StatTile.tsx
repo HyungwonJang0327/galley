@@ -2,6 +2,7 @@ import { cloneElement, isValidElement } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import styles from './StatTile.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 /** render로 넘길 링크 요소. className은 병합, 임의 속성 허용. */
 type RenderElement = ReactElement<{ className?: string; [key: string]: unknown }>;
@@ -52,7 +53,9 @@ export function StatTile({
         <span className={styles.label}>{label}</span>
       </span>
       <span className={styles.value}>{value}</span>
-      {isLink ? <ArrowUpRight className={styles.arrow} size={16} aria-hidden="true" /> : null}
+      {isLink ? (
+        <ArrowUpRight className={styles.arrow} size={ICON_SIZE.md} aria-hidden="true" />
+      ) : null}
     </>
   );
 

@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import styles from './Table.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 export type TableDensity = 'md' | 'sm';
 export type SortDirection = 'ascending' | 'descending';
@@ -107,7 +108,7 @@ export function TableHeaderCell({
       {onSort ? (
         <button type="button" className={styles.sortButton} onClick={onSort}>
           <span className={styles.sortLabel}>{children}</span>
-          <Icon size={14} aria-hidden="true" className={styles.sortIcon} />
+          <Icon size={ICON_SIZE.sm} aria-hidden="true" className={styles.sortIcon} />
         </button>
       ) : (
         children

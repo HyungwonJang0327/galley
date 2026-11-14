@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useFieldRequired } from '../FormField/FormFieldContext';
 import { useAccessibleNameWarning } from '../../internal/accessibleName';
 import styles from './Checkbox.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 export interface CheckboxProps {
   /** 제어형만. */
@@ -62,9 +63,9 @@ export function Checkbox({
       >
         <BaseCheckbox.Indicator className={styles.indicator}>
           {indeterminate ? (
-            <Minus size={12} strokeWidth={3} aria-hidden="true" />
+            <Minus size={ICON_SIZE.xs} strokeWidth={3} aria-hidden="true" />
           ) : (
-            <Check size={12} strokeWidth={3} aria-hidden="true" />
+            <Check size={ICON_SIZE.xs} strokeWidth={3} aria-hidden="true" />
           )}
         </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>

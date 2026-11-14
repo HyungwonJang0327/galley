@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, type ReactElement } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import styles from './Breadcrumb.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 /** render로 넘길 링크 요소(예: Next <Link href />). className은 병합, 임의 속성 허용. */
 type RenderElement = ReactElement<{ className?: string; [key: string]: unknown }>;
@@ -43,7 +44,7 @@ export function Breadcrumb({
           return (
             <li key={`${index}-${item.label}`} className={styles.item}>
               {index > 0 ? (
-                <ChevronRight size={12} aria-hidden="true" className={styles.separator} />
+                <ChevronRight size={ICON_SIZE.xs} aria-hidden="true" className={styles.separator} />
               ) : null}
               {isCurrent ? (
                 <span aria-current="page" className={styles.current}>

@@ -3,6 +3,7 @@ import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { X } from 'lucide-react';
 import type { ReactElement, ReactNode, RefObject } from 'react';
 import styles from './Dialog.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 export interface DialogProps {
   /** 제어형만. 열림 상태는 앱이 갖는다. */
@@ -52,7 +53,7 @@ export function Dialog({
           <div className={styles.header}>
             <BaseDialog.Title className={styles.title}>{title}</BaseDialog.Title>
             <BaseDialog.Close className={styles.close} aria-label={closeLabel}>
-              <X size={16} aria-hidden="true" />
+              <X size={ICON_SIZE.md} aria-hidden="true" />
             </BaseDialog.Close>
           </div>
           {description !== undefined ? (

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import styles from './Pagination.module.css';
+import { ICON_SIZE } from '../../internal/metrics';
 
 export type PaginationItem = number | 'ellipsis';
 
@@ -126,7 +127,7 @@ export function Pagination({
         disabled={isDisabled}
         onClick={() => go(target)}
       >
-        <Icon size={16} aria-hidden="true" />
+        <Icon size={ICON_SIZE.md} aria-hidden="true" />
       </button>
     </li>
   );

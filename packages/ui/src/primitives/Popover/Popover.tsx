@@ -2,6 +2,7 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import type { ReactElement, ReactNode } from 'react';
 import styles from './Popover.module.css';
+import { SIDE_OFFSET } from '../../internal/metrics';
 
 export type PopoverSide = 'top' | 'bottom' | 'left' | 'right';
 export type PopoverAlign = 'start' | 'center' | 'end';
@@ -78,7 +79,7 @@ export function Popover({
           className={styles.positioner}
           side={side}
           align={align}
-          sideOffset={6}
+          sideOffset={SIDE_OFFSET.popover}
         >
           <BasePopover.Popup className={popupClass} aria-label={ariaLabel}>
             {hasTitle ? (

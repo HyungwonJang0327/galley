@@ -2,6 +2,7 @@
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import type { ReactElement, ReactNode } from 'react';
 import styles from './Tooltip.module.css';
+import { SIDE_OFFSET } from '../../internal/metrics';
 
 export type TooltipSide = 'top' | 'bottom' | 'left' | 'right';
 
@@ -31,7 +32,11 @@ export function Tooltip({ trigger, content, side = 'top', delay, className }: To
     <BaseTooltip.Root>
       <BaseTooltip.Trigger render={trigger} delay={delay} />
       <BaseTooltip.Portal>
-        <BaseTooltip.Positioner className={styles.positioner} side={side} sideOffset={6}>
+        <BaseTooltip.Positioner
+          className={styles.positioner}
+          side={side}
+          sideOffset={SIDE_OFFSET.popover}
+        >
           {/* Base UI 1.8 Popup은 role을 붙이지 않는다 — 보조기기·테스트가 찾도록 명시. */}
           <BaseTooltip.Popup role="tooltip" className={popupClass}>
             {content}
