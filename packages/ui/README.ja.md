@@ -163,7 +163,7 @@ confirm({ title, confirmLabel: 'OK', cancelLabel: 'キャンセル', closeLabel:
 
 すべてのコンポーネントの基準線: キーボードで操作できる、見える `:focus-visible` リング（トークン）、ラベルか `aria-label` によるアクセシブルな名前、両テーマで文字コントラスト 4.5:1 以上（ダークの値はコントラスト表で選びました）。フォーカストラップ、roving tabindex、dismiss の挙動は Base UI が提供し、Base UI 1.8 が省いている role と名前はラッパーが補います（`Tooltip` popup の `role="tooltip"`）。
 
-未検証: Windows の forced-colors（ハイコントラスト）モードは `Separator` のみ対応しています。トグルの状態と選択の表示が色に依存しているため、手直しが必要かもしれません。`Form` 送信失敗とモーダル上のトーストのスクリーンリーダー読み上げは今後の課題です。
+Windows の forced-colors（ハイコントラスト）モードに対応しています: 色トークンをシステム色に再定義し（選択・トグルは `Highlight`/`HighlightText`、境界線は `CanvasText`、補助文字は `GrayText`）、タブはアクティブの下線だけを残し、バッジ・アバターは輪郭線を、タイムラインのマーカー・スケルトンは形を保ちます。Chrome の `forced-colors: active` エミュレーションで実測しています。`Form` 送信失敗とモーダル上のトーストのスクリーンリーダー読み上げは今後の課題です。
 
 ## モーション
 
