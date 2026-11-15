@@ -1,0 +1,8 @@
+.attempt,
+.progress {
+  color: var(--ui-color-text-muted);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
