@@ -48,7 +48,6 @@
 
 .button:disabled {
   color: var(--ui-color-text-muted);
-  opacity: 0.5;
   cursor: not-allowed;
 }
 
