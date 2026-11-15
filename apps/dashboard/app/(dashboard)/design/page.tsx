@@ -119,6 +119,7 @@ export default function DesignPage() {
             <div className={styles.row}>
               <Button size="sm">Small</Button>
               <Button size="md">Medium</Button>
+              <Button size="lg">Large</Button>
             </div>
           </div>
           <div className={styles.group}>
