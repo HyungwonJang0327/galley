@@ -16,8 +16,11 @@
     border-color var(--ui-duration-fast) var(--ui-ease);
 }
 
+/* 비활성: variant와 무관하게 토큰 색으로만(decisions/disabled-style.md) — opacity 금지. 테마·강제 색상에서 대비가 토큰대로 정해진다. */
 .button:disabled {
-  opacity: 0.5;
+  background-color: var(--ui-color-bg);
+  border-color: var(--ui-color-border);
+  color: var(--ui-color-text-muted);
   cursor: not-allowed;
 }
 
@@ -66,6 +69,12 @@
 
 .ghost:not(:disabled):hover {
   background-color: var(--ui-color-neutral-bg);
+}
+
+/* ghost는 비활성이어도 채움·테두리가 없다(글자만 흐려짐). */
+.ghost:disabled {
+  background-color: transparent;
+  border-color: transparent;
 }
 
 /* danger: 채운 빨강(--ui-color-danger, primary의 accent와 같은 자리). 글자는 accent-fg를 같이 쓴다 —
