@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import type { RunHistoryRow } from '../../../../lib/run-history';
 import {
@@ -7,6 +7,11 @@ import {
   RunHistoryTable,
   sortRunHistory,
 } from './RunHistoryTable';
+
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+
+beforeEach(() => push.mockClear());
 
 function row(overrides: Partial<RunHistoryRow> & { id: string }): RunHistoryRow {
   return {
@@ -118,6 +123,19 @@ describe('RunHistoryTable', () => {
     const cells = within(body!).getAllByRole('cell');
     expect(cells[0]!.textContent).toBe('재시도 2차');
     expect(cells[2]!.textContent?.replace(/\s+/g, ' ').trim()).toBe('발행정보·썸네일 완료 3/6');
+  });
+
+  it('행을 누르면 실행 상세로 간다 — 제목 링크를 누른 건 Link에 맡기고 겹치지 않는다', () => {
+    render(<RunHistoryTable rows={[row({ id: 'a', title: '가' })]} />);
+    const [, body] = screen.getAllByRole('rowgroup');
+    const cells = within(body!).getAllByRole('cell');
+
+    fireEvent.click(cells[3]!);
+    expect(push).toHaveBeenCalledWith('/runs?tab=done&id=a');
+
+    push.mockClear();
+    fireEvent.click(screen.getByRole('link', { name: '가' }));
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('행이 없으면 빈 행 한 줄', () => {
