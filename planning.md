@@ -42,6 +42,7 @@
 - 화면: TopBar/Sidebar 셸(사용 흐름 순 IA — decisions/navigation.md), 큐(패턴 A·탭 4개), 실행 상세(패턴 B)
 - 컴포넌트 갤러리(`/design`, 셸 안, A3 이후) — 개발 확인용. 정식 쇼케이스는 Storybook → GitHub Pages(P7c 결정 2026-11-12 — decisions/docs-site.md). (decisions/component-gallery.md)
 - **galley-ui npm 배포**(Phase P, 2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선; **0.1.0 2026-09-21 · 0.2.0 2026-11-12 · 0.2.1 2026-11-14(첫 CI publish) · 0.3.0 2026-11-15** — `--ui-font-mono`·Avatar·Breadcrumb·Storybook 링크 · Pagination·Table(표현 전용, 로직은 앱 — decisions/table-component.md)·forced-colors 토큰(decisions/forced-colors.md); publish는 태그 push → Actions(npm Trusted Publishing, P7b 결정 2026-11-12 — decisions/ci-publish.md)): 라이트+다크 토큰 · 폼·피드백 최소 구색 8개 + `useAwaitDialog`/`useConfirm`/`useAlert`(decisions/confirm-dialog-usage.md) · README · 배포 메타데이터. 배포명 `galley-ui`(unscoped, decisions/package-name.md). 절차는 todo/mvp-todo.md Phase P. [x] **배포됨(2026-09-21, galley-ui@0.1.0 — https://www.npmjs.com/package/galley-ui, 90파일 141.7 kB)**
+- **MVP 리허설**(2026-11-15 추가): INTENT 시나리오 1~3을 실제 리포·실제 모델로 1회 통과해야 Phase 1 완료로 본다. 기능 항목이 다 체크돼도 실측 전엔 미완 — todo MR1~MR3.
 
 ### 제외
 
