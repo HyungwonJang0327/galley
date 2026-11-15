@@ -308,6 +308,7 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ## Phase P · galley-ui 0.1.0 npm 배포 (2026-09-15 추가 — 대시보드 B·BM·BE·BS 항목보다 우선)
 
+- [x] **galley-ui 0.3.0 배포**(2026-11-15, 버전 PR #184 `30dd548`, 태그 `galley-ui@0.3.0` → publish.yml run 43672828277 success, provenance, 100 files 659.8 kB) — changeset 4 소비(Pagination·Table minor, forced-colors·RF 묶음 patch). 사람 손 없음(머지 → 에이전트 태그 push). `pnpm changeset tag`는 deprecated 경고 — 다음부터 `pnpm changeset git-tag`.
 - [x] **galley-ui 0.2.1 배포 — CI publish 첫 실전**(2026-11-14 `3caf519`, PR #178, 태그 `galley-ui@0.2.1` → publish.yml run 43525951061 success, provenance, 사용자 Trusted Publisher 등록 뒤 사람 publish 없음). 확인은 curl no-cache(CDN 캐시).
 - [x] **galley-ui 0.2.0 배포**(2026-11-12 `965aa50`, PR #174, 태그 `galley-ui@0.2.0`) — /ship 1~4 통과, changeset minor 3(P7m·Avatar·Breadcrumb) 소비. publish는 사용자 일반 터미널(`npm login` 패스키 → `npm publish`), E401이면 토큰 만료라 재로그인. 확인은 레지스트리 직접 조회(`npm view`는 캐시). 다음 릴리즈 전 P7b(CI publish) /decide.
 
