@@ -12,4 +12,5 @@ export const Secondary = { args: { children: '취소', variant: 'secondary' } };
 export const Ghost = { args: { children: '더보기', variant: 'ghost' } };
 export const Danger = { args: { children: '삭제', variant: 'danger' } };
 export const Small = { args: { children: '작게', size: 'sm' } };
+export const Large = { args: { children: '크게', size: 'lg' } };
 export const Disabled = { args: { children: '비활성', disabled: true } };
