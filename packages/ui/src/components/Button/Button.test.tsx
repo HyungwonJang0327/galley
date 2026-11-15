@@ -15,6 +15,16 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
+  it('size 클래스 — 기본 md, sm·lg 지정', () => {
+    const { rerender } = render(<Button>x</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn.className).toMatch(/md/);
+    rerender(<Button size="sm">x</Button>);
+    expect(btn.className).toMatch(/sm/);
+    rerender(<Button size="lg">x</Button>);
+    expect(btn.className).toMatch(/lg/);
+  });
+
   it('type 기본값은 button (실수 submit 방지)', () => {
     render(<Button>x</Button>);
     expect(screen.getByRole('button').getAttribute('type')).toBe('button');

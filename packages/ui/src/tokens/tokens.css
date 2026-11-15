@@ -100,8 +100,9 @@
   --ui-avatar-size-sm: 24px; /* Avatar — 목록 행 안 */
   --ui-avatar-size-md: 32px; /* 기본, 폼 컨트롤 높이와 같다 */
   --ui-avatar-size-lg: 40px; /* 카드 머리 */
-  --ui-button-height-sm: 28px;
-  --ui-button-height-md: 36px; /* 폼 컨트롤(32)보다 크다 — 나란히 놓일 때의 통일은 P7 */
+  --ui-button-height-sm: 28px; /* 목록 행·표 안의 밀집 액션 */
+  --ui-button-height-md: 32px; /* 기본 = 폼 컨트롤 높이, 같은 줄에 놓여도 맞는다 (decisions/button-height.md) */
+  --ui-button-height-lg: 36px; /* 혼자 서는 주요 CTA — 옵트인 */
   --ui-toolbar-min-height: 44px; /* ListToolbar 한 줄 최소 높이 */
   --ui-shell-min-width: 1200px; /* 데스크톱 전용 최소 폭 */
   --ui-select-popup-max-width: min(

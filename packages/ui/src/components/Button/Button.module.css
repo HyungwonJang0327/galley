@@ -42,6 +42,12 @@
   font-size: var(--ui-text-body);
 }
 
+.lg {
+  height: var(--ui-button-height-lg);
+  padding: 0 var(--ui-space-5);
+  font-size: var(--ui-text-body);
+}
+
 /* variant */
 .primary {
   background-color: var(--ui-color-accent);
