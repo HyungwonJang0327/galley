@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Badge,
   Table,
@@ -83,7 +84,13 @@ export function RunHistoryTable({
   rows: readonly RunHistoryRow[];
   initialSort?: RunHistorySort;
 }) {
+  const router = useRouter();
   const [sort, setSort] = useState<RunHistorySort>(initialSort);
+  // 행 어디를 눌러도 실행 상세로(layout.md "행 클릭 → /runs?id="). 제목 링크 자체를 눌렀으면 Link가 가니 겹치지 않게 둔다.
+  const onRowClick = (href: string) => (event: MouseEvent<HTMLTableRowElement>) => {
+    if ((event.target as HTMLElement).closest('a') !== null) return;
+    router.push(href);
+  };
   const sorted = sortRunHistory(rows, sort);
   const header = (key: RunHistorySortKey, label: string, numeric = false) => (
     <TableHeaderCell
@@ -113,7 +120,7 @@ export function RunHistoryTable({
           <TableEmptyRow colSpan={COLUMN_COUNT}>아직 실행한 기록이 없습니다.</TableEmptyRow>
         ) : (
           sorted.map((row) => (
-            <TableRow key={row.id} interactive>
+            <TableRow key={row.id} interactive onClick={onRowClick(row.href)}>
               <TableCell>
                 <Link href={row.href}>{row.title}</Link>
                 {row.attempt > 1 ? <span className={styles.attempt}> {row.attempt}차</span> : null}
