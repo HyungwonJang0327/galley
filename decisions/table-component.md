@@ -26,3 +26,4 @@
 ## 갱신 이력
 
 - 2026-11-14 최초 결정(사용자 선택 A). 첫 실제 자리(실행 이력 표)는 다음 단위.
+- 2026-11-15 첫 자리 — 실행 이력 /runs/history(P7d-apply). 정렬 상태·비교는 앱 컴포넌트(`RunHistoryTable`), 표시값은 서버 어댑터(`lib/run-history`). 소비자가 찾은 빈틈 하나: numeric 셀이 줄을 바꿔 단위가 떨어짐 → `white-space: nowrap`(patch). 결정 변경 없음.
