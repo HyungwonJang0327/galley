@@ -36,6 +36,8 @@
 - dnd-library — pragmatic-drag-and-drop
 - forced-colors — 강제 색상 모드: 토큰을 시스템 색으로 재정의 + Highlight 채움은 forced-color-adjust none + 구조 보정, 실측은 CDP 에뮬레이션
 - table-component — Table은 표현 전용 직접 구현, 정렬·필터 로직은 앱(TanStack은 필요 시 앱에)
+- disabled-style — 비활성 표현은 토큰 색(muted·bg·border)으로만, opacity 금지(강제 색상·중첩·다크에서 대비 예측 가능)
+- button-height — Button md 32(= 폼 컨트롤) + lg 36 옵트인, sm 28 유지
 - sidebar-collapse-persistence — localStorage
 - turborepo — 미도입
 - secret-scanning — gitleaks
