@@ -1,0 +1,5 @@
+.note {
+  margin: var(--ui-space-3) 0 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-sm);
+}
