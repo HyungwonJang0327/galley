@@ -59,3 +59,4 @@
 - dashboard-testing — apps/dashboard 단위 테스트(vitest+happy-dom+testing-library, ui와 동일 스택)
 - topic-slug — 주제 슬러그(힌트 뗀 제목에서 첫 실행 때 한 번, 같은 주제는 승계, 완료 주제 실행 거절·되돌리기 절차, 재승인 시 직전 파일 정리)
 - layout-measurement — 레이아웃 실측 스크립트(headless Chrome CDP, `verify:layout` 수동 실행, CI 통합은 10회 연속 통과 후 별도 결정)
+- ui-roadmap — galley-ui 고도화 로드맵(Q1~Q4→1.0)을 닫고 개별 항목만 남김. 새 컴포넌트는 Galley 자리가 생길 때, 1.0은 리허설 뒤 /decide(P7l 재계획)
