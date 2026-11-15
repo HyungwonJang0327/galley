@@ -12,6 +12,7 @@ import {
   getRunWithSteps,
   listRecentRuns,
   listRuns,
+  listRunHistory,
 } from './runQueries.ts';
 import { RUN_STATUS, STEP_ORDER, STEP_ORIGIN, STEP_STATUS } from './stateMachine.ts';
 
@@ -133,6 +134,53 @@ const seedSteps = (
   prisma.runStep.createMany({
     data: STEP_ORDER.map((name, order) => ({ runId, name, order, ...overrides[name] })),
   });
+
+describe('listRunHistory — 실행 이력', () => {
+  test('종결 여부와 무관하게 전부, 시작 시각 최신순, limit만큼', async () => {
+    await createRun({ topicSlug: 'a', startedAt: new Date('2026-09-01T00:00:00Z') });
+    await createRun({
+      topicSlug: 'b',
+      status: RUN_STATUS.done,
+      startedAt: new Date('2026-09-03T00:00:00Z'),
+      finishedAt: new Date('2026-09-05T00:00:00Z'),
+    });
+    await createRun({ topicSlug: 'c', startedAt: new Date('2026-09-02T00:00:00Z') });
+
+    expect((await listRunHistory(prisma)).map((r) => r.topicSlug)).toEqual(['b', 'c', 'a']);
+    expect((await listRunHistory(prisma, { limit: 2 })).map((r) => r.topicSlug)).toEqual([
+      'b',
+      'c',
+    ]);
+  });
+
+  test('행의 단계에는 사용량·비용·소요가 온다(합계는 화면이 낸다)', async () => {
+    const run = await createRun();
+    await seedSteps(run.id, {
+      evidence: { status: STEP_STATUS.succeeded, durationMs: 1200 },
+      velog: {
+        status: STEP_STATUS.succeeded,
+        inputTokens: 1000,
+        outputTokens: 200,
+        costUsd: 0.0123,
+        durationMs: 3400,
+      },
+    });
+
+    const [row] = await listRunHistory(prisma);
+
+    expect(row?.steps.map((s) => s.name)).toEqual([...STEP_ORDER]);
+    expect(row?.steps[1]).toEqual({
+      name: 'velog',
+      status: 'succeeded',
+      origin: 'fresh',
+      inputTokens: 1000,
+      outputTokens: 200,
+      costUsd: 0.0123,
+      durationMs: 3400,
+    });
+    expect(row?.steps[2]).toMatchObject({ inputTokens: null, costUsd: null, durationMs: null });
+  });
+});
 
 describe('listRuns — 실행 목록', () => {
   test('active 탭은 끝나지 않은 실행만, 시작 시각 최신순', async () => {
