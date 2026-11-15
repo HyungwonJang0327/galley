@@ -42,3 +42,4 @@
 - 2026-11-14 P7d Pagination: 갤러리 섹션 4데모 + pagination.mjs. 규칙 확인 — 상태·함수 prop이 필요한 데모는 PrimitiveDemos(클라)에(서버 page.tsx가 클라이언트 컴포넌트에 함수를 넘기면 /design 전체가 깨진다). `'use client'`는 번들 배너로 충분(RF-28·UM1), 소스 배너는 훅·Base UI 파일에만. 색 전환이 있는 요소를 재는 모듈은 `getAnimations` 완료를 기다린 뒤 읽는다. 결정 변경 없음.
 - 2026-11-14 P7d Table: 갤러리 섹션 5데모 + table.mjs(정렬 데모는 PrimitiveDemos — 정렬 상태는 앱). 결정 변경 없음.
 - 2026-11-14 P7k: Tabs 섹션 `data-demo="tabs"` + tabs.mjs(실제 키 입력). happy-dom이 못 잡는 키보드 동작은 실측 모듈로 — 이번에 Base UI 수동 활성화 기본값을 잡아냈다. 결정 변경 없음.
+- 2026-11-15 RF-22b: Button size 행에 lg 추가. 버튼 높이 단언은 없어 스크립트 변경 없음, verify 298/298 통과. 결정 변경 없음.
