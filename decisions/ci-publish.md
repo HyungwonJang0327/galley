@@ -40,3 +40,4 @@ npmjs.com → `galley-ui` → Settings → **Trusted Publisher** → GitHub Acti
 - 2026-11-12 최초 결정(P7b, 사용자 "1번으로" — 선택지 3개 중 "태그 push 트리거 + Trusted Publishing").
 - 2026-11-14 첫 실전 성공: `galley-ui@0.2.1` 태그 → run 43525951061 success, provenance 서명, 레지스트리 latest 0.2.1. 사용자는 Trusted Publisher 등록(Allow npm publish 체크 — 스테이징 승격 없이 직접 publish)만 했다. 레지스트리 확인은 CDN 캐시 때문에 `curl -H "Cache-Control: no-cache" "https://registry.npmjs.org/galley-ui?nocache=<ts>"`로(`npm view`는 한동안 404/옛 값). 결정 변경 없음.
 - 2026-11-15 두 번째 실전 성공: `galley-ui@0.3.0`(minor — Pagination·Table) 태그 → run 43672828277 success, provenance, 레지스트리 latest 0.3.0(약 1분 뒤 반영). 사람 개입은 PR 머지만. `changeset tag`가 deprecated 경고를 내 `changeset git-tag`로 표기 변경(동작 동일).
+- 2026-11-15 세 번째 실전 성공: `galley-ui@0.4.0`(minor — Button 높이·disabled·Table nowrap) 태그 → run 43714840333 success, provenance, 레지스트리 latest 0.4.0. `changeset git-tag` 첫 사용(경고 없음). 결정 변경 없음.
