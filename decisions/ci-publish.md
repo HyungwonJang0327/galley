@@ -6,7 +6,7 @@
 
 - 워크플로: `.github/workflows/publish.yml`(`on: push: tags: ['galley-ui@*']`, 잡 권한 `id-token: write`·`contents: read`).
 - 순서: checkout → pnpm install(frozen) → `galley-ui` build + test → **태그 버전 = `packages/ui/package.json` 버전 검증**(다르면 실패) → `npm publish --provenance --access public`(`packages/ui`에서).
-- 버전 bump·CHANGELOG는 지금처럼 **사람이 `/ship` 체크리스트 → `pnpm changeset version` 커밋 → PR → 머지**. 머지 뒤 `pnpm changeset tag` + 태그 push(에이전트)가 publish를 시작한다.
+- 버전 bump·CHANGELOG는 지금처럼 **사람이 `/ship` 체크리스트 → `pnpm changeset version` 커밋 → PR → 머지**. 머지 뒤 `pnpm changeset git-tag` + 태그 push(에이전트)가 publish를 시작한다.
 - 사람이 하는 일 중 **npm 로그인·`npm publish`만 사라진다.** 버전 PR은 required check 4개를 그대로 탄다.
 
 ## 사용자가 한 번 할 일
@@ -39,3 +39,4 @@ npmjs.com → `galley-ui` → Settings → **Trusted Publisher** → GitHub Acti
 
 - 2026-11-12 최초 결정(P7b, 사용자 "1번으로" — 선택지 3개 중 "태그 push 트리거 + Trusted Publishing").
 - 2026-11-14 첫 실전 성공: `galley-ui@0.2.1` 태그 → run 43525951061 success, provenance 서명, 레지스트리 latest 0.2.1. 사용자는 Trusted Publisher 등록(Allow npm publish 체크 — 스테이징 승격 없이 직접 publish)만 했다. 레지스트리 확인은 CDN 캐시 때문에 `curl -H "Cache-Control: no-cache" "https://registry.npmjs.org/galley-ui?nocache=<ts>"`로(`npm view`는 한동안 404/옛 값). 결정 변경 없음.
+- 2026-11-15 두 번째 실전 성공: `galley-ui@0.3.0`(minor — Pagination·Table) 태그 → run 43672828277 success, provenance, 레지스트리 latest 0.3.0(약 1분 뒤 반영). 사람 개입은 PR 머지만. `changeset tag`가 deprecated 경고를 내 `changeset git-tag`로 표기 변경(동작 동일).

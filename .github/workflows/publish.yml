@@ -1,7 +1,7 @@
 # galley-ui npm publish — `galley-ui@<버전>` 태그 push가 트리거(decisions/ci-publish.md).
 # 인증은 npm Trusted Publishing(GitHub Actions OIDC): 토큰·시크릿 없음, provenance 자동. npmjs.com 패키지 설정에
 # Trusted Publisher(리포 HyungwonJang0327/galley · 워크플로 publish.yml)가 등록돼 있어야 한다.
-# 버전 bump(changeset version)·CHANGELOG는 사람이 PR로 머지한 뒤 `pnpm changeset tag` + 태그 push.
+# 버전 bump(changeset version)·CHANGELOG는 사람이 PR로 머지한 뒤 `pnpm changeset git-tag` + 태그 push.
 name: Publish galley-ui
 
 on:
