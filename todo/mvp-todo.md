@@ -402,6 +402,14 @@ BE8~BE11은 근거 수집·검증·본문 **입력 제한**까지고, 본문을 
 
 ---
 
+## MVP 리허설 (2026-11-15 추가 — INTENT 성공 지표를 실제 리포·실제 모델로 1회 실측. 이게 끝나야 Phase 1 완료)
+
+Phase 1-A·1-B·P의 기능 항목은 전부 끝났지만(보류 AH6·TS5 제외) 로컬 DB는 Repo 0·RepoAnalysis 0, Run 7건은 시드라 **실제 모델로 끝까지 돌린 기록이 없다**. INTENT 시나리오 1~3을 그대로 한 번 통과한다. 1~2는 사용자 손(키·회사 리포·시간), 3은 에이전트.
+
+- [ ] **MR1** 사용자 — 준비. ① `.env`: `ANTHROPIC_API_KEY`(첫 사용처는 인덱싱 — 기본 Haiku 4.5), `REPO_DIRS`, `BLOG_DIR`, `DATA_DIR`(절대경로·BLOG_DIR 밖), `DATABASE_URL`; `NODE_ENV`는 두지 않는다(development면 Mock 러너). ② `.galley/redact.json`(example 복사 후 회사명·도메인·내부 URL 채움 — 없으면 워커가 인덱싱·근거 수집을 거부) · `.galley/thumbnail.json`(선택, 없으면 빈 푸터). ③ `pnpm --filter @galley/pipeline db migrate deploy`. ④ 워커를 터미널에서 한 번 띄워 기동 로그 `단계 러너: 실제`·`availableModels`에 anthropic 모델 확인 → 이상 없으면 launchd 등록(docs/worker-setup.md). ⑤ `pnpm --filter @galley/pipeline index <회사 리포 경로> --read-only`로 리포 1개 인덱싱 → 큐 화면에서 주제↔분석 글 자동 연결 확인.
+- [ ] **MR2** 사용자 — 리허설 1회(INTENT 시나리오 1~3). ① 대기 맨 위 주제 실행(모델은 실사용 고정 모델 1개 — 2026-11-12 결정) → 6단계 타임라인·단계별 산출물 펼침·근거 검증 unsupported 표시 확인. ② 벨로그 본문에 수정 지시 1회 → 본문 단계부터 재실행, 앞 단계 `carried` 확인. ③ 승인 → `posts/<슬러그>/` 7개 · 큐 완료 이동(`주제_큐.md` 줄 이동) · 실행 이력에 모델·토큰·비용·소요 시간 100% 기록 확인. 지표: 대시보드 밖 파일 수동 편집 0회. 걸린 것·이상한 것은 메모만(고치지 않는다).
+- [ ] **MR3** ag — MR2 메모를 버그·UX·결정 필요로 갈라 todo 항목화(각각 PR 하나) → 수정 → 다시 MR2 한 번. 전부 통과하면 planning "포함(Phase 1)"에 **MVP 완료(날짜)** 기록. 리허설 버그는 galley-ui 후속(P7)보다 우선.
+
 ## Phase 2로 미룸 (여기서 구현 안 함)
 
 Zenn push 실연동(push 전 검사: frontmatter `title` 70자 이내·`topics` 1~5개 — BS4 리뷰 L2, 下書き에도 CLI 검증이 걸리는지 확인) · 설정 화면(리포 `/settings/repos` 인덱싱 상태·인덱싱 모델 label·재인덱싱, 폴더 추가·재인덱싱 Dialog에 모델 Select·모델·비용·어투 프롬프트) · 비용 칩(인덱싱 비용 포함) · AI 주제 후보 생성 · Storybook 실행 · 스케줄 DB 이전 · 근거 검증 본문 밑줄·discovered 모델 재순위(evidence-collection).
