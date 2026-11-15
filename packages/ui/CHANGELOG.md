@@ -1,5 +1,16 @@
 # galley-ui
 
+## 0.4.0
+
+### Minor Changes
+
+- 15f5aeb: `Button`: default `md` height is now 32px (same as form controls, `--ui-control-height`) so a button next to an `Input`/`Select` lines up by default. New `size="lg"` (36px, `--ui-button-height-lg`) for standalone primary calls to action. `sm` (28px) is unchanged.
+
+### Patch Changes
+
+- 9cbd9bb: Disabled styling unified: every disabled control uses token colors only (muted text, `--ui-color-bg` fill, `--ui-color-border`) — no `opacity`. `Button` disabled now looks the same across variants (ghost keeps no fill/border); `Tabs` and `Pagination` drop the extra opacity so contrast stays predictable in dark and forced-colors modes.
+- 055134e: `Table`: `numeric` cells and header cells no longer wrap (`white-space: nowrap`), so values like durations and currency keep their unit on one line.
+
 ## 0.3.0
 
 ### Minor Changes
