@@ -73,6 +73,7 @@ export {
   listRecentRuns,
   findLatestRunForTopic,
   listRuns,
+  listRunHistory,
   getRunWithSteps,
 } from './run/runQueries.ts';
 export type {
@@ -80,6 +81,8 @@ export type {
   RunListFilter,
   RunListItem,
   RunListStep,
+  RunHistoryItem,
+  RunHistoryStep,
   RunDetail,
   RunStepDetail,
 } from './run/runQueries.ts';

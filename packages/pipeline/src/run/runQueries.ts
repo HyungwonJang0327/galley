@@ -143,6 +143,53 @@ export async function listRuns(
   return rows;
 }
 
+// ── 실행 이력(표) ──────────────────────────────────────────────────────────────
+
+export interface RunHistoryStep {
+  name: string;
+  status: string;
+  origin: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  costUsd: number | null;
+  durationMs: number | null;
+}
+
+/** 이력 한 줄. 단계의 사용량·소요를 같이 준다 — 합계는 화면이 낸다(총비용은 저장하지 않는다, decisions/model-selection.md). */
+export interface RunHistoryItem extends RunSummary {
+  steps: RunHistoryStep[];
+}
+
+/**
+ * 실행 이력 — 종결 여부와 무관하게 전부, 시작 시각 최신순. 한 주제의 시도가 여럿이면 각각 한 줄(attempt로 구분).
+ * 정렬·필터는 화면이 한다(decisions/table-component.md) — 여기서는 최신 limit건만 자른다.
+ */
+export async function listRunHistory(
+  prisma: PrismaClient,
+  options: { limit?: number } = {},
+): Promise<RunHistoryItem[]> {
+  const rows = await prisma.run.findMany({
+    orderBy: { startedAt: 'desc' },
+    take: options.limit,
+    select: {
+      ...RUN_SUMMARY_SELECT,
+      steps: {
+        orderBy: { order: 'asc' },
+        select: {
+          name: true,
+          status: true,
+          origin: true,
+          inputTokens: true,
+          outputTokens: true,
+          costUsd: true,
+          durationMs: true,
+        },
+      },
+    },
+  });
+  return rows;
+}
+
 // ── 실행 상세(2분할 화면 우측 타임라인) ───────────────────────────────────────
 
 export interface RunStepDetail {
