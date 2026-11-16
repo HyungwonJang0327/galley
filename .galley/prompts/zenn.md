@@ -23,3 +23,191 @@
 
 例のトーン:
 "前職の韓国ECスタートアップで、決済代行会社（PG）を止めずに乗り換える作業を担当しました。フロントエンドは私1人、企画担当はおらず、要件は代表から直接受け取る体制でした。"
+
+[참고 완성본 — 아래 글과 같은 결로 쓴다. 주제·내용·수치는 따라 하지 않고 문체·리듬·문단 길이·헤더 구조만 따른다]
+
+# 決済代行会社（PG）を止めずに乗り換えた話 — Toss Payments → NicePay
+
+## はじめに
+
+当時勤めていた会社のECサービスで、運用中の決済代行会社（PG）をToss PaymentsからNicePayへ乗り換えました。条件は「決済を一度も止めない」「約50店舗を、店舗ごとに順番に切り替える」「いつでも戻せる」。フロントエンドは私1人でした。そのときに決めた設計3つと、つまずいたところを書きます。
+（Toss Payments・NicePayはどちらも韓国のPGで、日本のGMOペイメントゲートウェイのような立ち位置です）
+
+## 「決済ができない」と言われた日
+
+2024年3月のある日、「決済ができない」という問い合わせが届きました。デプロイはしていません。調べると、PG側で私たちの決済サービスが停止されていて、その事実をユーザーの問い合わせで初めて知りました。契約書に私たちに不利な条項があり、それがそのまま実行された形でした。
+
+すぐにできたのは、決済ページに案内を出すホットフィックスだけでした。
+
+```ts
+// 2024-03-06 ホットフィックス。決済ボタンを押したら案内だけ出して進行を止める
+if (await showAlert(
+  '決済エラーのお知らせ',
+  '決済システムの連携に問題が発生し、復旧中です。しばらくしてから再度お試しください。',
+)) return;
+```
+
+<!-- [挿絵] illust1_예고없는_결제중단_ja.png — 挿入位置: ホットフィックスのコードブロック の後、「この件で、PGをToss PaymentsからNicePayへ…」 の前 -->
+
+この件で、PGをToss PaymentsからNicePayへ移すことが決まりました。そして今回は「PG一社にサービス全体が縛られていてはいけない」という条件が付きました。
+
+会社で運用していたサービスは、インフルエンサー1人につきストア（モール）が1つ作られる構造でした。ストア約50、月間注文約1,000件。2023年春にToss Payments SDKで決済を組み込み、1年近く運用していました。フロントエンドは私1人、バックエンド3人、企画担当はおらず代表と直接すり合わせていました。
+
+乗り換えの条件はこうでした。
+
+- 決済を止めずに切り替えること（インフルエンサーの共同購入——フォロワー向けの期間限定販売——は「今この瞬間」に売上が集中する）
+- ストアごとに切り替え時期が異なりうること（契約・審査の日程がモールごとに違った）
+- 問題が出たらすぐ戻せること
+- すでにTossで決済された注文の照会・返金はそのまま動くこと
+- 一つのPGが止まっても、別のPGに逃がせる構造であること
+
+## SDKを差し替えるだけでは済まなかった理由
+
+二つのPGは「決済画面を開く」という結果だけ同じで、方式が全く違いました。
+
+| | Toss Payments | NicePay（サーバー認証） |
+|---|---|---|
+| 呼び出し | JS SDK `requestPayment()` | 非表示 `<form>` をPOST + `goPay()` |
+| 認証 | clientKey | `SHA-256(EdiDate + MID + Amt + MerchantKey)` の署名 |
+| 結果の受け取り | `successUrl` へブラウザリダイレクト（フロントが受ける） | `returnURL` へサーバーにPOST（バックエンドが受ける） |
+| 決済手段コード | `'카드'`, `'가상계좌'`（韓国語） | `'CARD'`, `'VBANK'`, `'KakaoPay'` |
+| 文字コード | UTF-8 | EUC-KR |
+
+決済リクエスト、結果の受け取り、決済手段の一覧、結果画面の4か所が全部分かれます。これを `if (isNicePay)` でページのあちこちに撒くと、戻すこともモールごとのON/OFFもできなくなります。
+
+## 1. 切り替えスイッチはフロントではなくサーバー（モール情報）に置く
+
+最初に決めたのは、「どのPGを使うか」をフロントのビルドや環境変数ではなく、**モール情報APIの `pgType` フィールド**で受け取ることでした。
+
+```ts
+// 注文・決済ページの loader（react-router）
+async function orderPageLoader({ params }) {
+  const { mallId } = await getMallId(params.path);
+
+  // モールごとに 'TOSS' | 'NICE'。失敗時は空文字 → 既存（Toss）の動作を維持
+  const { pgType = '' } = await getMallInfo(mallId)
+    .then(r => r.mall)
+    .catch(() => ({ pgType: '' }));
+
+  return { mallId, pgType, /* ...注文データ */ };
+}
+```
+
+これで次のことができます。
+
+- **デプロイなしで切り替え**：バックエンドでモールの `pgType` を変えるだけで、そのモールは次の決済からNicePay
+- **モール単位のカナリア**：本番に両方のコードを載せたまま、テスト用モール1つだけ `NICE` にして実決済を検証
+- **即ロールバック**：問題が出たら値を `TOSS` に戻すだけ
+- **フェイルセーフ**：モール情報の取得に失敗しても空文字 → 既存のToss経路に落ちるデフォルト
+
+<!-- [挿絵] illust2_서버측_pgType_스위치_ja.png — 挿入位置: 「フェイルセーフ」の箇条書き の後、「フロントのデプロイとPGの切り替えタイミングを分離したのが…」 の前 -->
+
+フロントのデプロイとPGの切り替えタイミングを分離したのが、この作業で一番良かった判断でした。3月のようなことがまた起きても、今は値一つで別のPGに逃がせます。
+
+## 2. 両方のSDKを同時に読み込み、分岐は1か所だけ
+
+`index.html` にToss SDKとNicePayのスクリプトを**両方**載せておき、`pgType` による分岐は「決済ボタンのクリック → PG決済画面の呼び出し」の1か所に集めました。決済手段の一覧と初期選択値も同じ値で分けています。
+
+```ts
+const PAY_METHODS = {
+  TOSS: [
+    { value: '카드', label: 'クレジットカード' },
+    { value: '가상계좌', label: '仮想口座' },
+    { value: '계좌이체', label: '口座振替' },
+  ],
+  NICE: [
+    { value: 'CARD', label: 'クレジットカード' },
+    { value: 'KakaoPay', label: 'KakaoPay' },
+    { value: 'NaverPayCard', label: 'NaverPay' },
+    { value: 'VBANK', label: '仮想口座' },
+  ],
+} as const;
+
+const requestPay = {
+  async TOSS({ orderId, orderName, amount, method, sessionId }) {
+    const toss = await loadTossPayments(TOSS_CLIENT_KEY);
+    return toss.requestPayment(method, {
+      orderId, orderName, amount,
+      successUrl: `${FRONT_URL}/pay/toss/success?session=${sessionId}`,
+      failUrl: `${FRONT_URL}/pay/toss/fail?session=${sessionId}`,
+    });
+  },
+
+  async NICE({ orderId, orderName, amount, method, sessionId, buyer }) {
+    const ediDate = dayjs().format('YYYYMMDDHHmmss');
+    const signData = await sha256Hex(ediDate + MID + amount + MERCHANT_KEY);
+
+    const form = buildHiddenForm({
+      action: `${API_URL}/payments/nice/return?session=${sessionId}`,
+      charset: 'euc-kr',
+      fields: {
+        MID, Amt: amount, Moid: orderId, GoodsName: orderName,
+        EdiDate: ediDate, SignData: signData, PayMethod: method,
+        ReturnURL: `${API_URL}/payments/nice/return?session=${sessionId}`,
+        BuyerName: buyer.name, BuyerTel: buyer.tel, BuyerEmail: buyer.email,
+        // 仮想口座の入金期限：21時以降のリクエストはPGのデフォルト、それ以外は3時間
+        VbankExpDate: dayjs().hour() >= 21 ? '' : dayjs().add(3, 'hour').format('YYYYMMDDHHmmss'),
+      },
+    });
+
+    window.nicepaySubmit = () => form.submit();   // 認証完了時にPGが呼ぶ
+    window.nicepayClose  = () => resetLoading();   // ユーザーが画面を閉じたとき
+    window.goPay(form);
+  },
+};
+
+// ボタンのハンドラ — pgType を見るのはこの1行だけ
+await requestPay[pgType || 'TOSS'](payload);
+```
+
+実際のコードは2,000行のページコンポーネントにインラインで書かれていましたが（後で反省します）、構造は上のとおりです。ポイントは、**PGごとの違いを「決済リクエスト」関数の中に閉じ込めて、その外側（注文書・配送先・ポイント・規約）はPGを知らない**状態にしたことです。
+
+## 3. 結果画面はPGを知らない。パラメータはサーバーで統一
+
+結果の受け取り経路も、二つのPGで完全に違いました。
+
+- **Toss**：PG → フロントの成功ルート →（フロントが `orderId`, `paymentKey`, `amount` を付けて）バックエンドの承認APIへリダイレクト
+- **NicePay**：PG → バックエンドの `returnURL` へ直接POST
+
+そこでバックエンドと合意したのが、「どのPGでも、承認が終わったら**同じクエリパラメータ**でフロントの結果画面に飛ばす」ことでした。
+
+```
+/pay/result?session=...&orderId=...&orderNumber=...
+  &bank=...&accountNumber=...&depositor=...&dueDate=...   // 仮想口座のとき
+  &failMessage=...                                        // 失敗のとき
+```
+
+フロントの結果画面はこのパラメータだけを読みます。`pgType` による分岐で残ったのは、仮想口座の振込先名義の表示1行だけでした（Tossは会社名で固定、NicePayはサーバーが返した値）。Toss時代の成功ルートもそのまま残してあるので、`TOSS` のモールは以前の経路を何も変えずに通ります。
+
+## つまずいたところ
+
+**NicePayのJS SDKで先に実装してから、フォーム方式に乗り換えた。** 最初は新しいJS SDK（`AUTHNICE.requestPay`）で実装しました。コードも短くTossと似ていたのですが、契約上使うべき連携モジュールはサーバー認証（フォームPOST + `SignData` 署名）方式でした。仮想口座の入金期限も、新SDKは時間単位の整数（`vbankValidHours`）しか受け付けず、21時締めのルールを正確に表現できませんでした。結局 `pg-web` のフォーム方式に乗り換え、その過程で `test nicepay` というコミットが10個以上積まれました。契約書とバックエンドの承認方式を先に確認してからSDKを選ぶべきでした。
+
+**MerchantKeyのハードコード。** 開発サーバーで急いでテストするために署名用のキーをコードに直書きしてコミットし、後から `.env` に移してキーを変えました。決済のキーは最初から環境変数に。
+
+**EUC-KR。** NicePayのフォームは `acceptCharset` を `euc-kr` にしないと商品名（`GoodsName`）が化けます。商品名100文字制限はToss時代からそのまま引き継ぎました。
+
+**仮想口座の入金期限。** 基本は「リクエスト時刻＋3時間」にしていましたが、NicePayの仮想口座は21時までしか受け付けません。21時以降に＋3時間を入れるとその日の締めを越えるので、21時以降は値を空にしてPGのデフォルトに任せるルールを入れました。
+
+**`crypto.subtle` はどこでも使えるわけではない。** `SignData` 用のSHA-256を最初はWeb Crypto API（`crypto.subtle.digest`）で作っていました。後にショップをアプリのWebViewに載せる作業中に決済が止まり、`crypto-js` に置き換えました。`crypto.subtle` はsecure context（HTTPS / localhost）にしか存在しないので、その外では署名の生成から失敗します。決済経路にはE2Eテストを1本でも置いておくべきでした。
+
+## 結果
+
+- **4月上旬**：`pgType` フィールドの追加、NicePayスクリプトの読み込み、分岐の骨組み（Tossのモールには影響なし）
+- **5〜6月**：開発サーバーでNicePay決済を繰り返しテスト、フォーム方式へ移行
+- **6月中旬**：分岐を整理し、両方のSDKを有効にした状態で本番デプロイ
+- **6月下旬**：本番のテスト用モールで実決済を確認 → モールごとに `pgType` を順次切り替え
+
+両方を有効にしてデプロイした後は、モールの切り替えは全てバックエンドの値の変更だけで終わりました。フロントの再デプロイも、決済の停止もありませんでした。
+
+## まとめ
+
+良かった判断は3つです。切り替えスイッチをデータに出したこと、PGごとの違いを決済リクエスト関数1つに閉じ込めたこと、結果画面のパラメータをサーバーと統一してフロントがPGを知らない状態にしたこと。このおかげで「デプロイ＝切り替え」ではなく「デプロイ後にモールごとに切り替え」ができました。
+
+反省点は、分岐ロジックがページコンポーネントにインラインで入っていたことです。今やり直すなら `payments/toss.ts`、`payments/nice.ts` のようにアダプタをファイル単位で分け、決済手段の値も内部の標準コード（`CARD`）に統一してPGごとのマッピングをアダプタの中で行います。そして決済成功の経路だけでもE2Eテストを置きます。
+
+PGの乗り換えはSDKの差し替えではなく、「決済リクエスト／結果の受け取り／決済手段／結果画面」の4つの境界をどこに引くかを決める作業でした。
+
+---
+
+韓国語版（コード多め）はこちら：[velogリンク]
