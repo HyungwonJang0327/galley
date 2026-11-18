@@ -15,6 +15,8 @@ import {
   parseZennFrontmatter,
   PUBLISH_ARTIFACT,
   THUMBNAIL_ARTIFACT,
+  THUMBNAIL_ART_MARKER,
+  THUMBNAIL_ART_MAX_CHARS,
 } from './publishInfoStep.ts';
 import type { SeriesStepInfo } from './series.ts';
 import type { StepContext } from './StepRunner.ts';
@@ -122,6 +124,7 @@ describe('parsePublishInfoOutput', () => {
       subtitle: '끝에 닿기 전에 다음 페이지를',
       thumbnailTitle: ['무한 스크롤', '미리', '불러오기'],
       thumbnailTags: ['React', 'IntersectionObserver'],
+      thumbnailArt: '',
     });
   });
 
@@ -132,6 +135,7 @@ describe('parsePublishInfoOutput', () => {
       subtitle: '소개',
       thumbnailTitle: [],
       thumbnailTags: ['a'],
+      thumbnailArt: '',
     });
   });
 
@@ -151,6 +155,27 @@ describe('parsePublishInfoOutput', () => {
     expect(titleOf(['가'.repeat(14)])).toEqual([]);
     expect(titleOf(['가'.repeat(13), 1, ' '])).toEqual(['가'.repeat(13)]);
     expect(titleOf('한 줄')).toEqual([]);
+  });
+
+  test('구분 줄 아래는 그림 조각 — 그대로 돌려주고(거르기는 렌더러), 펜스는 벗기고, 상한을 넘으면 버린다', () => {
+    const json = JSON.stringify({ intro: '소개', tags: ['a'] });
+    const art = '<div class="card" style="left:10px;top:20px">a</div>';
+    expect(parsePublishInfoOutput(`${json}\n${THUMBNAIL_ART_MARKER}\n${art}\n`)).toMatchObject({
+      intro: '소개',
+      thumbnailArt: art,
+    });
+    expect(
+      parsePublishInfoOutput(
+        `\`\`\`json\n${json}\n\`\`\`\n ${THUMBNAIL_ART_MARKER} \n\`\`\`html\n${art}\n\`\`\``,
+      )?.thumbnailArt,
+    ).toBe(art);
+    expect(
+      parsePublishInfoOutput(
+        `${json}\n${THUMBNAIL_ART_MARKER}\n${'x'.repeat(THUMBNAIL_ART_MAX_CHARS + 1)}`,
+      )?.thumbnailArt,
+    ).toBe('');
+    // 구분 줄 위 JSON이 깨졌으면 그림이 있어도 형식 오류.
+    expect(parsePublishInfoOutput(`{ nope\n${THUMBNAIL_ART_MARKER}\n${art}`)).toBeUndefined();
   });
 
   test('썸네일 알약 — 최대 3개·24자 이내, 없으면 발행 태그 앞에서 길이가 맞는 것', () => {
@@ -424,6 +449,14 @@ describe('createPublishInfoStepRunner', () => {
       tags: ['a'],
       brand: '',
     });
+  });
+
+  test('모델이 그림 조각을 주면 썸네일 입력에 그대로 넘긴다(거르기는 렌더러 몫)', async () => {
+    const art = '<div class="card" style="left:10px;top:20px"><script>x()</script>a</div>';
+    const adapter = createScriptedAdapter(() => `${GOOD_OUTPUT}\n${THUMBNAIL_ART_MARKER}\n${art}`);
+    const thumbnails = fakeThumbnails();
+    await runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails }).run(ctx());
+    expect(thumbnails.calls[0]?.artHtml).toBe(art);
   });
 
   test('시리즈 편이면 썸네일에 시리즈 배지 값(이름·편·총 편수)을 넘긴다', async () => {

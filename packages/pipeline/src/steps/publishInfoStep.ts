@@ -1,6 +1,6 @@
 // 발행정보 단계(publishInfo) — 마지막 단계. 벨로그 본문(제목)·Zenn 원고(frontmatter)·근거 번들(포인터)을 DATA_DIR에서 읽어
-// `publish.md`를 조립한다. 모델은 **소개(150자)·태그 하나에만** 쓴다(2026-09-26 사용자 결정 — 자리표시자 대신 모델 1회, 짧아
-// 비용이 작다). 입력은 본문뿐이고 근거 번들·리포 경로는 프롬프트에 가지 않는다(근거 목록은 코드가 조립). posts/<슬러그>/에는
+// `publish.md`를 조립한다. 모델은 **소개(150자)·태그와 썸네일 값(제목 줄·알약·오른쪽 그림 조각)에만** 쓴다(2026-09-26 사용자
+// 결정 — 자리표시자 대신 모델 1회. 그림 조각은 2026-11-19 RH3 ②). 입력은 본문뿐이고 근거 번들·리포 경로는 프롬프트에 가지 않는다(근거 목록은 코드가 조립). posts/<슬러그>/에는
 // 승인 시 복사한다(approvePublish). 썸네일(`thumbnail.png`, B3b)도 여기서 만든다 — 같은 모델 호출이 제목 줄·부제·알약 태그를 주고
 // ThumbnailRenderer(설치된 Chrome)가 찍는다. 썸네일 실패는 단계 실패다(2026-09-26 사용자 결정 — 5종이 다 있어야 승인 대기로).
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
@@ -50,6 +50,10 @@ export const THUMBNAIL_ARTIFACT = 'thumbnail.png';
 export const THUMBNAIL_SUBTITLE_MAX_CHARS = 40;
 /** 썸네일 알약 태그 한 개 길이 상한 — 알약 하나가 왼쪽 틀(560px)을 넘지 않는 폭(여럿이면 줄바꿈). */
 export const THUMBNAIL_TAG_MAX_CHARS = 24;
+/** JSON과 그림 조각을 가르는 줄 — HTML을 JSON 문자열에 넣게 하면 따옴표 이스케이프에서 깨지기 쉬워 따로 받는다. */
+export const THUMBNAIL_ART_MARKER = '===ART===';
+/** 그림 조각 글자 수 상한 — 넘으면 조각을 버린다(오른쪽 빈 자리). 예시 조각이 4,000자 안팎이다. */
+export const THUMBNAIL_ART_MAX_CHARS = 16_000;
 
 const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨로그 글을 읽고 발행 정보를 JSON 하나로만 답합니다.
 - "intro": 글을 소개하는 한국어 한 문단, 공백 포함 ${PUBLISH_INTRO_MAX_CHARS}자 이내. 본문에 없는 사실을 더하지 않습니다.
@@ -57,7 +61,33 @@ const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨
 - "subtitle": 썸네일에 들어갈 한국어 부제 한 줄, ${THUMBNAIL_SUBTITLE_MAX_CHARS}자 이내. 제목을 되풀이하지 않고 글의 핵심을 한 문장으로.
 - "thumbnailTitle": 썸네일 제목 줄(문자열 배열, 2~${THUMBNAIL_TITLE_MAX_LINES}줄). 글 제목을 뜻이 끊기지 않는 자리에서 나누고 괄호 부제는 뺍니다. 한 줄은 공백 포함 ${THUMBNAIL_TITLE_LINE_CHARS}자 안팎(최대 ${THUMBNAIL_TITLE_LINE_MAX_CHARS}자). 마지막 줄이 빨간 강조색으로 찍히므로 글의 핵심어가 마지막 줄에 오게 합니다.
 - "thumbnailTags": 썸네일 알약 태그 2~${THUMBNAIL_TAGS_MAX}개(문자열 배열). 글의 핵심 기술 이름을 원어 표기로(예 "React", "zustand", "sessionStorage"), 각 ${THUMBNAIL_TAG_MAX_CHARS}자 이내. 회사·서비스 이름은 넣지 않습니다.
-- 출력은 {"intro": "...", "tags": ["..."], "subtitle": "...", "thumbnailTitle": ["...", "..."], "thumbnailTags": ["...", "..."]} 형태의 JSON뿐이며 코드 펜스나 설명을 붙이지 않습니다.`;
+- 출력 형식: 먼저 {"intro": "...", "tags": ["..."], "subtitle": "...", "thumbnailTitle": ["...", "..."], "thumbnailTags": ["...", "..."]} 형태의 JSON 하나. 그다음 줄에 ${THUMBNAIL_ART_MARKER} 한 줄. 그 아래에 썸네일 오른쪽 그림 HTML 조각. 코드 펜스나 설명을 붙이지 않습니다.
+
+[썸네일 오른쪽 그림 조각]
+썸네일(1200×630) 오른쪽 580×630 박스에 들어갈 그림을 HTML 조각으로 씁니다. 이 글의 핵심 장면 하나를 UI 카드와 단순 도형으로 은유합니다(예: 두 목록이 합쳐지지 않는 장면, 요청이 한도에 막히는 장면, 파일이 여러 폴더로 갈리는 장면).
+- 좌표는 박스 기준(left 0~580, top 0~630). 모든 요소는 position:absolute로 style에 left·top을 주고, 박스 밖으로 나가거나 서로 글자를 가리지 않게 합니다. 위아래 60px은 비워 둡니다.
+- 쓸 수 있는 클래스: .card(흰 둥근 카드·그림자 포함·기본 폭 222px, style로 left/top/width/transform:rotate(±2~4deg)) · .card h3(카드 제목줄: 아이콘 SVG + 영문 소문자 라벨) · .row > .tile(64px 아이콘 타일) + .lines > .l1 .l2(회색 텍스트 바) · .chip(작은 회색 알약 라벨) · .dot-red(78px 빨간 원, 안에 흰 아이콘 SVG나 짧은 숫자) · .mono(모노 글꼴).
+- 카드 2~3장 + 빨간 포인트(.dot-red 또는 #EC3B24 요소) 하나가 기본입니다. 강조는 빨강 하나만 씁니다.
+- 연결선·화살표는 <svg style="position:absolute;left:..;top:.." width=".." height=".." fill="none"><path d=".." stroke="#C9CDD4" stroke-width="3" stroke-dasharray="7 7"/></svg>처럼 직접 그립니다.
+- 아이콘은 단순 도형 인라인 SVG(viewBox="0 0 24 24", fill 또는 stroke)로 그립니다. 팔레트: 강조 #EC3B24 / 연한 강조 #F07C6A·#FFE9E6 / 아이콘 #5B6472 / 진한 선 #3A3E45 / 글자 #15171A / 보조 글자 #5A5F68 / 흐린 바 #E6E7EA / 연결선 #C9CDD4.
+- 카드 안 글자는 짧은 라벨만(영문·숫자·코드 조각 위주, 한 줄 14자 이내). 본문 문장을 옮기지 않습니다.
+- 쓸 수 있는 태그: div, span, p, b, small, h3, svg, g, path, circle, rect, ellipse, line, polyline, polygon, text. 속성은 class, style, SVG 도형 속성만. script, style 태그, img, a, 외부 주소(url(), http)는 쓰지 않습니다(걸러져 사라집니다).
+- 사람 얼굴·손 같은 유기적 형태, 로고, 실제 서비스 화면, 회사명·서비스명·실제 도메인·키는 넣지 않습니다. 주소 예시는 mall-a.example처럼 일반 이름으로 씁니다.
+- 분량은 4,000자 이내.
+
+그림 조각 예시(다른 글의 것 — 구도와 키트 쓰는 법만 참고하고 내용은 이 글에 맞게 새로 그립니다):
+<div class="card" style="left:36px;top:120px;width:250px;transform:rotate(-3deg)">
+  <h3><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#2B2F36" stroke-width="2.4" stroke-linecap="round"><path d="M10 14 L14 10 M8 12 L6 14 Q3 17 6 19 Q8 21 11 18 L12 17 M16 12 L18 10 Q21 7 18 5 Q16 3 13 6 L12 7"/></svg>url</h3>
+  <div class="row"><div class="tile"><svg viewBox="0 0 24 24" width="40" height="40" fill="#5B6472"><path d="M3 18 L9 10 L13 15 L16 12 L21 18 Z"/><circle cx="16" cy="7" r="2"/></svg></div><div class="lines"><span class="l1"></span><span class="l2"></span></div></div>
+  <div style="margin-top:14px"><span class="chip">empty card</span></div>
+</div>
+<svg style="position:absolute;left:286px;top:210px" width="120" height="120" fill="none"><path d="M4 10 Q70 20 96 96" stroke="#C9CDD4" stroke-width="3" stroke-dasharray="7 7"/></svg>
+<div class="card" style="left:300px;top:320px;width:240px;transform:rotate(2deg)">
+  <h3><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#2B2F36" stroke-width="2.4"><rect x="4" y="5" width="16" height="6" rx="2"/><rect x="4" y="13" width="16" height="6" rx="2"/></svg>server</h3>
+  <p class="mono" style="margin:0 0 10px;font-size:15px;color:#5A5F68">rate limit · 10 / min</p>
+  <div style="height:14px;border-radius:7px;background:#EC3B24"></div>
+</div>
+<div class="dot-red" style="left:470px;top:270px"><span class="mono" style="color:#fff;font-size:24px;font-weight:500">429</span></div>`;
 
 /** 모델에 보내는 프롬프트 — 테스트용으로 공개. 본문은 상한까지만(소개·태그는 앞부분으로 충분). */
 export function buildPublishInfoPrompt(
@@ -79,6 +109,8 @@ export interface PublishInfoOutput {
   thumbnailTitle: string[];
   /** 썸네일 알약 — 모델이 안 줬으면 발행 태그 앞에서 길이가 맞는 것. */
   thumbnailTags: string[];
+  /** 썸네일 오른쪽 그림 조각(모델이 쓴 그대로 — 거르기는 렌더러가 한다). 없거나 상한을 넘으면 빈 문자열. */
+  thumbnailArt: string;
 }
 
 const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim();
@@ -100,16 +132,24 @@ function cleanList(raw: unknown, max: number): string[] {
   return out;
 }
 
+/** 전체를 감싼 펜스는 정보 문자열이 무엇이든(json·html 등) 벗긴다 — writing.unwrapFence는 markdown만 받는다. */
+function unwrapAnyFence(text: string): string {
+  const unfenced = /^(`{3,})\w*[ \t]*\n([\s\S]*?)\n\1\s*$/.exec(text.trim());
+  return (unfenced === null ? text : unfenced[2]!).trim();
+}
+
 /**
- * 모델 출력 → 소개·태그·부제·썸네일 제목 줄·알약. 소개·태그 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는
- * 상한에서 자르고 태그는 정리·중복 제거. 부제는 없으면 소개 앞부분. 썸네일 값은 어긋나도 실패가 아니다 — 기본값으로 찍는다.
+ * 모델 출력 → 소개·태그·부제·썸네일 제목 줄·알약·그림 조각. 출력은 JSON, 구분 줄(`===ART===`), HTML 조각 순서 — 구분 줄이 없으면
+ * 전체를 JSON으로 읽는다(그림 없음). 소개·태그 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는 상한에서 자르고
+ * 태그는 정리·중복 제거. 부제는 없으면 소개 앞부분. 썸네일 값은 어긋나도 실패가 아니다 — 기본값으로 찍는다.
  */
 export function parsePublishInfoOutput(text: string): PublishInfoOutput | undefined {
-  // 전체를 감싼 펜스는 정보 문자열이 무엇이든(json 등) 벗긴다 — writing.unwrapFence는 markdown만 받는다.
-  const unfenced = /^(`{3,})\w*[ \t]*\n([\s\S]*?)\n\1\s*$/.exec(text.trim());
+  const marker = new RegExp(`^[ \\t]*${THUMBNAIL_ART_MARKER}[ \\t]*$`, 'm').exec(text);
+  const head = marker === null ? text : text.slice(0, marker.index);
+  const rawArt = marker === null ? '' : unwrapAnyFence(text.slice(marker.index + marker[0].length));
   let parsed: unknown;
   try {
-    parsed = JSON.parse((unfenced === null ? text : unfenced[2]!).trim());
+    parsed = JSON.parse(unwrapAnyFence(head));
   } catch {
     return undefined;
   }
@@ -151,6 +191,7 @@ export function parsePublishInfoOutput(text: string): PublishInfoOutput | undefi
       0,
       THUMBNAIL_TAGS_MAX,
     ),
+    thumbnailArt: rawArt.length > THUMBNAIL_ART_MAX_CHARS ? '' : rawArt,
   };
 }
 
@@ -324,7 +365,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
       };
       const text = renderPublishInfo(input);
 
-      // 썸네일 — 모델 출력의 제목 줄·부제·알약 + 설정의 브랜드 + 시리즈 배지. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
+      // 썸네일 — 모델 출력의 제목 줄·부제·알약·그림 조각(렌더러가 거른다) + 설정의 브랜드 + 시리즈 배지. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
       ctx.signal.throwIfAborted();
       const config = deps.thumbnailConfig ?? DEFAULT_THUMBNAIL_CONFIG;
       const rendered = await deps.thumbnails.render(
@@ -334,6 +375,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
           subtitle: parsed.subtitle,
           tags: parsed.thumbnailTags,
           brand: config.brand,
+          ...(parsed.thumbnailArt === '' ? {} : { artHtml: parsed.thumbnailArt }),
           ...(ctx.series === undefined
             ? {}
             : {
