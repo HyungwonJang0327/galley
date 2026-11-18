@@ -357,6 +357,7 @@ export type {
   ClaimReason,
   EvidenceRef,
   VerbatimMatch,
+  JudgeBatches,
 } from './evidence/verification.ts';
 export {
   loadTonePrompt,

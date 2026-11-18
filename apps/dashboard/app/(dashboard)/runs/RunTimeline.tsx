@@ -5,6 +5,7 @@ import type { RunStepView } from '../../../lib/run-detail';
 import type { RunArtifactViews, StepArtifactView } from '../../../lib/run-artifacts';
 import { ArtifactMarkdown } from './ArtifactMarkdown';
 import { EvidencePanel, VerificationPanel } from './RunEvidencePanels';
+import { verifyBadgeText, verifyBadgeTone } from '../../../lib/verification-judge';
 import styles from './RunTimeline.module.css';
 
 const time = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ko-KR') : null);
@@ -62,14 +63,14 @@ function hintOf(view: StepArtifactView): string {
   }
 }
 
-/** 근거 검증 줄의 배지 "근거 없음 n · 불확실 n" — unsupported ≥ 1이면 주황(decisions/layout.md). */
+/**
+ * 근거 검증 줄의 배지 "근거 없음 n · 불확실 n" — unsupported ≥ 1이면 주황(decisions/layout.md). 모델 판정이 잘리거나 깨졌으면
+ * " · 판정 잘림 k/N"을 덧붙이고 주황(RH2 — 불확실 n에 묻히면 검수자가 모른다).
+ */
 function verifyBadge(view: StepArtifactView | undefined) {
   if (view?.kind !== 'verification') return undefined;
-  const { unsupported, uncertain } = view.verification.counts;
   return (
-    <Badge tone={unsupported > 0 ? 'warning' : 'neutral'}>
-      근거 없음 {unsupported} · 불확실 {uncertain}
-    </Badge>
+    <Badge tone={verifyBadgeTone(view.verification)}>{verifyBadgeText(view.verification)}</Badge>
   );
 }
 
