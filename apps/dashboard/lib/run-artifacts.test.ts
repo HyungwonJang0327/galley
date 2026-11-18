@@ -439,39 +439,37 @@ describe('getRunArtifacts — 근거 수집·근거 검증(BE13)', () => {
 });
 
 describe('toVerificationView — judgeBatches(RH1 이후 파일)', () => {
+  // 픽스처는 JSON 모양의 평범한 객체라 파서를 거쳐 리포트 타입으로 만든다(화면이 읽는 경로와 같다).
+  const reportWith = (judge: unknown) => {
+    const parsed = parseVerificationReport(JSON.stringify({ ...REPORT, judge }));
+    if (parsed === undefined) throw new Error('fixture');
+    return parsed;
+  };
+
   it('judge.batches가 있으면 그대로 싣는다', () => {
-    const view = toVerificationView({
-      ...REPORT,
-      judge: {
+    const view = toVerificationView(
+      reportWith({
         status: 'truncated',
         model: 'mock',
         statements: 100,
         batches: { total: 5, judged: 4, truncated: 1, unparsed: 0 },
-      },
-    });
+      }),
+    );
     expect(view.judge).toBe('truncated');
     expect(view.judgeBatches).toEqual({ total: 5, judged: 4, truncated: 1, unparsed: 0 });
   });
 
   it('옛 파일(batches 없음)·skipped는 judgeBatches가 없다', () => {
-    expect(toVerificationView(REPORT).judgeBatches).toBeUndefined();
-    expect(
-      toVerificationView({ ...REPORT, judge: { status: 'skipped' } }).judgeBatches,
-    ).toBeUndefined();
+    expect(toVerificationView(reportWith(REPORT.judge)).judgeBatches).toBeUndefined();
+    expect(toVerificationView(reportWith({ status: 'skipped' })).judgeBatches).toBeUndefined();
   });
 
-  it('batches 형태가 어긋나면(사람이 손댄 파일) 조용히 빼고 status는 그대로', () => {
-    const report = JSON.parse(
-      JSON.stringify({
-        ...REPORT,
-        judge: { status: 'unparsed', model: 'mock', statements: 3, batches: { total: 'x' } },
-      }),
-    ) as typeof REPORT;
-    const view = toVerificationView(report);
+  it('batches 형태가 어긋나면(사람이 손댄 파일) 조용히 빼고 status는 그대로 — 파서도 거절하지 않는다', () => {
+    const view = toVerificationView(
+      reportWith({ status: 'unparsed', model: 'mock', statements: 3, batches: { total: 'x' } }),
+    );
     expect(view.judge).toBe('unparsed');
     expect(view.judgeBatches).toBeUndefined();
-    // 파서도 batches 때문에 리포트를 거절하지 않는다
-    expect(parseVerificationReport(JSON.stringify(report))).toBeTruthy();
   });
 });
 
