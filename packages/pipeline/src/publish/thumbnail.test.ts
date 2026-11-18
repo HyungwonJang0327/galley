@@ -11,6 +11,7 @@ import {
   loadThumbnailConfig,
   parseThumbnailConfig,
   renderThumbnailHtml,
+  splitThumbnailTitle,
   THUMBNAIL_HEIGHT,
   THUMBNAIL_SCALE,
   THUMBNAIL_WIDTH,
@@ -18,22 +19,83 @@ import {
 } from './thumbnail.ts';
 
 const INPUT: ThumbnailInput = {
-  title: '무한 스크롤 <미리> 불러오기',
+  titleLines: ['무한 스크롤', '<미리>', '불러오기'],
   subtitle: '피드 끝에 닿기 전에 & 다음 페이지',
-  tag: 'TROUBLESHOOTING',
-  footerLeft: 'Left',
-  footerRight: 'right.example',
+  tags: ['React', 'IntersectionObserver'],
+  brand: 'Blog.log',
 };
 
 describe('renderThumbnailHtml', () => {
-  test('값을 HTML 이스케이프해 템플릿 자리에 넣는다', () => {
+  test('제목 줄을 <br>로 잇고 마지막 줄만 강조, 값은 HTML 이스케이프', () => {
     const html = renderThumbnailHtml(INPUT);
-    expect(html).toContain('<h1 style="margin-top:28px">무한 스크롤 &lt;미리&gt; 불러오기</h1>');
-    expect(html).toContain('<div class="sub">피드 끝에 닿기 전에 &amp; 다음 페이지</div>');
-    expect(html).toContain('<div class="tag">TROUBLESHOOTING</div>');
-    expect(html).toContain('<span>Left</span><span>right.example</span>');
+    expect(html).toContain('<h1>무한 스크롤<br>&lt;미리&gt;<br><em>불러오기</em></h1>');
+    expect(html).toContain('<p class="sub">피드 끝에 닿기 전에 &amp; 다음 페이지</p>');
+    expect(html).toContain('<div class="brand">Blog.log</div>');
     expect(html).toContain(`width:${THUMBNAIL_WIDTH}px;height:${THUMBNAIL_HEIGHT}px`);
     expect(html).not.toContain('<미리>');
+    expect(html).not.toContain('class="series"');
+  });
+
+  test('태그는 색 점 알약으로 최대 3개, 색은 순서대로', () => {
+    const html = renderThumbnailHtml({ ...INPUT, tags: ['a', ' ', 'b', 'c', 'd'] });
+    expect(html.match(/class="pill"/g)).toHaveLength(3);
+    expect(html).toContain(
+      '<span class="pill" style="background:#E8F1FF;color:#2563EB"><i style="background:#2563EB"></i>a</span>',
+    );
+    expect(html).not.toContain('</i>d</span>');
+  });
+
+  test('한 줄이면 그 줄이 강조, 4줄 이상은 앞 3줄, 빈 부제·브랜드는 자리 없음', () => {
+    const one = renderThumbnailHtml({ titleLines: ['한 줄'], subtitle: ' ', tags: [], brand: '' });
+    expect(one).toContain('<h1><em>한 줄</em></h1>');
+    expect(one).not.toContain('class="sub"');
+    expect(one).not.toContain('class="brand"');
+    const four = renderThumbnailHtml({ ...INPUT, titleLines: ['1', '2', '3', '4'] });
+    expect(four).toContain('<h1>1<br>2<br><em>3</em></h1>');
+  });
+
+  test('시리즈 배지 — 지난 편·이번 편 점과 EP 두 자리', () => {
+    const html = renderThumbnailHtml({
+      ...INPUT,
+      series: { name: '실무 <트러블>', episodeNo: 2, total: 3 },
+    });
+    expect(html).toContain(
+      '<div class="series"><span class="sname">실무 &lt;트러블&gt;</span><span class="dots"><i class="done"></i><i class="on"></i><i class=""></i></span><span class="ep">EP 02<small> / 03</small></span></div><div class="brand">',
+    );
+  });
+
+  test('편이 12개를 넘으면 점은 빼고 번호만', () => {
+    const html = renderThumbnailHtml({ ...INPUT, series: { name: 'S', episodeNo: 3, total: 20 } });
+    expect(html).not.toContain('class="dots"');
+    expect(html).toContain('EP 03<small> / 20</small>');
+  });
+});
+
+describe('splitThumbnailTitle', () => {
+  test('낱말 단위로 한 줄 9자 안팎, 최대 3줄', () => {
+    expect(splitThumbnailTitle('무한 스크롤 미리 불러오기')).toEqual([
+      '무한 스크롤 미리',
+      '불러오기',
+    ]);
+    expect(splitThumbnailTitle('스냅과 아티클을 한 피드에 섞는 데이터 모델')).toEqual([
+      '스냅과 아티클을',
+      '한 피드에 섞는',
+      '데이터 모델',
+    ]);
+  });
+
+  test('끝의 괄호 부제는 떼고, 3줄을 넘는 낱말은 마지막 줄에 붙인다', () => {
+    expect(splitThumbnailTitle('PG사 무중단 전환기 (Toss에서 NicePay로)')).toEqual([
+      'PG사 무중단',
+      '전환기',
+    ]);
+    expect(splitThumbnailTitle('가나다라마바사 가나다라마바사 가나다라마바사 끝 말')).toEqual([
+      '가나다라마바사',
+      '가나다라마바사',
+      '가나다라마바사 끝 말',
+    ]);
+    expect(splitThumbnailTitle('(괄호뿐)')).toEqual(['(괄호뿐)']);
+    expect(splitThumbnailTitle('  ')).toEqual([]);
   });
 });
 
@@ -49,13 +111,20 @@ describe('findChrome', () => {
 });
 
 describe('thumbnail config', () => {
-  test('세 키 모두 선택, 문자열이어야 한다', () => {
+  test('brand는 선택, 문자열이어야 한다. 예전 footerLeft는 brand로 읽고 나머지 키는 무시', () => {
     expect(parseThumbnailConfig({})).toEqual({ ok: true, config: DEFAULT_THUMBNAIL_CONFIG });
-    expect(parseThumbnailConfig({ footerLeft: 'Blog', defaultTag: 'RETRO', extra: 1 })).toEqual({
+    expect(parseThumbnailConfig({ brand: 'Blog', extra: 1 })).toEqual({
       ok: true,
-      config: { footerLeft: 'Blog', footerRight: '', defaultTag: 'RETRO' },
+      config: { brand: 'Blog' },
     });
-    expect(parseThumbnailConfig({ footerLeft: 1 })).toEqual({
+    expect(
+      parseThumbnailConfig({ footerLeft: 'Old', footerRight: 'x', defaultTag: 'RETRO' }),
+    ).toEqual({ ok: true, config: { brand: 'Old' } });
+    expect(parseThumbnailConfig({ brand: 'New', footerLeft: 'Old' })).toEqual({
+      ok: true,
+      config: { brand: 'New' },
+    });
+    expect(parseThumbnailConfig({ brand: 1 })).toEqual({
       ok: false,
       code: 'THUMBNAIL_CONFIG_INVALID',
     });
@@ -74,10 +143,10 @@ describe('thumbnail config', () => {
         ok: false,
         code: 'THUMBNAIL_CONFIG_INVALID',
       });
-      await writeFile(join(dir, 'ok.json'), '{"footerLeft":"L","footerRight":"R"}');
+      await writeFile(join(dir, 'ok.json'), '{"brand":"B"}');
       expect(await loadThumbnailConfig(join(dir, 'ok.json'))).toEqual({
         ok: true,
-        config: { footerLeft: 'L', footerRight: 'R', defaultTag: 'TROUBLESHOOTING' },
+        config: { brand: 'B' },
       });
     } finally {
       await rm(dir, { recursive: true, force: true });

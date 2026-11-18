@@ -103,7 +103,7 @@ export function renderPublishInfo(input: PublishInfoInput): string {
     `${TITLE_PREFIX}${input.title}\n`,
     `## 포스트 소개 (${PUBLISH_INTRO_MAX_CHARS}자 이내)\n\n${intro}\n`,
     `## URL 슬러그\n\n${input.slug}\n`,
-    `## 썸네일\n\n${input.thumbnailFile} (${THUMBNAIL_WIDTH}×${THUMBNAIL_HEIGHT}, 텍스트 전용)\n`,
+    `## 썸네일\n\n${input.thumbnailFile} (${THUMBNAIL_WIDTH}×${THUMBNAIL_HEIGHT})\n`,
     `## 태그\n\n${tags}\n`,
     renderSeriesPublishSection(input.series),
     renderZennSection(input.zenn),
