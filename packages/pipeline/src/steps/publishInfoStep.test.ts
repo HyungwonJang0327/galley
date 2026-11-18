@@ -57,7 +57,8 @@ const GOOD_OUTPUT = JSON.stringify({
   intro: '피드 끝에 닿기 전에 다음 페이지를 불러온 이야기.',
   tags: ['React', ' 무한스크롤 ', 'react', ''],
   subtitle: '끝에 닿기 전에 다음 페이지를',
-  tag: 'TROUBLESHOOTING',
+  thumbnailTitle: ['무한 스크롤', ' 미리 ', '불러오기'],
+  thumbnailTags: ['React', 'IntersectionObserver'],
 });
 const PNG = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
 
@@ -119,7 +120,8 @@ describe('parsePublishInfoOutput', () => {
       intro: '피드 끝에 닿기 전에 다음 페이지를 불러온 이야기.',
       tags: ['React', '무한스크롤'],
       subtitle: '끝에 닿기 전에 다음 페이지를',
-      tag: 'TROUBLESHOOTING',
+      thumbnailTitle: ['무한 스크롤', '미리', '불러오기'],
+      thumbnailTags: ['React', 'IntersectionObserver'],
     });
   });
 
@@ -128,24 +130,42 @@ describe('parsePublishInfoOutput', () => {
       intro: '소개',
       tags: ['a'],
       subtitle: '소개',
-      tag: '',
+      thumbnailTitle: [],
+      thumbnailTags: ['a'],
     });
   });
 
-  test('부제는 40자에서 자르고 없으면 소개 앞부분, 라벨은 대문자 한 단어가 아니면 빈 값', () => {
+  test('부제는 40자에서 자르고 없으면 소개 앞부분', () => {
     const out = parsePublishInfoOutput(
-      JSON.stringify({
-        intro: '소개',
-        tags: [],
-        subtitle: '가'.repeat(50),
-        tag: 'trouble shooting',
-      }),
+      JSON.stringify({ intro: '소개', tags: [], subtitle: '가'.repeat(50) }),
     );
     expect(out?.subtitle).toBe(`${'가'.repeat(39)}…`);
-    expect(out?.tag).toBe('');
-    expect(
-      parsePublishInfoOutput(JSON.stringify({ intro: '소개', tags: [], tag: 'RETRO-2' }))?.tag,
-    ).toBe('RETRO-2');
+  });
+
+  test('썸네일 제목 줄 — 4줄 이상이거나 한 줄이 13자를 넘으면 빈 배열(호출부가 기본 나누기)', () => {
+    const titleOf = (thumbnailTitle: unknown) =>
+      parsePublishInfoOutput(JSON.stringify({ intro: '소개', tags: [], thumbnailTitle }))
+        ?.thumbnailTitle;
+    expect(titleOf(['가', '가', '끝'])).toEqual(['가', '가', '끝']);
+    expect(titleOf(['1', '2', '3', '4'])).toEqual([]);
+    expect(titleOf(['가'.repeat(14)])).toEqual([]);
+    expect(titleOf(['가'.repeat(13), 1, ' '])).toEqual(['가'.repeat(13)]);
+    expect(titleOf('한 줄')).toEqual([]);
+  });
+
+  test('썸네일 알약 — 최대 3개·24자 이내, 없으면 발행 태그 앞에서 길이가 맞는 것', () => {
+    const pillsOf = (extra: Record<string, unknown>) =>
+      parsePublishInfoOutput(JSON.stringify({ intro: '소개', ...extra }))?.thumbnailTags;
+    expect(pillsOf({ tags: ['x'], thumbnailTags: ['a', 'A', 'b', 'c', 'd'] })).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(pillsOf({ tags: ['x'.repeat(25), 'React', '상태 관리'], thumbnailTags: [] })).toEqual([
+      'React',
+      '상태 관리',
+    ]);
+    expect(pillsOf({ tags: ['React'], thumbnailTags: ['y'.repeat(25)] })).toEqual(['React']);
   });
 
   test('소개는 150자에서 자르고 태그는 10개까지', () => {
@@ -217,19 +237,18 @@ describe('createPublishInfoStepRunner', () => {
       artifacts,
       adapters: { get: (id) => (id === adapter.id ? adapter : undefined) },
       thumbnails,
-      thumbnailConfig: { footerLeft: 'Blog', footerRight: 'velog.io/@h', defaultTag: 'X' },
+      thumbnailConfig: { brand: 'Blog.log' },
     });
 
     const result = await runner.run(ctx());
 
-    // 썸네일: 모델 부제·라벨 + 설정 푸터로 한 번 찍어 DATA_DIR에 PNG로.
+    // 썸네일: 모델의 제목 줄·부제·알약 + 설정 브랜드로 한 번 찍어 DATA_DIR에 PNG로. 시리즈가 아니면 배지 없음.
     expect(thumbnails.calls).toEqual([
       {
-        title: '무한 스크롤 미리 불러오기',
+        titleLines: ['무한 스크롤', '미리', '불러오기'],
         subtitle: '끝에 닿기 전에 다음 페이지를',
-        tag: 'TROUBLESHOOTING',
-        footerLeft: 'Blog',
-        footerRight: 'velog.io/@h',
+        tags: ['React', 'IntersectionObserver'],
+        brand: 'Blog.log',
       },
     ]);
     expect(await artifacts.readBytes('infinite-scroll', 'run_1', THUMBNAIL_ARTIFACT)).toEqual({
@@ -244,7 +263,7 @@ describe('createPublishInfoStepRunner', () => {
     expect(text).toContain('## 태그\n\nReact\n무한스크롤\n');
     expect(text).toContain('タイトル: 無限スクロールの先読み');
     expect(text).toContain('- abcdef1 src/scroll.ts:L10-12 (2024-03-05) — 다음 페이지 미리 읽기');
-    expect(text).toContain('무한_스크롤_미리_불러오기_썸네일.png (1200×630, 텍스트 전용)');
+    expect(text).toContain('무한_스크롤_미리_불러오기_썸네일.png (1200×630)');
     // 조각은 파일에도 프롬프트에도 없다.
     expect(text).not.toContain('SECRET_SNIPPET');
     expect(adapter.calls[0]!.prompt).not.toContain('SECRET_SNIPPET');
@@ -393,17 +412,33 @@ describe('createPublishInfoStepRunner', () => {
     expect(adapter.calls).toHaveLength(0);
   });
 
-  test('라벨이 비면 설정의 기본 태그, 설정이 없으면 빈 푸터', async () => {
+  test('모델이 제목 줄을 안 주면 제목에서 기본 나누기, 설정이 없으면 빈 브랜드', async () => {
     const adapter = createScriptedAdapter(() =>
-      JSON.stringify({ intro: '소개', tags: ['a'], subtitle: '부제', tag: '' }),
+      JSON.stringify({ intro: '소개', tags: ['a'], subtitle: '부제' }),
     );
     const thumbnails = fakeThumbnails();
     await runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails }).run(ctx());
-    expect(thumbnails.calls[0]).toMatchObject({
-      tag: 'TROUBLESHOOTING',
-      footerLeft: '',
-      footerRight: '',
+    expect(thumbnails.calls[0]).toEqual({
+      titleLines: ['무한 스크롤 미리', '불러오기'],
+      subtitle: '부제',
+      tags: ['a'],
+      brand: '',
     });
+  });
+
+  test('시리즈 편이면 썸네일에 시리즈 배지 값(이름·편·총 편수)을 넘긴다', async () => {
+    const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
+    const thumbnails = fakeThumbnails();
+    const series: SeriesStepInfo = {
+      name: '피드 만들기',
+      episodeNo: 2,
+      total: 6,
+      alreadyPublished: false,
+    };
+    await runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails }).run(
+      ctx({ series }),
+    );
+    expect(thumbnails.calls[0]?.series).toEqual({ name: '피드 만들기', episodeNo: 2, total: 6 });
   });
 
   test.each([

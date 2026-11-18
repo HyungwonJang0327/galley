@@ -1,7 +1,7 @@
 // 발행정보 단계(publishInfo) — 마지막 단계. 벨로그 본문(제목)·Zenn 원고(frontmatter)·근거 번들(포인터)을 DATA_DIR에서 읽어
 // `publish.md`를 조립한다. 모델은 **소개(150자)·태그 하나에만** 쓴다(2026-09-26 사용자 결정 — 자리표시자 대신 모델 1회, 짧아
 // 비용이 작다). 입력은 본문뿐이고 근거 번들·리포 경로는 프롬프트에 가지 않는다(근거 목록은 코드가 조립). posts/<슬러그>/에는
-// 승인 시 복사한다(approvePublish). 썸네일(`thumbnail.png`, B3b)도 여기서 만든다 — 같은 모델 호출이 부제·태그를 주고
+// 승인 시 복사한다(approvePublish). 썸네일(`thumbnail.png`, B3b)도 여기서 만든다 — 같은 모델 호출이 제목 줄·부제·알약 태그를 주고
 // ThumbnailRenderer(설치된 Chrome)가 찍는다. 썸네일 실패는 단계 실패다(2026-09-26 사용자 결정 — 5종이 다 있어야 승인 대기로).
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
@@ -11,6 +11,11 @@ import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { postFileNames } from '../publish/postFiles.ts';
 import {
   DEFAULT_THUMBNAIL_CONFIG,
+  splitThumbnailTitle,
+  THUMBNAIL_TAGS_MAX,
+  THUMBNAIL_TITLE_LINE_CHARS,
+  THUMBNAIL_TITLE_LINE_MAX_CHARS,
+  THUMBNAIL_TITLE_MAX_LINES,
   type ThumbnailConfig,
   type ThumbnailRenderer,
 } from '../publish/thumbnail.ts';
@@ -32,7 +37,7 @@ export interface PublishInfoStepDeps {
   artifacts: ArtifactStore;
   adapters: { get(id: string): ModelAdapter | undefined };
   thumbnails: ThumbnailRenderer;
-  /** 푸터·기본 태그(.galley/thumbnail.json). 없으면 빈 푸터. */
+  /** 브랜드 표기(.galley/thumbnail.json). 없으면 브랜드 줄 없음. */
   thumbnailConfig?: ThumbnailConfig;
   limits?: WritingLimits;
 }
@@ -41,15 +46,18 @@ export interface PublishInfoStepDeps {
 export const PUBLISH_ARTIFACT = 'publish.md';
 /** 썸네일 PNG(DATA_DIR) — posts에서는 `<제목>_썸네일.png`. */
 export const THUMBNAIL_ARTIFACT = 'thumbnail.png';
-/** 썸네일 부제 길이 상한(28px 한 줄 안팎). */
+/** 썸네일 부제 길이 상한(25px 두 줄 안팎). */
 export const THUMBNAIL_SUBTITLE_MAX_CHARS = 40;
+/** 썸네일 알약 태그 한 개 길이 상한 — 알약 하나가 왼쪽 틀(560px)을 넘지 않는 폭(여럿이면 줄바꿈). */
+export const THUMBNAIL_TAG_MAX_CHARS = 24;
 
 const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨로그 글을 읽고 발행 정보를 JSON 하나로만 답합니다.
 - "intro": 글을 소개하는 한국어 한 문단, 공백 포함 ${PUBLISH_INTRO_MAX_CHARS}자 이내. 본문에 없는 사실을 더하지 않습니다.
 - "tags": 벨로그 태그 3~${PUBLISH_TAGS_MAX}개(문자열 배열). 기술 이름은 널리 쓰는 표기, 나머지는 한국어. 회사·서비스 이름은 넣지 않습니다.
 - "subtitle": 썸네일에 들어갈 한국어 부제 한 줄, ${THUMBNAIL_SUBTITLE_MAX_CHARS}자 이내. 제목을 되풀이하지 않고 글의 핵심을 한 문장으로.
-- "tag": 썸네일 상단 라벨 — 영문 대문자 한 단어(예 TROUBLESHOOTING, RETROSPECTIVE, ARCHITECTURE, MIGRATION).
-- 출력은 {"intro": "...", "tags": ["..."], "subtitle": "...", "tag": "..."} 형태의 JSON뿐이며 코드 펜스나 설명을 붙이지 않습니다.`;
+- "thumbnailTitle": 썸네일 제목 줄(문자열 배열, 2~${THUMBNAIL_TITLE_MAX_LINES}줄). 글 제목을 뜻이 끊기지 않는 자리에서 나누고 괄호 부제는 뺍니다. 한 줄은 공백 포함 ${THUMBNAIL_TITLE_LINE_CHARS}자 안팎(최대 ${THUMBNAIL_TITLE_LINE_MAX_CHARS}자). 마지막 줄이 빨간 강조색으로 찍히므로 글의 핵심어가 마지막 줄에 오게 합니다.
+- "thumbnailTags": 썸네일 알약 태그 2~${THUMBNAIL_TAGS_MAX}개(문자열 배열). 글의 핵심 기술 이름을 원어 표기로(예 "React", "zustand", "sessionStorage"), 각 ${THUMBNAIL_TAG_MAX_CHARS}자 이내. 회사·서비스 이름은 넣지 않습니다.
+- 출력은 {"intro": "...", "tags": ["..."], "subtitle": "...", "thumbnailTitle": ["...", "..."], "thumbnailTags": ["...", "..."]} 형태의 JSON뿐이며 코드 펜스나 설명을 붙이지 않습니다.`;
 
 /** 모델에 보내는 프롬프트 — 테스트용으로 공개. 본문은 상한까지만(소개·태그는 앞부분으로 충분). */
 export function buildPublishInfoPrompt(
@@ -63,13 +71,40 @@ export function buildPublishInfoPrompt(
   return { system: SYSTEM, prompt: `# 제목\n${input.title}\n\n# 본문\n${body}\n` };
 }
 
+export interface PublishInfoOutput {
+  intro: string;
+  tags: string[];
+  subtitle: string;
+  /** 썸네일 제목 줄 — 모델이 안 줬거나 한 줄이 상한을 넘으면 빈 배열(호출부가 제목에서 기본 나누기). */
+  thumbnailTitle: string[];
+  /** 썸네일 알약 — 모델이 안 줬으면 발행 태그 앞에서 길이가 맞는 것. */
+  thumbnailTags: string[];
+}
+
+const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim();
+
+/** 문자열 배열 정리 — 문자열만, 한 줄로, 빈 것·중복(대소문자 무시) 제거, 상한까지. */
+function cleanList(raw: unknown, max: number): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') continue;
+    const t = oneLine(item);
+    const key = t.toLowerCase();
+    if (t === '' || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+    if (out.length === max) break;
+  }
+  return out;
+}
+
 /**
- * 모델 출력 → 소개·태그·부제·라벨. 소개·태그 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는 상한에서 자르고
- * 태그는 정리·중복 제거. 부제는 없으면 소개 앞부분, 라벨은 없거나 대문자 한 단어가 아니면 빈 문자열(호출부가 기본 태그로).
+ * 모델 출력 → 소개·태그·부제·썸네일 제목 줄·알약. 소개·태그 형식이 어긋나면 undefined(호출부가 재시도 가능 실패로). 소개는
+ * 상한에서 자르고 태그는 정리·중복 제거. 부제는 없으면 소개 앞부분. 썸네일 값은 어긋나도 실패가 아니다 — 기본값으로 찍는다.
  */
-export function parsePublishInfoOutput(
-  text: string,
-): { intro: string; tags: string[]; subtitle: string; tag: string } | undefined {
+export function parsePublishInfoOutput(text: string): PublishInfoOutput | undefined {
   // 전체를 감싼 펜스는 정보 문자열이 무엇이든(json 등) 벗긴다 — writing.unwrapFence는 markdown만 받는다.
   const unfenced = /^(`{3,})\w*[ \t]*\n([\s\S]*?)\n\1\s*$/.exec(text.trim());
   let parsed: unknown;
@@ -79,35 +114,43 @@ export function parsePublishInfoOutput(
     return undefined;
   }
   if (typeof parsed !== 'object' || parsed === null) return undefined;
-  const { intro, tags, subtitle, tag } = parsed as Record<string, unknown>;
+  const { intro, tags, subtitle, thumbnailTitle, thumbnailTags } = parsed as Record<
+    string,
+    unknown
+  >;
   if (typeof intro !== 'string' || !Array.isArray(tags)) return undefined;
-  const cleanIntro = intro.replace(/\s+/g, ' ').trim();
+  const cleanIntro = oneLine(intro);
   if (cleanIntro === '') return undefined;
-  const rawSubtitle = typeof subtitle === 'string' ? subtitle.replace(/\s+/g, ' ').trim() : '';
+  const rawSubtitle = typeof subtitle === 'string' ? oneLine(subtitle) : '';
   // 상한을 넘으면 39자 + 말줄임(문장 중간에서 뚝 끊기지 않게 — 리뷰 L4).
   const subtitleChars = Array.from(rawSubtitle === '' ? cleanIntro : rawSubtitle);
   const cleanSubtitle =
     subtitleChars.length > THUMBNAIL_SUBTITLE_MAX_CHARS
       ? `${subtitleChars.slice(0, THUMBNAIL_SUBTITLE_MAX_CHARS - 1).join('')}…`
       : subtitleChars.join('');
-  const cleanTag =
-    typeof tag === 'string' && /^[A-Z][A-Z0-9-]{1,23}$/.test(tag.trim()) ? tag.trim() : '';
-  const seen = new Set<string>();
-  const cleanTags: string[] = [];
-  for (const raw of tags) {
-    if (typeof raw !== 'string') continue;
-    const t = raw.replace(/\s+/g, ' ').trim();
-    const key = t.toLowerCase();
-    if (t === '' || seen.has(key)) continue;
-    seen.add(key);
-    cleanTags.push(t);
-    if (cleanTags.length === PUBLISH_TAGS_MAX) break;
-  }
+  const cleanTags = cleanList(tags, PUBLISH_TAGS_MAX);
+  // 줄은 중복을 지우지 않는다(같은 낱말이 두 줄에 올 수 있다) — 문자열만, 한 줄로, 빈 줄 제거.
+  const titleLines = Array.isArray(thumbnailTitle)
+    ? thumbnailTitle
+        .filter((line): line is string => typeof line === 'string')
+        .map(oneLine)
+        .filter((line) => line !== '')
+    : [];
+  const titleFits =
+    titleLines.length > 0 &&
+    titleLines.length <= THUMBNAIL_TITLE_MAX_LINES &&
+    titleLines.every((line) => Array.from(line).length <= THUMBNAIL_TITLE_LINE_MAX_CHARS);
+  const fitsPill = (tag: string): boolean => Array.from(tag).length <= THUMBNAIL_TAG_MAX_CHARS;
+  const pills = cleanList(thumbnailTags, PUBLISH_TAGS_MAX).filter(fitsPill);
   return {
     intro: Array.from(cleanIntro).slice(0, PUBLISH_INTRO_MAX_CHARS).join(''),
     tags: cleanTags,
     subtitle: cleanSubtitle,
-    tag: cleanTag,
+    thumbnailTitle: titleFits ? titleLines : [],
+    thumbnailTags: (pills.length > 0 ? pills : cleanTags.filter(fitsPill)).slice(
+      0,
+      THUMBNAIL_TAGS_MAX,
+    ),
   };
 }
 
@@ -281,16 +324,25 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
       };
       const text = renderPublishInfo(input);
 
-      // 썸네일 — 모델 출력의 부제·라벨 + 설정의 푸터. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
+      // 썸네일 — 모델 출력의 제목 줄·부제·알약 + 설정의 브랜드 + 시리즈 배지. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
       ctx.signal.throwIfAborted();
       const config = deps.thumbnailConfig ?? DEFAULT_THUMBNAIL_CONFIG;
       const rendered = await deps.thumbnails.render(
         {
-          title,
+          titleLines:
+            parsed.thumbnailTitle.length > 0 ? parsed.thumbnailTitle : splitThumbnailTitle(title),
           subtitle: parsed.subtitle,
-          tag: parsed.tag === '' ? config.defaultTag : parsed.tag,
-          footerLeft: config.footerLeft,
-          footerRight: config.footerRight,
+          tags: parsed.thumbnailTags,
+          brand: config.brand,
+          ...(ctx.series === undefined
+            ? {}
+            : {
+                series: {
+                  name: ctx.series.name,
+                  episodeNo: ctx.series.episodeNo,
+                  total: ctx.series.total,
+                },
+              }),
         },
         ctx.signal,
       );
