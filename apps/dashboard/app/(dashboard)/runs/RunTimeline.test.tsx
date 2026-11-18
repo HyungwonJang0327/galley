@@ -531,12 +531,12 @@ describe('RunTimeline', () => {
 
       const row = rows()[2]!;
       const badge = row.querySelector('[class*="warning"]');
-      expect(badge?.textContent).toBe('근거 없음 1 · 불확실 0');
+      expect(badge?.textContent).toBe('근거 없음 1 · 불확실 0 · 판정 잘림'); // 옛 파일(묶음 수 없음)
       expect(screen.getByRole('button', { name: '근거 검증 보기' })).toBeTruthy();
       expect(row.textContent).toContain(
         '근거 있음 1 · 근거 없음 1 · 불확실 0 · 근거 조각을 그대로 담은 자리 2',
       );
-      expect(row.textContent).toContain('모델 판정 출력이 잘려');
+      expect(row.textContent).toContain('모델 판정 출력이 잘려 서술 0문장이 불확실로 남았습니다.');
       const items = Array.from(row.querySelectorAll('li[data-status]'));
       expect(items.map((li) => li.getAttribute('data-status'))).toEqual([
         'unsupported',
@@ -548,6 +548,47 @@ describe('RunTimeline', () => {
       expect(items[1]!.textContent).not.toContain('L12 ·');
       expect(items[0]!.textContent).toContain('src/nope.ts');
       expect(items[1]!.textContent).toContain('src/feed.ts:L10 · abcdef0');
+    });
+
+    it('판정이 묶음 단위로 잘리면 배지에 "판정 잘림 k/N"(주황), 안내문에 묶음·문장 수·상한 밖 수(RH2)', () => {
+      const statement = (text: string, line: number, reason: string) => ({
+        text,
+        kind: 'statement' as const,
+        status: 'uncertain' as const,
+        line,
+        reason: reason as 'judge-truncated',
+      });
+      render(
+        <RunTimeline
+          steps={[step({ name: 'verify', order: 3, status: 'succeeded' })]}
+          artifacts={{
+            verify: {
+              kind: 'verification',
+              verification: {
+                counts: { supported: 10, unsupported: 0, uncertain: 3 },
+                verbatimMatches: 0,
+                judge: 'truncated',
+                judgeBatches: { total: 5, judged: 4, truncated: 1, unparsed: 0 },
+                claims: [
+                  statement('서술 A', 10, 'judge-truncated'),
+                  statement('서술 B', 11, 'judge-truncated'),
+                  statement('서술 C', 90, 'not-judged'),
+                ],
+              },
+            },
+          }}
+        />,
+      );
+      const row = rows()[2]!;
+      expect(row.querySelector('[class*="warning"]')?.textContent).toBe(
+        '근거 없음 0 · 불확실 3 · 판정 잘림 1/5',
+      );
+      expect(row.textContent).toContain(
+        '모델 판정 출력이 잘려 묶음 5개 중 1개(서술 2문장)가 불확실로 남았습니다. 근거 검증부터 재실행하면 다시 판정합니다.',
+      );
+      expect(row.textContent).toContain(
+        '판정 상한을 넘어 서술 1문장은 판정하지 않았습니다(불확실).',
+      );
     });
 
     it('근거 검증에 unsupported가 없으면 배지는 neutral', () => {

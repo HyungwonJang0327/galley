@@ -1,6 +1,7 @@
 // 근거 수집·근거 검증 줄의 펼침 내용(BE13, 서버 컴포넌트). 값은 lib/run-artifacts가 줄인 것이고 여기서 한국어 라벨만 붙인다
 // (DB·파일 값은 영어 — decisions/db-value-language.md). 조각 미리보기는 DATA_DIR 쪽이라 로컬 화면에만 보인다.
 import type { ClaimView, EvidenceView, VerificationView } from '../../../lib/run-artifacts';
+import { judgeNote } from '../../../lib/verification-judge';
 import styles from './RunEvidencePanels.module.css';
 
 const SOURCE_LABEL = { linked: '연결', discovered: '탐색' } as const;
@@ -26,11 +27,6 @@ const REASON_LABEL: Record<NonNullable<ClaimView['reason']>, string> = {
   'judge-unparsed': '판정 출력 깨짐',
   'judge-truncated': '판정 출력 잘림',
 };
-const JUDGE_NOTE: Partial<Record<VerificationView['judge'], string>> = {
-  unparsed: '모델 판정 출력이 깨져 서술은 전부 불확실로 두었습니다.',
-  truncated: '모델 판정 출력이 잘려 서술은 전부 불확실로 두었습니다.',
-};
-
 const range = ({ start, end }: { start: number; end: number }) =>
   start === end ? `L${start}` : `L${start}-${end}`;
 
@@ -105,7 +101,7 @@ function ClaimRow({ claim }: { claim: ClaimView }) {
 
 export function VerificationPanel({ verification }: { verification: VerificationView }) {
   const { counts } = verification;
-  const judgeNote = JUDGE_NOTE[verification.judge];
+  const note = judgeNote(verification);
   return (
     <div className={styles.panel}>
       <p className={styles.summary}>
@@ -114,7 +110,7 @@ export function VerificationPanel({ verification }: { verification: Verification
           ? ` · 근거 조각을 그대로 담은 자리 ${verification.verbatimMatches}`
           : ''}
       </p>
-      {judgeNote ? <p className={styles.note}>{judgeNote}</p> : null}
+      {note ? <p className={styles.note}>{note}</p> : null}
       {verification.claims.length === 0 ? (
         <p className={styles.note}>추출된 주장이 없습니다.</p>
       ) : (

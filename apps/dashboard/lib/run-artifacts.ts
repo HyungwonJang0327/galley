@@ -23,6 +23,7 @@ import {
   type EvidenceBundle,
   type EvidenceRef,
   type EvidenceSource,
+  type JudgeBatches,
   type StepName,
   type VerificationClaim,
   type VerificationReport,
@@ -84,6 +85,8 @@ export interface VerificationView {
   /** 본문이 근거 조각을 그대로 담은 자리 수(클린룸 검사). */
   verbatimMatches: number;
   judge: VerificationReport['judge']['status'];
+  /** 서술 판정 묶음별 결과 수(RH1 이후 파일에만). 잘림·깨짐이 전부인지 일부인지는 여기서 안다. */
+  judgeBatches?: JudgeBatches;
 }
 
 export type StepArtifactView =
@@ -275,13 +278,20 @@ export function toVerificationView(report: VerificationReport): VerificationView
       ...(claim.note === undefined ? {} : { note: claim.note }),
     }))
     .sort((a, b) => CLAIM_ORDER[a.status] - CLAIM_ORDER[b.status] || a.line - b.line);
+  const batches = 'batches' in report.judge ? report.judge.batches : undefined;
   return {
     counts: report.counts,
     claims,
     verbatimMatches: report.cleanRoom.matches.length,
     judge: report.judge.status,
+    ...(batches !== undefined && isJudgeBatches(batches) ? { judgeBatches: batches } : {}),
   };
 }
+
+/** `judge.batches` 형태 — 네 수가 음이 아닌 정수여야 쓴다(사람이 손댄 파일이면 조용히 뺀다). */
+const isJudgeBatches = (v: unknown): v is JudgeBatches =>
+  isRecord(v) &&
+  (['total', 'judged', 'truncated', 'unparsed'] as const).every((k) => isCount(v[k]));
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
