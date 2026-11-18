@@ -54,6 +54,14 @@ export interface VerbatimMatch {
   lines: number;
 }
 
+/** 서술 판정 묶음별 결과 수 — `judged + truncated + unparsed = total`. 일부만 실패했는지 여기서 안다(RH1). */
+export interface JudgeBatches {
+  total: number;
+  judged: number;
+  truncated: number;
+  unparsed: number;
+}
+
 export interface VerificationReport {
   version: 1;
   runId: string;
@@ -64,11 +72,20 @@ export interface VerificationReport {
   claims: VerificationClaim[];
   counts: Record<ClaimStatus, number>;
   cleanRoom: { threshold: number; matches: VerbatimMatch[] };
-  /** 서술 판정 — 모델을 안 불렀으면(서술 0개) `skipped`, 출력이 깨졌거나 잘렸으면 전부 uncertain으로 두고 여기 남긴다. */
+  /**
+   * 서술 판정 — 모델을 안 불렀으면(서술 0개) `skipped`. 문장은 묶음으로 나눠 부르고, 묶음 하나라도 잘렸으면 `truncated`,
+   * 깨졌으면 `unparsed`(둘 다면 `unparsed`) — 실패한 **묶음의 문장만** uncertain이고 나머지 묶음의 판정은 살아 있다.
+   * `batches`로 몇 묶음이 실패했는지 안다(RH1 이전 파일에는 없다 — 그때는 묶음 하나 = 전부).
+   */
   judge:
     | { status: 'skipped' }
-    | { status: 'judged'; model: string; statements: number }
-    | { status: 'unparsed' | 'truncated'; model: string; statements: number };
+    | { status: 'judged'; model: string; statements: number; batches?: JudgeBatches }
+    | {
+        status: 'unparsed' | 'truncated';
+        model: string;
+        statements: number;
+        batches?: JudgeBatches;
+      };
 }
 
 /**

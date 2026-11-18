@@ -1,7 +1,8 @@
 // 근거 검증 단계(verify) — 벨로그 본문의 주장을 EvidenceBundle과 대조해 VerificationReport(`verification.json`)를 만든다.
 // **본문은 바꾸지 않고, unsupported가 있어도 단계는 성공**한다(표시 조건 — decisions/evidence-collection.md "근거 검증").
 // 숫자·경로·식별자는 정규식+문자열 대조(비용 0), "~다." 서술은 모델이 번들만 보고 판정한다(서술이 없으면 모델을 부르지 않는다).
-// 판정 출력이 깨지거나 잘려도 실패가 아니다 — 서술을 전부 uncertain으로 두고 보고서 `judge`에 남긴다.
+// 서술은 묶음(`judgeBatchSize`)으로 나눠 여러 번 판정한다 — 한 묶음의 출력이 깨지거나 잘려도 실패가 아니고, **그 묶음의 문장만**
+// uncertain으로 두고 보고서 `judge`(상태·묶음 수)에 남긴다(RH1: 40문장 한 번에 보내던 때 출력 상한에 걸리면 판정 전부를 잃었다).
 // 모델 사유(`note`)는 근거 조각 인용을 걸러낸 뒤에만 보고서에 싣는다(보고서는 posts로 복사된다).
 // 본문은 ArtifactStore(`sources.velog ?? runId`), 번들은 EvidenceStore(`sources.evidence ?? runId`)에서 읽는다.
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
@@ -16,6 +17,7 @@ import {
   matchMechanicalClaims,
   splitBodyLines,
   type ClaimStatus,
+  type JudgeBatches,
   type VerificationClaim,
   type VerificationReport,
   significant,
@@ -49,7 +51,7 @@ const JUDGE_SYSTEM = `당신은 기술 블로그 초안의 문장이 "근거 묶
   - supported: 문장의 사실(수치·시점·동작·결정·이유·사건)이 근거에 있다. 이름이 일반 이름으로 바뀐 것(예: 경로·식별자·회사명 토큰)은 사실이 같으면 supported로 봅니다.
   - unsupported: 근거와 어긋나거나, 구체적 사실(수치·시점·사건·이유)을 주장하는데 근거에 그 사실이 없다.
   - uncertain: 의견·소감·일반론이거나, 근거만으로는 참·거짓을 가릴 수 없다.
-- reason은 한 줄 사유입니다. **근거 조각의 코드·경로·note를 인용하지 말고** "조각 2에 있음"처럼 조각 번호로 가리킵니다(사유는 공개 파일에 실립니다).
+- reason은 한 줄 사유, **40자 이내**입니다. **근거 조각의 코드·경로·note를 인용하지 말고** "조각 2에 있음"처럼 조각 번호로 가리킵니다(사유는 공개 파일에 실립니다).
 - 출력은 JSON 객체 하나뿐입니다: {"judgments":[{"id":1,"status":"supported","reason":"한 줄 사유"}, ...]}. 모든 id를 빠짐없이 포함하고, 앞뒤에 설명을 붙이지 않습니다.
 `;
 
@@ -85,7 +87,7 @@ export function sanitizeNote(
   return cleaned;
 }
 
-/** 판정 프롬프트 — 테스트·미리보기용으로 공개. 근거 묶음(조각·요약) + 번호 붙은 서술 문장. */
+/** 판정 프롬프트 — 테스트·미리보기용으로 공개. 근거 묶음(조각·요약) + 번호 붙은 서술 문장(묶음 안에서 1부터). */
 export function buildJudgePrompt(
   bundle: EvidenceBundle,
   statements: readonly VerificationClaim[],
@@ -201,53 +203,76 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
       const cleanRoom = findVerbatimRuns(lines, bundle, limits);
       ctx.signal.throwIfAborted();
 
-      // 서술 판정 — 앞 maxStatements개만 모델에, 나머지는 uncertain(not-judged).
+      // 서술 판정 — 앞 maxStatements개를 judgeBatchSize씩 묶어 차례로 모델에, 나머지는 uncertain(not-judged).
+      // 묶음마다 근거 묶음을 다시 보내므로 호출 수 = ceil(문장 수 / 묶음 크기)만큼 입력 비용이 든다(출력은 짧다).
       let judge: VerificationReport['judge'] = { status: 'skipped' };
       let judged: VerificationClaim[] = statements.map((s) => ({ ...s, reason: 'not-judged' }));
-      let generated: GenerateResult | undefined;
+      let usage: { input: number; output: number; costUsd: number } | undefined;
       if (statements.length > 0) {
         const head = statements.slice(0, limits.maxStatements);
-        const { system, prompt } = buildJudgePrompt(bundle, head, evidenceChars);
-        try {
-          generated = await abortable(
-            adapter.generate({ system, prompt, maxOutputTokens: limits.judgeMaxOutputTokens }),
-            ctx.signal,
-          );
-        } catch (error) {
-          if (ctx.signal.aborted) throw error;
-          throw classifyModelError(error, 'VERIFY_JUDGE_FAILED');
-        }
-        const verdicts = generated.truncated ? undefined : parseJudgments(generated.text);
-        judge = {
-          status: generated.truncated
+        const batchSize = Math.max(1, Math.floor(limits.judgeBatchSize));
+        const batches: JudgeBatches = { total: 0, judged: 0, truncated: 0, unparsed: 0 };
+        const results: VerificationClaim[] = [];
+        usage = { input: 0, output: 0, costUsd: 0 };
+        for (let start = 0; start < head.length; start += batchSize) {
+          ctx.signal.throwIfAborted();
+          const batch = head.slice(start, start + batchSize);
+          const { system, prompt } = buildJudgePrompt(bundle, batch, evidenceChars);
+          let generated: GenerateResult;
+          try {
+            generated = await abortable(
+              adapter.generate({ system, prompt, maxOutputTokens: limits.judgeMaxOutputTokens }),
+              ctx.signal,
+            );
+          } catch (error) {
+            if (ctx.signal.aborted) throw error;
+            throw classifyModelError(error, 'VERIFY_JUDGE_FAILED');
+          }
+          usage.input += generated.usage.inputTokens;
+          usage.output += generated.usage.outputTokens;
+          usage.costUsd += generated.costUsd;
+          const verdicts = generated.truncated ? undefined : parseJudgments(generated.text);
+          const outcome = generated.truncated
             ? 'truncated'
             : verdicts === undefined
               ? 'unparsed'
-              : 'judged',
+              : 'judged';
+          batches.total += 1;
+          batches[outcome] += 1;
+          const failedReason = outcome === 'truncated' ? 'judge-truncated' : 'judge-unparsed';
+          batch.forEach((s, i) => {
+            const v = verdicts?.get(i + 1);
+            if (v === undefined) {
+              results.push({
+                ...s,
+                status: 'uncertain',
+                reason: verdicts === undefined ? failedReason : 'judge-missing',
+              });
+              return;
+            }
+            const note =
+              v.note === undefined
+                ? undefined
+                : sanitizeNote(v.note, bundle, limits.cleanRoomMinLineChars);
+            results.push({
+              ...s,
+              status: v.status,
+              reason: 'judged',
+              ...(note !== undefined ? { note } : {}),
+            });
+          });
+        }
+        judge = {
+          status:
+            batches.unparsed > 0 ? 'unparsed' : batches.truncated > 0 ? 'truncated' : 'judged',
           model: adapter.id,
           statements: head.length,
+          batches,
         };
-        const failedReason = judge.status === 'truncated' ? 'judge-truncated' : 'judge-unparsed';
-        judged = statements.map((s, i) => {
-          if (i >= head.length) return { ...s, reason: 'not-judged' };
-          const v = verdicts?.get(i + 1);
-          if (v === undefined)
-            return {
-              ...s,
-              status: 'uncertain',
-              reason: verdicts === undefined ? failedReason : 'judge-missing',
-            };
-          const note =
-            v.note === undefined
-              ? undefined
-              : sanitizeNote(v.note, bundle, limits.cleanRoomMinLineChars);
-          return {
-            ...s,
-            status: v.status,
-            reason: 'judged',
-            ...(note !== undefined ? { note } : {}),
-          };
-        });
+        judged = [
+          ...results,
+          ...statements.slice(head.length).map((s) => ({ ...s, reason: 'not-judged' as const })),
+        ];
       }
 
       const claims = [...mechanical, ...judged].sort((a, b) => a.line - b.line);
@@ -276,11 +301,11 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
       return {
         artifacts: { [VERIFICATION_ARTIFACT]: text },
         flags: { unsupported: report.counts.unsupported, uncertain: report.counts.uncertain },
-        ...(generated === undefined
+        ...(usage === undefined
           ? {}
           : {
-              tokens: { input: generated.usage.inputTokens, output: generated.usage.outputTokens },
-              costUsd: generated.costUsd,
+              tokens: { input: usage.input, output: usage.output },
+              costUsd: usage.costUsd,
               model: adapter.id,
             }),
       };
