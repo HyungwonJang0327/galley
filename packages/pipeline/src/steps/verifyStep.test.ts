@@ -158,7 +158,12 @@ describe('createVerifyStepRunner', () => {
       [...report.claims.map((c) => c.line)].sort((x, y) => x - y),
     );
     expect(report.counts).toEqual({ supported: 4, unsupported: 2, uncertain: 1 });
-    expect(report.judge).toEqual({ status: 'judged', model: 'mock:scripted', statements: 4 });
+    expect(report.judge).toEqual({
+      status: 'judged',
+      model: 'mock:scripted',
+      statements: 4,
+      batches: { total: 1, judged: 1, truncated: 0, unparsed: 0 },
+    });
     expect(report.sources).toEqual({ velog: 'run_1', evidence: 'run_1' });
     expect(report.cleanRoom).toEqual({ threshold: VERIFY_LIMITS.cleanRoomLines, matches: [] });
     expect(r.flags).toEqual({ unsupported: 2, uncertain: 1 });
@@ -199,7 +204,12 @@ describe('createVerifyStepRunner', () => {
       adapters: adapters(createScriptedAdapter(() => '판정을 못 하겠습니다')),
     });
     const b = reportOf(broken);
-    expect(b.judge).toEqual({ status: 'unparsed', model: 'mock:scripted', statements: 4 });
+    expect(b.judge).toEqual({
+      status: 'unparsed',
+      model: 'mock:scripted',
+      statements: 4,
+      batches: { total: 1, judged: 0, truncated: 0, unparsed: 1 },
+    });
     expect(
       b.claims
         .filter((c) => c.kind === 'statement')
@@ -221,7 +231,10 @@ describe('createVerifyStepRunner', () => {
     const t = reportOf(
       await run({ adapters: { get: () => truncating } }, ctx({ modelId: truncating.id })),
     );
-    expect(t.judge).toMatchObject({ status: 'truncated' });
+    expect(t.judge).toMatchObject({
+      status: 'truncated',
+      batches: { total: 1, judged: 0, truncated: 1, unparsed: 0 },
+    });
     expect(
       t.claims.filter((c) => c.kind === 'statement').every((c) => c.reason === 'judge-truncated'),
     ).toBe(true);
@@ -250,6 +263,100 @@ describe('createVerifyStepRunner', () => {
       true,
     );
     expect(r.judge).toMatchObject({ statements: 1 });
+  });
+
+  test('judgeBatchSize로 묶어 차례로 부른다 — 묶음 안 번호는 1부터, 토큰·비용은 합산', async () => {
+    const a = adapters(
+      createScriptedAdapter((_input, i) =>
+        i === 0
+          ? '{"judgments":[{"id":1,"status":"supported","reason":"조각 1"},{"id":2,"status":"supported","reason":"조각 1"}]}'
+          : '{"judgments":[{"id":1,"status":"unsupported","reason":"없음"},{"id":2,"status":"uncertain","reason":"소감"}]}',
+      ),
+    );
+    const r = await run({ adapters: a, limits: { ...VERIFY_LIMITS, judgeBatchSize: 2 } });
+    expect(a.adapter.calls).toHaveLength(2);
+    expect(a.adapter.calls[0]!.prompt).toContain('# 판정할 문장(2개)');
+    expect(a.adapter.calls[0]!.prompt).toContain('1. 스토어 50개에서 목록이 멈췄다.');
+    expect(a.adapter.calls[0]!.prompt).not.toContain('실패율은 12%였다.');
+    expect(a.adapter.calls[1]!.prompt).toContain('1. 실패율은 12%였다.'); // 둘째 묶음도 1부터
+    expect(a.adapter.calls[1]!.prompt).toContain('2. 빠른 결정이었다고 생각한다.');
+    // 둘째 묶음에도 근거 묶음이 다시 들어간다(묶음마다 독립 프롬프트)
+    expect(a.adapter.calls[1]!.prompt).toContain('io.observe(sentinel);');
+    const report = reportOf(r);
+    const st = report.claims.filter((c) => c.kind === 'statement');
+    expect(st.map((c) => [c.status, c.reason])).toEqual([
+      ['supported', 'judged'],
+      ['supported', 'judged'],
+      ['unsupported', 'judged'],
+      ['uncertain', 'judged'],
+    ]);
+    expect(report.judge).toEqual({
+      status: 'judged',
+      model: 'mock:scripted',
+      statements: 4,
+      batches: { total: 2, judged: 2, truncated: 0, unparsed: 0 },
+    });
+    const expectedInput = a.adapter.calls.reduce((n, c) => n + Math.ceil(c.prompt.length / 4), 0);
+    expect(r.tokens?.input).toBe(expectedInput);
+    expect(r.costUsd).toBeCloseTo(0.002, 9);
+  });
+
+  test('한 묶음이 잘리면 그 묶음의 문장만 judge-truncated — 다른 묶음의 판정은 살아 있고 judge는 truncated + 묶음 수', async () => {
+    const base = createScriptedAdapter((_input, i) =>
+      i === 0
+        ? '{"judgments":[{"id":1,"status":"supported"},{"id":2,"status":"supported"}]}'
+        : '{"judgments":[',
+    );
+    const flaky = {
+      ...base,
+      async generate(input: Parameters<typeof base.generate>[0]) {
+        const out = await base.generate(input);
+        return { ...out, truncated: base.calls.length === 2 };
+      },
+    };
+    const r = reportOf(
+      await run(
+        {
+          adapters: { get: () => flaky },
+          limits: { ...VERIFY_LIMITS, judgeBatchSize: 2 },
+        },
+        ctx({ modelId: flaky.id }),
+      ),
+    );
+    const st = r.claims.filter((c) => c.kind === 'statement');
+    expect(st.map((c) => [c.status, c.reason])).toEqual([
+      ['supported', 'judged'],
+      ['supported', 'judged'],
+      ['uncertain', 'judge-truncated'],
+      ['uncertain', 'judge-truncated'],
+    ]);
+    expect(r.judge).toEqual({
+      status: 'truncated',
+      model: 'mock:scripted',
+      statements: 4,
+      batches: { total: 2, judged: 1, truncated: 1, unparsed: 0 },
+    });
+    expect(r.counts.uncertain).toBe(2);
+  });
+
+  test('묶음과 maxStatements가 함께: 상한 밖은 not-judged, 상한 안은 묶음 수만큼 호출', async () => {
+    const a = adapters(
+      createScriptedAdapter(() => '{"judgments":[{"id":1,"status":"supported"}]}'),
+    );
+    const r = reportOf(
+      await run({
+        adapters: a,
+        limits: { ...VERIFY_LIMITS, maxStatements: 3, judgeBatchSize: 1 },
+      }),
+    );
+    expect(a.adapter.calls).toHaveLength(3);
+    const st = r.claims.filter((c) => c.kind === 'statement');
+    expect(st.slice(0, 3).every((c) => c.status === 'supported')).toBe(true);
+    expect(st[3]).toMatchObject({ status: 'uncertain', reason: 'not-judged' });
+    expect(r.judge).toMatchObject({
+      statements: 3,
+      batches: { total: 3, judged: 3, truncated: 0, unparsed: 0 },
+    });
   });
 
   test('carried 출처: sources.velog·sources.evidence의 Run을 읽고 보고서는 이 Run에, sources에 기록', async () => {
