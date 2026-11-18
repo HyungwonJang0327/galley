@@ -1,14 +1,17 @@
 // 썸네일 렌더러 — 1200×630 소프트 UI v2 PNG(blog 폴더 `tools/make_thumb.py` v2의 HTML 템플릿을 옮김, 로고·상표 없음).
-// 왼쪽: 태그 알약·제목(마지막 줄 강조색)·부제·시리즈 배지·브랜드. 오른쪽 580×630은 그림 자리(decisions/illustrations.md).
+// 왼쪽: 태그 알약·제목(마지막 줄 강조색)·부제·시리즈 배지·브랜드. 오른쪽 580×630은 글마다 모델이 쓰는 그림 조각 —
+// 허용 목록으로 걸러(markup.ts) 끼우고, 페이지는 CSP로 외부 로드·다른 스크립트를 막는다(decisions/illustrations.md).
 // 인터페이스(`ThumbnailRenderer`) 뒤에 구현을 두어 교체 가능하게 한다(decisions/deploy-readiness.md). 첫 구현은 **설치된
 // Chrome headless `--screenshot`**(2026-09-26 사용자 결정 — Python+Playwright 대신, 새 라이브러리 없음). Chrome 경로는
 // verify:layout과 같은 규칙: `GALLEY_CHROME` 우선, 없으면 OS별 후보(decisions/layout-measurement.md). 실패는 값으로.
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { sanitizeMarkup } from './markup.ts';
 
 export const THUMBNAIL_WIDTH = 1200;
 export const THUMBNAIL_HEIGHT = 630;
@@ -39,6 +42,11 @@ export interface ThumbnailInput {
   brand: string;
   /** 시리즈 글이면 "시리즈명 ●●●▬ EP 01 / 06" 배지. */
   series?: ThumbnailSeries;
+  /**
+   * 오른쪽 그림 HTML 조각(580×630 박스 기준 좌표, 키트 클래스 `.card`·`.chip`·`.dot-red` 등). 모델이 쓴 글이라 **렌더 직전에
+   * 항상 거른다**(sanitizeMarkup) — 호출부가 걸렀는지에 기대지 않는다. 없거나 걸러서 비면 오른쪽은 빈 자리.
+   */
+  artHtml?: string;
 }
 
 export type ThumbnailRenderResult =
@@ -97,7 +105,7 @@ const TAG_COLORS: readonly (readonly [string, string])[] = [
   ['#FFE9E6', '#E2402B'],
 ];
 
-/** make_thumb.py v2 CSS에서 왼쪽 틀에 쓰는 부분(색·여백·글꼴 값 그대로). 글꼴은 시스템 설치 전제 — 없으면 뒤의 대체 글꼴. */
+/** make_thumb.py v2 CSS(색·여백·글꼴 값 그대로) — 왼쪽 틀 + 오른쪽 그림 키트(.card·.row·.tile·.lines·.qty·.chip·.dot-red). 글꼴은 시스템 설치 전제 — 없으면 뒤의 대체 글꼴. */
 const THUMBNAIL_CSS = `*{box-sizing:border-box} body{margin:0}
 .c{width:${THUMBNAIL_WIDTH}px;height:${THUMBNAIL_HEIGHT}px;position:relative;overflow:hidden;font-family:'Noto Sans KR','Noto Sans CJK KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#15171A;
  background:radial-gradient(circle at 92% 18%, #FFD3C7 0, rgba(255,211,199,0) 380px),
@@ -117,13 +125,28 @@ h1 em{font-style:normal;color:#EC3B24}
 .dots{display:flex;gap:6px} .dots i{width:10px;height:10px;border-radius:50%;background:#E9DCD6}
 .dots i.done{background:#F2A496} .dots i.on{background:#EC3B24;width:26px;border-radius:5px}
 .ep{font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-weight:500;font-size:20px;color:#EC3B24} .ep small{font-size:16px;color:#8A8F98}
-.art{position:absolute;left:620px;top:0;width:580px;height:630px}`;
+.art{position:absolute;left:620px;top:0;width:580px;height:630px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace}
+.card{position:absolute;width:222px;padding:20px 18px;border-radius:26px;background:rgba(255,255,255,.92);box-shadow:0 24px 50px rgba(190,100,80,.18),0 2px 6px rgba(0,0,0,.04)}
+.card h3{margin:0 0 16px;display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-weight:500;font-size:24px}
+.row{display:flex;gap:14px;align-items:center;margin-top:14px}
+.tile{width:64px;height:64px;border-radius:16px;background:#F2F2F4;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lines{flex:1;display:flex;flex-direction:column;gap:7px}
+.l1{height:9px;border-radius:5px;background:#E6E7EA;width:100%} .l2{height:9px;border-radius:5px;background:#EEEFF1;width:55%}
+.qty{display:flex;align-items:center;gap:12px;align-self:flex-start;padding:3px 12px;border-radius:999px;background:#F5F5F7;font-size:16px;color:#5B6472} .qty b{font-weight:700;color:#2B2F36}
+.chip{display:inline-block;padding:4px 12px;border-radius:999px;background:#F2F2F4;font-family:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;font-size:15px;color:#5B6472}
+.dot-red{position:absolute;width:78px;height:78px;border-radius:50%;background:#EC3B24;box-shadow:0 14px 30px rgba(236,59,36,.4);display:flex;align-items:center;justify-content:center}`;
 
 /** 제목이 왼쪽 틀(560px)을 넘으면 44px까지 줄인다 — make_thumb.py FIT. 스크린샷 전에 동기로 돈다. */
-const THUMBNAIL_FIT_SCRIPT = `<script>
-const h=document.querySelector('h1');let s=70;
-while(h&&h.scrollWidth>560&&s>44){s-=2;h.style.fontSize=s+'px';}
-</script>`;
+const THUMBNAIL_FIT_SCRIPT = `const h=document.querySelector('h1');let s=70;
+while(h&&h.scrollWidth>560&&s>44){s-=2;h.style.fontSize=s+'px';}`;
+
+/**
+ * 페이지 CSP — 기본은 전부 금지(네트워크·파일·이미지·글꼴 로드 없음, 시스템 글꼴은 로드가 아니다), 인라인 스타일과 **이번 렌더의
+ * nonce가 붙은 스크립트 하나**(제목 맞춤)만 허용. 그림 조각은 이미 걸렀지만, 거르기에 구멍이 있어도 스크립트·외부 요청이 돌지 않게 한 겹 더.
+ */
+const thumbnailCsp = (nonce: string): string =>
+  `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'`;
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
@@ -139,7 +162,7 @@ function renderSeriesBadge(series: ThumbnailSeries): string {
   return `<div class="series"><span class="sname">${escapeHtml(series.name)}</span>${dots}<span class="ep">EP ${pad2(series.episodeNo)}<small> / ${pad2(series.total)}</small></span></div>`;
 }
 
-/** 템플릿 — make_thumb.py v2와 같은 구조·값. 글자는 전부 HTML 이스케이프해 넣는다(스크립트는 안 했다). 빈 줄·빈 태그는 뺀다. */
+/** 템플릿 — make_thumb.py v2와 같은 구조·값. 글자는 전부 HTML 이스케이프해 넣고(스크립트는 안 했다) 그림 조각은 걸러 넣는다. 빈 줄·빈 태그는 뺀다. */
 export function renderThumbnailHtml(input: ThumbnailInput): string {
   const lines = input.titleLines
     .map((line) => line.trim())
@@ -164,7 +187,9 @@ export function renderThumbnailHtml(input: ThumbnailInput): string {
   const foot =
     (input.series === undefined ? '' : renderSeriesBadge(input.series)) +
     (brand === '' ? '' : `<div class="brand">${escapeHtml(brand)}</div>`);
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><style>${THUMBNAIL_CSS}</style></head><body><div class="c"><div class="left"><div class="tags">${tags}</div><h1>${title}</h1>${sub}<div class="foot">${foot}</div></div><div class="art"></div></div>${THUMBNAIL_FIT_SCRIPT}</body></html>`;
+  const art = input.artHtml === undefined ? '' : sanitizeMarkup(input.artHtml);
+  const nonce = randomUUID().replace(/-/g, '');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${thumbnailCsp(nonce)}"><style>${THUMBNAIL_CSS}</style></head><body><div class="c"><div class="left"><div class="tags">${tags}</div><h1>${title}</h1>${sub}<div class="foot">${foot}</div></div><div class="art">${art}</div></div><script nonce="${nonce}">${THUMBNAIL_FIT_SCRIPT}</script></body></html>`;
 }
 
 /** OS별 Chrome 후보 — apps/dashboard/scripts/verify-layout/cdp.mjs와 같은 표(그 파일은 대시보드 스크립트라 import하지 않는다). */

@@ -64,6 +64,31 @@ describe('renderThumbnailHtml', () => {
     );
   });
 
+  test('그림 조각은 걸러서 오른쪽 자리에 — 스크립트·외부 주소는 빠지고 바깥 틀을 닫지 못한다', () => {
+    const html = renderThumbnailHtml({
+      ...INPUT,
+      artHtml:
+        '</div></div><div class="card" style="left:10px;top:20px" onclick="x()">a<script>fetch("https://x.example")</script><img src="https://x.example/a.png"></div>',
+    });
+    expect(html).toContain(
+      '<div class="art"><div class="card" style="left:10px;top:20px">a</div></div></div><script nonce="',
+    );
+    expect(html).not.toContain('x.example');
+    expect(html).not.toContain('onclick');
+  });
+
+  test('그림 조각이 없으면 빈 자리, 페이지 CSP는 nonce 붙은 스크립트 하나만 허용', () => {
+    const html = renderThumbnailHtml(INPUT);
+    expect(html).toContain('<div class="art"></div>');
+    const nonce = /script-src 'nonce-([0-9a-f]{32})'/.exec(html)?.[1];
+    expect(nonce).toBeDefined();
+    expect(html).toContain(`default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-`);
+    expect(html.match(/<script/g)).toHaveLength(1);
+    expect(html).toContain(`<script nonce="${nonce}">`);
+    // 렌더마다 다른 nonce — 조각이 미리 맞춰 쓸 수 없다.
+    expect(renderThumbnailHtml(INPUT)).not.toContain(`nonce-${nonce}`);
+  });
+
   test('편이 12개를 넘으면 점은 빼고 번호만', () => {
     const html = renderThumbnailHtml({ ...INPUT, series: { name: 'S', episodeNo: 3, total: 20 } });
     expect(html).not.toContain('class="dots"');
