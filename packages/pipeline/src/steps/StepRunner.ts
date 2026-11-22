@@ -5,7 +5,7 @@
 // 그래서 워커는 오케스트레이션(클레임·순서·기록·heartbeat·재시도 정책)만 하고,
 // 무엇을 하는지는 여기 구현이 안다. (decisions/run-execution-model.md)
 //
-// 구현은 단계별 러너(evidence·velog·verify·linkedin·zenn·publishInfo, createStepRunner로 라우팅)와 Mock(토큰 없이 같은 파일을 쓴다)이다.
+// 구현은 단계별 러너(evidence·velog·verify·linkedin·zenn·illustration·publishInfo, createStepRunner로 라우팅)와 Mock(토큰 없이 같은 파일을 쓴다)이다.
 import type { StepName } from '../run/stateMachine.ts';
 import type { SeriesStepInfo } from './series.ts';
 

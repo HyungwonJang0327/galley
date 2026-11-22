@@ -207,7 +207,7 @@ describe('createMockStepRunner — stores(DATA_DIR 쓰기, B3a M4)', () => {
     expect(((error as Error).cause as Error).message).toContain('EACCES');
   });
 
-  it('6단계가 승인·미리보기가 읽는 파일을 실제 형식으로 쓴다', async () => {
+  it('7단계가 승인·미리보기가 읽는 파일을 실제 형식으로 쓴다', async () => {
     await withStores(async ({ dir, artifacts, evidence }) => {
       const runner = createMockStepRunner({
         stores: { artifacts, evidence },

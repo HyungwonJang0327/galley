@@ -97,7 +97,7 @@ export interface RunListStep {
   finishedAt: Date | null;
 }
 
-/** 목록 한 줄. 단계 6개의 상태·출처를 같이 준다 — 원형 진행 인디케이터·마지막 단계 미리보기용. */
+/** 목록 한 줄. 단계 7개의 상태·출처를 같이 준다 — 원형 진행 인디케이터·마지막 단계 미리보기용. */
 export interface RunListItem extends RunSummary {
   steps: RunListStep[];
 }

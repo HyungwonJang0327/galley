@@ -87,7 +87,7 @@ export interface WorkerRepo {
    * 실행은 `interrupted`·`workerId` 없음으로 돌아가 다음 기동이 곧바로 집어간다.
    */
   release(runId: string, step: StepName, now: Date): Promise<void>;
-  /** 6단계가 끝났다 — 승인 대기로. */
+  /** 7단계가 끝났다 — 승인 대기로. */
   awaitApproval(runId: string, now: Date): Promise<void>;
   /** 단계가 영구 실패했다 — 실행을 실패로. */
   failRun(runId: string, now: Date): Promise<void>;

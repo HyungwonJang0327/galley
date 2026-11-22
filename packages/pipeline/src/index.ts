@@ -304,6 +304,27 @@ export {
   THUMBNAIL_ARTIFACT,
 } from './steps/publishInfoStep.ts';
 export {
+  ILLUSTRATIONS_MANIFEST,
+  ILLUSTRATIONS_MAX,
+  illustrationArtifact,
+  parseIllustrationManifest,
+  parseIllustrationSlots,
+  planIllustrations,
+  countBodyChars,
+  illustrationCountFor,
+} from './steps/illustration.ts';
+export type { IllustrationManifest, IllustrationSlot } from './steps/illustration.ts';
+export { createIllustrationStepRunner } from './steps/illustrationStep.ts';
+export type { IllustrationStepDeps } from './steps/illustrationStep.ts';
+export {
+  ChromeIllustrationRenderer,
+  renderIllustrationHtml,
+  ILLUSTRATION_WIDTH,
+  ILLUSTRATION_HEIGHT,
+  ILLUSTRATION_SCALE,
+} from './publish/illustration.ts';
+export type { IllustrationRenderer } from './publish/illustration.ts';
+export {
   renderPublishInfo,
   renderEvidenceSection,
   parsePublishTitle,

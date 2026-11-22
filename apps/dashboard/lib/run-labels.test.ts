@@ -56,7 +56,7 @@ describe('isRunInProgress', () => {
 });
 
 describe('stepLabel / STEP_OPTIONS', () => {
-  it('6단계 라벨이 파이프라인 순서를 따른다', () => {
+  it('7단계 라벨이 파이프라인 순서를 따른다', () => {
     expect(STEP_OPTIONS.map((o) => o.name)).toEqual([...STEP_ORDER]);
     expect(STEP_OPTIONS.map((o) => o.label)).toEqual([
       '근거 수집',
@@ -64,6 +64,7 @@ describe('stepLabel / STEP_OPTIONS', () => {
       '근거 검증',
       '링크드인',
       'Zenn',
+      '삽화',
       '발행정보·썸네일',
     ]);
   });

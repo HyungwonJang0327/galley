@@ -4,13 +4,14 @@
 //
 // 요구사항 출처: decisions/evidence-collection.md "상태 머신(B1a) 인터페이스 요구사항" 6개.
 
-/** 단계 6개, 순서 고정. 타임라인·워커·재실행 규칙이 전부 이 배열 하나를 읽는다(요구사항 1). */
+/** 단계 7개, 순서 고정. 타임라인·워커·재실행 규칙이 전부 이 배열 하나를 읽는다(요구사항 1). */
 export const STEP_ORDER = [
   'evidence',
   'velog',
   'verify',
   'linkedin',
   'zenn',
+  'illustration',
   'publishInfo',
 ] as const;
 
@@ -88,7 +89,7 @@ export interface StepState {
 export type NextAction =
   /** 이 단계를 돌려라. */
   | { kind: 'runStep'; step: StepName }
-  /** 6단계가 다 끝났다 — 승인 대기로. */
+  /** 단계가 다 끝났다 — 승인 대기로. */
   | { kind: 'awaitApproval' }
   /** 이 단계가 실패했다 — 실행을 실패로. */
   | { kind: 'fail'; step: StepName };

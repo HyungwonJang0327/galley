@@ -18,6 +18,7 @@ import {
 import { runIndexTick } from '../src/index/runIndexTick.ts';
 import { runAutoLinkTick } from '../src/link/autoLink.ts';
 import { createModelRegistryFromEnv, type ModelRegistry } from '../src/model/ModelRegistry.ts';
+import { ChromeIllustrationRenderer } from '../src/publish/illustration.ts';
 import {
   ChromeThumbnailRenderer,
   defaultThumbnailConfigPath,
@@ -179,7 +180,7 @@ async function createStepRunnerForEnv(
   // 못 찾았거나 GALLEY_CHROME이 없는 파일을 가리키면(오타) 기동은 하되 미리 알린다 — 단계에서 THUMBNAIL_CHROME_NOT_FOUND로 실패한다.
   if (!(await thumbnails.check()).ok)
     deps.logger.error(
-      'Chrome을 찾지 못했다 — 발행정보 단계(썸네일)가 실패한다. .env GALLEY_CHROME에 실행 파일 경로를 적는다',
+      'Chrome을 찾지 못했다 — 삽화 단계와 발행정보 단계(썸네일)가 실패한다. .env GALLEY_CHROME에 실행 파일 경로를 적는다',
       { GALLEY_CHROME: process.env.GALLEY_CHROME ?? null, candidate: chrome ?? null },
     );
   deps.logger.info('단계 러너: 실제', {
@@ -199,6 +200,7 @@ async function createStepRunnerForEnv(
     redactConfig,
     clock: deps.clock,
     thumbnails,
+    illustrations: new ChromeIllustrationRenderer({ env: process.env }),
     ...(thumbnailConfig === null ? {} : { thumbnailConfig }),
   });
 }
@@ -293,7 +295,7 @@ async function main(): Promise<void> {
     try {
       const { outcome } = await runOnce(deps, controller.signal);
       if (stopping) break;
-      // 진행했으면 바로 다음 틱 — 6단계를 2초씩 기다리면 실행이 하염없이 길어진다.
+      // 진행했으면 바로 다음 틱 — 7단계를 2초씩 기다리면 실행이 하염없이 길어진다.
       // 자동 연결(linked)은 급하지 않은 가장 싼 일이라 쉰다 — 시계가 뒤로 가 stale 판정이 계속 참이어도 tight loop가 되지 않게.
       if (outcome === 'idle' || outcome === 'linked') await sleep(IDLE_INTERVAL_MS);
     } catch (error) {

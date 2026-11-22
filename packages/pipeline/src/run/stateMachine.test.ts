@@ -22,8 +22,16 @@ const doneUpTo = (count: number): StepState[] =>
   }));
 
 describe('STEP_ORDER', () => {
-  it('단계 6개 순서가 고정돼 있다', () => {
-    expect(STEP_ORDER).toEqual(['evidence', 'velog', 'verify', 'linkedin', 'zenn', 'publishInfo']);
+  it('단계 7개 순서가 고정돼 있다 — 삽화는 Zenn 뒤·발행정보 앞', () => {
+    expect(STEP_ORDER).toEqual([
+      'evidence',
+      'velog',
+      'verify',
+      'linkedin',
+      'zenn',
+      'illustration',
+      'publishInfo',
+    ]);
   });
 
   it('밖에서 들어온 문자열을 단계 이름으로 좁힌다', () => {
@@ -42,8 +50,8 @@ describe('nextAction — 다음에 돌 단계', () => {
     expect(nextAction(doneUpTo(2))).toEqual({ kind: 'runStep', step: 'verify' });
   });
 
-  it('6단계가 다 끝나면 승인 대기로', () => {
-    expect(nextAction(doneUpTo(6))).toEqual({ kind: 'awaitApproval' });
+  it('7단계가 다 끝나면 승인 대기로', () => {
+    expect(nextAction(doneUpTo(7))).toEqual({ kind: 'awaitApproval' });
   });
 
   it('목록에 없는 단계는 대기로 친다', () => {
@@ -74,7 +82,7 @@ describe('nextAction — 다음에 돌 단계', () => {
   });
 
   it('이전 결과를 가져온(carried) 단계도 끝난 것으로 본다', () => {
-    const steps = doneUpTo(6);
+    const steps = doneUpTo(7);
     steps[0] = {
       name: 'evidence',
       status: STEP_STATUS.succeeded,
@@ -92,6 +100,7 @@ describe('nextAction — 다음에 돌 단계', () => {
       { name: 'verify', status: STEP_STATUS.pending },
       { name: 'linkedin', status: STEP_STATUS.pending },
       { name: 'zenn', status: STEP_STATUS.pending },
+      { name: 'illustration', status: STEP_STATUS.pending },
       { name: 'publishInfo', status: STEP_STATUS.pending },
     ];
 
@@ -99,7 +108,7 @@ describe('nextAction — 다음에 돌 단계', () => {
   });
 
   it('근거 검증에 unsupported가 있어도 전이에 영향이 없다(표시용 플래그)', () => {
-    const steps = doneUpTo(6);
+    const steps = doneUpTo(7);
     steps[2] = {
       name: 'verify',
       status: STEP_STATUS.succeeded,
@@ -111,7 +120,7 @@ describe('nextAction — 다음에 돌 단계', () => {
 });
 
 describe('planRerun — 재실행 범위', () => {
-  it.each(STEP_ORDER)('%s부터 시작하면 fresh + carried가 6단계와 정확히 맞는다', (startStep) => {
+  it.each(STEP_ORDER)('%s부터 시작하면 fresh + carried가 7단계와 정확히 맞는다', (startStep) => {
     const plan = planRerun({ startStep, instruction: '아무 지시' });
 
     // 속성: 두 목록을 이으면 STEP_ORDER 그대로다 — 빠짐·중복·순서 어긋남이 한 번에 걸린다.
@@ -121,18 +130,25 @@ describe('planRerun — 재실행 범위', () => {
     expect(plan.carried).not.toContain(startStep);
   });
 
-  it('근거 수집이 시작이면 carried가 비고 6단계 전부 다시 돈다', () => {
+  it('근거 수집이 시작이면 carried가 비고 7단계 전부 다시 돈다', () => {
     const plan = planRerun({ startStep: 'evidence', instruction: '다시' });
 
     expect(plan.carried).toEqual([]);
     expect(plan.fresh).toEqual([...STEP_ORDER]);
   });
 
-  it('마지막 단계만 돌면 fresh가 하나, 앞 다섯은 carried', () => {
+  it('마지막 단계만 돌면 fresh가 하나, 앞 여섯은 carried', () => {
     const plan = planRerun({ startStep: 'publishInfo', instruction: '제목만 바꿔' });
 
     expect(plan.fresh).toEqual(['publishInfo']);
-    expect(plan.carried).toEqual(['evidence', 'velog', 'verify', 'linkedin', 'zenn']);
+    expect(plan.carried).toEqual([
+      'evidence',
+      'velog',
+      'verify',
+      'linkedin',
+      'zenn',
+      'illustration',
+    ]);
   });
 
   describe('시작 단계 결정', () => {
@@ -182,7 +198,7 @@ describe('applyCommand — 승인 게이트', () => {
       status: RUN_STATUS.revised,
       rerun: {
         startStep: 'velog',
-        fresh: ['velog', 'verify', 'linkedin', 'zenn', 'publishInfo'],
+        fresh: ['velog', 'verify', 'linkedin', 'zenn', 'illustration', 'publishInfo'],
         carried: ['evidence'],
       },
     });
@@ -215,7 +231,7 @@ describe('applyCommand — 승인 게이트', () => {
       status: RUN_STATUS.failed,
       rerun: {
         startStep: 'zenn',
-        fresh: ['zenn', 'publishInfo'],
+        fresh: ['zenn', 'illustration', 'publishInfo'],
         carried: ['evidence', 'velog', 'verify', 'linkedin'],
       },
     });

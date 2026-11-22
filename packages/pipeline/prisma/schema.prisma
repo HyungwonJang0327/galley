@@ -121,7 +121,7 @@ model Run {
   @@index([topicSlug, startedAt])
 }
 
-// 실행 안의 단계 한 줄. 단계 6개(근거 수집·본문·근거 검증·링크드인·Zenn·발행정보)는 이름 문자열로
+// 실행 안의 단계 한 줄. 단계 7개(근거 수집·본문·근거 검증·링크드인·Zenn·삽화·발행정보)는 이름 문자열로
 // 둔다 — SQLite enum 금지 규칙을 지키고, 단계가 늘어도 마이그레이션이 필요 없다.
 model RunStep {
   id    String @id @default(cuid())

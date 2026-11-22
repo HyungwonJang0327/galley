@@ -274,7 +274,7 @@ describe('listRuns — 실행 목록', () => {
     expect(await listRuns(prisma, { tab: 'active', query: '   ' })).toHaveLength(2);
   });
 
-  test('각 줄에 단계 6개가 순서대로 붙는다(진행 인디케이터용)', async () => {
+  test('각 줄에 단계 7개가 순서대로 붙는다(진행 인디케이터용)', async () => {
     const run = await createRun();
     await seedSteps(run.id, {
       evidence: { status: STEP_STATUS.succeeded },
@@ -291,6 +291,7 @@ describe('listRuns — 실행 목록', () => {
       'pending',
       'pending',
       'pending',
+      'pending',
     ]);
   });
 
@@ -303,7 +304,7 @@ describe('listRuns — 실행 목록', () => {
 });
 
 describe('getRunWithSteps — 실행 상세', () => {
-  test('실행 + 단계 6행을 순서대로, 재실행 정보까지', async () => {
+  test('실행 + 단계 7행을 순서대로, 재실행 정보까지', async () => {
     const run = await createRun({
       attempt: 2,
       instruction: '어투를 부드럽게',

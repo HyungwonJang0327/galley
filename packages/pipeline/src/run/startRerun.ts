@@ -1,5 +1,5 @@
 // 재실행 시작 — 승인 대기·실패·완료된 Run을 기준으로 **새 Run**을 만든다(같은 Run 안의 재시도가 아니다,
-// decisions/run-execution-model.md §1). 단계 행 6개를 **한 트랜잭션에서 함께** 만든다:
+// decisions/run-execution-model.md §1). 단계 행 7개를 **한 트랜잭션에서 함께** 만든다:
 // 범위 밖 앞 단계는 `carried`+`succeeded`+`sourceRunId`, 시작 단계부터는 `pending`+`fresh`.
 //
 // 그래서 워커는 첫 실행과 똑같이 pending만 잡는다 — 워커 코드에 "재실행"이라는 개념이 들어가지 않는다
@@ -37,7 +37,7 @@ export type StartRerunFailure =
   | 'NOT_LATEST_ATTEMPT'
   /** 완료됐거나 파일에서 줄이 사라진 주제 — 첫 실행과 같은 판정(topicGuard). 다시 돌려도 승인이 거절한다 */
   | TopicRunBlock
-  /** 계획이 6단계를 순서대로 덮지 않음(carried+fresh ≠ STEP_ORDER) */
+  /** 계획이 7단계를 순서대로 덮지 않음(carried+fresh ≠ STEP_ORDER) */
   | 'INVALID_PLAN'
   /** 이어받을 단계가 직전 Run에서 성공하지 않았음(실패한 Run은 실패 단계부터만 다시 돌 수 있다) */
   | 'CARRIED_STEP_NOT_SUCCEEDED'

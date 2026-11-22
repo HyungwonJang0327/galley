@@ -1,5 +1,5 @@
 // 워커 전체 흐름 통합 테스트: 실제 임시 SQLite + Mock StepRunner.
-// **BW2의 완료 조건** — 큐 적재 → 실행 시작 → 6단계 → 승인 대기가 토큰 없이 한 번에 돈다.
+// **BW2의 완료 조건** — 큐 적재 → 실행 시작 → 7단계 → 승인 대기가 토큰 없이 한 번에 돈다.
 import { describe, test, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -110,11 +110,11 @@ async function queueAndStart() {
 }
 
 describe('워커 전체 흐름', () => {
-  test('큐 → 실행 → 6단계 → 승인 대기가 한 번에 돈다(토큰 없이)', async () => {
+  test('큐 → 실행 → 7단계 → 승인 대기가 한 번에 돈다(토큰 없이)', async () => {
     const run = await queueAndStart();
     const { deps } = makeDeps();
 
-    // 잡는 틱 1 + 단계 6 + 승인 대기 1.
+    // 잡는 틱 1 + 단계 7 + 승인 대기 1.
     const outcomes = [];
     for (let i = 0; i < STEP_ORDER.length + 2; i += 1) outcomes.push((await runOnce(deps)).outcome);
 
@@ -376,11 +376,12 @@ describe('승인 게이트 → 워커', () => {
     );
     if (!revised.ok) throw new Error(revised.code);
 
-    // 잡기 1 + verify·linkedin·zenn·publishInfo 4 + 승인 대기 1.
+    // 잡기 1 + verify·linkedin·zenn·illustration·publishInfo 5 + 승인 대기 1.
     const outcomes = [];
-    for (let i = 0; i < 6; i += 1) outcomes.push((await runOnce(deps)).outcome);
+    for (let i = 0; i < 7; i += 1) outcomes.push((await runOnce(deps)).outcome);
     expect(outcomes).toEqual([
       'claimed',
+      'completed',
       'completed',
       'completed',
       'completed',

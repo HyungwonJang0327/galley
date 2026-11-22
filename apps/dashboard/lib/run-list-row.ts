@@ -1,5 +1,5 @@
 // 실행 목록(2분할 좌측) 한 행의 표시값(서버 전용). decisions/layout.md "실행 /runs":
-// 6단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 시간 · 상태 배지 옆 "근거 없음 n"(BE13).
+// 7단계 원형 진행 인디케이터 · 주제명 · 마지막 단계 미리보기 · 시간 · 상태 배지 옆 "근거 없음 n"(BE13).
 import 'server-only';
 import type { TimelineStatus } from 'galley-ui';
 import type { RunListRow } from './run-list';
@@ -15,7 +15,7 @@ export interface RunStepDot {
 }
 
 export interface RunListRowView {
-  /** 파이프라인 순서 6칸. DB에 행이 없는 단계는 pending. */
+  /** 파이프라인 순서 7칸. DB에 행이 없는 단계는 pending. */
   dots: RunStepDot[];
   /** 마지막으로 손댄 단계(pending이 아닌 마지막 단계)의 "단계명 상태". 전부 대기면 "대기". */
   lastStep: string;

@@ -134,7 +134,7 @@ export function createPrismaWorkerRepo(prisma: PrismaClient): WorkerRepo {
 }
 
 /**
- * 잡은 실행에 단계 6줄이 없으면 만든다(첫 실행 — 전부 `pending`+`fresh`).
+ * 잡은 실행에 단계 7줄이 없으면 만든다(첫 실행 — 전부 `pending`+`fresh`).
  * 재실행은 `startRerun`이 Run을 만들 때 carried/fresh 행을 **이미** 함께 만들어 두므로 여기서는
  * 아무것도 하지 않는다 — 워커는 재실행이라는 개념을 모르고 pending만 잡는다.
  */

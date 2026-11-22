@@ -40,7 +40,7 @@ afterAll(async () => {
 });
 
 /**
- * Run 하나를 6단계와 함께 만든다. `carriedFrom`이 있으면 그 Run의 결과를 이어받은 재실행으로
+ * Run 하나를 7단계와 함께 만든다. `carriedFrom`이 있으면 그 Run의 결과를 이어받은 재실행으로
  * 본다 — 워커(BE14c)가 할 일을 테스트가 손으로 흉내 낸다.
  */
 async function createRun(options: {
@@ -85,7 +85,7 @@ describe('resolveCarriedSources', () => {
   });
 
   test('재실행을 반복해도 출처가 밀리지 않는다(승계)', async () => {
-    // Run1: 첫 실행 — 6단계 전부 fresh.
+    // Run1: 첫 실행 — 7단계 전부 fresh.
     const run1 = await createRun({});
 
     // Run2: 본문부터 재실행 — evidence는 Run1에서 이어받는다.

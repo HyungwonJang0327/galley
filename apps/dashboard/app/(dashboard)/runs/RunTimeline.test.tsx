@@ -9,6 +9,7 @@ const STEP_LABELS = [
   '근거 검증',
   '링크드인',
   'Zenn',
+  '삽화',
   '발행정보·썸네일',
 ];
 
@@ -37,11 +38,11 @@ const rows = () => screen.getAllByRole('listitem');
 const markerLabel = (row: HTMLElement) => row.querySelector('[data-status] span')?.textContent;
 
 describe('RunTimeline', () => {
-  it('단계가 없어도 파이프라인 순서대로 6줄을 그린다(전부 대기)', () => {
+  it('단계가 없어도 파이프라인 순서대로 7줄을 그린다(전부 대기)', () => {
     render(<RunTimeline steps={[]} />);
 
     const items = rows();
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     STEP_LABELS.forEach((label, i) => {
       expect(items[i]!.textContent).toContain(label);
       expect(items[i]!.dataset.status).toBe('pending');
