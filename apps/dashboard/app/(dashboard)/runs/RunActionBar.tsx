@@ -105,7 +105,7 @@ export function RunActionBar({
   const disabled = !enabled || busy !== null;
   const request = () => ({
     instruction: instruction.trim(),
-    ...(startStep === AUTO_STEP ? {} : { startStep }),
+    ...(effectiveStep === AUTO_STEP ? {} : { startStep: effectiveStep }),
   });
   /** 원래 모델과 다를 때만 실어 보낸다 — 같으면 서버가 직전 실행의 모델을 잇는다(기본 경로 불변). */
   const modelChanged = modelId !== null && modelId !== runModelId;
@@ -147,6 +147,13 @@ export function RunActionBar({
         },
         ...steps.map((s) => ({ value: s.name, label: s.label })),
       ];
+
+  // 고른 값이 지금 목록에 없으면(같은 화면에서 다른 실행으로 넘어와 실패 여부가 바뀐 경우 — 상태는 남고 목록만 바뀐다)
+  // 그 목록의 기본값으로 본다. 그대로 두면 Select가 내부 값("__auto__")을 글자로 보이고, 실패 실행에 "단계 자동"이 나간다.
+  const defaultStep = failedStep ?? AUTO_STEP;
+  const effectiveStep = stepItems.some((item) => item.value === startStep)
+    ? startStep
+    : defaultStep;
 
   // 재실행: 먼저 계획(다시 도는 단계)을 받아 확인 Dialog로 보여주고, 확인해야 실제로 보낸다.
   const onRerunClick = async () => {
@@ -286,7 +293,7 @@ export function RunActionBar({
           <div className={styles.row}>
             <div className={styles.step}>
               <Select
-                value={startStep}
+                value={effectiveStep}
                 onValueChange={setStartStep}
                 items={stepItems}
                 disabled={disabled}

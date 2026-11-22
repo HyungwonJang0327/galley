@@ -226,6 +226,28 @@ describe('RunActionBar', () => {
     );
   });
 
+  it('승인 대기 실행에서 실패 실행으로 넘어오면(같은 화면, 상태 유지) 시작 단계는 실패한 단계 — 내부 값이 보이지 않는다', async () => {
+    planRerun.mockResolvedValue({ ok: true, data: PLAN });
+    const props = {
+      enabled: true,
+      steps: STEPS,
+      maxLength: 2000,
+      modelOptions: MODELS,
+      runModelId: 'anthropic:a',
+    };
+    const { rerender } = render(<RunActionBar runId="r1" approveEnabled {...props} />);
+    expect(screen.getByRole('combobox', { name: '시작 단계' }).textContent).toContain('단계 자동');
+
+    rerender(<RunActionBar runId="r2" approveEnabled={false} failedStep="velog" {...props} />);
+
+    const trigger = screen.getByRole('combobox', { name: '시작 단계' });
+    expect(trigger.textContent).toContain('벨로그 본문');
+    expect(trigger.textContent).not.toContain('__auto__');
+    fireEvent.click(screen.getByRole('button', { name: '재실행' }));
+    await screen.findByRole('dialog', { name: '다시 실행할까요?' });
+    expect(planRerun).toHaveBeenCalledWith('r2', { instruction: '', startStep: 'velog' });
+  });
+
   it('빈 지시로 재실행을 누르면 API를 부르지 않고 안내만', () => {
     renderBar();
 
