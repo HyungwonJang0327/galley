@@ -341,6 +341,60 @@ describe('RunTimeline', () => {
       expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('본문 제목');
     });
 
+    it('삽화 줄 — meta에 장수, 펼치면 한 장마다 이름·자리와 한국어판·일본어판 그림', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'illustration', order: 5, status: 'succeeded' })]}
+          artifacts={{
+            illustration: {
+              kind: 'illustrations',
+              items: [
+                {
+                  n: 1,
+                  name: 'illust1_표_분리',
+                  where: '표 다음',
+                  url: '/api/runs/run_1/illustration?n=1',
+                  jaUrl: '/api/runs/run_1/illustration?n=1&lang=ja',
+                },
+                {
+                  n: 2,
+                  name: 'illust2_cursor',
+                  url: '/api/runs/run_1/illustration?n=2',
+                  jaUrl: '/api/runs/run_1/illustration?n=2&lang=ja',
+                },
+              ],
+            },
+          }}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: /삽화/ }).textContent).toContain('삽화 2장');
+      const ko = screen.getByRole('img', { name: '삽화 1 미리보기', hidden: true });
+      expect(ko.getAttribute('src')).toBe('/api/runs/run_1/illustration?n=1');
+      expect(ko.getAttribute('width')).toBe('1200');
+      expect(ko.getAttribute('height')).toBe('520');
+      expect(ko.getAttribute('loading')).toBe('lazy');
+      expect(
+        screen
+          .getByRole('img', { name: '삽화 2 일본어판 미리보기', hidden: true })
+          .getAttribute('src'),
+      ).toBe('/api/runs/run_1/illustration?n=2&lang=ja');
+      expect(screen.getByText(/illust1_표_분리\.png/).textContent).toContain('자리: 표 다음');
+      expect(screen.getByText(/illust2_cursor\.png/).textContent).not.toContain('자리');
+    });
+
+    it('삽화가 0장인 목록이면 그림 없이 안내 한 줄', () => {
+      render(
+        <RunTimeline
+          steps={[step({ name: 'illustration', order: 5, status: 'succeeded' })]}
+          artifacts={{ illustration: { kind: 'illustrations', items: [] } }}
+        />,
+      );
+
+      expect(screen.getByText('이 실행은 삽화를 만들지 않았습니다.')).toBeTruthy();
+      expect(screen.queryByRole('img', { hidden: true })).toBeNull();
+    });
+
     it('발행정보에 썸네일 URL이 있으면 본문 위에 이미지를 둔다', () => {
       render(
         <RunTimeline

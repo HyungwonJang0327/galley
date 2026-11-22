@@ -7,7 +7,10 @@ import type {
   RunRerunPlanErrorCode,
   RunReviseErrorCode,
 } from '../../../../lib/run-commands';
-import type { RunThumbnailErrorCode } from '../../../../lib/run-artifacts';
+import type {
+  RunIllustrationErrorCode,
+  RunThumbnailErrorCode,
+} from '../../../../lib/run-artifacts';
 
 /** Next 16 동적 라우트 — `params`는 Promise다. */
 export type RouteContext = { params: Promise<{ id: string }> };
@@ -18,7 +21,8 @@ export type ErrorCode =
   | RunApproveErrorCode
   | RunReviseErrorCode
   | RunRerunPlanErrorCode
-  | RunThumbnailErrorCode;
+  | RunThumbnailErrorCode
+  | RunIllustrationErrorCode;
 
 const STATUS_OF: Record<ErrorCode, number> = {
   INVALID_BODY: 400,
@@ -49,6 +53,10 @@ const STATUS_OF: Record<ErrorCode, number> = {
   THUMBNAIL_MISSING: 404,
   THUMBNAIL_UNREADABLE: 500,
   RUN_THUMBNAIL_FAILED: 500,
+  // 삽화 GET — 썸네일과 같은 규칙(번호가 범위 밖인 것도 없음 404).
+  ILLUSTRATION_MISSING: 404,
+  ILLUSTRATION_UNREADABLE: 500,
+  RUN_ILLUSTRATION_FAILED: 500,
 };
 
 export function fail(code: ErrorCode, message: string): Response {

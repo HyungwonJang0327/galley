@@ -6,10 +6,14 @@
 import 'server-only';
 import {
   getRunWithSteps,
+  ILLUSTRATIONS_MANIFEST,
+  ILLUSTRATIONS_MAX,
+  illustrationArtifact,
   isStepName,
   LINKEDIN_ARTIFACT,
   LocalFsArtifactStore,
   LocalFsEvidenceStore,
+  parseIllustrationManifest,
   prisma,
   PUBLISH_ARTIFACT,
   STEP_ORIGIN,
@@ -89,9 +93,20 @@ export interface VerificationView {
   judgeBatches?: JudgeBatches;
 }
 
+/** 삽화 한 장 — 한국어 PNG와 일본어 캡션판 PNG의 GET 주소, posts에 복사될 이름 줄기, 본문 자리(있을 때). */
+export interface IllustrationView {
+  n: number;
+  name: string;
+  where?: string;
+  url: string;
+  jaUrl: string;
+}
+
 export type StepArtifactView =
   /** 마크다운 본문. 발행정보 단계는 같은 Run의 썸네일 PNG가 있으면 그 URL도(이진이라 GET 라우트로 낸다). */
   | { kind: 'markdown'; text: string; thumbnailUrl?: string }
+  /** 삽화 단계 — 목록 파일의 순서대로(이진이라 그림은 GET 라우트로 낸다). */
+  | { kind: 'illustrations'; items: IllustrationView[] }
   | { kind: 'evidence'; evidence: EvidenceView }
   | { kind: 'verification'; verification: VerificationView }
   /** DATA_DIR에 파일이 없다 — DATA_DIR 없이 돈 Mock 실행이거나 산출물을 쓰기 전(B3a 전) 실행. */
@@ -167,6 +182,8 @@ async function readStep(
   try {
     if (name === 'evidence') return await readEvidence(stores.evidence, slug, producer);
     if (name === 'verify') return await readVerification(stores.artifacts, slug, producer);
+    if (name === 'illustration')
+      return await readIllustrations(stores.artifacts, slug, producer, run.id);
     const file = MARKDOWN_ARTIFACT[name];
     if (file === undefined) return { kind: 'missing' };
     const view = await readMarkdown(stores.artifacts, slug, producer, file);
@@ -190,6 +207,37 @@ async function readMarkdown(
   if (result.ok) return { kind: 'markdown', text: result.text };
   if (result.code === 'ARTIFACT_MISSING') return { kind: 'missing' };
   return { kind: 'unavailable', message: `산출물(${file})을 읽지 못했습니다.` };
+}
+
+async function readIllustrations(
+  store: LocalFsArtifactStore,
+  slug: string,
+  producer: string,
+  runId: string,
+): Promise<StepArtifactView> {
+  const result = await store.read(slug, producer, ILLUSTRATIONS_MANIFEST);
+  if (!result.ok) {
+    return result.code === 'ARTIFACT_MISSING'
+      ? { kind: 'missing' }
+      : { kind: 'unavailable', message: `산출물(${ILLUSTRATIONS_MANIFEST})을 읽지 못했습니다.` };
+  }
+  const manifest = parseIllustrationManifest(result.text);
+  if (!manifest) {
+    return {
+      kind: 'unavailable',
+      message: `삽화 목록(${ILLUSTRATIONS_MANIFEST})의 형식이 맞지 않습니다.`,
+    };
+  }
+  return {
+    kind: 'illustrations',
+    items: manifest.items.map((item) => ({
+      n: item.n,
+      name: item.name,
+      ...(item.where === undefined ? {} : { where: item.where }),
+      url: illustrationHref(runId, item.n, 'ko'),
+      jaUrl: illustrationHref(runId, item.n, 'ja'),
+    })),
+  };
 }
 
 async function readEvidence(
@@ -475,6 +523,76 @@ export async function getRunThumbnail(runId: string): Promise<RunThumbnailResult
       error: {
         code: 'RUN_THUMBNAIL_FAILED',
         message: `썸네일을 불러오지 못했습니다: ${reason(error)}`,
+      },
+    };
+  }
+}
+
+// ── 삽화 PNG(GET /api/runs/[id]/illustration?n=1&lang=ja) ────────────────────
+
+export type IllustrationLang = 'ko' | 'ja';
+
+/** 삽화 GET 라우트 경로 — 이 Run의 id로 부르면 라우트가 출처 Run을 다시 푼다. 한국어판은 lang을 붙이지 않는다. */
+export const illustrationHref = (runId: string, n: number, lang: IllustrationLang) =>
+  `/api/runs/${encodeURIComponent(runId)}/illustration?n=${n}${lang === 'ja' ? '&lang=ja' : ''}`;
+
+export type RunIllustrationErrorCode =
+  | 'RUN_NOT_FOUND'
+  | 'DATA_DIR_MISSING'
+  | 'ILLUSTRATION_MISSING'
+  | 'ILLUSTRATION_UNREADABLE'
+  | 'RUN_ILLUSTRATION_FAILED';
+
+export type RunIllustrationResult =
+  { ok: true; data: { bytes: Uint8Array } } | Failure<RunIllustrationErrorCode>;
+
+const ILLUSTRATION_MISSING: Failure<RunIllustrationErrorCode> = {
+  ok: false,
+  error: { code: 'ILLUSTRATION_MISSING', message: '삽화 파일이 없습니다.' },
+};
+
+/**
+ * 삽화 단계가 만든 PNG 한 장 — carried면 출처 Run의 파일. 번호는 1~최대 장수의 정수만(파일 이름은 번호 고정이라
+ * 요청 값이 경로에 그대로 들어가지 않는다). 번호가 범위 밖이거나 파일이 없으면 값으로.
+ */
+export async function getRunIllustration(
+  runId: string,
+  n: number,
+  lang: IllustrationLang,
+): Promise<RunIllustrationResult> {
+  try {
+    if (!Number.isInteger(n) || n < 1 || n > ILLUSTRATIONS_MAX) return ILLUSTRATION_MISSING;
+    const run = await getRunWithSteps(prisma, runId);
+    if (!run) {
+      return { ok: false, error: { code: 'RUN_NOT_FOUND', message: '실행을 찾을 수 없습니다.' } };
+    }
+    const dataDir = resolveDashboardDataDir({
+      DATA_DIR: process.env.DATA_DIR,
+      BLOG_DIR: process.env.BLOG_DIR,
+    });
+    if (!dataDir.ok) return { ok: false, error: { code: dataDir.code, message: dataDir.message } };
+
+    // 미리보기와 같은 판정 — 삽화 단계가 성공한 Run만 그림이 있다.
+    const step = run.steps.find((s) => s.name === 'illustration' && isReadable(s));
+    if (!step) return ILLUSTRATION_MISSING;
+    const result = await new LocalFsArtifactStore(dataDir.dir).readBytes(
+      run.topicSlug,
+      producerOf(run, step),
+      illustrationArtifact(n, lang, 'png'),
+    );
+    if (result.ok) return { ok: true, data: { bytes: result.bytes } };
+    return result.code === 'ARTIFACT_MISSING'
+      ? ILLUSTRATION_MISSING
+      : {
+          ok: false,
+          error: { code: 'ILLUSTRATION_UNREADABLE', message: '삽화 파일을 읽지 못했습니다.' },
+        };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        code: 'RUN_ILLUSTRATION_FAILED',
+        message: `삽화를 불러오지 못했습니다: ${reason(error)}`,
       },
     };
   }

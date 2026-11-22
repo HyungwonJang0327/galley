@@ -49,6 +49,8 @@ function hintOf(view: StepArtifactView): string {
     case 'markdown':
     case 'verification':
       return '보기';
+    case 'illustrations':
+      return `삽화 ${view.items.length}장`;
     case 'evidence':
       return [
         `연결 ${view.evidence.linked} · 탐색 ${view.evidence.discovered}`,
@@ -81,6 +83,41 @@ function artifactPanel(view: StepArtifactView) {
       return <EvidencePanel evidence={view.evidence} />;
     case 'verification':
       return <VerificationPanel verification={view.verification} />;
+    case 'illustrations':
+      return view.items.length === 0 ? (
+        <p className={styles.note}>이 실행은 삽화를 만들지 않았습니다.</p>
+      ) : (
+        <ul className={styles.illustrations}>
+          {view.items.map((item) => (
+            <li key={item.n}>
+              <p className={styles.illustrationName}>
+                {item.name}.png
+                {item.where === undefined ? null : (
+                  <span className={styles.note}> — 자리: {item.where}</span>
+                )}
+              </p>
+              {/* 1200×520 원본을 패널 폭에 맞춰 줄인다 — 글자 겹침·잘림을 사람이 본다(decisions/illustrations.md 검수).
+                  lazy — 접힌(hidden) 동안은 요청하지 않는다. 캐시하지 않는 GET이라 재실행 뒤에도 최신 그림. */}
+              <img
+                className={styles.thumbnail}
+                src={item.url}
+                alt={`삽화 ${item.n} 미리보기`}
+                width={1200}
+                height={520}
+                loading="lazy"
+              />
+              <img
+                className={styles.thumbnail}
+                src={item.jaUrl}
+                alt={`삽화 ${item.n} 일본어판 미리보기`}
+                width={1200}
+                height={520}
+                loading="lazy"
+              />
+            </li>
+          ))}
+        </ul>
+      );
     case 'markdown':
       return (
         <>
@@ -113,7 +150,7 @@ function artifactPanel(view: StepArtifactView) {
 }
 
 /**
- * 단계 7줄. `artifacts`에 있는 단계는 펼쳐서 산출물을 읽을 수 있다(제목+meta가 토글, meta 끝에 "보기" 힌트) —
+ * 단계 7줄. `artifacts`에 있는 단계는 펼쳐서 산출물(삽화 단계는 PNG 미리보기)을 볼 수 있다(제목+meta가 토글, meta 끝에 "보기" 힌트) —
  * 읽기는 서버(page)가 하고 여기는 결과만 받는다(decisions/layout.md 타임라인 한 줄).
  */
 export function RunTimeline({

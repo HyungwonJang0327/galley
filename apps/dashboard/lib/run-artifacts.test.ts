@@ -11,13 +11,27 @@ const { read, readBytes, readBundle, getRunWithSteps, constructed } = vi.hoisted
 // 실제 파일은 pipeline ArtifactStore 테스트가 본다. 여기서는 단계 고르기·출처 Run·상태 매핑만.
 vi.mock('@galley/pipeline', () => ({
   isStepName: (name: string) =>
-    ['evidence', 'velog', 'verify', 'linkedin', 'zenn', 'publishInfo'].includes(name),
+    ['evidence', 'velog', 'verify', 'linkedin', 'zenn', 'illustration', 'publishInfo'].includes(
+      name,
+    ),
   STEP_ORIGIN: { fresh: 'fresh', carried: 'carried' },
   VELOG_ARTIFACT: 'velog.md',
   LINKEDIN_ARTIFACT: 'linkedin.md',
   ZENN_ARTIFACT: 'zenn.md',
   PUBLISH_ARTIFACT: 'publish.md',
   THUMBNAIL_ARTIFACT: 'thumbnail.png',
+  ILLUSTRATIONS_MANIFEST: 'illustrations.json',
+  ILLUSTRATIONS_MAX: 3,
+  illustrationArtifact: (n: number, lang: string, ext: string) =>
+    `illust${n}${lang === 'ja' ? '_ja' : ''}.${ext}`,
+  // 실제 파서는 pipeline 테스트가 본다 — 여기서는 "읽힘/형식 불량"만 가른다.
+  parseIllustrationManifest: (text: string) => {
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      return undefined;
+    }
+  },
   VERIFICATION_ARTIFACT: 'verification.json',
   prisma: {},
   getRunWithSteps,
@@ -37,6 +51,7 @@ vi.mock('@galley/pipeline', () => ({
 
 import {
   getRunArtifacts,
+  getRunIllustration,
   getRunThumbnail,
   getRunVerificationFlags,
   parseVerificationReport,
@@ -592,6 +607,128 @@ describe('getRunVerificationFlags — 목록 행', () => {
   it('읽을 행이 없으면 DATA_DIR을 해석하지 않는다', async () => {
     vi.stubEnv('DATA_DIR', '');
     expect(await getRunVerificationFlags([run([step('velog')])])).toEqual({});
+  });
+});
+
+describe('삽화 단계 보기', () => {
+  const MANIFEST = JSON.stringify({
+    version: 1,
+    items: [
+      { n: 1, name: 'illust1_표_분리', where: '표 다음' },
+      { n: 2, name: 'illust2_cursor' },
+    ],
+  });
+
+  it('목록 파일(출처 Run)을 읽어 한 장마다 한국어·일본어판 GET 주소를 붙인다 — 주소는 이 Run의 id', async () => {
+    read.mockResolvedValue({ ok: true, text: MANIFEST });
+
+    const views = await getRunArtifacts(
+      run([step('illustration', 'succeeded', { origin: 'carried', sourceRunId: 'run_1' })]),
+    );
+
+    expect(read).toHaveBeenCalledWith('무한-스크롤', 'run_1', 'illustrations.json');
+    expect(views.illustration).toEqual({
+      kind: 'illustrations',
+      items: [
+        {
+          n: 1,
+          name: 'illust1_표_분리',
+          where: '표 다음',
+          url: '/api/runs/run_2/illustration?n=1',
+          jaUrl: '/api/runs/run_2/illustration?n=1&lang=ja',
+        },
+        {
+          n: 2,
+          name: 'illust2_cursor',
+          url: '/api/runs/run_2/illustration?n=2',
+          jaUrl: '/api/runs/run_2/illustration?n=2&lang=ja',
+        },
+      ],
+    });
+  });
+
+  it('목록이 없으면 missing, 못 읽거나 형식이 어긋나면 unavailable', async () => {
+    read.mockResolvedValue({ ok: false, code: 'ARTIFACT_MISSING' });
+    expect((await getRunArtifacts(run([step('illustration')]))).illustration).toEqual({
+      kind: 'missing',
+    });
+    read.mockResolvedValue({ ok: false, code: 'ARTIFACT_UNREADABLE' });
+    expect((await getRunArtifacts(run([step('illustration')]))).illustration).toMatchObject({
+      kind: 'unavailable',
+    });
+    read.mockResolvedValue({ ok: true, text: '{ nope' });
+    expect((await getRunArtifacts(run([step('illustration')]))).illustration).toEqual({
+      kind: 'unavailable',
+      message: '삽화 목록(illustrations.json)의 형식이 맞지 않습니다.',
+    });
+  });
+});
+
+describe('getRunIllustration', () => {
+  const detail = (illustration: {
+    status?: string;
+    origin: string;
+    sourceRunId: string | null;
+  }) => ({
+    id: 'run_2',
+    topicSlug: '무한-스크롤',
+    steps: [step('velog'), { name: 'illustration', status: 'succeeded', ...illustration }],
+  });
+
+  it('삽화 출처 Run의 번호 고정 PNG 바이트를 돌려준다(한국어판·일본어판)', async () => {
+    getRunWithSteps.mockResolvedValue(detail({ origin: 'carried', sourceRunId: 'run_1' }));
+    const bytes = new Uint8Array([137, 80]);
+    readBytes.mockResolvedValue({ ok: true, bytes });
+
+    expect(await getRunIllustration('run_2', 2, 'ja')).toEqual({ ok: true, data: { bytes } });
+    expect(readBytes).toHaveBeenLastCalledWith('무한-스크롤', 'run_1', 'illust2_ja.png');
+    await getRunIllustration('run_2', 1, 'ko');
+    expect(readBytes).toHaveBeenLastCalledWith('무한-스크롤', 'run_1', 'illust1.png');
+  });
+
+  it('번호가 1~3의 정수가 아니면 Run을 찾지도 않고 ILLUSTRATION_MISSING', async () => {
+    for (const n of [0, 4, 1.5, Number.NaN, -1]) {
+      expect(await getRunIllustration('run_2', n, 'ko')).toMatchObject({
+        ok: false,
+        error: { code: 'ILLUSTRATION_MISSING' },
+      });
+    }
+    expect(getRunWithSteps).not.toHaveBeenCalled();
+    expect(readBytes).not.toHaveBeenCalled();
+  });
+
+  it('없는 실행·삽화 단계가 성공하지 않은 실행·없는 파일·읽기 실패·예외를 값으로', async () => {
+    getRunWithSteps.mockResolvedValue(null);
+    expect(await getRunIllustration('nope', 1, 'ko')).toMatchObject({
+      error: { code: 'RUN_NOT_FOUND' },
+    });
+
+    getRunWithSteps.mockResolvedValue(
+      detail({ status: 'failed', origin: 'fresh', sourceRunId: null }),
+    );
+    expect(await getRunIllustration('run_2', 1, 'ko')).toMatchObject({
+      error: { code: 'ILLUSTRATION_MISSING' },
+    });
+    expect(readBytes).not.toHaveBeenCalled();
+
+    getRunWithSteps.mockResolvedValue(detail({ origin: 'fresh', sourceRunId: null }));
+    expect(await getRunIllustration('run_2', 1, 'ko')).toMatchObject({
+      error: { code: 'ILLUSTRATION_MISSING' },
+    });
+    readBytes.mockResolvedValue({ ok: false, code: 'ARTIFACT_UNREADABLE' });
+    expect(await getRunIllustration('run_2', 1, 'ko')).toMatchObject({
+      error: { code: 'ILLUSTRATION_UNREADABLE' },
+    });
+    readBytes.mockRejectedValue(new Error('EACCES'));
+    expect(await getRunIllustration('run_2', 1, 'ko')).toMatchObject({
+      error: { code: 'RUN_ILLUSTRATION_FAILED' },
+    });
+
+    vi.stubEnv('DATA_DIR', '');
+    vi.stubEnv('BLOG_DIR', '');
+    expect(await getRunIllustration('run_2', 1, 'ko')).toMatchObject({
+      error: { code: 'DATA_DIR_MISSING' },
+    });
   });
 });
 
