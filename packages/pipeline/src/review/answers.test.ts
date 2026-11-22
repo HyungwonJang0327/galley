@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { applyCodeAnswers, type ReviewAnswer } from './answers.ts';
+import { applyCodeAnswers, locateQuestion, type ReviewAnswer } from './answers.ts';
 import { selectReviewQuestions } from './questions.ts';
 
 const BODY = [
@@ -180,5 +180,27 @@ describe('applyCodeAnswers — 여러 답·실패', () => {
   test('CRLF 본문은 LF로 고쳐 돌려준다, 답이 없으면 그대로', () => {
     expect(applyCodeAnswers('가\r\n나', [], []).body).toBe('가\n나');
     expect(apply([])).toMatchObject({ body: BODY, applied: [], changed: false });
+  });
+});
+
+describe('locateQuestion — 지금 본문에서 질문의 자리', () => {
+  test('원래 본문에서는 저장된 앵커와 같다', () => {
+    for (const question of all()) expect(locateQuestion(BODY, question)).toEqual(question.anchor);
+  });
+
+  test('앞쪽이 고쳐져 줄·문단이 밀려도 주석·문장을 다시 찾는다', () => {
+    const questions = all();
+    // 맨 앞에 문단 하나를 끼워 넣었다 — 줄 2개, 문단 1개씩 밀린다.
+    const shifted = `새 문단.\n\n${BODY}`;
+    for (const question of questions)
+      expect(locateQuestion(shifted, question)).toEqual({
+        paragraph: question.anchor.paragraph + 1,
+        line: question.anchor.line + 2,
+      });
+  });
+
+  test('본문에 없으면 undefined', () => {
+    const [first] = all();
+    expect(locateQuestion('# 다른 글\n\n내용.\n', first!)).toBeUndefined();
   });
 });
