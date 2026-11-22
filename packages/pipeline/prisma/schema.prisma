@@ -108,6 +108,11 @@ model Run {
   instruction String?
   startStep   String?
 
+  // 답 반영 실행일 때만 채운다(decisions/review-questions.md) — 확인 질문과 그 답의 JSON(`{version:1, items:[{question, answer}]}`,
+  // 형식은 src/review/answerSet.ts가 소유). 질문(앵커 포함)을 같이 담아 미반영된 답을 다음 시도가 그대로 다시 쓸 수 있다.
+  // 답의 글은 사람이 쓴 글이라 원문 그대로(decisions/db-value-language.md 예외). 수정 지시 재실행·첫 실행은 null.
+  reviewAnswers String?
+
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
   createdAt  DateTime  @default(now())
@@ -136,13 +141,14 @@ model RunStep {
   // pending | running | succeeded | failed — 어휘는 상태 머신 STEP_STATUS가 소유.
   status String @default("pending")
 
-  // fresh | carried — 결과 출처(STEP_ORIGIN). status(생명주기)와 **직교한다**:
+  // fresh | carried | patched — 결과 출처(STEP_ORIGIN). patched = 이전 결과를 고쳐 만든 단계(답 반영 실행).
+  // status(생명주기)와 **직교한다**:
   // 재실행 중 시작 단계가 실패하면 앞은 carried+succeeded, 시작 단계는 fresh+failed, 뒤는 pending.
   // carried 단계도 새 Run의 행으로 저장한다 — 타임라인이 자기 완결적이어야 하고,
   // 발행정보 근거 목록과의 대조도 같은 Run 안에서 끝나야 한다.
   origin String @default("fresh")
 
-  // carried일 때 그 결과를 생산한 Run. 화면의 "이전 결과 · {시각}"은 이 Run의 완료 시각을
+  // carried일 때 그 결과를 생산한 Run, patched일 때 **고칠 대상**을 생산한 Run. 화면의 "이전 결과 · {시각}"은 이 Run의 완료 시각을
   // **참조**한다(시각을 복사해 두지 않는다 — 원본이 바뀌면 같이 바뀌어야 한다).
   sourceRunId String?
 

@@ -10,6 +10,7 @@ import {
   firstUnfinishedStep,
   isStepName,
   nextAction,
+  planAnswerRerun,
   planRerun,
   type StepState,
 } from './stateMachine.ts';
@@ -261,4 +262,71 @@ describe('applyCommand — 승인 게이트', () => {
       code: 'NOT_PENDING_APPROVAL',
     });
   });
+});
+
+describe('planAnswerRerun — 답 반영 실행의 단계별 방식', () => {
+  it('글 내용이 바뀌면 본문·링크드인·Zenn은 고침, 근거 검증은 다시, 근거 수집·삽화·발행정보는 유지', () => {
+    expect(planAnswerRerun({ contentChanges: true })).toEqual({
+      startStep: 'velog',
+      fresh: ['verify'],
+      patched: ['velog', 'linkedin', 'zenn'],
+      carried: ['evidence', 'illustration', 'publishInfo'],
+    });
+  });
+
+  it('주석만 지우면 본문만 고침이고 나머지는 전부 유지(모델을 부르는 단계가 없다)', () => {
+    expect(planAnswerRerun({ contentChanges: false })).toEqual({
+      startStep: 'velog',
+      fresh: [],
+      patched: ['velog'],
+      carried: ['evidence', 'verify', 'linkedin', 'zenn', 'illustration', 'publishInfo'],
+    });
+  });
+
+  it('세 묶음이 7단계를 한 번씩 덮는다', () => {
+    for (const contentChanges of [true, false]) {
+      const plan = planAnswerRerun({ contentChanges });
+      expect([...plan.carried, ...(plan.patched ?? []), ...plan.fresh].sort()).toEqual(
+        [...STEP_ORDER].sort(),
+      );
+    }
+  });
+
+  it('뒤 단계가 유지여도 워커는 고칠 단계 → 다시 만들 단계 순으로 집고, 다 끝나면 승인 대기', () => {
+    const plan = planAnswerRerun({ contentChanges: true });
+    const steps: StepState[] = STEP_ORDER.map((name) => ({
+      name,
+      status: plan.carried.includes(name) ? STEP_STATUS.succeeded : STEP_STATUS.pending,
+    }));
+    const ran: string[] = [];
+    for (let action = nextAction(steps); action.kind === 'runStep'; action = nextAction(steps)) {
+      ran.push(action.step);
+      const step = action.step;
+      steps.find((s) => s.name === step)!.status = STEP_STATUS.succeeded;
+    }
+    expect(ran).toEqual(['velog', 'verify', 'linkedin', 'zenn']);
+    expect(nextAction(steps)).toEqual({ kind: 'awaitApproval' });
+  });
+});
+
+describe('applyCommand — 확인 질문의 답', () => {
+  it('승인 대기에서 답하면 이 Run은 revised + 답 반영 계획', () => {
+    expect(
+      applyCommand(RUN_STATUS.pendingApproval, { type: 'answer', contentChanges: false }),
+    ).toEqual({
+      ok: true,
+      status: RUN_STATUS.revised,
+      rerun: planAnswerRerun({ contentChanges: false }),
+    });
+  });
+
+  it.each([RUN_STATUS.running, RUN_STATUS.done, RUN_STATUS.failed, RUN_STATUS.revised])(
+    '%s에서는 받지 않는다 — 실패 Run에는 이어받을 뒤 단계가 없다',
+    (status) => {
+      expect(applyCommand(status, { type: 'answer', contentChanges: true })).toEqual({
+        ok: false,
+        code: 'NOT_PENDING_APPROVAL',
+      });
+    },
+  );
 });

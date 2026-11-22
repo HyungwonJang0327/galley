@@ -1,6 +1,7 @@
 // 재실행 시작 — 승인 대기·실패·완료된 Run을 기준으로 **새 Run**을 만든다(같은 Run 안의 재시도가 아니다,
 // decisions/run-execution-model.md §1). 단계 행 7개를 **한 트랜잭션에서 함께** 만든다:
-// 범위 밖 앞 단계는 `carried`+`succeeded`+`sourceRunId`, 시작 단계부터는 `pending`+`fresh`.
+// 범위 밖 단계는 `carried`+`succeeded`+`sourceRunId`, 다시 만드는 단계는 `pending`+`fresh`, 답 반영 실행의 고치는 단계는
+// `pending`+`patched`+`sourceRunId`(고칠 대상).
 //
 // 그래서 워커는 첫 실행과 똑같이 pending만 잡는다 — 워커 코드에 "재실행"이라는 개념이 들어가지 않는다
 // (워커는 오케스트레이션만). 확인 UI가 보여준 계획(`planRerun`)과 실제 행이 같은 계산에서 나온다.
@@ -22,8 +23,10 @@ export interface StartRerunInput {
   previousRunId: string;
   /** `planRerun`이 낸 계획 — 확인 UI가 보여준 그것. 여기서 다시 계산하지 않는다. */
   plan: RerunPlan;
-  /** 사용자가 입력한 수정 지시 원문. 그대로 저장한다. */
-  instruction: string;
+  /** 사용자가 입력한 수정 지시 원문. 그대로 저장한다. 답 반영 실행에는 없다(지시가 아니라 답으로 고친다). */
+  instruction?: string;
+  /** 답 반영 실행의 질문·답(JSON — `renderReviewAnswerSet`). 그대로 저장하고 워커가 고치는 단계에 넘긴다. */
+  reviewAnswers?: string;
   /** 레지스트리 어댑터 id. 없으면 직전 Run의 모델을 그대로 쓴다. */
   modelId?: string;
 }
@@ -37,9 +40,9 @@ export type StartRerunFailure =
   | 'NOT_LATEST_ATTEMPT'
   /** 완료됐거나 파일에서 줄이 사라진 주제 — 첫 실행과 같은 판정(topicGuard). 다시 돌려도 승인이 거절한다 */
   | TopicRunBlock
-  /** 계획이 7단계를 순서대로 덮지 않음(carried+fresh ≠ STEP_ORDER) */
+  /** 계획이 7단계를 한 번씩 덮지 않음(carried+patched+fresh ≠ STEP_ORDER) */
   | 'INVALID_PLAN'
-  /** 이어받을 단계가 직전 Run에서 성공하지 않았음(실패한 Run은 실패 단계부터만 다시 돌 수 있다) */
+  /** 이어받거나 고칠 단계가 직전 Run에서 성공하지 않았음(실패한 Run은 실패 단계부터만 다시 돌 수 있다) */
   | 'CARRIED_STEP_NOT_SUCCEEDED'
   /** 레지스트리에 없는 모델 id */
   | 'UNKNOWN_MODEL'
@@ -61,9 +64,10 @@ const RUN_SUMMARY_SELECT = {
   finishedAt: true,
 } as const;
 
+/** 세 묶음(유지·고침·다시 만듦)이 7단계를 **정확히 한 번씩** 덮는가. 답 반영 실행은 뒤 단계도 유지라 순서 접두사로 보지 않는다. */
 function isWholePipeline(plan: RerunPlan): boolean {
-  const joined = [...plan.carried, ...plan.fresh];
-  return joined.length === STEP_ORDER.length && joined.every((name, i) => name === STEP_ORDER[i]);
+  const joined = [...plan.carried, ...(plan.patched ?? []), ...plan.fresh];
+  return joined.length === STEP_ORDER.length && STEP_ORDER.every((name) => joined.includes(name));
 }
 
 /**
@@ -134,13 +138,16 @@ export async function startRerunIn(
     if (!adapter.available) return { ok: false, code: 'MODEL_UNAVAILABLE' };
 
     const previousStatus = new Map(previous.steps.map((step) => [step.name, step.status]));
-    const allCarriedSucceeded = input.plan.carried.every(
+    // 고치는 단계도 이전 결과가 있어야 한다 — 유지와 같은 조건, 같은 출처 규칙(직전이 carried면 그 생산자).
+    const patched = input.plan.patched ?? [];
+    const inherited = [...input.plan.carried, ...patched];
+    const allInheritedSucceeded = inherited.every(
       (name) => previousStatus.get(name) === STEP_STATUS.succeeded,
     );
-    if (!allCarriedSucceeded) return { ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' };
+    if (!allInheritedSucceeded) return { ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' };
 
     // 같은 트랜잭션에서 읽어야 승계 사슬(직전이 carried면 그 sourceRunId)이 일관된다.
-    const sources = await resolveCarriedSources(tx, previous.id, input.plan.carried);
+    const sources = await resolveCarriedSources(tx, previous.id, inherited);
     const attempts = await tx.run.count({ where: { topicId: previous.topicId } });
 
     const run = await tx.run.create({
@@ -150,7 +157,8 @@ export async function startRerunIn(
         topicSlug: previous.topicSlug,
         topicTitle: previous.topicTitle,
         modelId: adapter.id,
-        instruction: input.instruction,
+        instruction: input.instruction ?? null,
+        reviewAnswers: input.reviewAnswers ?? null,
         startStep: input.plan.startStep,
         workerState: 'queued',
         steps: {
@@ -164,7 +172,15 @@ export async function startRerunIn(
                     origin: STEP_ORIGIN.carried,
                     sourceRunId: sources.get(name) ?? null,
                   }
-                : { name, order },
+                : patched.includes(name)
+                  ? // 고칠 대상(이전 결과를 만든 Run)을 적어 둔다 — 못 찾으면 워커의 그 단계가 실패로 알린다.
+                    {
+                      name,
+                      order,
+                      origin: STEP_ORIGIN.patched,
+                      sourceRunId: sources.get(name) ?? null,
+                    }
+                  : { name, order },
             ),
           },
         },

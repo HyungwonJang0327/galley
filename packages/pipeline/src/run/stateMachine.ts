@@ -63,7 +63,9 @@ export function isStepStatus(value: string): value is StepStatus {
 /**
  * 단계 결과의 출처. `RunStep.origin`에 저장된다(요구사항 3).
  * - `fresh`: 이번 실행에서 다시 돈 단계. 첫 실행은 전부 fresh.
- * - `carried`: 시작 단계보다 앞이라 이번 재실행 범위에 없던 단계. 이전 실행 결과를 그대로 쓴다.
+ * - `carried`: 이번 재실행 범위에 없던 단계. 이전 실행 결과를 그대로 쓴다. 수정 지시 재실행에서는 시작 단계보다 앞이고,
+ *   답 반영 실행에서는 **뒤 단계도** carried일 수 있다(삽화·발행정보 — `planAnswerRerun`).
+ * - `patched`: 이전 결과를 입력으로 받아 바뀐 곳만 고치는 단계(답 반영 실행의 본문·링크드인·Zenn).
  *
  * **생명주기(`status`)와 직교한다** — 재실행 중 시작 단계가 실패하면 앞은 `carried`+`succeeded`,
  * 시작 단계는 `fresh`+`failed`, 뒤는 `pending`이다. 단일 enum으로는 표현할 수 없다.
@@ -73,6 +75,11 @@ export function isStepStatus(value: string): value is StepStatus {
 export const STEP_ORIGIN = {
   fresh: 'fresh',
   carried: 'carried',
+  /**
+   * 이전 결과를 **고쳐서** 만든 단계(확인 질문의 답 반영 — decisions/review-questions.md). 이번 실행이 도는 단계라 산출물은
+   * 이 Run의 것이고(fresh와 같다), `sourceRunId`는 **고칠 대상**(이전 결과를 만든 Run)을 가리킨다.
+   */
+  patched: 'patched',
 } as const;
 
 export type StepOrigin = (typeof STEP_ORIGIN)[keyof typeof STEP_ORIGIN];
@@ -135,8 +142,10 @@ export interface RerunPlan {
   startStep: StepName;
   /** 이번에 다시 도는 단계 = 시작 단계와 그 뒤 전부(`STEP_ORDER` 순). */
   fresh: readonly StepName[];
-  /** 범위 밖이라 이전 결과를 그대로 쓰는 앞 단계(`STEP_ORDER` 순). */
+  /** 범위 밖이라 이전 결과를 그대로 쓰는 단계(`STEP_ORDER` 순). 수정 지시 재실행에서는 앞 단계뿐이다. */
   carried: readonly StepName[];
+  /** 이전 결과를 고쳐서 만드는 단계(`STEP_ORDER` 순) — 답 반영 실행만. 없으면 빈 것으로 본다. */
+  patched?: readonly StepName[];
 }
 
 /**
@@ -163,13 +172,40 @@ export function planRerun(input: RerunInput): RerunPlan {
   return { startStep, fresh: STEP_ORDER.slice(at), carried: STEP_ORDER.slice(0, at) };
 }
 
+export interface AnswerRerunInput {
+  /**
+   * 답이 **글 내용**을 바꾸는가 — 채움이 하나라도 있거나 근거 없음 문장을 빼는 삭제가 있을 때(`answersChangeContent`).
+   * 모름(과 주석만 지우는 삭제)만이면 false.
+   */
+  contentChanges: boolean;
+}
+
+/**
+ * 답 반영 실행의 범위(decisions/review-questions.md 착수 결정). 수정 지시 재실행과 달리 **뒤 단계도 유지**될 수 있다.
+ * - 근거 수집·삽화·발행정보: 항상 이전 결과 유지(삽화 앞뒤 문단 예외는 다음 확인 질문으로 올린다).
+ * - 본문: 항상 고침 — 모름만이어도 주석을 지운 새 본문이 이 Run의 산출물이 된다(모델 호출 없음).
+ * - 글 내용이 바뀌면: 근거 검증은 다시, 링크드인·Zenn은 고침. 안 바뀌면 셋 다 유지(모델 호출 0회).
+ */
+export function planAnswerRerun(input: AnswerRerunInput): RerunPlan {
+  const patched: StepName[] = input.contentChanges ? ['velog', 'linkedin', 'zenn'] : ['velog'];
+  const fresh: StepName[] = input.contentChanges ? ['verify'] : [];
+  return {
+    startStep: 'velog',
+    fresh,
+    patched,
+    carried: STEP_ORDER.filter((name) => !patched.includes(name) && !fresh.includes(name)),
+  };
+}
+
 export type RunCommand =
   /** 사람이 승인 — 실행을 끝낸다. */
   | { type: 'approve' }
   /** 사람이 수정 지시 — 이 Run은 `revised`로 끝나고 **새 Run**이 시작 단계부터 돈다. */
-  | ({ type: 'revise' } & RerunInput);
+  | ({ type: 'revise' } & RerunInput)
+  /** 사람이 확인 질문에 답 — 이 Run은 `revised`로 끝나고 **새 Run**이 답한 곳만 고친다. */
+  | ({ type: 'answer' } & AnswerRerunInput);
 
-/** 승인은 승인 대기가 아닌 실행에, 수정 지시는 승인 대기·실패가 아닌 실행에 온 경우(이미 끝났거나 아직 도는 중). */
+/** 승인·답 반영은 승인 대기가 아닌 실행에, 수정 지시는 승인 대기·실패가 아닌 실행에 온 경우(이미 끝났거나 아직 도는 중). */
 export type CommandFailure = 'NOT_PENDING_APPROVAL';
 
 /**
@@ -188,6 +224,11 @@ export function applyCommand(status: RunStatus, command: RunCommand): CommandRes
   if (command.type === 'approve') {
     if (status !== RUN_STATUS.pendingApproval) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
     return { ok: true, status: RUN_STATUS.done };
+  }
+  // 답 반영은 **승인 대기에서만** — 고칠 본문과 그 뒤 산출물이 다 있어야 한다(실패 Run에는 이어받을 뒤 단계가 없다).
+  if (command.type === 'answer') {
+    if (status !== RUN_STATUS.pendingApproval) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
+    return { ok: true, status: RUN_STATUS.revised, rerun: planAnswerRerun(command) };
   }
   // 수정 지시는 승인 대기와 **실패**에서 받는다(decisions/failed-run-rerun.md). 실패 Run은 종결 상태 그대로 두고
   // 새 Run만 만든다 — "다음 시도가 있는가"는 같은 주제의 더 큰 attempt로 본다. 실패의 시작 단계 기본값(실패한 단계)은
