@@ -12,6 +12,12 @@ export const WRITING_LIMITS = {
   zennMaxOutputTokens: 12_288,
   /** 발행정보 출력 상한 — 소개·태그 JSON(수백 토큰) + 썸네일 오른쪽 그림 HTML 조각(인라인 SVG 포함 4,000자 안팎 ≈ 3,000~4,000 토큰). 절단 상한이지 지출 상한이 아니다. */
   publishInfoMaxOutputTokens: 8_192,
+  /** 삽화 출력 토큰 상한(모델 호출 한 번 = 삽화 최대 3장, 한 장 SVG 4,000~6,000자 ≈ 3,000~5,000 토큰). 절단 상한이지 지출 상한이 아니다. */
+  illustrationMaxOutputTokens: 16_384,
+  /** 삽화 프롬프트에 넣는 벨로그 본문 글자 수 상한. */
+  illustrationBodyChars: 24_000,
+  /** 일본어 캡션판 프롬프트에 넣는 Zenn 기사 글자 수 상한(용어 참고용). */
+  illustrationZennChars: 12_000,
   /** 발행정보 프롬프트에 넣는 벨로그 본문 글자 수 상한 — 소개·태그는 앞부분으로 충분하다. */
   publishInfoBodyChars: 24_000,
 } as const;
