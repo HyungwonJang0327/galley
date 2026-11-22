@@ -57,7 +57,7 @@ running일 때만 폴링한다. 실행은 워커가 한다. (decisions/run-locat
 
 ### 파이프라인 단계 (순서 고정)
 
-`근거 수집 → 벨로그 본문 → 근거 검증 → 링크드인 → Zenn → 발행정보·썸네일` (6단계, decisions/evidence-collection.md)
+`근거 수집 → 벨로그 본문 → 근거 검증 → 링크드인 → Zenn → 삽화 → 발행정보·썸네일` (7단계, decisions/evidence-collection.md · 삽화는 decisions/illustrations.md)
 상태 머신: `실행 → 승인 대기 → (수정 지시 → 시작 단계부터 재실행) → 완료`. 근거 검증의 unsupported는 표시 조건이지 실패가 아니다. 재실행은 **시작 단계 + 이후 전부**(Select 지정 우선, 없으면 지시에 "근거·커밋·코드"가 있으면 근거 수집부터·없으면 본문부터). 범위에 없던 앞 단계는 `carried`(이전 결과 유지) — decisions/evidence-collection.md.
 **시리즈**는 `주제_큐.md`의 표기로만 존재한다(편 줄 태그 `[A-1]`, 후보 `### 시리즈` 아래 정의 줄 `시리즈 A. <이름> (<메모>)`). DB는 `seriesKey`·`episodeNo` 캐시뿐, 이름·편 목록은 매번 파일에서. 태그는 표시 제목·매칭 키·슬러그에 안 들어가고 화면은 배지로 보인다. 발행 제목 `| 시리즈명 N편`·Zenn `(第N回)`, `(기존 글)` 편은 실행 대상이 아니다 — decisions/series.md.
 
@@ -72,7 +72,7 @@ Galley/
 │     │  │  ├─ layout.tsx      # TopBar/Sidebar 고정 셸
 │     │  │  ├─ page.tsx        # 홈(요약 대시보드) — 루트 / (목록형 A의 변형 "요약형", decisions/navigation·layout)
 │     │  │  ├─ queue/          # 큐 1화면(탭 대기/후보/보류/완료) (패턴 A) — 행 ⋮ "근거 편집" Dialog
-│     │  │  ├─ runs/           # 실행 상세(2분할)·이력 (패턴 B) — 타임라인 6줄(펼침: 마크다운 미리보기·썸네일·근거 항목·검증 주장 목록)
+│     │  │  ├─ runs/           # 실행 상세(2분할)·이력 (패턴 B) — 타임라인 7줄(펼침: 마크다운 미리보기·썸네일·근거 항목·검증 주장 목록)
 │     │  │  └─ settings/repos/ # 리포 연결·인덱싱 상태 (Phase 2, Phase 1-B는 CLI index)
 │     │  └─ api/               # Route Handlers → @galley/pipeline 호출만
 │     └─ lib/                  # 도메인 어댑터: 상태→Badge variant 매핑, 사이드바 메뉴 정의, 데이터 페칭
