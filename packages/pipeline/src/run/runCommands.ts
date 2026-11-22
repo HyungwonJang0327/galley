@@ -1,9 +1,16 @@
-// 승인 게이트 배선 — 사람이 승인 대기 Run에 내리는 명령 둘(승인·수정 지시)과 수정 지시 미리보기.
+// 승인 게이트 배선 — 사람이 승인 대기 Run에 내리는 명령 셋(승인·수정 지시·확인 질문의 답)과 수정 지시 미리보기.
 // 전이는 상태 머신 `applyCommand`가 정하고, 여기서는 그 답을 DB에 쓴다. 대시보드는 Run 상태를
 // 바꿀 뿐 워커에 신호를 보내지 않는다 — 새 Run이 queued로 생기면 워커가 폴링으로 집어간다
 // (decisions/run-location.md). 실패는 값으로 돌려준다(CLAUDE.md §4).
 import type { Prisma, PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
+import {
+  answersChangeContent,
+  buildReviewAnswerSet,
+  renderReviewAnswerSet,
+  type ReviewAnswerItem,
+  type ReviewAnswerSetFailure,
+} from '../review/answerSet.ts';
 import { resolveCarriedSources } from './carriedSources.ts';
 import type { RunSummary } from './runQueries.ts';
 import { startRerunIn, type StartRerunFailure } from './startRerun.ts';
@@ -119,8 +126,8 @@ export type ReviseRunResult =
 
 /** 트랜잭션 안에서 값-실패를 만나면 이걸 던져 롤백하고, 밖에서 다시 값으로 바꾼다. */
 class Rollback extends Error {
-  readonly code: ReviseRunFailure;
-  constructor(code: ReviseRunFailure) {
+  readonly code: 'NOT_PENDING_APPROVAL';
+  constructor(code: 'NOT_PENDING_APPROVAL') {
     super(code);
     this.name = 'Rollback';
     this.code = code;
@@ -181,6 +188,84 @@ export async function reviseRun(
           workerId: null,
           ...(decision.status === RUN_STATUS.revised ? { finishedAt: now } : {}),
         },
+      });
+      if (count === 0) throw new Rollback('NOT_PENDING_APPROVAL');
+
+      const previous = await tx.run.findUniqueOrThrow({
+        where: { id: input.runId },
+        select: RUN_SUMMARY_SELECT,
+      });
+      return { ok: true, previous, run: created.run, plan: decision.rerun };
+    });
+  } catch (error) {
+    if (error instanceof Rollback) return { ok: false, code: error.code };
+    throw error;
+  }
+}
+
+// ── 확인 질문의 답 ───────────────────────────────────────────────────────────
+
+export interface AnswerRunInput {
+  runId: string;
+  /** 답한 질문과 그 답 — 질문은 그 Run의 질문 목록에서 온 것(앵커 포함). 답하지 않은 질문은 넣지 않는다. */
+  items: readonly ReviewAnswerItem[];
+  /** 새 시도의 모델. 없으면 직전 Run의 모델을 잇는다. */
+  modelId?: string;
+}
+
+export type AnswerRunFailure =
+  | 'RUN_NOT_FOUND'
+  | CommandFailure
+  | ReviewAnswerSetFailure
+  | Exclude<StartRerunFailure, 'RUN_NOT_FOUND' | 'RUN_IN_PROGRESS' | 'INVALID_PLAN'>;
+
+export type AnswerRunResult =
+  /** `previous`는 `revised`로 끝난 그 Run, `run`은 새로 queued된 답 반영 실행. */
+  | { ok: true; previous: RunSummary; run: RunSummary; plan: RerunPlan }
+  | { ok: false; code: AnswerRunFailure };
+
+/**
+ * 확인 질문에 답 — 이 Run을 `revised`로 끝내고 **답한 곳만 고치는 새 Run**을 queued로 만든다(decisions/review-questions.md).
+ * 수정 지시(`reviseRun`)와 같은 뼈대(한 트랜잭션, 새 Run 생성 → 이 Run 종결)이고 다른 점은 둘이다: 계획이 단계별 방식
+ * (`planAnswerRerun` — 본문은 고침, 삽화·발행정보는 뒤 단계여도 유지)이고, 지시 대신 질문·답을 `Run.reviewAnswers`에 남긴다.
+ * 승인 대기에서만 받는다.
+ */
+export async function answerRun(
+  deps: { prisma: PrismaClient; registry: ModelRegistry },
+  input: AnswerRunInput,
+  now: Date = new Date(),
+): Promise<AnswerRunResult> {
+  const built = buildReviewAnswerSet(input.items);
+  if (!built.ok) return built;
+
+  try {
+    return await deps.prisma.$transaction(async (tx) => {
+      const current = await tx.run.findUnique({
+        where: { id: input.runId },
+        select: { status: true },
+      });
+      if (!current) return { ok: false, code: 'RUN_NOT_FOUND' };
+      if (!isRunStatus(current.status)) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
+
+      const decision = applyCommand(current.status, {
+        type: 'answer',
+        contentChanges: answersChangeContent(built.set.items),
+      });
+      if (!decision.ok) return decision;
+      if (!decision.rerun) throw new Error('answer 결과에 재실행 계획이 없다');
+
+      const created = await startRerunIn(tx, deps.registry, {
+        previousRunId: input.runId,
+        plan: decision.rerun,
+        reviewAnswers: renderReviewAnswerSet(built.set),
+        modelId: input.modelId,
+      });
+      // reviseRun과 같은 이유로 단언한다(앞에서 걸러진 코드는 여기 닿지 않는다).
+      if (!created.ok) return { ok: false, code: created.code as AnswerRunFailure };
+
+      const { count } = await tx.run.updateMany({
+        where: { id: input.runId, status: current.status },
+        data: { status: decision.status, workerId: null, finishedAt: now },
       });
       if (count === 0) throw new Rollback('NOT_PENDING_APPROVAL');
 

@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
-import { approveRun, previewRerun, reviseRun } from './runCommands.ts';
+import type { ReviewAnswerItem } from '../review/answerSet.ts';
+import { answerRun, approveRun, previewRerun, reviseRun } from './runCommands.ts';
 import {
   INSTRUCTION_MAX_LENGTH,
   RUN_STATUS,
@@ -313,6 +314,135 @@ describe('reviseRun', () => {
       ok: false,
       code: 'RUN_NOT_FOUND',
     });
+  });
+});
+
+describe('answerRun', () => {
+  const comment: ReviewAnswerItem['question'] = {
+    id: 'c1',
+    source: 'comment',
+    question: 'CHECK 제약을 검토했나요?',
+    anchor: { paragraph: 12, line: 40 },
+  };
+  const claim: ReviewAnswerItem['question'] = {
+    id: 'u1',
+    source: 'unsupported',
+    question: '절반으로 줄었다.',
+    anchor: { paragraph: 3, line: 7 },
+  };
+  const originsOf = async (runId: string) =>
+    Object.fromEntries(
+      (await prisma.runStep.findMany({ where: { runId } })).map((s) => [s.name, s.origin]),
+    );
+
+  test('채움이 있으면: 이 Run은 revised, 새 Run은 본문·링크드인·Zenn 고침 + 검증 다시 + 나머지 유지, 질문·답을 남긴다', async () => {
+    const run = await finishedRun();
+    const items: ReviewAnswerItem[] = [
+      { question: comment, answer: { id: 'c1', kind: 'fill', text: ' 검토했고 넣지 않았다 ' } },
+      { question: claim, answer: { id: 'u1', kind: 'keep' } },
+    ];
+
+    const result = await answerRun(deps(), { runId: run.id, items }, NOW);
+
+    expect(result).toMatchObject({
+      ok: true,
+      previous: { id: run.id, status: RUN_STATUS.revised, finishedAt: NOW },
+      run: { topicId, attempt: 2, status: RUN_STATUS.running, finishedAt: null },
+      plan: { startStep: 'velog', fresh: ['verify'], patched: ['velog', 'linkedin', 'zenn'] },
+    });
+    if (!result.ok) return;
+
+    const created = await prisma.run.findUniqueOrThrow({ where: { id: result.run.id } });
+    expect(created).toMatchObject({ workerState: 'queued', instruction: null, startStep: 'velog' });
+    expect(JSON.parse(created.reviewAnswers ?? '')).toEqual({
+      version: 1,
+      items: [
+        { question: comment, answer: { id: 'c1', kind: 'fill', text: '검토했고 넣지 않았다' } },
+        items[1],
+      ],
+    });
+    expect(await originsOf(created.id)).toEqual({
+      evidence: STEP_ORIGIN.carried,
+      velog: STEP_ORIGIN.patched,
+      verify: STEP_ORIGIN.fresh,
+      linkedin: STEP_ORIGIN.patched,
+      zenn: STEP_ORIGIN.patched,
+      illustration: STEP_ORIGIN.carried,
+      publishInfo: STEP_ORIGIN.carried,
+    });
+  });
+
+  test('모름과 주석 질문의 삭제뿐이면 본문만 고침이고 나머지는 전부 유지다', async () => {
+    const run = await finishedRun();
+
+    const result = await answerRun(deps(), {
+      runId: run.id,
+      items: [
+        { question: comment, answer: { id: 'c1', kind: 'delete' } },
+        { question: claim, answer: { id: 'u1', kind: 'keep' } },
+      ],
+    });
+    if (!result.ok) throw new Error(result.code);
+
+    const origins = await originsOf(result.run.id);
+    expect(origins.velog).toBe(STEP_ORIGIN.patched);
+    expect(Object.values(origins).filter((o) => o === STEP_ORIGIN.carried)).toHaveLength(6);
+  });
+
+  test('근거 없음 문장을 빼는 삭제는 글 내용이 바뀌므로 검증을 다시 돈다', async () => {
+    const run = await finishedRun();
+
+    const result = await answerRun(deps(), {
+      runId: run.id,
+      items: [{ question: claim, answer: { id: 'u1', kind: 'delete' } }],
+    });
+    if (!result.ok) throw new Error(result.code);
+
+    expect((await originsOf(result.run.id)).verify).toBe(STEP_ORIGIN.fresh);
+  });
+
+  test.each([RUN_STATUS.failed, RUN_STATUS.done, RUN_STATUS.revised])(
+    '%s Run에는 답하지 못하고 아무것도 만들지 않는다',
+    async (status) => {
+      const run = await finishedRun(status);
+
+      const result = await answerRun(deps(), {
+        runId: run.id,
+        items: [{ question: claim, answer: { id: 'u1', kind: 'keep' } }],
+      });
+
+      expect(result).toEqual({ ok: false, code: 'NOT_PENDING_APPROVAL' });
+      expect(await prisma.run.count()).toBe(1);
+    },
+  );
+
+  test('답이 없거나 형식이 어긋나면 DB를 보지 않고 거절한다', async () => {
+    expect(await answerRun(deps(), { runId: 'nope', items: [] })).toEqual({
+      ok: false,
+      code: 'ANSWERS_EMPTY',
+    });
+    expect(
+      await answerRun(deps(), {
+        runId: 'nope',
+        items: [{ question: comment, answer: { id: 'c1', kind: 'fill', text: ' ' } }],
+      }),
+    ).toEqual({ ok: false, code: 'ANSWER_INVALID' });
+  });
+
+  test('없는 Run이면 RUN_NOT_FOUND, 새 Run을 못 만들면 이 Run도 승인 대기로 남는다', async () => {
+    const items: ReviewAnswerItem[] = [{ question: claim, answer: { id: 'u1', kind: 'keep' } }];
+    expect(await answerRun(deps(), { runId: 'nope', items })).toEqual({
+      ok: false,
+      code: 'RUN_NOT_FOUND',
+    });
+
+    const run = await finishedRun();
+    const result = await answerRun(deps(), { runId: run.id, items, modelId: 'mock:nope' });
+    expect(result).toEqual({ ok: false, code: 'UNKNOWN_MODEL' });
+    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
+      RUN_STATUS.pendingApproval,
+    );
+    expect(await prisma.run.count()).toBe(1);
   });
 });
 
