@@ -528,3 +528,17 @@ export {
   type ReviewQuestionSource,
   type ReviewQuestions,
 } from './review/questions.ts';
+export {
+  applyCodeAnswers,
+  type CodeAnswerFailure,
+  type CodeAnswersResult,
+  type ReviewAnswer,
+  type ReviewAnswerKind,
+} from './review/answers.ts';
+export {
+  PATCH_SCOPE_RADIUS,
+  checkPatchScope,
+  diffParagraphs,
+  type ParagraphDiff,
+  type PatchScopeResult,
+} from './run/patchScope.ts';
