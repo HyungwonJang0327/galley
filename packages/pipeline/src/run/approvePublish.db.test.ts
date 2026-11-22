@@ -13,6 +13,7 @@ import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { LocalFsPostsWriter } from '../publish/PostsWriter.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
 import { LocalFsStorage } from '../storage/LocalFsStorage.ts';
+import { ILLUSTRATIONS_MANIFEST, illustrationArtifact } from '../steps/illustration.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
 import { createMockStepRunner } from '../steps/MockStepRunner.ts';
 import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from '../steps/publishInfoStep.ts';
@@ -157,6 +158,30 @@ async function finishedRun(
   return run;
 }
 
+const ILLUST_FILES = (name: string) => [`${name}.png`, `${name}_ja.png`, `${name}_ja.svg`];
+
+/** 삽화 단계 산출물 — 번호 고정 이름의 그림 넷과 목록(번호 → posts 이름). 기본은 삽화 0장. */
+async function writeIllustrations(runId: string, names: readonly string[]) {
+  for (const [index] of names.entries()) {
+    const n = index + 1;
+    await artifacts.write(SLUG, runId, illustrationArtifact(n, 'ko', 'svg'), `<svg>ko${n}</svg>\n`);
+    await artifacts.write(SLUG, runId, illustrationArtifact(n, 'ja', 'svg'), `<svg>ja${n}</svg>\n`);
+    await artifacts.writeBytes(SLUG, runId, illustrationArtifact(n, 'ko', 'png'), PNG);
+    await artifacts.writeBytes(
+      SLUG,
+      runId,
+      illustrationArtifact(n, 'ja', 'png'),
+      new Uint8Array([...PNG, n]),
+    );
+  }
+  await artifacts.write(
+    SLUG,
+    runId,
+    ILLUSTRATIONS_MANIFEST,
+    JSON.stringify({ version: 1, items: names.map((name, index) => ({ n: index + 1, name })) }),
+  );
+}
+
 async function writeArtifacts(runId: string, title: string) {
   await artifacts.write(SLUG, runId, VELOG_ARTIFACT, `# ${title}\n\n본문 ${runId}\n`);
   await artifacts.write(SLUG, runId, LINKEDIN_ARTIFACT, `링크드인 ${runId}\n`);
@@ -164,6 +189,7 @@ async function writeArtifacts(runId: string, title: string) {
   await artifacts.write(SLUG, runId, VERIFICATION_ARTIFACT, `{"runId":"${runId}"}\n`);
   await artifacts.write(SLUG, runId, PUBLISH_ARTIFACT, `# 발행 정보 — ${title}\n\n## 근거\n`);
   await artifacts.writeBytes(SLUG, runId, THUMBNAIL_ARTIFACT, PNG);
+  await writeIllustrations(runId, []);
   await evidence.write({ ...BUNDLE, runId, topicId });
 }
 
@@ -197,6 +223,8 @@ describe('approveAndPublishRun', () => {
         '무한_스크롤_썸네일.png',
         'evidence.json',
         'verification.json',
+        // Mock 삽화 한 장 — 한국어 PNG + 일본어 캡션판 PNG·SVG.
+        ...ILLUST_FILES('illust1_mock'),
       ].sort(),
     );
     const queue = await readFile(join(blogDir, '주제_큐.md'), 'utf8');
@@ -277,6 +305,7 @@ describe('approveAndPublishRun', () => {
       `# 발행 정보 — 무한 스크롤 미리 불러오기\n`,
     );
     await artifacts.writeBytes(SLUG, second.id, THUMBNAIL_ARTIFACT, PNG);
+    await writeIllustrations(second.id, []);
 
     const result = await approveAndPublishRun(deps, second.id);
 
@@ -485,6 +514,136 @@ describe('approveAndPublishRun', () => {
     expect(
       await readFile(join(blogDir, 'posts', SLUG, '무한_스크롤_미리_불러오기.md'), 'utf8'),
     ).toContain('고친 본문');
+  });
+
+  describe('삽화(decisions/illustrations.md)', () => {
+    const BASE = [
+      '무한_스크롤_미리_불러오기.md',
+      '무한_스크롤_미리_불러오기_링크드인.md',
+      '무한_스크롤_미리_불러오기_zenn.md',
+      '무한_스크롤_미리_불러오기_발행정보.md',
+      '무한_스크롤_미리_불러오기_썸네일.png',
+      'evidence.json',
+      'verification.json',
+    ];
+    const postsDir = () => join(blogDir, 'posts', SLUG);
+
+    async function revert() {
+      await writeFile(join(blogDir, '주제_큐.md'), QUEUE, 'utf8');
+      await prisma.queueItem.update({
+        where: { id: topicId },
+        data: { title: '무한 스크롤 (spacehome)', status: 'waiting', completedOn: null, order: 0 },
+      });
+    }
+
+    test('삽화 목록의 이름으로 PNG·_ja.png·_ja.svg를 posts에 복사한다(한국어 SVG는 DATA_DIR에만)', async () => {
+      const run = await finishedRun();
+      await writeIllustrations(run.id, ['illust1_표_분리', 'illust2_cursor']);
+
+      const result = await approveAndPublishRun(deps, run.id);
+
+      expect(result.ok).toBe(true);
+      const names = [...ILLUST_FILES('illust1_표_분리'), ...ILLUST_FILES('illust2_cursor')];
+      expect((await readdir(postsDir())).sort()).toEqual([...BASE, ...names].sort());
+      expect(new Uint8Array(await readFile(join(postsDir(), 'illust2_cursor.png')))).toEqual(PNG);
+      expect(new Uint8Array(await readFile(join(postsDir(), 'illust2_cursor_ja.png')))).toEqual(
+        new Uint8Array([...PNG, 2]),
+      );
+      expect(await readFile(join(postsDir(), 'illust2_cursor_ja.svg'), 'utf8')).toBe(
+        '<svg>ja2</svg>\n',
+      );
+    });
+
+    test('삽화 단계가 carried면 그 결과를 만든 Run의 삽화를 복사한다', async () => {
+      const source = await finishedRun({ status: RUN_STATUS.failed });
+      await writeIllustrations(source.id, ['illust1_출처']);
+      const run = await finishedRun();
+      await prisma.runStep.updateMany({
+        where: { runId: run.id, name: 'illustration' },
+        data: { origin: STEP_ORIGIN.carried, sourceRunId: source.id },
+      });
+      await writeIllustrations(run.id, ['illust1_이_Run_것이_아님']);
+
+      expect((await approveAndPublishRun(deps, run.id)).ok).toBe(true);
+      expect((await readdir(postsDir())).sort()).toEqual(
+        [...BASE, ...ILLUST_FILES('illust1_출처')].sort(),
+      );
+    });
+
+    test('삽화 단계가 없는 옛 6단계 Run은 삽화 없이 승인된다', async () => {
+      const run = await finishedRun();
+      await prisma.runStep.deleteMany({ where: { runId: run.id, name: 'illustration' } });
+      await artifacts.remove(SLUG, run.id, ILLUSTRATIONS_MANIFEST);
+
+      expect((await approveAndPublishRun(deps, run.id)).ok).toBe(true);
+      expect((await readdir(postsDir())).sort()).toEqual([...BASE].sort());
+    });
+
+    test('목록이 없거나 깨졌거나 그림이 하나라도 없으면 ARTIFACT_MISSING(파일명) — 부작용 없음', async () => {
+      const run = await finishedRun();
+      await artifacts.remove(SLUG, run.id, ILLUSTRATIONS_MANIFEST);
+      expect(await approveAndPublishRun(deps, run.id)).toEqual({
+        ok: false,
+        code: 'ARTIFACT_MISSING',
+        detail: ILLUSTRATIONS_MANIFEST,
+      });
+      await artifacts.write(SLUG, run.id, ILLUSTRATIONS_MANIFEST, '{ nope');
+      expect(await approveAndPublishRun(deps, run.id)).toMatchObject({
+        code: 'ARTIFACT_MISSING',
+        detail: ILLUSTRATIONS_MANIFEST,
+      });
+      await writeIllustrations(run.id, ['illust1_a']);
+      await artifacts.remove(SLUG, run.id, 'illust1_ja.png');
+      expect(await approveAndPublishRun(deps, run.id)).toEqual({
+        ok: false,
+        code: 'ARTIFACT_MISSING',
+        detail: 'illust1_ja.png',
+      });
+      await expect(readdir(join(blogDir, 'posts'))).rejects.toThrow();
+    });
+
+    test('재승인에서 이름이 바뀐 옛 삽화만 DATA_DIR/replaced로 옮긴다 — 글 제목이 같아도, 같은 이름은 덮어쓴다', async () => {
+      const first = await finishedRun();
+      await writeIllustrations(first.id, ['illust1_같은', 'illust2_옛']);
+      expect((await approveAndPublishRun(deps, first.id)).ok).toBe(true);
+      await revert();
+      await writeFile(join(postsDir(), 'illust9_사람.png'), '사람이 넣은 그림', 'utf8');
+      const second = await finishedRun();
+      await writeIllustrations(second.id, ['illust1_같은', 'illust2_새']);
+
+      const result = await approveAndPublishRun(deps, second.id);
+
+      const into = join(dataDir, 'replaced', SLUG, second.id);
+      expect(result).toMatchObject({ ok: true, leftover: [], replacedDir: into });
+      if (!result.ok) return;
+      expect([...result.replaced].sort()).toEqual(ILLUST_FILES('illust2_옛').sort());
+      expect((await readdir(into)).sort()).toEqual(ILLUST_FILES('illust2_옛').sort());
+      expect((await readdir(postsDir())).sort()).toEqual(
+        [
+          ...BASE,
+          ...ILLUST_FILES('illust1_같은'),
+          ...ILLUST_FILES('illust2_새'),
+          'illust9_사람.png',
+        ].sort(),
+      );
+    });
+
+    test('직전 승인이 삽화 단계 없는 옛 Run이면 삽화는 아무것도 옮기지 않는다', async () => {
+      const first = await finishedRun();
+      await prisma.runStep.deleteMany({ where: { runId: first.id, name: 'illustration' } });
+      expect((await approveAndPublishRun(deps, first.id)).ok).toBe(true);
+      await revert();
+      await writeFile(join(postsDir(), 'illust1_사람.png'), '사람이 넣은 그림', 'utf8');
+      const second = await finishedRun();
+      await writeIllustrations(second.id, ['illust1_새']);
+
+      const result = await approveAndPublishRun(deps, second.id);
+
+      expect(result).toMatchObject({ ok: true, replaced: [], leftover: [] });
+      expect((await readdir(postsDir())).sort()).toEqual(
+        [...BASE, ...ILLUST_FILES('illust1_새'), 'illust1_사람.png'].sort(),
+      );
+    });
   });
 
   test('산출물이 하나라도 없으면 ARTIFACT_MISSING(파일명) — 부작용 없음', async () => {

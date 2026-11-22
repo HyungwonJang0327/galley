@@ -1,9 +1,9 @@
-// 승인 = Run을 done으로 끝내면서 **발행 준비를 마친다**(B3a, 2026-09-26 사용자 결정 "승인 시 복사"): DATA_DIR의 최신 산출물(썸네일 포함 7개)을
-// posts/<슬러그>/로 복사하고, 주제를 큐 파일의 완료 섹션으로 옮기고(completeTopic), Run을 done으로. posts에는 승인본만 남는다
+// 승인 = Run을 done으로 끝내면서 **발행 준비를 마친다**(B3a, 2026-09-26 사용자 결정 "승인 시 복사"): DATA_DIR의 최신 산출물(썸네일 포함 7개
+// + 삽화 한 장마다 PNG·일본어 캡션판 PNG·SVG, decisions/illustrations.md)을 posts/<슬러그>/로 복사하고, 주제를 큐 파일의 완료 섹션으로 옮기고(completeTopic), Run을 done으로. posts에는 승인본만 남는다
 // (Run별 이력은 DATA_DIR — decisions/run-execution-model.md). 공개 발행은 여기서 일어나지 않는다(publish-gate).
 //
 // 순서: 읽기·검증(부작용 없음) → posts 쓰기 → DB 트랜잭션(QueueItem·Run 갱신이 성공한 뒤 **그 안에서** 큐 파일 쓰기) →
-// (재승인이고 글 제목이 바뀌었으면) 직전 승인 파일을 DATA_DIR로 옮기기 → 재적재. 옮기기는 **승인이 확정된 뒤**다 — 트랜잭션이
+// (재승인이고 글 제목·삽화 이름이 바뀌었으면) 직전 승인 파일을 DATA_DIR로 옮기기 → 재적재. 옮기기는 **승인이 확정된 뒤**다 — 트랜잭션이
 // 실패하면 옛 승인본이 posts에 그대로 남는다(decisions/topic-slug.md 규칙 4, TS4 리뷰 M1).
 // 앞에서 실패하면 뒤는 하지 않고 값으로 돌려준다(Run은 승인 대기로 남는다). 되돌릴 수 없는 큐 파일 쓰기를 맨 마지막에 두어
 // 파일 쓰기 실패·롤백(그새 수정 지시)이면 DB가 같이 되돌아간다(리뷰 M1) — 남는 창은 "파일을 쓴 뒤 커밋 실패"뿐이다. posts를
@@ -14,13 +14,18 @@ import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
 import { stripSnippets, type EvidenceBundle, type EvidencePointers } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { ReplacedStore } from '../artifacts/ReplacedStore.ts';
-import type { PostsWriter } from '../publish/PostsWriter.ts';
+import type { PostIllustration, PostsWriter } from '../publish/PostsWriter.ts';
 import { completeTopic, completedTitle } from '../queue/completeQueue.ts';
 import { importQueueFromFile } from '../queue/importQueue.ts';
 import { normalizeTopicTitle, trailingUrl } from '../queue/normalizeTitle.ts';
 import { parseQueue, serializeQueue } from '../queue/queueFile.ts';
 import { QUEUE_STATUS, isQueueStatus, sectionOf } from '../queue/queueStatus.ts';
 import type { Storage } from '../storage/Storage.ts';
+import {
+  ILLUSTRATIONS_MANIFEST,
+  illustrationArtifact,
+  parseIllustrationManifest,
+} from '../steps/illustration.ts';
 import { LINKEDIN_ARTIFACT } from '../steps/linkedinStep.ts';
 import { parsePublishTitle } from '../steps/publishInfo.ts';
 import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from '../steps/publishInfoStep.ts';
@@ -64,7 +69,7 @@ export type ApprovePublishResult =
       run: RunSummary;
       postsDir: string;
       files: string[];
-      /** 재승인에서 글 제목이 바뀌어 DATA_DIR로 옮긴 직전 승인 파일(없으면 빈 배열)과 옮긴 폴더. */
+      /** 재승인에서 글 제목·삽화 이름이 바뀌어 DATA_DIR로 옮긴 직전 승인 파일(없으면 빈 배열)과 옮긴 폴더. */
       replaced: string[];
       replacedDir?: string;
       /** 옮기지 못해 posts 폴더에 남은 옛 이름(폴더가 섞여 있다 — 사람이 정리). */
@@ -156,6 +161,35 @@ export async function approveAndPublishRun(
   );
   if (!thumbnail.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: THUMBNAIL_ARTIFACT };
 
+  // 삽화 — 삽화 단계가 있는 Run(7단계)은 목록과 그 안의 그림이 전부 있어야 한다. 단계 행이 없는 옛 6단계 Run은 삽화 없이 승인한다.
+  const illustrations: PostIllustration[] = [];
+  if (run.steps.some((step) => step.name === 'illustration')) {
+    const from = producer('illustration');
+    const manifestText = await deps.artifacts.read(slug, from, ILLUSTRATIONS_MANIFEST);
+    const manifest = manifestText.ok ? parseIllustrationManifest(manifestText.text) : undefined;
+    if (manifest === undefined)
+      return { ok: false, code: 'ARTIFACT_MISSING', detail: ILLUSTRATIONS_MANIFEST };
+    for (const item of manifest.items) {
+      const names = {
+        png: illustrationArtifact(item.n, 'ko', 'png'),
+        jaPng: illustrationArtifact(item.n, 'ja', 'png'),
+        jaSvg: illustrationArtifact(item.n, 'ja', 'svg'),
+      };
+      const png = await deps.artifacts.readBytes(slug, from, names.png);
+      if (!png.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: names.png };
+      const jaPng = await deps.artifacts.readBytes(slug, from, names.jaPng);
+      if (!jaPng.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: names.jaPng };
+      const jaSvg = await deps.artifacts.read(slug, from, names.jaSvg);
+      if (!jaSvg.ok) return { ok: false, code: 'ARTIFACT_MISSING', detail: names.jaSvg };
+      illustrations.push({
+        name: item.name,
+        png: png.bytes,
+        jaPng: jaPng.bytes,
+        jaSvg: jaSvg.text,
+      });
+    }
+  }
+
   const articleTitle = parsePublishTitle(texts.publishInfo!);
   if (articleTitle === undefined) return { ok: false, code: 'PUBLISH_TITLE_MISSING' };
 
@@ -193,20 +227,37 @@ export async function approveAndPublishRun(
     orderBy: { attempt: 'desc' },
     select: {
       id: true,
-      steps: { where: { name: 'publishInfo' }, select: { origin: true, sourceRunId: true } },
+      steps: {
+        where: { name: { in: ['publishInfo', 'illustration'] } },
+        select: { name: true, origin: true, sourceRunId: true },
+      },
     },
   });
   // 직전 승인의 글 제목 — 그 Run의 발행정보(DATA_DIR, carried면 출처 Run)에서 읽는다(부작용 없음). 못 읽으면 옛 파일은
   // 그대로 둔다. **직전 승인 하나만** 본다(결정 문서 그대로 — 치우는 범위를 넓히지 않는다).
+  // 직전 승인의 삽화 이름도 같은 식으로 그 Run의 삽화 목록에서 읽는다(삽화 단계가 없던 Run·못 읽은 목록은 빈 목록).
   let previousTitle: string | undefined;
+  let previousIllustrations: string[] = [];
   if (priorApproved) {
-    const step = priorApproved.steps[0];
-    const priorProducer =
-      step?.origin === STEP_ORIGIN.carried && step.sourceRunId
+    const priorProducer = (name: StepName): string | undefined => {
+      const step = priorApproved.steps.find((s) => s.name === name);
+      if (step === undefined) return undefined;
+      return step.origin === STEP_ORIGIN.carried && step.sourceRunId
         ? step.sourceRunId
         : priorApproved.id;
-    const text = await deps.artifacts.read(slug, priorProducer, PUBLISH_ARTIFACT);
+    };
+    const text = await deps.artifacts.read(
+      slug,
+      priorProducer('publishInfo') ?? priorApproved.id,
+      PUBLISH_ARTIFACT,
+    );
     if (text.ok) previousTitle = parsePublishTitle(text.text);
+    const illustrationRun = priorProducer('illustration');
+    if (illustrationRun !== undefined) {
+      const list = await deps.artifacts.read(slug, illustrationRun, ILLUSTRATIONS_MANIFEST);
+      const manifest = list.ok ? parseIllustrationManifest(list.text) : undefined;
+      previousIllustrations = manifest?.items.map((item) => item.name) ?? [];
+    }
   }
   const written = await deps.posts.write({
     slug,
@@ -219,6 +270,7 @@ export async function approveAndPublishRun(
       thumbnail: thumbnail.bytes,
       evidence: `${JSON.stringify(toPostsEvidence(bundle.bundle), null, 2)}\n`,
       verification: texts.verification!,
+      illustrations,
     },
     overwrite: priorApproved !== null,
   });
@@ -253,12 +305,18 @@ export async function approveAndPublishRun(
     if (error instanceof Rollback) return { ok: false, code: 'NOT_PENDING_APPROVAL' };
     throw error;
   }
-  // 6. 승인이 확정됐다 — 글 제목이 바뀐 재승인이면 직전 승인이 쓴 5개 이름을 DATA_DIR로 옮긴다. 실패해도 승인은 끝났다
-  //    (못 옮긴 이름은 leftover로 돌려준다).
+  // 6. 승인이 확정됐다 — 재승인이면 직전 승인이 쓴 5개 이름(글 제목이 바뀐 경우)과 삽화 파일(이름이 바뀌거나 없어진 경우)을
+  //    DATA_DIR로 옮긴다. 이번 승인이 쓴 이름은 옮기지 않는다(retire의 keep). 실패해도 승인은 끝났다(못 옮긴 이름은 leftover).
   const retired =
-    previousTitle === undefined
+    previousTitle === undefined && previousIllustrations.length === 0
       ? { moved: [], leftover: [] }
-      : await retirePrevious(deps, { slug, runId: run.id, previousTitle, keep: written.files });
+      : await retirePrevious(deps, {
+          slug,
+          runId: run.id,
+          previousTitle,
+          previousIllustrations,
+          keep: written.files,
+        });
 
   // 재적재는 승인의 일부가 아니다 — 여기서 실패해도 승인·posts·큐 이동은 끝났고 다음 페이지 요청이 다시 적재한다(리뷰 M5).
   try {
@@ -285,12 +343,19 @@ export async function approveAndPublishRun(
 /** 옮기기는 승인 뒤 정리라 던지지 않는다 — 예외는 "아무것도 못 옮김"으로 본다(옛 파일은 posts에 남는다). */
 async function retirePrevious(
   deps: ApprovePublishDeps,
-  input: { slug: string; runId: string; previousTitle: string; keep: readonly string[] },
+  input: {
+    slug: string;
+    runId: string;
+    previousTitle: string | undefined;
+    previousIllustrations: readonly string[];
+    keep: readonly string[];
+  },
 ): Promise<{ moved: string[]; leftover: string[] }> {
   try {
     return await deps.posts.retire({
       slug: input.slug,
-      previousTitle: input.previousTitle,
+      ...(input.previousTitle === undefined ? {} : { previousTitle: input.previousTitle }),
+      previousIllustrations: input.previousIllustrations,
       keep: input.keep,
       into: deps.replaced.dirFor(input.slug, input.runId),
     });
