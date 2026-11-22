@@ -83,6 +83,13 @@ describe('sanitizeMarkup', () => {
     expect(sanitizeMarkup('  \n ')).toBe('');
   });
 
+  test('xmlns는 SVG 네임스페이스 값만 통과', () => {
+    expect(sanitizeMarkup('<svg xmlns="http://www.w3.org/2000/svg" width="10"></svg>')).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="10"></svg>',
+    );
+    expect(sanitizeMarkup('<svg xmlns="https://x.example/ns"></svg>')).toBe('<svg></svg>');
+  });
+
   test('같은 속성이 두 번이면 첫 번째만', () => {
     expect(sanitizeMarkup('<div class="a" class="b">x</div>')).toBe('<div class="a">x</div>');
   });

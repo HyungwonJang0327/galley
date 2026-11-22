@@ -110,6 +110,8 @@ function isSafeAttrValue(value: string): boolean {
   return true;
 }
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
 const escapeText = (text: string): string => text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeAttr = (text: string): string =>
   text.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -169,7 +171,9 @@ function renderAttrs(attrs: readonly { name: string; value: string }[]): string 
   let out = '';
   for (const { name, value } of attrs) {
     const key = name.toLowerCase();
-    if (!ALLOWED_ATTRS.has(key) || seen.has(key) || !isSafeAttrValue(value)) continue;
+    if (!ALLOWED_ATTRS.has(key) || seen.has(key)) continue;
+    // xmlns는 주소 꼴이라 값 검사에 걸린다 — SVG 네임스페이스 한 값만 그대로 통과시킨다(따로 저장한 .svg가 열리게).
+    if (key === 'xmlns' ? value !== SVG_NAMESPACE : !isSafeAttrValue(value)) continue;
     seen.add(key);
     out += ` ${name}="${escapeAttr(value)}"`;
   }
