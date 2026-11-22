@@ -15,6 +15,7 @@ import {
   STEP_ORDER,
   STEP_ORIGIN,
   STEP_STATUS,
+  planAnswerRerun,
   planRerun,
   type RunStatus,
   type StepName,
@@ -153,6 +154,88 @@ describe('startRerun', () => {
         sourceRunId: null,
       });
     }
+  });
+
+  test('답 반영 계획: 고치는 단계는 pending+patched+고칠 대상, 뒤 단계(삽화·발행정보)도 carried, 지시 없이 질문·답을 적는다', async () => {
+    const previous = await finishedRun();
+
+    const result = await startRerun(deps(), {
+      previousRunId: previous.id,
+      plan: planAnswerRerun({ contentChanges: true }),
+      reviewAnswers: '{"version":1,"items":[]}',
+    });
+    if (!result.ok) throw new Error(result.code);
+
+    const run = await prisma.run.findUniqueOrThrow({ where: { id: result.run.id } });
+    expect(run).toMatchObject({
+      instruction: null,
+      reviewAnswers: '{"version":1,"items":[]}',
+      startStep: 'velog',
+      workerState: 'queued',
+    });
+    const rows = (await stepsOf(run.id)).map((s) => [s.name, s.status, s.origin, s.sourceRunId]);
+    expect(rows).toEqual([
+      ['evidence', STEP_STATUS.succeeded, STEP_ORIGIN.carried, previous.id],
+      ['velog', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
+      ['verify', STEP_STATUS.pending, STEP_ORIGIN.fresh, null],
+      ['linkedin', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
+      ['zenn', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
+      ['illustration', STEP_STATUS.succeeded, STEP_ORIGIN.carried, previous.id],
+      ['publishInfo', STEP_STATUS.succeeded, STEP_ORIGIN.carried, previous.id],
+    ]);
+  });
+
+  test('답 반영을 거듭해도 유지 단계의 출처는 실제 생산 Run, 고칠 대상은 직전에 고친 Run이다', async () => {
+    const first = await finishedRun();
+    const second = await startRerun(deps(), {
+      previousRunId: first.id,
+      plan: planAnswerRerun({ contentChanges: false }),
+      reviewAnswers: '{}',
+    });
+    if (!second.ok) throw new Error(second.code);
+    await prisma.runStep.updateMany({
+      where: { runId: second.run.id },
+      data: { status: STEP_STATUS.succeeded },
+    });
+    await prisma.run.update({
+      where: { id: second.run.id },
+      data: { status: RUN_STATUS.pendingApproval },
+    });
+
+    const third = await startRerun(deps(), {
+      previousRunId: second.run.id,
+      plan: planAnswerRerun({ contentChanges: false }),
+      reviewAnswers: '{}',
+    });
+    if (!third.ok) throw new Error(third.code);
+
+    const rows = new Map((await stepsOf(third.run.id)).map((s) => [s.name, s]));
+    // 본문은 2차가 고친 것이 고칠 대상이고, 검증·발행정보는 1차가 만든 그대로다.
+    expect(rows.get('velog')).toMatchObject({
+      origin: STEP_ORIGIN.patched,
+      sourceRunId: second.run.id,
+    });
+    expect(rows.get('verify')).toMatchObject({
+      origin: STEP_ORIGIN.carried,
+      sourceRunId: first.id,
+    });
+    expect(rows.get('publishInfo')).toMatchObject({
+      origin: STEP_ORIGIN.carried,
+      sourceRunId: first.id,
+    });
+  });
+
+  test('고칠 단계가 직전 Run에서 성공하지 않았으면 거절한다', async () => {
+    const previous = await finishedRun({ failedAt: 'zenn' });
+
+    const result = await startRerun(deps(), {
+      previousRunId: previous.id,
+      plan: planAnswerRerun({ contentChanges: true }),
+      reviewAnswers: '{}',
+    });
+
+    expect(result).toEqual({ ok: false, code: 'CARRIED_STEP_NOT_SUCCEEDED' });
+    expect(await prisma.run.count()).toBe(1);
   });
 
   test('슬러그·제목은 직전 Run 것을 복사한다 — 큐 제목이 그새 바뀌어도 다시 계산하지 않는다', async () => {
@@ -320,6 +403,18 @@ describe('startRerun', () => {
 
     expect(result).toEqual({ ok: false, code: 'INVALID_PLAN' });
     expect(await prisma.run.count()).toBe(1);
+
+    // 같은 단계가 두 묶음에 들어가 수만 맞는 계획도 거절한다.
+    const duplicated = await startRerun(deps(), {
+      previousRunId: previous.id,
+      plan: {
+        startStep: 'velog',
+        carried: ['evidence', 'illustration', 'publishInfo'],
+        patched: ['velog', 'linkedin', 'velog'],
+        fresh: ['verify'],
+      },
+    });
+    expect(duplicated).toEqual({ ok: false, code: 'INVALID_PLAN' });
   });
 
   test('모델을 주지 않으면 직전 Run의 모델을 잇고, 주면 그 모델로 만든다', async () => {
