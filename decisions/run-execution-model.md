@@ -102,3 +102,4 @@ StepResult  { artifacts, tokens, cost, model? }
 - 2026-09-12 최초 결정(BW2 착수 전 3건). decisions/run-location.md(워커 위치·heartbeat)와 evidence-collection.md(재실행 규칙·단계 출처)를 전제로 한 실행 모델 층이다.
 - 2026-11-10 B2d-2: 실패 실행도 수정 지시(재실행)를 받는다 — decisions/failed-run-rerun.md. `revised`는 승인 대기에서 받은 경우로 한정(실패는 `failed` 유지). ⚠️ 결정 범위 변경, 사용자 결정.
 - 2026-11-19 RH3 ①: 썸네일 템플릿을 소프트 UI v2로(decisions/illustrations.md). 같은 모델 호출이 주는 값이 부제·라벨 → 부제·제목 줄(`thumbnailTitle`)·알약(`thumbnailTags`)으로, `thumbnail.json`은 푸터 → `brand`(예전 `footerLeft`를 읽음). 실패=단계 실패·check() 사전 점검은 그대로.
+- 2026-11-22 RH4 ②: 승인이 복사하는 것에 삽화가 더해졌다 — 폴더당 7개 + 삽화 한 장마다 3개(`<이름>.png`·`_ja.png`·`_ja.svg`). Mock 러너의 삽화 한 장(`illust1_mock`)도 승인 때 복사된다. decisions/illustrations.md.
