@@ -75,14 +75,16 @@ export function createPrismaWorkerRepo(prisma: PrismaClient): WorkerRepo {
       });
     },
 
-    /** 성공이면 **실패 기록을 비운다** — 이전 실패의 흔적이 성공한 단계에 남으면 안 된다. */
+    /**
+     * 성공이면 **실패 기록을 비운다** — 이전 실패의 흔적이 성공한 단계에 남으면 안 된다.
+     * 출처(origin)는 건드리지 않는다 — 행을 만들 때 정해졌고(fresh·patched), 워커가 도는 단계에 carried는 없다.
+     */
     async finishStep(runId, step, outcome, now) {
       const succeeded = outcome.status === STEP_STATUS.succeeded;
       await prisma.runStep.updateMany({
         where: { runId, name: step },
         data: {
           status: outcome.status,
-          origin: STEP_ORIGIN.fresh,
           attemptCount: outcome.attemptCount,
           errorCode: succeeded ? null : (outcome.errorCode ?? null),
           errorMessage: succeeded ? null : (outcome.errorMessage ?? null),
@@ -156,6 +158,7 @@ async function toClaimedRun(
     topicSlug: string;
     modelId: string;
     instruction: string | null;
+    reviewAnswers: string | null;
   },
 ): Promise<ClaimedRun> {
   const rows = await prisma.runStep.findMany({
@@ -172,6 +175,7 @@ async function toClaimedRun(
     modelId: run.modelId,
     // 재실행의 수정 지시. null이면 첫 실행 — StepContext에도 자리가 비어 간다.
     ...(run.instruction !== null ? { instruction: run.instruction } : {}),
+    ...(run.reviewAnswers !== null ? { reviewAnswers: run.reviewAnswers } : {}),
     steps: rows.flatMap((row) =>
       isStepName(row.name)
         ? [
@@ -179,7 +183,10 @@ async function toClaimedRun(
               name: row.name,
               // 모르는 값이면 대기로 본다 — 단계는 원자적이라 다시 돌아도 안전하다.
               status: isStepStatus(row.status) ? row.status : STEP_STATUS.pending,
-              origin: row.origin === STEP_ORIGIN.carried ? STEP_ORIGIN.carried : STEP_ORIGIN.fresh,
+              origin:
+                row.origin === STEP_ORIGIN.carried || row.origin === STEP_ORIGIN.patched
+                  ? row.origin
+                  : STEP_ORIGIN.fresh,
               ...(row.sourceRunId !== null ? { sourceRunId: row.sourceRunId } : {}),
             },
           ]

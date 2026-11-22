@@ -211,7 +211,7 @@ function fakeRepo(options: { pendingApproval?: boolean } = {}) {
     },
   };
 
-  return { repo, state };
+  return { repo, state, run };
 }
 
 function deps(overrides: Partial<WorkerDeps> = {}): WorkerDeps & {
@@ -710,6 +710,93 @@ describe('runOnce — StepContext', () => {
     await runOnce(d); // 잡는 틱
     await runOnce(d); // velog(evidence는 carried+succeeded라 건너뛴다)
     expect(seen[0]).toEqual({ step: 'velog', modelId: 'mock', sources: { evidence: 'run_0' } });
+  });
+});
+
+describe('runOnce — 고치는 단계(patched)', () => {
+  const ANSWERS = JSON.stringify({
+    version: 1,
+    items: [
+      {
+        question: {
+          id: 'u1',
+          source: 'unsupported',
+          question: '절반으로 줄었다.',
+          anchor: { paragraph: 3, line: 7 },
+        },
+        answer: { id: 'u1', kind: 'delete' },
+      },
+    ],
+  });
+
+  /** 답 반영 실행: 근거 수집은 유지, 본문은 run_0의 것을 고침. */
+  function answerRunRepo(reviewAnswers: string | undefined, sourceRunId: string | undefined) {
+    const made = fakeRepo();
+    Object.assign(
+      made.state.steps.find((s) => s.name === 'evidence')!,
+      {
+        status: STEP_STATUS.succeeded,
+        origin: 'carried',
+        sourceRunId: 'run_0',
+      },
+    );
+    Object.assign(
+      made.state.steps.find((s) => s.name === 'velog')!,
+      {
+        origin: 'patched',
+        ...(sourceRunId === undefined ? {} : { sourceRunId }),
+      },
+    );
+    if (reviewAnswers !== undefined) made.run.reviewAnswers = reviewAnswers;
+    return made;
+  }
+
+  it('고칠 대상 Run과 질문·답을 그 단계에만 넘기고, 고치는 단계는 sources에 넣지 않는다', async () => {
+    const { repo } = answerRunRepo(ANSWERS, 'run_0');
+    const seen: Pick<StepContext, 'step' | 'patch' | 'sources'>[] = [];
+    const capturing: StepRunner = {
+      async run(ctx) {
+        seen.push({ step: ctx.step, patch: ctx.patch, sources: { ...ctx.sources } });
+        return { artifacts: {} };
+      },
+    };
+    const d = deps({ repo, stepRunner: capturing });
+    await runOnce(d); // 잡는 틱
+    await runOnce(d); // velog(고침)
+    await runOnce(d); // verify(다시 만듦)
+    expect(seen[0]).toEqual({
+      step: 'velog',
+      sources: { evidence: 'run_0' },
+      patch: {
+        baseRunId: 'run_0',
+        answers: [expect.objectContaining({ answer: { id: 'u1', kind: 'delete' } })],
+      },
+    });
+    // 뒤 단계는 이 Run이 고친 본문을 읽는다 — 고침 입력도 없다.
+    expect(seen[1]).toEqual({ step: 'verify', sources: { evidence: 'run_0' }, patch: undefined });
+  });
+
+  it.each([
+    ['질문·답이 없으면', undefined, 'run_0'],
+    ['질문·답이 깨졌으면', '{ nope', 'run_0'],
+    ['고칠 대상 Run을 모르면', ANSWERS, undefined],
+  ])('%s 단계를 부르지 않고 재시도 없이 실패로 남긴다', async (_name, answers, source) => {
+    const { repo, state } = answerRunRepo(answers, source);
+    const run = vi.fn(async () => ({ artifacts: {} }));
+    const d = deps({ repo, stepRunner: { run } });
+    await runOnce(d);
+    await runOnce(d);
+    expect(run).not.toHaveBeenCalled();
+    expect(state.outcomes).toEqual([
+      {
+        step: 'velog',
+        outcome: expect.objectContaining({
+          status: STEP_STATUS.failed,
+          errorCode: 'PATCH_INPUT_MISSING',
+          attemptCount: 1,
+        }),
+      },
+    ]);
   });
 });
 

@@ -19,7 +19,7 @@ import {
 } from '../run/stateMachine.ts';
 import { startRun } from '../run/startRun.ts';
 import { startRerun } from '../run/startRerun.ts';
-import { approveRun, reviseRun } from '../run/runCommands.ts';
+import { answerRun, approveRun, reviseRun } from '../run/runCommands.ts';
 import type { StepContext, StepRunner } from '../steps/StepRunner.ts';
 import { createModelRegistry } from '../model/ModelRegistry.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
@@ -345,6 +345,58 @@ describe('재실행', () => {
         attemptCount: 1,
       });
     }
+  });
+
+  test('답 반영 실행: 유지 단계(뒤 단계 포함)는 건너뛰고 고치는 단계에만 고침 입력을 넘긴다 — 끝나도 출처는 patched', async () => {
+    const first = await queueAndStart();
+    const { deps } = makeDeps();
+    for (let i = 0; i < STEP_ORDER.length + 2; i += 1) await runOnce(deps);
+
+    const item = {
+      question: {
+        id: 'u1',
+        source: 'unsupported',
+        question: '절반으로 줄었다.',
+        anchor: { paragraph: 3, line: 7 },
+      },
+      answer: { id: 'u1', kind: 'delete' },
+    } as const;
+    const answered = await answerRun({ prisma, registry }, { runId: first.id, items: [item] });
+    if (!answered.ok) throw new Error(`답 반영 실행이 만들어져야 한다: ${answered.code}`);
+
+    const seen: { step: string; patch: unknown }[] = [];
+    const { deps: second } = makeDeps({
+      stepRunner: {
+        async run(ctx) {
+          seen.push({ step: ctx.step, patch: ctx.patch });
+          return { artifacts: {} };
+        },
+      },
+    });
+    for (let i = 0; i < STEP_ORDER.length + 2; i += 1) await runOnce(second);
+
+    const patch = { baseRunId: first.id, answers: [item] };
+    expect(seen).toEqual([
+      { step: 'velog', patch },
+      { step: 'verify', patch: undefined },
+      { step: 'linkedin', patch },
+      { step: 'zenn', patch },
+    ]);
+    const after = await prisma.run.findUniqueOrThrow({
+      where: { id: answered.run.id },
+      include: { steps: { orderBy: { order: 'asc' } } },
+    });
+    expect(after.status).toBe(RUN_STATUS.pendingApproval);
+    expect(after.steps.map((s) => s.origin)).toEqual([
+      STEP_ORIGIN.carried,
+      STEP_ORIGIN.patched,
+      STEP_ORIGIN.fresh,
+      STEP_ORIGIN.patched,
+      STEP_ORIGIN.patched,
+      STEP_ORIGIN.carried,
+      STEP_ORIGIN.carried,
+    ]);
+    expect(after.steps.every((s) => s.status === STEP_STATUS.succeeded)).toBe(true);
   });
 
   test('StepRunner는 수정 지시를 받고, 첫 실행에서는 받지 않는다', async () => {

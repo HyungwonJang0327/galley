@@ -109,6 +109,13 @@ describe('createStepRunner', () => {
     await expect(runner.run(ctx('zenn'))).rejects.toMatchObject({ code: 'ZENN_MODEL_UNKNOWN' });
   });
 
+  test('고치는 길이 없는 단계에 고침 입력이 오면 그 단계를 부르지 않고 멈춘다(처음부터 다시 만들지 않는다)', async () => {
+    for (const step of ['velog', 'linkedin', 'zenn'] as const)
+      await expect(
+        runner.run({ ...ctx(step), patch: { baseRunId: 'run_0', answers: [] } }),
+      ).rejects.toMatchObject({ code: 'PATCH_UNSUPPORTED', retryable: false });
+  });
+
   test('발행정보는 실제 러너 — 모델이 없으면 그 단계 코드로 실패', async () => {
     await expect(runner.run(ctx('publishInfo'))).rejects.toMatchObject({
       code: 'PUBLISH_INFO_MODEL_UNKNOWN',

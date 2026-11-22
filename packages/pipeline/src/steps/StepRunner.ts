@@ -6,6 +6,7 @@
 // 무엇을 하는지는 여기 구현이 안다. (decisions/run-execution-model.md)
 //
 // 구현은 단계별 러너(evidence·velog·verify·linkedin·zenn·illustration·publishInfo, createStepRunner로 라우팅)와 Mock(토큰 없이 같은 파일을 쓴다)이다.
+import type { ReviewAnswerItem } from '../review/answerSet.ts';
 import type { StepName } from '../run/stateMachine.ts';
 import type { SeriesStepInfo } from './series.ts';
 
@@ -26,8 +27,13 @@ export interface StepContext {
    * 단계만. 없으면 시리즈가 아닌 글(decisions/series.md).
    */
   series?: SeriesStepInfo;
-  /** 재실행이면 그때의 수정 지시. 첫 실행에는 없다. */
+  /** 재실행이면 그때의 수정 지시. 첫 실행·답 반영 실행에는 없다. */
   instruction?: string;
+  /**
+   * 이 단계가 **이전 결과를 고치는 단계**일 때만(답 반영 실행의 `patched` 단계 — decisions/review-questions.md).
+   * `baseRunId`는 고칠 대상(이 단계의 이전 산출물)을 만든 Run, `answers`는 그 실행의 질문·답. 있으면 처음부터 다시 만들지 않는다.
+   */
+  patch?: { baseRunId: string; answers: readonly ReviewAnswerItem[] };
   /** 워커가 소유하는 취소·타임아웃. 구현은 오래 걸리는 일 사이사이에 확인한다. */
   signal: AbortSignal;
 }
