@@ -4,7 +4,8 @@
 //  - 삭제: 근거 없음 질문이면 그 주장 문장을 본문에서 뺀다. 주석 질문이면 주석만 지운다 — 주석은 "넣지 않은 사실"의 자리라
 //    코드가 뺄 문장을 알 수 없다(본문 프롬프트 규칙: 근거 없는 것은 쓰지 않고 주석으로 남긴다).
 // 줄 번호가 밀리지 않게 **아래 줄부터** 고친다. 순수 함수만.
-import type { ReviewQuestion } from './questions.ts';
+import { paragraphIndexAtLine, splitParagraphs } from './paragraphs.ts';
+import type { ReviewAnchor, ReviewQuestion } from './questions.ts';
 
 /** 파일·DB 값(영어). 표시는 대시보드가 붙인다(채움·모름·삭제). */
 export type ReviewAnswerKind = 'fill' | 'keep' | 'delete';
@@ -109,6 +110,20 @@ function findSentence(
   const onLine = matches.find((m) => m.start >= lineStart && m.start < lineEnd);
   if (onLine !== undefined) return onLine;
   return matches.length === 1 ? matches[0] : undefined;
+}
+
+/**
+ * 질문이 **지금 이 본문**에서 가리키는 자리 — 주석 질문은 그 주석, 근거 없음 질문은 그 문장. 앞선 수정으로 줄·문단 번호가
+ * 밀렸을 수 있어 저장된 앵커를 그대로 믿지 않고 다시 찾는다(찾는 규칙은 `applyCodeAnswers`와 같다). 못 찾으면 undefined.
+ */
+export function locateQuestion(body: string, question: ReviewQuestion): ReviewAnchor | undefined {
+  const text = body.replace(/\r\n/g, '\n');
+  const range =
+    question.source === 'comment' ? findComment(text, question) : findSentence(text, question);
+  if (range === undefined) return undefined;
+  const line = text.slice(0, range.start).split('\n').length;
+  const paragraph = paragraphIndexAtLine(splitParagraphs(text), line);
+  return paragraph === undefined ? undefined : { paragraph, line };
 }
 
 /**
