@@ -34,6 +34,14 @@ const EXPECTED = [
   'verification.json',
 ];
 
+const ILLUST = (name: string) => ({
+  name,
+  png: new Uint8Array([1, 1]),
+  jaPng: new Uint8Array([2, 2]),
+  jaSvg: `<svg>${name}</svg>\n`,
+});
+const ILLUST_FILES = (name: string) => [`${name}.png`, `${name}_ja.png`, `${name}_ja.svg`];
+
 describe('LocalFsPostsWriter', () => {
   test('posts/<슬러그>/에 7개 파일을 쓰고 임시 파일을 남기지 않는다', async () => {
     await withTempDir(async (blogDir) => {
@@ -93,6 +101,103 @@ describe('LocalFsPostsWriter', () => {
       expect(result.ok).toBe(true);
       expect(await readFile(join(dir, '제목.md'), 'utf8')).toBe('# 제목\n\n고친 본문\n');
       expect(await readdir(dir)).toContain('illust1.png');
+    });
+  });
+
+  test('삽화는 한 장마다 PNG·_ja.png·_ja.svg를 목록의 이름으로 쓴다', async () => {
+    await withTempDir(async (blogDir) => {
+      const writer = new LocalFsPostsWriter(blogDir);
+      const result = await writer.write({
+        slug: 's',
+        articleTitle: '무한 스크롤',
+        files: { ...FILES, illustrations: [ILLUST('illust1_a'), ILLUST('illust2_b')] },
+        overwrite: false,
+      });
+      if (!result.ok) throw new Error(result.code);
+      const names = [...ILLUST_FILES('illust1_a'), ...ILLUST_FILES('illust2_b')];
+      expect(result.files).toEqual([...EXPECTED, ...names]);
+      const dir = join(blogDir, 'posts', 's');
+      expect((await readdir(dir)).sort()).toEqual([...EXPECTED, ...names].sort());
+      expect(new Uint8Array(await readFile(join(dir, 'illust1_a.png')))).toEqual(
+        new Uint8Array([1, 1]),
+      );
+      expect(new Uint8Array(await readFile(join(dir, 'illust1_a_ja.png')))).toEqual(
+        new Uint8Array([2, 2]),
+      );
+      expect(await readFile(join(dir, 'illust1_a_ja.svg'), 'utf8')).toBe('<svg>illust1_a</svg>\n');
+    });
+  });
+
+  describe('retire — 재승인에서 삽화 이름이 바뀐 경우 직전 승인의 삽화를 옮긴다', () => {
+    test('이번 승인에 없는 삽화 이름만 옮긴다 — 제목이 같아도, 같은 이름의 삽화와 사람 파일은 그대로', async () => {
+      await withTempDir(async (root) => {
+        const writer = new LocalFsPostsWriter(join(root, 'blog'));
+        const write = (illustrations: PostFiles['illustrations'], overwrite: boolean) =>
+          writer.write({
+            slug: 's',
+            articleTitle: '무한 스크롤',
+            files: { ...FILES, illustrations },
+            overwrite,
+          });
+        await write([ILLUST('illust1_a'), ILLUST('illust2_old')], false);
+        const written = await write([ILLUST('illust1_a'), ILLUST('illust2_new')], true);
+        if (!written.ok) throw new Error(written.code);
+        const dir = join(root, 'blog', 'posts', 's');
+        await writeFile(join(dir, 'illust9_사람.png'), '사람이 넣은 그림');
+        const into = join(root, 'data', 'replaced', 's', 'run_2');
+
+        const result = await writer.retire({
+          slug: 's',
+          previousTitle: '무한 스크롤',
+          previousIllustrations: ['illust1_a', 'illust2_old'],
+          keep: written.files,
+          into,
+        });
+
+        expect([...result.moved].sort()).toEqual(ILLUST_FILES('illust2_old').sort());
+        expect(result.leftover).toEqual([]);
+        expect((await readdir(into)).sort()).toEqual(ILLUST_FILES('illust2_old').sort());
+        expect((await readdir(dir)).sort()).toEqual(
+          [
+            ...EXPECTED,
+            ...ILLUST_FILES('illust1_a'),
+            ...ILLUST_FILES('illust2_new'),
+            'illust9_사람.png',
+          ].sort(),
+        );
+      });
+    });
+
+    test('제목을 못 읽었어도(previousTitle 없음) 삽화는 옮기고, 삽화가 없어진 재승인이면 전부 옮긴다', async () => {
+      await withTempDir(async (root) => {
+        const writer = new LocalFsPostsWriter(join(root, 'blog'));
+        await writer.write({
+          slug: 's',
+          articleTitle: '무한 스크롤',
+          files: { ...FILES, illustrations: [ILLUST('illust1_a')] },
+          overwrite: false,
+        });
+        const written = await writer.write({
+          slug: 's',
+          articleTitle: '무한 스크롤',
+          files: FILES,
+          overwrite: true,
+        });
+        if (!written.ok) throw new Error(written.code);
+        const into = join(root, 'replaced');
+
+        const result = await writer.retire({
+          slug: 's',
+          previousIllustrations: ['illust1_a', '../../밖'],
+          keep: written.files,
+          into,
+        });
+
+        expect([...result.moved].sort()).toEqual(ILLUST_FILES('illust1_a').sort());
+        expect((await readdir(join(root, 'blog', 'posts', 's'))).sort()).toEqual(
+          [...EXPECTED].sort(),
+        );
+      });
     });
   });
 

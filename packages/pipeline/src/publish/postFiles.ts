@@ -48,3 +48,20 @@ export function postFileNames(articleTitle: string): PostFileNames {
     verification: 'verification.json',
   };
 }
+
+export interface IllustrationFileNames {
+  /** 한국어 삽화 PNG — 벨로그 본문의 자리 주석이 적은 이름. */
+  png: string;
+  /** 일본어 캡션판 PNG·SVG — Zenn 기사의 자리 주석이 적는 이름(`_ja`). SVG는 글자를 손볼 때의 원본. */
+  jaPng: string;
+  jaSvg: string;
+}
+
+/**
+ * 삽화 한 장의 posts 파일 이름 셋(decisions/illustrations.md). `name`은 삽화 목록(illustrations.json)의 이름 줄기
+ * (`illust1_<설명>`) — 여기서 한 번 더 파일 이름으로 다듬는다(경로 구분자가 들어올 수 없게).
+ */
+export function illustrationFileNames(name: string): IllustrationFileNames {
+  const stem = toFileStem(name);
+  return { png: `${stem}.png`, jaPng: `${stem}_ja.png`, jaSvg: `${stem}_ja.svg` };
+}
