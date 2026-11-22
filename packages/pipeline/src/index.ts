@@ -513,3 +513,18 @@ export type {
   IndexOverviewFailure,
   IndexOverviewResult,
 } from './index/indexRepoOverview.ts';
+
+// 확인 질문(decisions/review-questions.md) — 문단 나누기·질문 고르기(순수 함수).
+export { splitParagraphs, paragraphIndexAtLine, type Paragraph } from './review/paragraphs.ts';
+export {
+  REVIEW_QUESTIONS_ARTIFACT,
+  REVIEW_QUESTIONS_MAX,
+  parseReviewComments,
+  selectReviewQuestions,
+  type ReviewAnchor,
+  type ReviewClaim,
+  type ReviewComment,
+  type ReviewQuestion,
+  type ReviewQuestionSource,
+  type ReviewQuestions,
+} from './review/questions.ts';
