@@ -1,9 +1,9 @@
-// posts/<슬러그>/ 산출물 7개 쓰기 — blog 폴더(BLOG_DIR)에 쓰는 **유일한 산출물 경로**. 파일 이름은 postFileNames, 내용은 호출부
+// posts/<슬러그>/ 산출물 7개(+ 삽화 한 장마다 3개) 쓰기 — blog 폴더(BLOG_DIR)에 쓰는 **유일한 산출물 경로**. 파일 이름은 postFileNames, 내용은 호출부
 // (approvePublish)가 DATA_DIR에서 읽어 넘긴다. 회사 코드 조각은 여기로 오지 않는다(evidence는 포인터 사본 — CLAUDE.md §5).
 // 폴더가 이미 있으면 `overwrite`일 때만 쓴다 — Galley가 만든 폴더(DB에 이 주제의 승인된 Run)만 덮어쓰고 사람이 만든 같은
 // 슬러그 폴더는 거부한다(2026-09-26 사용자 결정). 파일마다 임시 파일 + rename(원자적, 에디터로 열어 둔 파일이 잘리지 않게).
-// 재승인에서 글 제목이 바뀌면 직전 승인이 쓴 5개 이름을 **지우지 않고 DATA_DIR로 옮긴다**(`retire`, decisions/topic-slug.md
-// 규칙 4) — 승인이 확정된 뒤에 호출부가 부른다. 그 밖의 파일(사람이 넣은 것)과 이번 승인이 쓴 파일은 건드리지 않는다.
+// 재승인에서 글 제목이 바뀌면 직전 승인이 쓴 5개 이름을, 삽화 이름이 바뀌면 직전 승인의 삽화 파일을 **지우지 않고 DATA_DIR로
+// 옮긴다**(`retire`, decisions/topic-slug.md 규칙 4) — 승인이 확정된 뒤에 호출부가 부른다. 그 밖의 파일(사람이 넣은 것)과 이번 승인이 쓴 파일은 건드리지 않는다.
 import { constants } from 'node:fs';
 import {
   access,
@@ -17,9 +17,17 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { join } from 'node:path';
-import { postFileNames } from './postFiles.ts';
+import { illustrationFileNames, postFileNames } from './postFiles.ts';
 
-/** 사람이 읽는 5개 + Galley 부산물 2개. 값은 파일 내용(문자열, 썸네일은 PNG 바이트). */
+/** 삽화 한 장 — 한국어 PNG와 일본어 캡션판 PNG·SVG(삽화 단계 산출물). `name`은 목록의 이름 줄기(`illust1_<설명>`). */
+export interface PostIllustration {
+  name: string;
+  png: Uint8Array;
+  jaPng: Uint8Array;
+  jaSvg: string;
+}
+
+/** 사람이 읽는 5개 + Galley 부산물 2개(+ 삽화). 값은 파일 내용(문자열, 썸네일·삽화는 PNG 바이트). */
 export interface PostFiles {
   velog: string;
   linkedin: string;
@@ -30,6 +38,8 @@ export interface PostFiles {
   /** JSON 텍스트 — 포인터만(stripSnippets 결과). */
   evidence: string;
   verification: string;
+  /** 삽화 단계가 없던 옛 Run은 없다(생략). */
+  illustrations?: readonly PostIllustration[];
 }
 
 export interface WritePostInput {
@@ -49,8 +59,10 @@ export type WritePostResult =
 
 export interface RetirePostInput {
   slug: string;
-  /** 직전 승인의 글 제목(호출부가 그 Run의 발행정보에서 읽는다 — 사실 기록). 이 제목으로 만든 5개 이름이 대상이다. */
-  previousTitle: string;
+  /** 직전 승인의 글 제목(호출부가 그 Run의 발행정보에서 읽는다 — 사실 기록). 이 제목으로 만든 5개 이름이 대상이다. 못 읽었으면 생략. */
+  previousTitle?: string;
+  /** 직전 승인이 쓴 삽화의 이름 줄기(그 Run의 삽화 목록에서 읽는다) — 한 장마다 PNG·`_ja.png`·`_ja.svg`가 대상이다. */
+  previousIllustrations?: readonly string[];
   /** 이번 승인이 쓴 파일 이름 — 같은 이름이거나 **같은 파일**이면 옮기지 않는다. */
   keep: readonly string[];
   /** 옮길 폴더(절대경로, DATA_DIR 아래 — ReplacedStore.dirFor). 옮길 것이 있을 때만 만든다. */
@@ -99,6 +111,14 @@ export class LocalFsPostsWriter implements PostsWriter {
       [names.evidence, input.files.evidence],
       [names.verification, input.files.verification],
     ];
+    for (const illustration of input.files.illustrations ?? []) {
+      const file = illustrationFileNames(illustration.name);
+      plan.push(
+        [file.png, illustration.png],
+        [file.jaPng, illustration.jaPng],
+        [file.jaSvg, illustration.jaSvg],
+      );
+    }
 
     let exists = true;
     try {
@@ -132,8 +152,8 @@ export class LocalFsPostsWriter implements PostsWriter {
   }
 
   /**
-   * 직전 승인 제목의 5개 이름(본문·링크드인·zenn·발행정보·썸네일)을 `into`로 옮긴다. evidence·verification은 고정 이름이라
-   * 이미 덮어썼다. **지우지 않는다** — 옮기지 못하면 posts에 남기고 leftover로 알린다. 옮기지 않는 것:
+   * 직전 승인 제목의 5개 이름(본문·링크드인·zenn·발행정보·썸네일)과 직전 승인의 삽화 파일을 `into`로 옮긴다.
+   * evidence·verification은 고정 이름이라 이미 덮어썼다. **지우지 않는다** — 옮기지 못하면 posts에 남기고 leftover로 알린다. 옮기지 않는 것:
    *  - 이번 승인이 쓴 이름과 같은 것 — 대소문자·유니코드 정규화를 접어 비교한다(조용히).
    *  - 이번 승인이 쓴 파일과 **같은 파일**(dev·ino) — 대소문자를 구분하지 않는 파일시스템(macOS 기본)에서는 제목의 대소문자만
    *    바뀌어도 옛 이름이 새 파일을 가리킨다(`Straße`/`STRASSE`처럼 이름 접기로 못 잡는 경우도). 이름이 아니라 파일시스템
@@ -157,17 +177,21 @@ export class LocalFsPostsWriter implements PostsWriter {
       return { moved: [], leftover: [] };
     }
 
-    const names = postFileNames(input.previousTitle);
+    const targets: string[] = [];
+    if (input.previousTitle !== undefined) {
+      const names = postFileNames(input.previousTitle);
+      targets.push(names.velog, names.linkedin, names.zenn, names.publishInfo, names.thumbnail);
+    }
+    for (const stem of input.previousIllustrations ?? []) {
+      const file = illustrationFileNames(stem);
+      targets.push(file.png, file.jaPng, file.jaSvg);
+    }
     const moved: string[] = [];
     const leftover: string[] = [];
-    for (const name of [
-      names.velog,
-      names.linkedin,
-      names.zenn,
-      names.publishInfo,
-      names.thumbnail,
-    ]) {
-      if (keepNames.has(fold(name))) continue;
+    const seen = new Set<string>();
+    for (const name of targets) {
+      if (keepNames.has(fold(name)) || seen.has(name)) continue;
+      seen.add(name);
       const path = join(dir, name);
       let stat;
       try {

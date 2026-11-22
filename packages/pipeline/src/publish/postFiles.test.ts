@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { postFileNames, toFileStem } from './postFiles.ts';
+import { illustrationFileNames, postFileNames, toFileStem } from './postFiles.ts';
 
 describe('toFileStem', () => {
   test('공백은 _로, 나머지 글자는 그대로(기존 산출물 관례)', () => {
@@ -40,5 +40,16 @@ describe('postFileNames', () => {
       evidence: 'evidence.json',
       verification: 'verification.json',
     });
+  });
+});
+
+describe('illustrationFileNames', () => {
+  test('삽화 한 장 = 한국어 PNG + 일본어 캡션판 PNG·SVG, 이름은 파일 이름으로 다듬는다', () => {
+    expect(illustrationFileNames('illust1_두_타입_한_피드')).toEqual({
+      png: 'illust1_두_타입_한_피드.png',
+      jaPng: 'illust1_두_타입_한_피드_ja.png',
+      jaSvg: 'illust1_두_타입_한_피드_ja.svg',
+    });
+    expect(illustrationFileNames('../illust1/x').png).toBe('illust1x.png');
   });
 });
