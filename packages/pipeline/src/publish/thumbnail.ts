@@ -242,6 +242,18 @@ export function findChrome(env: NodeJS.ProcessEnv = process.env): string | undef
   return undefined;
 }
 
+/** 쓸 Chrome 실행 파일 — 지정 경로 우선, 없으면 후보 탐색. 절대경로인데 없으면 undefined(오타). 썸네일·삽화 렌더러가 같이 쓴다. */
+export function resolveChromePath(options: {
+  chromePath?: string;
+  env?: NodeJS.ProcessEnv;
+}): string | undefined {
+  const chrome = options.chromePath ?? findChrome(options.env);
+  if (chrome === undefined) return undefined;
+  // 절대경로인데 없으면 오타 — PATH 이름(linux 후보)은 spawn이 판정한다.
+  if (isAbsolute(chrome) && !existsSync(chrome)) return undefined;
+  return chrome;
+}
+
 export interface ChromeThumbnailRendererOptions {
   /** 실행 파일. 없으면 render마다 findChrome — 기동 뒤 설치해도 다음 단계에서 잡힌다. */
   chromePath?: string;
@@ -265,11 +277,7 @@ export class ChromeThumbnailRenderer implements ThumbnailRenderer {
 
   /** 실행 파일 — 옵션 → GALLEY_CHROME/후보. 지정된 경로가 없는 파일이면(오타) 못 찾은 것으로 본다(리뷰 M3). */
   private resolveChrome(): string | undefined {
-    const chrome = this.options.chromePath ?? findChrome(this.options.env);
-    if (chrome === undefined) return undefined;
-    // 절대경로인데 없으면 오타 — PATH 이름(linux 후보)은 spawn이 판정한다.
-    if (isAbsolute(chrome) && !existsSync(chrome)) return undefined;
-    return chrome;
+    return resolveChromePath(this.options);
   }
 
   async check(): Promise<ThumbnailCheckResult> {
@@ -281,41 +289,59 @@ export class ChromeThumbnailRenderer implements ThumbnailRenderer {
   async render(input: ThumbnailInput, signal?: AbortSignal): Promise<ThumbnailRenderResult> {
     const chrome = this.resolveChrome();
     if (chrome === undefined) return { ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' };
-    const timeoutMs = this.options.timeoutMs ?? THUMBNAIL_TIMEOUT_MS;
+    return screenshotHtml(
+      chrome,
+      renderThumbnailHtml(input),
+      { width: THUMBNAIL_WIDTH, height: THUMBNAIL_HEIGHT, scale: THUMBNAIL_SCALE },
+      this.options.timeoutMs ?? THUMBNAIL_TIMEOUT_MS,
+      signal,
+    );
+  }
+}
 
-    const dir = await mkdtemp(join(tmpdir(), 'galley-thumb-'));
-    const html = join(dir, 'thumb.html');
-    const out = join(dir, 'thumb.png');
-    try {
-      await writeFile(html, renderThumbnailHtml(input), 'utf8');
-      return await runChrome(
-        chrome,
-        [
-          '--headless=new',
-          `--screenshot=${out}`,
-          `--window-size=${THUMBNAIL_WIDTH},${THUMBNAIL_HEIGHT}`,
-          `--force-device-scale-factor=${THUMBNAIL_SCALE}`,
-          '--hide-scrollbars',
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--disable-gpu',
-          `--user-data-dir=${join(dir, 'profile')}`,
-          pathToFileURL(html).href,
-        ],
-        out,
-        timeoutMs,
-        signal,
-      );
-    } catch (error) {
-      return {
-        ok: false,
-        code: 'THUMBNAIL_RENDER_FAILED',
-        detail: error instanceof Error ? error.message : String(error),
-      };
-    } finally {
-      // 정리 실패(SIGKILL 직후 헬퍼 프로세스가 프로필에 쓰는 경합)는 결과를 바꾸지 않는다 — 값으로 끝난 결과를 예외로 덮지 않는다(리뷰 M2).
-      await rm(dir, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});
-    }
+/**
+ * HTML 한 장을 headless Chrome으로 찍는다 — 썸네일(1200×630)과 본문 삽화(1200×520)가 같이 쓴다. 임시 폴더에 html·프로필·출력을
+ * 두고 끝나면 지운다. 실패는 값으로(코드 이름은 썸네일 때 정한 것을 그대로 — 호출부가 제 단계 코드로 옮긴다).
+ */
+export async function screenshotHtml(
+  chrome: string,
+  pageHtml: string,
+  size: { width: number; height: number; scale: number },
+  timeoutMs: number,
+  signal?: AbortSignal,
+): Promise<ThumbnailRenderResult> {
+  const dir = await mkdtemp(join(tmpdir(), 'galley-thumb-'));
+  const html = join(dir, 'thumb.html');
+  const out = join(dir, 'thumb.png');
+  try {
+    await writeFile(html, pageHtml, 'utf8');
+    return await runChrome(
+      chrome,
+      [
+        '--headless=new',
+        `--screenshot=${out}`,
+        `--window-size=${size.width},${size.height}`,
+        `--force-device-scale-factor=${size.scale}`,
+        '--hide-scrollbars',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-gpu',
+        `--user-data-dir=${join(dir, 'profile')}`,
+        pathToFileURL(html).href,
+      ],
+      out,
+      timeoutMs,
+      signal,
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      code: 'THUMBNAIL_RENDER_FAILED',
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    // 정리 실패(SIGKILL 직후 헬퍼 프로세스가 프로필에 쓰는 경합)는 결과를 바꾸지 않는다 — 값으로 끝난 결과를 예외로 덮지 않는다(리뷰 M2).
+    await rm(dir, { recursive: true, force: true, maxRetries: 3 }).catch(() => {});
   }
 }
 
