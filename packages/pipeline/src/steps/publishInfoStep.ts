@@ -9,6 +9,7 @@ import { stripSnippets } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { postFileNames } from '../publish/postFiles.ts';
+import { ILLUSTRATIONS_MANIFEST, parseIllustrationManifest } from './illustration.ts';
 import {
   DEFAULT_THUMBNAIL_CONFIG,
   splitThumbnailTitle,
@@ -266,6 +267,23 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
         );
   }
 
+  /**
+   * 삽화 단계의 목록(carried면 출처 Run) — 발행정보의 `## 삽화` 절에 쓴다. 목록이 없거나 깨졌으면 빈 목록(절 없음)이다:
+   * 그 판정은 승인이 한다(approvePublish — 삽화 단계가 있는 Run은 목록이 없으면 승인되지 않는다).
+   */
+  async function readIllustrations(ctx: StepContext): Promise<{ name: string; where?: string }[]> {
+    const read = await deps.artifacts.read(
+      ctx.topic.slug,
+      ctx.sources.illustration ?? ctx.runId,
+      ILLUSTRATIONS_MANIFEST,
+    );
+    const manifest = read.ok ? parseIllustrationManifest(read.text) : undefined;
+    return (manifest?.items ?? []).map((item) => ({
+      name: item.name,
+      ...(item.where === undefined ? {} : { where: item.where }),
+    }));
+  }
+
   return {
     async run(ctx: StepContext): Promise<StepResult> {
       if (ctx.step !== 'publishInfo')
@@ -361,6 +379,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
         zenn,
         evidence: stripSnippets(bundle.bundle),
         thumbnailFile: postFileNames(title).thumbnail,
+        illustrations: await readIllustrations(ctx),
         ...(ctx.series === undefined ? {} : { series: ctx.series }),
       };
       const text = renderPublishInfo(input);

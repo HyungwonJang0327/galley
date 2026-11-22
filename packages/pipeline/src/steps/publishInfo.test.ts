@@ -4,6 +4,7 @@ import {
   parsePublishTitle,
   renderChecklistSection,
   renderEvidenceSection,
+  renderIllustrationSection,
   renderPublishInfo,
   type PublishInfoInput,
 } from './publishInfo.ts';
@@ -109,6 +110,32 @@ describe('renderChecklistSection', () => {
         '',
       ].join('\n'),
     );
+  });
+});
+
+describe('renderIllustrationSection', () => {
+  test('한 장에 한 줄 — 한국어 PNG · 일본어판 PNG · 자리(있을 때만), 썸네일 절 다음에 놓인다', () => {
+    const illustrations = [
+      { name: 'illust1_표_분리', where: '표 다음, "## 2." 앞' },
+      { name: 'illust2_cursor' },
+    ];
+    expect(renderIllustrationSection(illustrations)).toBe(
+      [
+        '## 삽화 (1200×520)',
+        '',
+        '- illust1_표_분리.png · 일본어판 illust1_표_분리_ja.png — 자리: 표 다음, "## 2." 앞',
+        '- illust2_cursor.png · 일본어판 illust2_cursor_ja.png',
+        '',
+      ].join('\n'),
+    );
+    const text = renderPublishInfo({ ...INPUT, illustrations });
+    expect(text.indexOf('## 썸네일')).toBeLessThan(text.indexOf('## 삽화'));
+    expect(text.indexOf('## 삽화')).toBeLessThan(text.indexOf('## 태그'));
+  });
+
+  test('삽화가 없으면 절이 없다', () => {
+    expect(renderIllustrationSection([])).toBe('');
+    expect(renderPublishInfo({ ...INPUT, illustrations: [] })).not.toContain('## 삽화');
   });
 });
 

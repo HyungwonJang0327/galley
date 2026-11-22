@@ -3,6 +3,8 @@
 // decisions/evidence-collection.md BE11)·시리즈 절(decisions/series.md)·발행 체크리스트를 더한다. 모델이 쓰는 것은 소개·태그뿐이고
 // 나머지는 코드가 조립한다(decisions/run-execution-model.md "발행정보는 상당 부분 EvidenceBundle 조립").
 import type { EvidencePointerItem, EvidencePointers } from '../evidence/bundle.ts';
+import { ILLUSTRATION_HEIGHT, ILLUSTRATION_WIDTH } from '../publish/illustration.ts';
+import { illustrationFileNames } from '../publish/postFiles.ts';
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../publish/thumbnail.ts';
 import { seriesChecklist, type PublishChecklistItem } from './publishChecklist.ts';
 import { renderSeriesPublishSection, type SeriesStepInfo } from './series.ts';
@@ -25,6 +27,8 @@ export interface PublishInfoInput {
   evidence: EvidencePointers;
   /** 썸네일 파일명(postFileNames.thumbnail) — 같은 단계가 만든 PNG를 승인 시 이 이름으로 복사한다. */
   thumbnailFile: string;
+  /** 삽화 단계의 목록(이름 줄기·본문 자리) — 승인 시 이 이름으로 posts에 복사된다. 없으면 절을 쓰지 않는다. */
+  illustrations?: readonly { name: string; where?: string }[];
   series?: SeriesStepInfo;
 }
 
@@ -78,6 +82,23 @@ export function renderChecklistSection(items: readonly PublishChecklistItem[]): 
   return `## 발행 체크리스트\n\n${items.map(checklistLine).join('\n')}\n`;
 }
 
+/**
+ * `## 삽화` 절 — 한 장에 한 줄: 한국어 PNG(벨로그 본문 자리 주석의 이름) · 일본어 캡션판 PNG(Zenn 기사용) · 본문 자리.
+ * 삽화가 없으면 빈 문자열(절 없음).
+ */
+export function renderIllustrationSection(
+  illustrations: readonly { name: string; where?: string }[],
+): string {
+  if (illustrations.length === 0) return '';
+  const lines = illustrations.map((item) => {
+    const file = illustrationFileNames(item.name);
+    const where =
+      item.where === undefined || item.where.trim() === '' ? '' : ` — 자리: ${item.where.trim()}`;
+    return `- ${file.png} · 일본어판 ${file.jaPng}${where}`;
+  });
+  return `## 삽화 (${ILLUSTRATION_WIDTH}×${ILLUSTRATION_HEIGHT})\n\n${lines.join('\n')}\n`;
+}
+
 /** `## Zenn (일본어판)` 절 — 기존 파일 표기(タイトル·emoji·type·topics). topics가 비면 검수 때 채우라고 적는다. */
 function renderZennSection(zenn: PublishInfoInput['zenn']): string {
   const topics = zenn.topics.length === 0 ? '(검수 때 채움)' : zenn.topics.join(', ');
@@ -93,7 +114,7 @@ function renderZennSection(zenn: PublishInfoInput['zenn']): string {
 }
 
 /**
- * 발행정보 전체. 절 순서는 기존 파일(소개 → 슬러그 → 썸네일 → 태그 → Zenn)을 지키고 시리즈·근거·체크리스트를 뒤에 붙인다.
+ * 발행정보 전체. 절 순서는 기존 파일(소개 → 슬러그 → 썸네일 → 태그 → Zenn)을 지키고 삽화(썸네일 다음)·시리즈·근거·체크리스트를 더한다.
  * 절 사이는 빈 줄 하나, 마지막은 개행 하나로 끝난다.
  */
 export function renderPublishInfo(input: PublishInfoInput): string {
@@ -104,6 +125,7 @@ export function renderPublishInfo(input: PublishInfoInput): string {
     `## 포스트 소개 (${PUBLISH_INTRO_MAX_CHARS}자 이내)\n\n${intro}\n`,
     `## URL 슬러그\n\n${input.slug}\n`,
     `## 썸네일\n\n${input.thumbnailFile} (${THUMBNAIL_WIDTH}×${THUMBNAIL_HEIGHT})\n`,
+    renderIllustrationSection(input.illustrations ?? []),
     `## 태그\n\n${tags}\n`,
     renderSeriesPublishSection(input.series),
     renderZennSection(input.zenn),

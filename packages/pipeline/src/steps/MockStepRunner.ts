@@ -217,6 +217,7 @@ function mockArtifacts(
           zenn: { title, emoji: '📝', type: 'tech', topics: [] },
           evidence: stripSnippets(mockBundle(ctx, at)),
           thumbnailFile: postFileNames(title).thumbnail,
+          illustrations: [{ name: MOCK_ILLUSTRATION_NAME }],
           ...(ctx.series === undefined ? {} : { series: ctx.series }),
         }),
       };
