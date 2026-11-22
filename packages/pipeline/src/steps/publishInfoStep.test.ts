@@ -7,6 +7,7 @@ import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { createScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
+import { ILLUSTRATIONS_MANIFEST } from './illustration.ts';
 import { WRITING_LIMITS } from './limits.ts';
 import {
   buildPublishInfoPrompt,
@@ -329,6 +330,40 @@ describe('createPublishInfoStepRunner', () => {
     expect(text).toContain('## 벨로그 시리즈\n\n결제 전환 · 2/3편\n');
     expect(text).toContain('"1편" 글 URL로 채움');
     expect(adapter.calls[0]!.prompt).not.toContain('시리즈 2편');
+  });
+
+  test('삽화 단계의 목록이 있으면 `## 삽화` 절을 쓴다 — carried면 출처 Run의 목록, 없거나 깨졌으면 절 없음', async () => {
+    const adapter = createScriptedAdapter(() => GOOD_OUTPUT);
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter } });
+    const manifest = (name: string) =>
+      JSON.stringify({ version: 1, items: [{ n: 1, name, where: '표 다음' }] });
+    const run = async (overrides: Partial<StepContext> = {}) =>
+      (await runner.run(ctx(overrides))).artifacts[PUBLISH_ARTIFACT]!;
+
+    await artifacts.remove('infinite-scroll', 'run_1', ILLUSTRATIONS_MANIFEST);
+    expect(await run()).not.toContain('## 삽화');
+    await artifacts.write('infinite-scroll', 'run_1', ILLUSTRATIONS_MANIFEST, '{ nope');
+    expect(await run()).not.toContain('## 삽화');
+
+    await artifacts.write(
+      'infinite-scroll',
+      'run_1',
+      ILLUSTRATIONS_MANIFEST,
+      manifest('illust1_a'),
+    );
+    expect(await run()).toContain(
+      '## 삽화 (1200×520)\n\n- illust1_a.png · 일본어판 illust1_a_ja.png — 자리: 표 다음\n',
+    );
+
+    await artifacts.write(
+      'infinite-scroll',
+      'run_0',
+      ILLUSTRATIONS_MANIFEST,
+      manifest('illust1_b'),
+    );
+    expect(await run({ sources: { illustration: 'run_0' } })).toContain('- illust1_b.png');
+    await artifacts.remove('infinite-scroll', 'run_1', ILLUSTRATIONS_MANIFEST);
+    await artifacts.remove('infinite-scroll', 'run_0', ILLUSTRATIONS_MANIFEST);
   });
 
   test('carried면 sources의 Run에서 본문·Zenn·번들을 읽는다', async () => {
