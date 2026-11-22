@@ -534,7 +534,13 @@ export {
   type ReviewQuestions,
 } from './review/questions.ts';
 export {
+  REVIEW_RESULT_ARTIFACT,
+  type ReviewResult,
+  type ReviewUnappliedCode,
+} from './review/answerResult.ts';
+export {
   applyCodeAnswers,
+  locateQuestion,
   type CodeAnswerFailure,
   type CodeAnswersResult,
   type ReviewAnswer,

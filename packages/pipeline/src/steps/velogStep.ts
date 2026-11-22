@@ -18,6 +18,8 @@ import {
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
+import { REVIEW_RESULT_ARTIFACT } from '../review/answerResult.ts';
+import { runVelogPatch } from './velogPatch.ts';
 import { applyVelogSeries, renderSeriesSystemLine, type SeriesStepInfo } from './series.ts';
 
 export interface VelogStepDeps {
@@ -105,6 +107,10 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
           '이미 발행된 시리즈 편((기존 글))이라 본문을 쓰지 않습니다.',
           false,
         );
+
+      // 답 반영 실행 — 처음부터 다시 쓰지 않고 이전 본문에서 답한 곳만 고친다(velogPatch.ts). 시리즈 줄은 이전 본문에 이미 있다.
+      const { patch } = ctx;
+      if (patch !== undefined) return runVelogPatch(deps, { ...ctx, patch }, limits);
 
       const adapter = deps.adapters.get(ctx.modelId);
       if (adapter === undefined)
@@ -195,6 +201,7 @@ export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
     },
     async discard(ctx) {
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, VELOG_ARTIFACT);
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, REVIEW_RESULT_ARTIFACT);
     },
   };
 }
