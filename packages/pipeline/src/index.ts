@@ -96,6 +96,7 @@ export {
   isStepStatus,
   nextAction,
   planRerun,
+  planAnswerRerun,
   applyCommand,
   firstUnfinishedStep,
   INSTRUCTION_MAX_LENGTH,
@@ -108,6 +109,7 @@ export type {
   StepState,
   NextAction,
   RerunInput,
+  AnswerRerunInput,
   RerunPlan,
   RunCommand,
   CommandFailure,
@@ -158,7 +160,7 @@ export type {
 export { startRun } from './run/startRun.ts';
 export type { StartRunInput, StartRunFailure, StartRunResult } from './run/startRun.ts';
 export { startRerun } from './run/startRerun.ts';
-export { approveRun, reviseRun, previewRerun } from './run/runCommands.ts';
+export { approveRun, reviseRun, answerRun, previewRerun } from './run/runCommands.ts';
 export { approveAndPublishRun, localDate } from './run/approvePublish.ts';
 export type {
   ApprovePublishDeps,
@@ -171,6 +173,9 @@ export type {
   ReviseRunInput,
   ReviseRunFailure,
   ReviseRunResult,
+  AnswerRunInput,
+  AnswerRunFailure,
+  AnswerRunResult,
   PreviewRerunInput,
   PreviewRerunFailure,
   PreviewRerunResult,
@@ -535,6 +540,18 @@ export {
   type ReviewAnswer,
   type ReviewAnswerKind,
 } from './review/answers.ts';
+export {
+  REVIEW_ANSWER_MAX_LENGTH,
+  REVIEW_ANSWERS_MAX,
+  answersChangeContent,
+  buildReviewAnswerSet,
+  parseReviewAnswerSet,
+  renderReviewAnswerSet,
+  type ReviewAnswerItem,
+  type ReviewAnswerSet,
+  type ReviewAnswerSetFailure,
+  type ReviewAnswerSetResult,
+} from './review/answerSet.ts';
 export {
   PATCH_SCOPE_RADIUS,
   checkPatchScope,
