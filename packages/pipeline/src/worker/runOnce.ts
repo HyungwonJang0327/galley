@@ -108,7 +108,7 @@ export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<T
 
   if (action.kind === 'awaitApproval') {
     await deps.repo.awaitApproval(run.id, now);
-    deps.logger.info('6단계를 마쳐 승인 대기로', { runId: run.id });
+    deps.logger.info('7단계를 마쳐 승인 대기로', { runId: run.id });
     return { outcome: 'completed' };
   }
 

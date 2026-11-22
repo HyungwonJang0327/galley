@@ -14,6 +14,12 @@ import { stripTopicHints } from '../queue/normalizeTitle.ts';
 import { STEP_ORDER, type StepName } from '../run/stateMachine.ts';
 import { hashPromptText, isTonePromptStep } from '../prompts/tonePrompts.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
+import {
+  ILLUSTRATIONS_MANIFEST,
+  illustrationArtifact,
+  renderIllustrationManifest,
+} from './illustration.ts';
+import { discardIllustrations } from './illustrationStep.ts';
 import { LINKEDIN_ARTIFACT } from './linkedinStep.ts';
 import { renderPublishInfo } from './publishInfo.ts';
 import { PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT } from './publishInfoStep.ts';
@@ -32,14 +38,20 @@ export const MOCK_ARTIFACT_NAME: Record<StepName, string> = {
   verify: VERIFICATION_ARTIFACT,
   linkedin: LINKEDIN_ARTIFACT,
   zenn: ZENN_ARTIFACT,
+  illustration: ILLUSTRATIONS_MANIFEST,
   publishInfo: PUBLISH_ARTIFACT,
 };
 
-/** 1×1 투명 PNG — 썸네일 자리(승인은 바이트를 복사만 한다, 미리보기는 <img>로 보인다). */
+/** 1×1 투명 PNG — 썸네일·삽화 자리(승인은 바이트를 복사만 한다, 미리보기는 <img>로 보인다). */
 const MOCK_THUMBNAIL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64',
 );
+
+/** Mock 삽화 — 이름은 고정, SVG는 빈 캔버스(1×1 PNG와 짝). */
+const MOCK_ILLUSTRATION_NAME = 'illust1_mock';
+const MOCK_ILLUSTRATION_SVG =
+  '<svg width="1200" height="520" viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg"></svg>\n';
 
 export interface MockStepRunnerOptions {
   /** 이 단계에서 실패하게 만든다(워커의 재시도·실패 경로 테스트용). */
@@ -187,6 +199,14 @@ function mockArtifacts(
       return {
         [MOCK_ARTIFACT_NAME.zenn]: renderZennArticle(title, splitTitle(mockBody(ctx), title).body),
       };
+    case 'illustration':
+      // 삽화 한 장짜리 목록 — 실제 단계의 목록 형식 그대로(승인·미리보기가 읽는다).
+      return {
+        [MOCK_ARTIFACT_NAME.illustration]: renderIllustrationManifest(
+          [{ n: 1, name: MOCK_ILLUSTRATION_NAME, svg: MOCK_ILLUSTRATION_SVG }],
+          [{ n: 1, name: MOCK_ILLUSTRATION_NAME }],
+        ),
+      };
     case 'publishInfo':
       return {
         [MOCK_ARTIFACT_NAME.publishInfo]: renderPublishInfo({
@@ -253,6 +273,21 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
               await files.write(slug, ctx.runId, name, text);
           if (ctx.step === 'publishInfo')
             await files.writeBytes(slug, ctx.runId, THUMBNAIL_ARTIFACT, MOCK_THUMBNAIL_PNG);
+          if (ctx.step === 'illustration')
+            for (const lang of ['ko', 'ja'] as const) {
+              await files.write(
+                slug,
+                ctx.runId,
+                illustrationArtifact(1, lang, 'svg'),
+                MOCK_ILLUSTRATION_SVG,
+              );
+              await files.writeBytes(
+                slug,
+                ctx.runId,
+                illustrationArtifact(1, lang, 'png'),
+                MOCK_THUMBNAIL_PNG,
+              );
+            }
         } catch (error) {
           // 실제 단계와 같은 취급 — fs 메시지(DATA_DIR 절대경로)는 cause에만, 행에는 코드와 한 줄.
           throw new StepFailure(
@@ -283,6 +318,8 @@ export function createMockStepRunner(options: MockStepRunnerOptions = {}): StepR
       if (options.stores === undefined) return;
       const { artifacts: files, evidence } = options.stores;
       if (ctx.step === 'evidence') await evidence.remove(ctx.topic.slug, ctx.runId);
+      else if (ctx.step === 'illustration')
+        await discardIllustrations(files, ctx.topic.slug, ctx.runId);
       else await files.remove(ctx.topic.slug, ctx.runId, MOCK_ARTIFACT_NAME[ctx.step]);
       if (ctx.step === 'publishInfo')
         await files.remove(ctx.topic.slug, ctx.runId, THUMBNAIL_ARTIFACT);

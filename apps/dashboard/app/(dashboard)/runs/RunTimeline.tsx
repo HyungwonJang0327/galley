@@ -113,7 +113,7 @@ function artifactPanel(view: StepArtifactView) {
 }
 
 /**
- * 단계 6줄. `artifacts`에 있는 단계는 펼쳐서 산출물을 읽을 수 있다(제목+meta가 토글, meta 끝에 "보기" 힌트) —
+ * 단계 7줄. `artifacts`에 있는 단계는 펼쳐서 산출물을 읽을 수 있다(제목+meta가 토글, meta 끝에 "보기" 힌트) —
  * 읽기는 서버(page)가 하고 여기는 결과만 받는다(decisions/layout.md 타임라인 한 줄).
  */
 export function RunTimeline({

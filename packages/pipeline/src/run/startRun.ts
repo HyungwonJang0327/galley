@@ -69,7 +69,7 @@ export async function startRun(
     select: { id: true, title: true, status: true, holdReason: true, missingSince: true },
   });
   if (!topic) return { ok: false, code: 'TOPIC_NOT_FOUND' };
-  // 완료됐거나 파일에서 사라진 주제는 실행하지 않는다 — 승인이 TOPIC_NOT_IN_QUEUE로 거절할 것을 6단계를 다 돌린
+  // 완료됐거나 파일에서 사라진 주제는 실행하지 않는다 — 승인이 TOPIC_NOT_IN_QUEUE로 거절할 것을 7단계를 다 돌린
   // 뒤에야 알게 된다(비용). 완료 주제를 다시 쓰려면 주제_큐.md에서 완료 줄을 대기로 되돌린다
   // (decisions/topic-slug.md "되돌리기 절차").
   const block = topicRunBlock(topic);

@@ -7,10 +7,12 @@ import type { EvidenceLimits } from '../evidence/limits.ts';
 import type { RedactConfig } from '../evidence/redact.ts';
 import type { VerifyLimits } from '../evidence/verifyLimits.ts';
 import type { ModelAdapter } from '../model/ModelAdapter.ts';
+import type { IllustrationRenderer } from '../publish/illustration.ts';
 import type { ThumbnailConfig, ThumbnailRenderer } from '../publish/thumbnail.ts';
 import { isStepName, type StepName } from '../run/stateMachine.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
 import { createEvidenceStepRunner } from './evidenceStep.ts';
+import { createIllustrationStepRunner } from './illustrationStep.ts';
 import type { WritingLimits } from './limits.ts';
 import { createLinkedinStepRunner } from './linkedinStep.ts';
 import { createPublishInfoStepRunner } from './publishInfoStep.ts';
@@ -36,6 +38,8 @@ export interface StepRunnerDeps {
   /** 썸네일 렌더러(발행정보 단계) + 템플릿 설정(.galley/thumbnail.json, 없으면 빈 푸터). */
   thumbnails: ThumbnailRenderer;
   thumbnailConfig?: ThumbnailConfig;
+  /** 삽화 렌더러(삽화 단계) — 썸네일과 같은 설치된 Chrome. */
+  illustrations: IllustrationRenderer;
   /** 발행정보 단계를 바꿔 끼울 자리(테스트용). 없으면 실제 러너(createPublishInfoStepRunner, B3a). */
   publishInfo?: StepRunner;
   limits?: { evidence?: EvidenceLimits; writing?: WritingLimits; verify?: VerifyLimits };
@@ -63,7 +67,7 @@ export function routeStepRunner(runners: Record<StepName, StepRunner>): StepRunn
 }
 
 /**
- * 조립 루트용 — deps 하나로 6단계 러너를 만들어 라우팅한다. 라우팅 전에 **식별 정보 필터를 제목 경로에 한 번** 건다
+ * 조립 루트용 — deps 하나로 7단계 러너를 만들어 라우팅한다. 라우팅 전에 **식별 정보 필터를 제목 경로에 한 번** 건다
  * (`redactStepContext`, decisions/title-redact.md) — 단계 구현은 걸러진 제목만 본다. discard는 제목을 쓰지 않아 그대로.
  */
 export function createStepRunner(deps: StepRunnerDeps): StepRunner {
@@ -104,6 +108,12 @@ function createRoutedStepRunner(deps: StepRunnerDeps): StepRunner {
     }),
     linkedin: createLinkedinStepRunner({ ...writing, ...writingLimits }),
     zenn: createZennStepRunner({ ...writing, ...writingLimits }),
+    illustration: createIllustrationStepRunner({
+      artifacts: deps.artifactStore,
+      adapters: deps.adapters,
+      illustrations: deps.illustrations,
+      ...writingLimits,
+    }),
     publishInfo:
       deps.publishInfo ??
       createPublishInfoStepRunner({

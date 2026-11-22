@@ -37,7 +37,7 @@ const minutes = (n: number) => n * 60_000;
 const now = Date.now();
 const at = (minutesAgo: number) => new Date(now - minutes(minutesAgo));
 
-/** 단계 6행. 성공 행에는 그럴듯한 토큰·비용·소요를 넣는다(썸네일 단계는 모델 없음). */
+/** 단계 7행. 성공 행에는 그럴듯한 토큰·비용·소요를 넣는다(썸네일 단계는 모델 없음). */
 function steps(runId: string, seed: Partial<Record<StepName, StepSeed>>, base: Date) {
   return STEP_ORDER.map((name, order) => {
     const s = seed[name] ?? {};
@@ -128,7 +128,7 @@ const SCENARIOS: Scenario[] = [
     return [['실행 중', running.id]];
   },
 
-  // 2. 승인 대기 — 6단계 전부 성공. 첫 시도.
+  // 2. 승인 대기 — 7단계 전부 성공. 첫 시도.
   async (t) => {
     const pending = await prisma.run.create({
       data: {

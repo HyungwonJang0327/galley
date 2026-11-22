@@ -7,7 +7,7 @@ export interface RunStepDotsProps {
   label: string;
 }
 
-/** 목록 행 좌측 6단계 원형 진행 인디케이터. 색은 타임라인 마커와 같은 토큰. */
+/** 목록 행 좌측 7단계 원형 진행 인디케이터. 색은 타임라인 마커와 같은 토큰. */
 export function RunStepDots({ dots, label }: RunStepDotsProps) {
   return (
     <span className={styles.dots} role="img" aria-label={label}>

@@ -123,7 +123,7 @@ beforeEach(async () => {
   };
 });
 
-/** 6단계를 끝낸 Run(기본 승인 대기) + 그 Run의 DATA_DIR 산출물. */
+/** 7단계를 끝낸 Run(기본 승인 대기) + 그 Run의 DATA_DIR 산출물. */
 async function finishedRun(
   options: { status?: RunStatus; carriedFrom?: string; withArtifacts?: boolean } = {},
 ) {

@@ -259,7 +259,7 @@ describe('runOnce — 정상 진행', () => {
     expect(state.outcomes.every((o) => o.outcome.status === STEP_STATUS.succeeded)).toBe(true);
   });
 
-  it('6단계가 끝나면 승인 대기로 넘긴다', async () => {
+  it('7단계가 끝나면 승인 대기로 넘긴다', async () => {
     const { repo, state } = fakeRepo();
     const d = deps({ repo });
     await runOnce(d); // 잡는 틱
@@ -740,6 +740,7 @@ describe('runOnce — 시리즈 편 정보', () => {
       'verify',
       'linkedin',
       'zenn',
+      'illustration',
       'publishInfo',
     ]);
     expect(seen.every((s) => s.series === info)).toBe(true);

@@ -69,7 +69,7 @@ describe('runHistoryRow', () => {
     expect(row.model).toBe('Claude X');
   });
 
-  it('단계 기록이 없으면 합계는 null·"—", 마지막 단계는 "대기", 완료 0/6', () => {
+  it('단계 기록이 없으면 합계는 null·"—", 마지막 단계는 "대기", 완료 0/7', () => {
     const row = runHistoryRow(item(), label);
 
     expect(row.tokens).toBeNull();
@@ -78,7 +78,7 @@ describe('runHistoryRow', () => {
     expect(row.durationText).toBe('—');
     expect(row.lastStep).toBe('대기');
     expect(row.doneCount).toBe(0);
-    expect(row.stepCount).toBe(6);
+    expect(row.stepCount).toBe(7);
   });
 
   it('마지막으로 손댄 단계와 완료 수, carried 성공은 "이전 결과"로 읽힌다', () => {

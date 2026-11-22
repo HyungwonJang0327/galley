@@ -1,4 +1,4 @@
-// 재실행 시작 통합 테스트: 실제 임시 SQLite에 새 Run + 단계 6행(carried/fresh)이 한 번에 생기는지,
+// 재실행 시작 통합 테스트: 실제 임시 SQLite에 새 Run + 단계 7행(carried/fresh)이 한 번에 생기는지,
 // 거절할 때 아무것도 남지 않는지, 반복 재실행에서 출처가 밀리지 않는지.
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -72,7 +72,7 @@ const deps = () => ({ prisma, registry });
 
 /**
  * 워커가 끝낸 Run을 손으로 만든다. `failedAt`이 있으면 그 단계는 failed, 그 뒤는 pending이고
- * Run은 failed다. 없으면 6단계 succeeded + 주어진 검수 상태.
+ * Run은 failed다. 없으면 7단계 succeeded + 주어진 검수 상태.
  */
 async function finishedRun(options: { status?: RunStatus; failedAt?: StepName } = {}) {
   const failedIndex = options.failedAt ? STEP_ORDER.indexOf(options.failedAt) : -1;
@@ -189,7 +189,7 @@ describe('startRerun', () => {
     expect(after).toMatchObject({ status: RUN_STATUS.pendingApproval, finishedAt: null });
   });
 
-  test('근거 수집부터면 carried가 없고 6단계 전부 pending+fresh다', async () => {
+  test('근거 수집부터면 carried가 없고 7단계 전부 pending+fresh다', async () => {
     const previous = await finishedRun();
 
     const result = await startRerun(deps(), {
@@ -309,7 +309,7 @@ describe('startRerun', () => {
     expect(await prisma.run.count()).toBe(0);
   });
 
-  test('계획이 6단계를 순서대로 덮지 않으면 DB를 보지 않고 거절한다', async () => {
+  test('계획이 7단계를 순서대로 덮지 않으면 DB를 보지 않고 거절한다', async () => {
     const previous = await finishedRun();
 
     const result = await startRerun(deps(), {

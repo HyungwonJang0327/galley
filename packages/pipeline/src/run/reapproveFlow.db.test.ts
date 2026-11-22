@@ -106,7 +106,7 @@ beforeEach(async () => {
   };
 });
 
-/** 워커 대신: Mock 러너로 6단계 산출물을 쓰고 Run을 승인 대기로 만든다. */
+/** 워커 대신: Mock 러너로 7단계 산출물을 쓰고 Run을 승인 대기로 만든다. */
 async function runToPendingApproval(runId: string, instruction?: string) {
   const run = await prisma.run.findUniqueOrThrow({ where: { id: runId } });
   const runner = createMockStepRunner({
@@ -274,7 +274,7 @@ describe('되돌리기 → 재승인 흐름', () => {
     expect(fresh.id).not.toBe(topic.id);
 
     // 새 주제는 실행 기록이 없어 제목의 posts 표기를 슬러그로 쓰는데, 그 슬러그는 옛 주제의 승인된 Run 것이다 —
-    // 6단계를 돌린 뒤 승인에서 POSTS_DIR_EXISTS가 되기 전에 실행을 거절한다.
+    // 7단계를 돌린 뒤 승인에서 POSTS_DIR_EXISTS가 되기 전에 실행을 거절한다.
     expect(await startRun({ prisma, registry }, { topicId: fresh.id })).toEqual({
       ok: false,
       code: 'SLUG_TAKEN',

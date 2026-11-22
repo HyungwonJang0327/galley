@@ -19,7 +19,7 @@ function row(overrides: Partial<RunListRow> = {}): RunListRow {
 }
 
 describe('runListRowView', () => {
-  it('단계 행이 없어도 파이프라인 순서 6칸 전부 pending, 마지막 단계는 "대기"', () => {
+  it('단계 행이 없어도 파이프라인 순서 7칸 전부 pending, 마지막 단계는 "대기"', () => {
     const view = runListRowView(row());
 
     expect(view.dots.map((d) => d.name)).toEqual([
@@ -28,6 +28,7 @@ describe('runListRowView', () => {
       'verify',
       'linkedin',
       'zenn',
+      'illustration',
       'publishInfo',
     ]);
     expect(view.dots.every((d) => d.status === 'pending')).toBe(true);

@@ -64,7 +64,7 @@ const deps = () => ({ prisma, registry });
 
 const NOW = new Date('2026-09-13T03:00:00Z');
 
-/** 워커가 6단계를 끝낸 Run. 기본은 승인 대기. */
+/** 워커가 7단계를 끝낸 Run. 기본은 승인 대기. */
 async function finishedRun(status: RunStatus = RUN_STATUS.pendingApproval) {
   const attempts = await prisma.run.count({ where: { topicId } });
   return prisma.run.create({

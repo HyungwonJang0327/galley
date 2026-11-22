@@ -89,6 +89,10 @@ describe('createStepRunner', () => {
         check: async () => ({ ok: true }),
         render: async () => ({ ok: true, png: new Uint8Array() }),
       },
+      illustrations: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
       clock: { now: () => new Date('2026-09-26T00:00:00Z') },
     });
   });
@@ -124,6 +128,10 @@ describe('createStepRunner', () => {
         check: async () => ({ ok: true }),
         render: async () => ({ ok: true, png: new Uint8Array() }),
       },
+      illustrations: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
       clock: { now: () => new Date() },
       publishInfo: { run: custom },
     });
@@ -148,6 +156,10 @@ describe('createStepRunner', () => {
         ],
       },
       thumbnails: {
+        check: async () => ({ ok: true }),
+        render: async () => ({ ok: true, png: new Uint8Array() }),
+      },
+      illustrations: {
         check: async () => ({ ok: true }),
         render: async () => ({ ok: true, png: new Uint8Array() }),
       },

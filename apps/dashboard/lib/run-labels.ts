@@ -76,6 +76,7 @@ const STEP_LABEL: Record<StepName, string> = {
   verify: '근거 검증',
   linkedin: '링크드인',
   zenn: 'Zenn',
+  illustration: '삽화',
   publishInfo: '발행정보·썸네일',
 };
 
