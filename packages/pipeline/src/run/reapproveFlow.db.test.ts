@@ -180,7 +180,8 @@ describe('되돌리기 → 재승인 흐름', () => {
     expect(await readdir(join(blogDir, 'posts'))).toEqual([SLUG]);
     // Mock은 주제 제목을 글 제목으로 써서 이름이 같다 — 그대로 덮어쓴다. 글 제목이 바뀌는 재승인(옛 5개를 DATA_DIR로
     // 옮김)은 approvePublish.db.test.ts가 본다.
-    expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(7);
+    // 7개 + Mock 삽화 한 장(PNG·_ja.png·_ja.svg).
+    expect(await readdir(join(blogDir, 'posts', SLUG))).toHaveLength(10);
     expect(await readFile(join(blogDir, 'posts', SLUG, '무한_스크롤.md'), 'utf8')).toContain(
       '도입부를 짧게',
     );
