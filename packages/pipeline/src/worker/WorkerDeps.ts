@@ -40,11 +40,13 @@ export interface ClaimedRun {
   modelId: string;
   /** 사람이 준 수정 지시(재실행일 때만). */
   instruction?: string;
+  /** 답 반영 실행의 질문·답(`Run.reviewAnswers` 원문 JSON). 워커는 고치는 단계에 넘길 때만 읽는다. */
+  reviewAnswers?: string;
   steps: {
     name: StepName;
     status: StepStatus;
-    origin?: 'fresh' | 'carried';
-    /** carried일 때 그 결과를 만든 Run. */
+    origin?: 'fresh' | 'carried' | 'patched';
+    /** carried일 때 그 결과를 만든 Run, patched일 때 고칠 대상을 만든 Run. */
     sourceRunId?: string;
   }[];
 }

@@ -16,7 +16,7 @@ import { createIllustrationStepRunner } from './illustrationStep.ts';
 import type { WritingLimits } from './limits.ts';
 import { createLinkedinStepRunner } from './linkedinStep.ts';
 import { createPublishInfoStepRunner } from './publishInfoStep.ts';
-import type { StepContext, StepResult, StepRunner } from './StepRunner.ts';
+import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import { redactStepContext } from './redactContext.ts';
 import { createVelogStepRunner } from './velogStep.ts';
 import { createVerifyStepRunner } from './verifyStep.ts';
@@ -66,6 +66,9 @@ export function routeStepRunner(runners: Record<StepName, StepRunner>): StepRunn
   };
 }
 
+/** 이전 결과를 고치는 길(`ctx.patch`)을 구현한 단계 — 구현될 때마다 여기에 더한다(decisions/review-questions.md 단위 ④⑤). */
+const PATCH_STEPS: ReadonlySet<StepName> = new Set<StepName>();
+
 /**
  * 조립 루트용 — deps 하나로 7단계 러너를 만들어 라우팅한다. 라우팅 전에 **식별 정보 필터를 제목 경로에 한 번** 건다
  * (`redactStepContext`, decisions/title-redact.md) — 단계 구현은 걸러진 제목만 본다. discard는 제목을 쓰지 않아 그대로.
@@ -74,6 +77,13 @@ export function createStepRunner(deps: StepRunnerDeps): StepRunner {
   const routed = createRoutedStepRunner(deps);
   return {
     async run(ctx: StepContext): Promise<StepResult> {
+      // 고치는 길이 없는 단계에 고침 입력이 오면 멈춘다 — 그대로 넘기면 그 단계가 처음부터 다시 만들어 답하지 않은 곳까지 바뀐다.
+      if (ctx.patch !== undefined && !PATCH_STEPS.has(ctx.step))
+        throw new StepFailure(
+          'PATCH_UNSUPPORTED',
+          '이 단계는 이전 결과를 고치는 방식을 아직 지원하지 않습니다.',
+          false,
+        );
       return routed.run(redactStepContext(ctx, deps.redactConfig).ctx);
     },
     async discard(ctx) {

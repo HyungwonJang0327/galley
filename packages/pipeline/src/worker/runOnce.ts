@@ -3,9 +3,10 @@
 // (decisions/run-execution-model.md)
 import type { IndexTickResult } from '../index/runIndexTick.ts';
 import type { AutoLinkTickResult } from '../link/autoLink.ts';
+import { parseReviewAnswerSet } from '../review/answerSet.ts';
 import { STEP_STATUS, nextAction, type StepName } from '../run/stateMachine.ts';
 import type { SeriesStepInfo } from '../steps/series.ts';
-import { StepFailure, toStepFailure } from '../steps/StepRunner.ts';
+import { StepFailure, toStepFailure, type StepContext } from '../steps/StepRunner.ts';
 import type { ClaimedRun, StepOutcome, WorkerDeps } from './WorkerDeps.ts';
 
 /** heartbeat가 이만큼 끊기면 중단으로 본다(decisions/run-location.md). */
@@ -146,6 +147,24 @@ async function runStep(
   }
 }
 
+/**
+ * 고치는 단계(`patched`)의 입력 — 고칠 대상 Run과 질문·답. 답 반영 실행이 아니면 undefined.
+ * 둘 중 하나라도 없으면 **실패로 알린다**: 조용히 처음부터 다시 만들면 답하지 않은 곳까지 바뀐다(decisions/review-questions.md).
+ */
+function patchOf(run: ClaimedRun, step: StepName): StepContext['patch'] {
+  const row = run.steps.find((s) => s.name === step);
+  if (row?.origin !== 'patched') return undefined;
+  const answers =
+    run.reviewAnswers === undefined ? undefined : parseReviewAnswerSet(run.reviewAnswers);
+  if (row.sourceRunId === undefined || answers === undefined)
+    throw new StepFailure(
+      'PATCH_INPUT_MISSING',
+      '고칠 이전 결과나 확인 질문의 답을 찾지 못했습니다.',
+      false,
+    );
+  return { baseRunId: row.sourceRunId, answers: answers.items };
+}
+
 async function attemptStep(
   deps: WorkerDeps,
   run: ClaimedRun,
@@ -184,6 +203,7 @@ async function attemptStep(
       const sources: Partial<Record<StepName, string>> = {};
       for (const s of run.steps)
         if (s.origin === 'carried' && s.sourceRunId !== undefined) sources[s.name] = s.sourceRunId;
+      const patch = patchOf(run, step);
       if (!seriesLoaded && deps.series !== undefined) {
         series = await deps.series.forTopic(run.topicId);
         seriesLoaded = true;
@@ -203,6 +223,7 @@ async function attemptStep(
         sources,
         ...(series === undefined ? {} : { series }),
         instruction: run.instruction,
+        ...(patch === undefined ? {} : { patch }),
         signal: controller.signal,
       });
 

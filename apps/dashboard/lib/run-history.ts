@@ -80,7 +80,8 @@ export function runHistoryRow(
   });
   const touched = lines.filter((l) => l.status !== 'pending');
   // 이번 시도에서 실제로 모델을 부른 단계만 — carried는 이전 시도의 사용량이라 여기 더하면 중복이다.
-  const fresh = item.steps.filter((s) => s.origin === STEP_ORIGIN.fresh);
+  // 고친 단계(patched)는 이번 시도가 돈 단계라 함께 센다.
+  const fresh = item.steps.filter((s) => s.origin !== STEP_ORIGIN.carried);
   const durationMs = sumOrNull(fresh.map((s) => s.durationMs));
   const tokens = sumOrNull(
     fresh.map((s) =>
