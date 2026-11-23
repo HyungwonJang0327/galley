@@ -110,6 +110,41 @@ describe('matchMechanicalClaims', () => {
     expect(countClaims(matched)).toEqual({ supported: 10, unsupported: 1, uncertain: 2 });
   });
 
+  test('날짜는 표기가 달라도 같은 날로 맞춘다 — 마이그레이션 폴더 이름(20260617145854_init)·슬래시·점', () => {
+    const statusOf = (body: string, evidence: Partial<EvidenceBundle['items'][number]>) => {
+      const bundle: EvidenceBundle = {
+        ...BUNDLE,
+        items: [{ ...BUNDLE.items[0]!, note: undefined, snippet: 'x', ...evidence }],
+        analyses: [],
+      };
+      return Object.fromEntries(
+        matchMechanicalClaims(extractMechanicalClaims(splitBodyLines(body)), bundle).map((c) => [
+          c.text,
+          c.status,
+        ]),
+      );
+    };
+    const body = '- **2026-06-17**: 초기 마이그레이션.';
+
+    for (const evidence of [
+      { path: 'prisma/migrations/20260617145854_init/migration.sql' },
+      { path: 'prisma/migrations/202606171458_init/migration.sql' },
+      { path: 'backup/20260617.sql' },
+      { snippet: '-- created 2026/06/17' },
+      { snippet: 'released: 2026.06.17' },
+    ])
+      expect(statusOf(body, evidence)).toEqual({ '2026-06-17': 'supported' });
+
+    // 다른 날·다른 수의 일부는 맞지 않는다.
+    for (const evidence of [
+      { path: 'prisma/migrations/20260618145854_init/migration.sql' },
+      { snippet: 'id = 120260617' },
+      { snippet: 'n = 202606171' },
+      { snippet: 'v = 2026.06.17.3' },
+    ])
+      expect(statusOf(body, evidence)).toEqual({ '2026-06-17': 'unsupported' });
+  });
+
   test('숫자는 토큰 경계로 맞춘다(1000 ≠ 10000) · 분석 글 요약에서만 맞으면 in-analysis-summary', () => {
     const bundle: EvidenceBundle = {
       ...BUNDLE,
