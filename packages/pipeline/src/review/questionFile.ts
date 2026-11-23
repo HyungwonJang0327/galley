@@ -3,6 +3,7 @@
 // 모델 호출 없음: 본문(velog.md)과 근거 검증 리포트(verification.json)를 읽어 규칙으로 고른다(`selectReviewQuestions`).
 // 파일이 없는 실행(이 기능 전의 실행)은 읽는 쪽이 같은 함수(`collectReviewQuestions`)로 그 자리에서 만든다.
 import type { ArtifactStore } from '../artifacts/ArtifactStore.ts';
+import { PUBLISH_PATCH_ARTIFACT, parsePublishPatchResult } from './answerResult.ts';
 import { locateQuestion } from './answers.ts';
 import { parseReviewAnswerSet, parseReviewQuestion } from './answerSet.ts';
 import {
@@ -87,6 +88,11 @@ export interface CollectReviewQuestionsInput {
    * 같은 문장은 또 근거 없음으로 나오기 때문이다.
    */
   confirmed?: readonly string[];
+  /**
+   * 이 실행의 발행정보를 만든 Run — 그 단계가 남긴 고침 결과(`publishInfo-patch.json`)에 "다시 만들지 물을 삽화"가 있으면
+   * 삽화 질문을 하나 더한다. 없으면(답 반영 실행이 아니거나 삽화 자리 앞뒤가 안 바뀜) 묻지 않는다.
+   */
+  publishRunId?: string;
 }
 
 export type CollectReviewQuestionsResult =
@@ -108,6 +114,10 @@ export async function collectReviewQuestions(
     (claim) => !confirmed.has(oneLine(claim.text)),
   );
   const selected = selectReviewQuestions(body.text, claims);
+  const illustration =
+    input.publishRunId === undefined
+      ? undefined
+      : await illustrationQuestion(artifacts, input.slug, input.publishRunId);
   const reanchor = (question: ReviewQuestion): ReviewQuestion => {
     if (question.source !== 'unsupported') return question;
     const anchor = locateQuestion(body.text, question);
@@ -117,9 +127,34 @@ export async function collectReviewQuestions(
     ok: true,
     value: {
       version: 1,
-      questions: selected.questions.map(reanchor),
+      // 삽화 질문은 상위 3건의 자리를 뺏지 않고 그 뒤에 따로 붙는다(글의 사실을 묻는 질문이 아니다).
+      questions: [
+        ...selected.questions.map(reanchor),
+        ...(illustration === undefined ? [] : [illustration]),
+      ],
       more: selected.more.map(reanchor),
     },
+  };
+}
+
+/** 삽화 질문의 id — 한 실행에 하나(걸린 삽화를 한 번에 묻는다. 다시 만들기는 삽화 단계 전체를 다시 돌린다). */
+export const ILLUSTRATION_QUESTION_ID = 'i1';
+
+/** 발행정보 고침 결과에 물을 삽화가 있으면 질문 하나 — 글은 삽화 이름들, 앵커는 본문에서 가장 앞선 자리. */
+async function illustrationQuestion(
+  artifacts: ArtifactStore,
+  slug: string,
+  publishRunId: string,
+): Promise<ReviewQuestion | undefined> {
+  const read = await artifacts.read(slug, publishRunId, PUBLISH_PATCH_ARTIFACT);
+  const items = (read.ok ? parsePublishPatchResult(read.text) : undefined)?.illustrations ?? [];
+  const first = [...items].sort((a, b) => a.line - b.line)[0];
+  if (first === undefined) return undefined;
+  return {
+    id: ILLUSTRATION_QUESTION_ID,
+    source: 'illustration',
+    question: items.map((item) => item.name).join(', '),
+    anchor: { paragraph: first.paragraph, line: first.line },
   };
 }
 
@@ -148,6 +183,7 @@ export function reviewQuestionsInputOf(run: ReviewQuestionRun): CollectReviewQue
     slug: run.topicSlug,
     bodyRunId: runOf('velog'),
     verifyRunId: runOf('verify'),
+    publishRunId: runOf('publishInfo'),
     ...(confirmed.length === 0 ? {} : { confirmed }),
   };
 }

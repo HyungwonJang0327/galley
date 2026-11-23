@@ -534,6 +534,7 @@ export {
   type ReviewQuestions,
 } from './review/questions.ts';
 export {
+  ILLUSTRATION_QUESTION_ID,
   collectReviewQuestions,
   createReviewQuestionWriter,
   parseReviewQuestions,
@@ -544,13 +545,16 @@ export {
   type ReviewQuestionRun,
 } from './review/questionFile.ts';
 export {
+  PUBLISH_PATCH_ARTIFACT,
   REVIEW_RESULT_ARTIFACT,
   derivedPatchArtifact,
   parseDerivedPatchResult,
+  parsePublishPatchResult,
   parseReviewResult,
   type DerivedPatchResult,
   type DerivedPatchStatus,
   type DerivedPatchStep,
+  type PublishPatchResult,
   type ReviewResult,
   type ReviewUnappliedCode,
 } from './review/answerResult.ts';
@@ -567,6 +571,7 @@ export {
   REVIEW_ANSWER_MAX_LENGTH,
   REVIEW_ANSWERS_MAX,
   answersChangeContent,
+  answersRedoIllustration,
   buildReviewAnswerSet,
   parseReviewAnswerSet,
   renderReviewAnswerSet,

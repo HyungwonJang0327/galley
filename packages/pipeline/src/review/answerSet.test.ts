@@ -3,6 +3,7 @@ import {
   REVIEW_ANSWER_MAX_LENGTH,
   REVIEW_ANSWERS_MAX,
   answersChangeContent,
+  answersRedoIllustration,
   buildReviewAnswerSet,
   parseReviewAnswerSet,
   renderReviewAnswerSet,
@@ -73,6 +74,36 @@ describe('buildReviewAnswerSet', () => {
     expect(
       buildReviewAnswerSet([fill(comment, '가'.repeat(REVIEW_ANSWER_MAX_LENGTH + 1))]),
     ).toEqual({ ok: false, code: 'ANSWER_TOO_LONG' });
+  });
+});
+
+const illust: ReviewQuestion = {
+  id: 'i1',
+  source: 'illustration',
+  question: 'illust1_feed',
+  anchor: { paragraph: 5, line: 12 },
+};
+const redo = (question: ReviewQuestion): ReviewAnswerItem => ({
+  question,
+  answer: { id: question.id, kind: 'redo' },
+});
+
+describe('삽화 질문의 답', () => {
+  test('삽화 질문에는 다시 만들기만, 다시 만들기는 삽화 질문에만 — 어긋나면 ANSWER_INVALID', () => {
+    expect(buildReviewAnswerSet([redo(illust), keep(comment)])).toMatchObject({ ok: true });
+    for (const items of [[keep(illust)], [del(illust)], [fill(illust, '글')], [redo(comment)]])
+      expect(buildReviewAnswerSet(items)).toEqual({ ok: false, code: 'ANSWER_INVALID' });
+  });
+
+  test('다시 만들기는 글 내용을 바꾸지 않고, 삽화를 다시 만들지만 알린다', () => {
+    expect(answersChangeContent([redo(illust)])).toBe(false);
+    expect(answersRedoIllustration([redo(illust), keep(comment)])).toBe(true);
+    expect(answersRedoIllustration([keep(comment), fill(claim, '글')])).toBe(false);
+  });
+
+  test('저장하고 다시 읽으면 같다', () => {
+    const set = { version: 1 as const, items: [redo(illust)] };
+    expect(parseReviewAnswerSet(renderReviewAnswerSet(set))).toEqual(set);
   });
 });
 

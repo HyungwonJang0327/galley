@@ -169,6 +169,38 @@ describe('본문 고침 — 모름·삭제(코드)', () => {
   });
 });
 
+describe('본문 고침 — 삽화 다시 만들기', () => {
+  test('본문은 건드리지 않고 반영된 것으로 남긴다(모델 호출 없음) — 같이 온 답은 평소대로', async () => {
+    const adapter = createScriptedAdapter(() => {
+      throw new Error('삽화 다시 만들기는 본문 단계에서 모델을 부르지 않는다');
+    });
+    const { runner, ctx, read } = setup(adapter);
+    const illust = {
+      id: 'i1',
+      source: 'illustration' as const,
+      question: 'illust1_a',
+      anchor: { paragraph: 6, line: 16 },
+    };
+
+    await runner.run(
+      ctx([
+        { question: comment, answer: { id: comment.id, kind: 'keep' } },
+        { question: illust, answer: { id: 'i1', kind: 'redo' } },
+      ]),
+    );
+
+    expect(await read(VELOG_ARTIFACT)).toBe(
+      BASE.replace('\n<!-- [확인 필요] CHECK 제약을 검토했나요? — 근거에 없음 -->', ''),
+    );
+    expect(JSON.parse((await read(REVIEW_RESULT_ARTIFACT)) ?? '')).toEqual({
+      version: 1,
+      baseRunId: 'run_base',
+      applied: [comment.id, 'i1'],
+      unapplied: [],
+    });
+  });
+});
+
 describe('본문 고침 — 채움(모델)', () => {
   test('범위 안만 고친 출력은 채택한다 — 모델이 남긴 주석은 코드가 지운다', async () => {
     // 모델이 답은 반영했지만 주석을 지우지 않았다.

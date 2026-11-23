@@ -8,13 +8,16 @@ import { paragraphIndexAtLine, splitParagraphs } from './paragraphs.ts';
 import type { ReviewAnchor, ReviewQuestion } from './questions.ts';
 
 /** 파일·DB 값(영어). 표시는 대시보드가 붙인다(채움·모름·삭제). */
-export type ReviewAnswerKind = 'fill' | 'keep' | 'delete';
+/** `redo`는 삽화 질문에만 쓴다 — 삽화를 다시 만든다(본문은 건드리지 않는다). */
+export type ReviewAnswerKind = 'fill' | 'keep' | 'delete' | 'redo';
 
 export type ReviewAnswer =
   /** 채움 — 사람이 적은 사실. 모델이 그 문단에 반영한다. */
   | { id: string; kind: 'fill'; text: string }
   | { id: string; kind: 'keep' }
-  | { id: string; kind: 'delete' };
+  | { id: string; kind: 'delete' }
+  /** 삽화 다시 만들기 — 삽화 질문의 답. 본문 고침이 아니라 실행 계획(삽화 단계를 다시 돌림)에 쓴다. */
+  | { id: string; kind: 'redo' };
 
 /** 코드로 고치지 못한 이유 — 본문이 그새 달라져 주석·문장을 그 자리에서 찾지 못했다. */
 export type CodeAnswerFailure = 'QUESTION_UNKNOWN' | 'COMMENT_NOT_FOUND' | 'SENTENCE_NOT_FOUND';
@@ -117,6 +120,8 @@ function findSentence(
  * 밀렸을 수 있어 저장된 앵커를 그대로 믿지 않고 다시 찾는다(찾는 규칙은 `applyCodeAnswers`와 같다). 못 찾으면 undefined.
  */
 export function locateQuestion(body: string, question: ReviewQuestion): ReviewAnchor | undefined {
+  // 삽화 질문은 본문의 고칠 자리가 아니다.
+  if (question.source === 'illustration') return undefined;
   const text = body.replace(/\r\n/g, '\n');
   const range =
     question.source === 'comment' ? findComment(text, question) : findSentence(text, question);
@@ -143,6 +148,7 @@ export function stripReviewComments(body: string): string {
 
 /**
  * 모름·삭제 답을 본문에 반영한다. 채움(fill) 답은 건너뛴다(모델 몫 — `applied`·`failed` 어디에도 넣지 않는다).
+ * 삽화 다시 만들기(redo)도 건너뛴다 — 본문을 고치는 답이 아니다.
  * `questions`는 이 본문에서 뽑은 질문 목록(질문 + 그 외 전부)이다.
  */
 export function applyCodeAnswers(
@@ -155,7 +161,7 @@ export function applyCodeAnswers(
   const todo: { question: ReviewQuestion; kind: 'keep' | 'delete' }[] = [];
   const seen = new Set<string>();
   for (const answer of answers) {
-    if (answer.kind === 'fill' || seen.has(answer.id)) continue;
+    if (answer.kind === 'fill' || answer.kind === 'redo' || seen.has(answer.id)) continue;
     seen.add(answer.id);
     const question = byId.get(answer.id);
     if (question === undefined) failed.push({ id: answer.id, code: 'QUESTION_UNKNOWN' });

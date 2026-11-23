@@ -10,8 +10,11 @@ export const REVIEW_QUESTIONS_MAX = 3;
 /** DATA_DIR 산출물 이름 — posts로 복사하지 않는다(검수 과정의 기록이지 발행물이 아니다). */
 export const REVIEW_QUESTIONS_ARTIFACT = 'questions.json';
 
-/** `comment` = 본문 단계가 남긴 `[확인 필요]` 주석, `unsupported` = 근거 검증이 근거를 찾지 못한 주장. DB·파일 값(영어). */
-export type ReviewQuestionSource = 'comment' | 'unsupported';
+/**
+ * `comment` = 본문 단계가 남긴 `[확인 필요]` 주석, `unsupported` = 근거 검증이 근거를 찾지 못한 주장,
+ * `illustration` = 답 반영으로 삽화 자리 앞뒤 문단이 바뀐 삽화("다시 만들까요?"). DB·파일 값(영어).
+ */
+export type ReviewQuestionSource = 'comment' | 'unsupported' | 'illustration';
 
 export interface ReviewAnchor {
   /** 그 항목이 든 문단 번호(splitParagraphs 기준, 0부터). */
@@ -21,10 +24,10 @@ export interface ReviewAnchor {
 }
 
 export interface ReviewQuestion {
-  /** 실행 안에서 유일한 id — `c1`·`c2`…(주석), `u1`…(근거 없음). 본문 순서로 매긴다. */
+  /** 실행 안에서 유일한 id — `c1`·`c2`…(주석), `u1`…(근거 없음), `i1`(삽화 — 한 실행에 하나). 본문 순서로 매긴다. */
   id: string;
   source: ReviewQuestionSource;
-  /** 주석: 사용자에게 물을 질문 한 문장(주석의 앞부분). 근거 없음: 그 주장 원문 — 화면이 문구를 입힌다. */
+  /** 주석: 사용자에게 물을 질문 한 문장(주석의 앞부분). 근거 없음: 그 주장 원문. 삽화: 그 삽화 이름들(쉼표로) — 화면이 문구를 입힌다. */
   question: string;
   /** 주석: 왜 확인하지 못했는지(뒷부분). 근거 없음: 모델 판정의 한 줄 사유. 없으면 생략. */
   reason?: string;

@@ -265,12 +265,30 @@ describe('applyCommand — 승인 게이트', () => {
 });
 
 describe('planAnswerRerun — 답 반영 실행의 단계별 방식', () => {
-  it('글 내용이 바뀌면 본문·링크드인·Zenn은 고침, 근거 검증은 다시, 근거 수집·삽화·발행정보는 유지', () => {
+  it('글 내용이 바뀌면 본문·링크드인·Zenn·발행정보는 고침, 근거 검증은 다시, 근거 수집·삽화는 유지', () => {
     expect(planAnswerRerun({ contentChanges: true })).toEqual({
       startStep: 'velog',
       fresh: ['verify'],
-      patched: ['velog', 'linkedin', 'zenn'],
-      carried: ['evidence', 'illustration', 'publishInfo'],
+      patched: ['velog', 'linkedin', 'zenn', 'publishInfo'],
+      carried: ['evidence', 'illustration'],
+    });
+  });
+
+  it('삽화 다시 만들기만이면 삽화는 다시, 발행정보는 고침, 글 단계는 유지', () => {
+    expect(planAnswerRerun({ contentChanges: false, redoIllustration: true })).toEqual({
+      startStep: 'velog',
+      fresh: ['illustration'],
+      patched: ['velog', 'publishInfo'],
+      carried: ['evidence', 'verify', 'linkedin', 'zenn'],
+    });
+  });
+
+  it('글 내용도 바뀌고 삽화도 다시 만들면 근거 수집만 유지', () => {
+    expect(planAnswerRerun({ contentChanges: true, redoIllustration: true })).toEqual({
+      startStep: 'velog',
+      fresh: ['verify', 'illustration'],
+      patched: ['velog', 'linkedin', 'zenn', 'publishInfo'],
+      carried: ['evidence'],
     });
   });
 
@@ -284,12 +302,13 @@ describe('planAnswerRerun — 답 반영 실행의 단계별 방식', () => {
   });
 
   it('세 묶음이 7단계를 한 번씩 덮는다', () => {
-    for (const contentChanges of [true, false]) {
-      const plan = planAnswerRerun({ contentChanges });
-      expect([...plan.carried, ...(plan.patched ?? []), ...plan.fresh].sort()).toEqual(
-        [...STEP_ORDER].sort(),
-      );
-    }
+    for (const contentChanges of [true, false])
+      for (const redoIllustration of [true, false]) {
+        const plan = planAnswerRerun({ contentChanges, redoIllustration });
+        expect([...plan.carried, ...(plan.patched ?? []), ...plan.fresh].sort()).toEqual(
+          [...STEP_ORDER].sort(),
+        );
+      }
   });
 
   it('뒤 단계가 유지여도 워커는 고칠 단계 → 다시 만들 단계 순으로 집고, 다 끝나면 승인 대기', () => {
@@ -304,7 +323,7 @@ describe('planAnswerRerun — 답 반영 실행의 단계별 방식', () => {
       const step = action.step;
       steps.find((s) => s.name === step)!.status = STEP_STATUS.succeeded;
     }
-    expect(ran).toEqual(['velog', 'verify', 'linkedin', 'zenn']);
+    expect(ran).toEqual(['velog', 'verify', 'linkedin', 'zenn', 'publishInfo']);
     expect(nextAction(steps)).toEqual({ kind: 'awaitApproval' });
   });
 });

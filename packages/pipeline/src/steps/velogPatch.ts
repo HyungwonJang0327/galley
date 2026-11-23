@@ -95,7 +95,12 @@ export async function runVelogPatch(
   ctx: StepContext & { patch: NonNullable<StepContext['patch']> },
   limits: WritingLimits,
 ): Promise<StepResult> {
-  const { baseRunId, answers: items } = ctx.patch;
+  const { baseRunId } = ctx.patch;
+  // 삽화 질문의 답(다시 만들기)은 본문을 고치지 않는다 — 실행 계획이 이미 삽화 단계를 다시 돌리게 했다. 반영된 것으로 남긴다.
+  const items = ctx.patch.answers.filter((item) => item.question.source !== 'illustration');
+  const redone = ctx.patch.answers
+    .filter((item) => item.question.source === 'illustration')
+    .map((item) => item.question.id);
   const base = await deps.artifacts.read(ctx.topic.slug, baseRunId, ARTIFACT);
   if (!base.ok)
     throw new StepFailure(
@@ -194,7 +199,8 @@ export async function runVelogPatch(
     }
   }
 
-  const order = new Map(items.map((item, index) => [item.question.id, index]));
+  applied.push(...redone);
+  const order = new Map(ctx.patch.answers.map((item, index) => [item.question.id, index]));
   const byOrder = (a: string, b: string) => (order.get(a) ?? 0) - (order.get(b) ?? 0);
   const result = renderReviewResult({
     version: 1,
