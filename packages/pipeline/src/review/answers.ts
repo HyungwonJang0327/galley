@@ -127,6 +127,21 @@ export function locateQuestion(body: string, question: ReviewQuestion): ReviewAn
 }
 
 /**
+ * `[확인 필요]` 주석을 전부 걷어낸 본문 — **글 내용만** 견줄 때 쓴다(뒤 단계 고침이 "본문의 무엇이 바뀌었나"를 볼 때:
+ * 주석은 사실이 아니라 주석만 지운 문단은 바뀐 것이 아니다). 지우는 방식은 모름 답과 같다(줄이 비면 줄째).
+ */
+export function stripReviewComments(body: string): string {
+  let text = body.replace(/\r\n/g, '\n');
+  const ranges = [...text.matchAll(COMMENT)].map((match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+  // 아래부터 — 앞쪽 자리가 밀리지 않는다.
+  for (const range of ranges.reverse()) text = removeRange(text, range.start, range.end);
+  return text;
+}
+
+/**
  * 모름·삭제 답을 본문에 반영한다. 채움(fill) 답은 건너뛴다(모델 몫 — `applied`·`failed` 어디에도 넣지 않는다).
  * `questions`는 이 본문에서 뽑은 질문 목록(질문 + 그 외 전부)이다.
  */
