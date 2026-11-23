@@ -22,15 +22,22 @@ export interface IllustrationSlot {
   where?: string;
 }
 
+/** 본문에서 찾은 삽화 자리 — 그 주석이 시작하는 줄(1부터)과 함께. */
+export interface LocatedIllustrationSlot extends IllustrationSlot {
+  name: string;
+  line: number;
+}
+
 /**
- * 벨로그 본문의 삽화 자리 주석(`<!-- [삽화] illustN_<설명>.png — 여기: … -->`)을 읽는다. 번호는 본문에 나온 순서로 다시 매기고
- * (모델이 번호를 건너뛰어도 1·2·3), 이름은 주석의 것을 파일 이름으로 안전하게 다듬어 쓴다. 같은 이름은 한 번만. 최대 3장.
+ * 벨로그 본문의 삽화 자리 주석(`<!-- [삽화] illustN_<설명>.png — 여기: … -->`)을 줄 번호와 함께 읽는다. 번호는 본문에 나온 순서로
+ * 다시 매기고(모델이 번호를 건너뛰어도 1·2·3), 이름은 주석의 것을 파일 이름으로 안전하게 다듬어 쓴다. 같은 이름은 한 번만. 최대 3장.
  */
-export function parseIllustrationSlots(body: string): IllustrationSlot[] {
-  const slots: IllustrationSlot[] = [];
+export function locateIllustrationSlots(body: string): LocatedIllustrationSlot[] {
+  const text = body.replace(/\r\n/g, '\n');
+  const slots: LocatedIllustrationSlot[] = [];
   const seen = new Set<string>();
   const pattern = /<!--\s*\[삽화\]\s*([^\s>]+?)\.png\b([\s\S]*?)-->/g;
-  for (const match of body.matchAll(pattern)) {
+  for (const match of text.matchAll(pattern)) {
     const stem = toFileStem(match[1]!);
     if (!/^illust\d+/i.test(stem) || seen.has(stem)) continue;
     seen.add(stem);
@@ -39,10 +46,24 @@ export function parseIllustrationSlots(body: string): IllustrationSlot[] {
       .replace(/^여기\s*:\s*/, '')
       .replace(/\s+/g, ' ')
       .trim();
-    slots.push({ n: slots.length + 1, name: stem, ...(where === '' ? {} : { where }) });
+    slots.push({
+      n: slots.length + 1,
+      name: stem,
+      ...(where === '' ? {} : { where }),
+      line: text.slice(0, match.index).split('\n').length,
+    });
     if (slots.length === ILLUSTRATIONS_MAX) break;
   }
   return slots;
+}
+
+/** 삽화 자리 주석 목록(줄 번호 없이) — 삽화 단계가 그릴 목록으로 쓴다. 규칙은 `locateIllustrationSlots`와 같다. */
+export function parseIllustrationSlots(body: string): IllustrationSlot[] {
+  return locateIllustrationSlots(body).map(({ n, name, where }) => ({
+    n,
+    name,
+    ...(where === undefined ? {} : { where }),
+  }));
 }
 
 /** 본문 분량 — 코드 블록·HTML 주석을 빼고 공백을 뺀 글자 수(스케줄 3-1 "코드 제외, 공백 제외 글자 수"). */
