@@ -55,7 +55,7 @@ export function parseReviewResult(text: string): ReviewResult | undefined {
 
 /**
  * 뒤 단계(링크드인·Zenn) 고침 결과 — 단계마다 한 파일(`<단계>-patch.json`, DATA_DIR만).
- *  - `patched`: 본문에서 바뀐 곳을 반영해 고쳤다  - `unchanged`: 본문 내용이 안 바뀌어 이전 결과 그대로(모델 호출 없음)
+ *  - `patched`: 본문에서 바뀐 곳을 반영해 고쳤다  - `unchanged`: 고칠 것이 없어 이전 결과 그대로(본문 내용이 안 바뀌었거나 — 모델 호출 없음 — 바뀐 내용을 이 글이 다루지 않았다)
  *  - `kept`: 모델이 두 번 다 범위 밖을 바꾸거나 출력이 불량해 **이전 결과를 그대로 뒀다** — 본문의 수정이 이 글에 반영되지 않았다.
  */
 export type DerivedPatchStatus = 'patched' | 'unchanged' | 'kept';

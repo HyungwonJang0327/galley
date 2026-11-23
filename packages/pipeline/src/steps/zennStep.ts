@@ -19,6 +19,8 @@ import {
   unwrapFence,
 } from './writing.ts';
 import { applyZennSeries, seriesZennTitle, stripSeriesLines } from './series.ts';
+import { derivedPatchArtifact } from '../review/answerResult.ts';
+import { runDerivedPatch, type DerivedPatchSpec } from './derivedPatch.ts';
 
 export interface ZennStepDeps {
   /** 산출물 저장소(DATA_DIR) — 벨로그 본문을 여기서 읽고 zenn.md를 여기에 쓴다. */
@@ -135,6 +137,33 @@ export function renderZennArticle(title: string, body: string): string {
   ].join('\n');
 }
 
+/** 산출물 맨 앞의 frontmatter 블록(닫는 `---` 줄까지). 코드가 만든 것이라 고침은 이 머리를 **그대로** 다시 붙인다. */
+const FRONTMATTER_HEAD = /^---[ \t]*\n[\s\S]*?\n---[ \t]*\n/;
+
+/**
+ * 답 반영 실행에서 이전 Zenn 기사를 고칠 때의 단계별 차이(derivedPatch.ts). 제목·`published: false`가 든 frontmatter는
+ * 모델에 주지 않고 그대로 유지한다 — 고치는 것은 그 아래 글뿐이다(시리즈 문장도 이전 글에 이미 있다).
+ */
+const patchSpec = (limits: WritingLimits): DerivedPatchSpec => ({
+  step: 'zenn',
+  artifact: ZENN_ARTIFACT,
+  codePrefix: 'ZENN',
+  label: 'Zenn 기사',
+  maxOutputTokens: limits.zennMaxOutputTokens,
+  rules: [
+    '- 이 글은 일본어입니다. 본문에서 바뀐 내용도 주변 문장과 같은 일본어로 옮겨 씁니다(코드는 그대로, 주석·label만 일본어).',
+    '- 제목 줄(# …)과 YAML frontmatter(--- 블록)는 출력하지 않습니다(시스템이 붙입니다).',
+  ],
+  split: (text) => {
+    const normalized = text.replace(/\r\n/g, '\n');
+    const head = FRONTMATTER_HEAD.exec(normalized)?.[0] ?? '';
+    return { head, body: normalized.slice(head.length).trim() };
+  },
+  join: (head, body) => (head === '' ? `${body.trim()}\n` : `${head}\n${body.trim()}\n`),
+  clean: (output) =>
+    stripFrontmatter(unwrapFence(output.replace(/\r\n/g, '\n').trim()).trim()).trim(),
+});
+
 export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
   const limits = deps.limits ?? WRITING_LIMITS;
   return {
@@ -142,6 +171,10 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
       if (ctx.step !== 'zenn')
         throw new Error(`zenn 단계 러너에 ${ctx.step} 단계가 들어왔다 — 라우팅(BS5) 오류`);
       ctx.signal.throwIfAborted();
+
+      // 답 반영 실행 — 처음부터 다시 쓰지 않고 이전 기사에서 본문이 바뀐 대목만 고친다.
+      const { patch } = ctx;
+      if (patch !== undefined) return runDerivedPatch(deps, { ...ctx, patch }, patchSpec(limits));
 
       const adapter = deps.adapters.get(ctx.modelId);
       if (adapter === undefined)
@@ -249,6 +282,7 @@ export function createZennStepRunner(deps: ZennStepDeps): StepRunner {
     },
     async discard(ctx) {
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, ZENN_ARTIFACT);
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, derivedPatchArtifact('zenn'));
     },
   };
 }
