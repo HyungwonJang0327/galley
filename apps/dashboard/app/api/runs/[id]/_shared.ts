@@ -3,6 +3,7 @@
 import 'server-only';
 import { INSTRUCTION_MAX_LENGTH, isStepName, type StepName } from '@galley/pipeline';
 import type {
+  RunAnswerErrorCode,
   RunApproveErrorCode,
   RunRerunPlanErrorCode,
   RunReviseErrorCode,
@@ -11,6 +12,7 @@ import type {
   RunIllustrationErrorCode,
   RunThumbnailErrorCode,
 } from '../../../../lib/run-artifacts';
+import type { ReviewAnswerInput } from '../../../../lib/run-review';
 
 /** Next 16 동적 라우트 — `params`는 Promise다. */
 export type RouteContext = { params: Promise<{ id: string }> };
@@ -20,6 +22,7 @@ export type ErrorCode =
   | 'INVALID_BODY'
   | RunApproveErrorCode
   | RunReviseErrorCode
+  | RunAnswerErrorCode
   | RunRerunPlanErrorCode
   | RunThumbnailErrorCode
   | RunIllustrationErrorCode;
@@ -49,6 +52,14 @@ const STATUS_OF: Record<ErrorCode, number> = {
   RUN_APPROVE_FAILED: 500,
   RUN_REVISE_FAILED: 500,
   RUN_RERUN_PLAN_FAILED: 500,
+  // 확인 질문의 답 — 형식(빈 답·빈 채움·길이) 400, 질문 목록이 그새 바뀜·본문 없음 409, 설정·그 밖 500.
+  ANSWERS_EMPTY: 400,
+  ANSWERS_TOO_MANY: 400,
+  ANSWER_INVALID: 400,
+  ANSWER_TOO_LONG: 400,
+  REVIEW_QUESTION_UNKNOWN: 409,
+  REVIEW_QUESTIONS_MISSING: 409,
+  RUN_ANSWER_FAILED: 500,
   // 썸네일 GET(B2e) — 파일 없음은 404(이미지 요청이라 브라우저가 깨진 이미지로 보인다), 읽기 실패는 500.
   THUMBNAIL_MISSING: 404,
   THUMBNAIL_UNREADABLE: 500,
@@ -92,6 +103,29 @@ export function parseRerunBody(raw: unknown, allowModel: boolean): RerunBody | n
   if (startStep !== undefined) body.startStep = startStep;
   if (modelId !== undefined) body.modelId = modelId;
   return body;
+}
+
+export const ANSWER_BODY_HINT =
+  'answers(배열)가 필요합니다. 항목은 { id, kind: "fill" | "keep" | "delete", text? } — text는 fill일 때만.';
+
+/** 확인 질문의 답 본문. 형식만 본다(빈 답·빈 채움·길이·중복은 pipeline이 거절한다). */
+export function parseAnswerBody(raw: unknown): ReviewAnswerInput[] | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const { answers } = raw as Record<string, unknown>;
+  if (!Array.isArray(answers)) return null;
+  const out: ReviewAnswerInput[] = [];
+  for (const entry of answers as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) return null;
+    const { id, kind, text } = entry as Record<string, unknown>;
+    if (typeof id !== 'string') return null;
+    if (kind === 'fill') {
+      if (typeof text !== 'string') return null;
+      out.push({ id, kind, text });
+    } else if (kind === 'keep' || kind === 'delete') {
+      out.push({ id, kind });
+    } else return null;
+  }
+  return out;
 }
 
 export async function readJson(
