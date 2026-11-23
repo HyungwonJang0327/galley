@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { read, getRunWithSteps, collectReviewQuestions, json } = vi.hoisted(() => ({
+const { read, getRunWithSteps, collectReviewQuestions, checkBodyCode, json } = vi.hoisted(() => ({
+  checkBodyCode: vi.fn(),
   read: vi.fn(),
   getRunWithSteps: vi.fn(),
   collectReviewQuestions: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('@galley/pipeline', () => ({
   parseReviewAnswerSet: json,
   reviewQuestionsInputOf: (run: unknown) => ({ from: run }),
   collectReviewQuestions,
+  checkBodyCode,
   prisma: {},
   getRunWithSteps,
   resolveDataDir: (env: { DATA_DIR?: string }) =>
@@ -68,6 +70,7 @@ beforeEach(() => {
   vi.stubEnv('BLOG_DIR', '/blog');
   getRunWithSteps.mockResolvedValue(RUN);
   collectReviewQuestions.mockResolvedValue({ ok: false, code: 'REVIEW_BODY_MISSING' });
+  checkBodyCode.mockReturnValue([]);
 });
 
 afterEach(() => {
@@ -92,6 +95,7 @@ describe('getRunReview', () => {
       more: [{ id: 'u1', source: 'unsupported', text: '응답이 2배 빨라졌다.', line: 40 }],
       unapplied: [],
       kept: [],
+      bodyNotes: [],
       maxLength: 2000,
     });
     expect(collectReviewQuestions).not.toHaveBeenCalled();
@@ -150,6 +154,34 @@ describe('getRunReview', () => {
     expect(await getRunReview('nope')).toBeUndefined();
 
     vi.stubEnv('DATA_DIR', '');
+    expect(await getRunReview('run_2')).toBeUndefined();
+  });
+
+  it('본문의 코드 분량이 기준을 넘으면 문구로 알린다 — 본문이 이전 결과 유지면 출처 실행의 것을 잰다', async () => {
+    files({ 'velog.md': '본문' });
+    checkBodyCode.mockReturnValue([
+      { code: 'CODE_BLOCKS_OVER', value: 7, limit: 4 },
+      { code: 'CODE_BLOCK_TOO_LONG', value: 37, limit: 15, count: 5 },
+      { code: 'CODE_RATIO_OVER', value: 55, limit: 40 },
+    ]);
+
+    const view = await getRunReview('run_2');
+
+    expect(view?.bodyNotes).toEqual([
+      '코드 블록이 7개입니다(기준 4개 이하).',
+      '15줄을 넘는 코드 블록이 5개 있습니다(가장 긴 것 37줄).',
+      '코드가 본문 글자의 55%입니다(기준 40% 이하).',
+    ]);
+    expect(view?.questions).toEqual([]);
+    expect(checkBodyCode).toHaveBeenCalledWith('"본문"');
+    expect(read).toHaveBeenCalledWith('무한-스크롤', 'run_1', 'velog.md');
+  });
+
+  it('승인 대기가 아니면 코드 분량도 알리지 않는다', async () => {
+    getRunWithSteps.mockResolvedValue({ ...RUN, status: 'done' });
+    files({ 'velog.md': '본문' });
+    checkBodyCode.mockReturnValue([{ code: 'CODE_BLOCKS_OVER', value: 7, limit: 4 }]);
+
     expect(await getRunReview('run_2')).toBeUndefined();
   });
 
@@ -243,7 +275,7 @@ describe('getRunReview', () => {
 
       await getRunReview('run_2');
 
-      expect(read.mock.calls.map((call) => call[2])).toEqual(['questions.json']);
+      expect(read.mock.calls.map((call) => call[2]).sort()).toEqual(['questions.json', 'velog.md']);
     });
   });
 });

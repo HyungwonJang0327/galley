@@ -172,6 +172,18 @@ export function RunReviewPanel({ runId, review }: RunReviewPanelProps) {
           ))}
         </InlineAlert>
       ) : null}
+      {review.bodyNotes.length > 0 ? (
+        <InlineAlert tone="warning" title="본문에 코드가 많습니다">
+          {review.bodyNotes.map((line) => (
+            <p key={line} className={styles.noticeLine}>
+              {line}
+            </p>
+          ))}
+          <p className={styles.noticeLine}>
+            승인은 막지 않습니다. 줄이려면 수정 지시로 본문부터 다시 실행하세요.
+          </p>
+        </InlineAlert>
+      ) : null}
       {hasQuestions ? (
         <>
           <h3 className={styles.title}>확인 질문 {review.questions.length}건</h3>
