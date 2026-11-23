@@ -282,6 +282,7 @@ const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\
 /**
  * 기계 주장을 번들과 대조한다. 대조 대상은 조각 본문·note·경로·날짜·분석 글 요약이다.
  * - number: 콤마를 뗀 값이 토큰 경계로 나오면 supported, 아니면 **unsupported**(숫자는 일반화 대상이 아니다).
+ *   날짜(연-월-일)는 붙여 쓴 표기(`20260617…`)·`/`·`.` 구분도 같은 날로 본다.
  * - path·identifier: 나오면 supported, 아니면 **uncertain** — 어투가 회사 고유 이름을 일반 이름으로 바꾸게 하므로
  *   못 찾은 것이 곧 지어낸 것은 아니다(decisions 2026-09-23 BS2 ⑬).
  */
@@ -307,8 +308,16 @@ export function matchMechanicalClaims(
     if (claim.kind === 'number') {
       const m = /^(\d{4}-\d{2}(?:-\d{2})?|[\d,]+(?:\.\d+)?)/.exec(claim.text)!;
       const value = m[1]!.replace(/,/g, '');
-      // 값만 본다(단위는 안 본다). 앞뒤 숫자·소수점은 차단(`20` ≠ `120`·`2024`·`0.20`·`20.5`)
-      pattern = new RegExp(`(?<![\\d.])${escapeRegExp(value)}(?![\\d]|\\.\\d)`);
+      const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+      pattern =
+        day !== null
+          ? // 날짜(연-월-일)는 표기가 달라도 같은 날이다 — 구분자 없이 붙여 쓴 것(`20260617`, 마이그레이션 폴더 이름처럼
+            // 뒤에 시각 4·6자리가 붙은 것 포함)과 `/`·`.` 구분도 맞춘다. 그 밖의 숫자가 이어지면 다른 수다.
+            new RegExp(
+              `(?<![\\d.])${day[1]}[-/.]?${day[2]}[-/.]?${day[3]}(?:\\d{4}|\\d{6})?(?![\\d]|\\.\\d)`,
+            )
+          : // 값만 본다(단위는 안 본다). 앞뒤 숫자·소수점은 차단(`20` ≠ `120`·`2024`·`0.20`·`20.5`)
+            new RegExp(`(?<![\\d.])${escapeRegExp(value)}(?![\\d]|\\.\\d)`);
     } else if (claim.kind === 'path') {
       const tail = claim.text.replace(/^\.?\//, '');
       pattern = new RegExp(`(?<![\\w])${escapeRegExp(tail)}(?![\\w])`); // 뒤쪽 경로 일치(앞에 디렉터리가 더 있어도)
