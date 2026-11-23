@@ -1,5 +1,5 @@
 'use client';
-// 실행 상세의 확인 질문(decisions/review-questions.md): 질문 최대 3건 + 접힌 "그 외 N건"에 채움·모름·삭제로 답하면
+// 실행 상세의 확인 질문(decisions/review-questions.md): 질문 최대 3건(+ 삽화 질문) + 접힌 "그 외 N건"에 채움·모름·삭제(삽화는 다시 만들기)로 답하면
 // 답한 곳만 고치는 새 실행이 생긴다. 답 반영 실행이면 그 결과(미반영 질문·이전 글을 그대로 둔 뒤 단계)를 위에 알린다 —
 // 미반영된 답은 서버가 같은 질문에 다시 채워 넘긴다(previousAnswer). 질문 목록·문구는 서버(lib/run-review)가 만들고,
 // 이 컴포넌트는 pipeline을 import하지 않는다(decisions/server-only-boundary.md). 명령은 Route Handler로 보낸다.
@@ -30,9 +30,16 @@ const CHOICES: { value: ReviewChoice; label: string }[] = [
   { value: 'delete', label: '삭제' },
 ];
 
+/** 삽화 질문의 답은 "다시 만들기"뿐이다 — 그대로 두려면 답하지 않는다. */
+const ILLUSTRATION_CHOICES: { value: ReviewChoice; label: string }[] = [
+  { value: 'none', label: '답 안 함(그대로 둠)' },
+  { value: 'redo', label: '다시 만들기' },
+];
+
 const SOURCE_LABEL: Record<ReviewQuestionView['source'], string> = {
   comment: '확인 필요',
   unsupported: '근거 없음',
+  illustration: '삽화',
 };
 
 export function RunReviewPanel({ runId, review }: RunReviewPanelProps) {
@@ -119,7 +126,7 @@ export function RunReviewPanel({ runId, review }: RunReviewPanelProps) {
           orientation="horizontal"
           value={choice}
           onValueChange={(value) => setChoice(question.id, value as ReviewChoice)}
-          items={CHOICES}
+          items={question.source === 'illustration' ? ILLUSTRATION_CHOICES : CHOICES}
           disabled={busy}
         />
         {choice === 'fill' ? (

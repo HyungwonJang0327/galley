@@ -73,6 +73,7 @@ describe('describeChoice', () => {
     expect(describeChoice('unsupported', 'delete')).toContain('본문에서 뺍니다');
     expect(describeChoice('unsupported', 'keep')).toContain('다시 묻지 않습니다');
     expect(describeChoice('comment', 'none')).toBeNull();
+    expect(describeChoice('illustration', 'redo')).toContain('썸네일은 그대로');
   });
 });
 
@@ -100,5 +101,31 @@ describe('describeAnswerPlan', () => {
     const plan = describeAnswerPlan(QUESTIONS, [{ id: 'c1', kind: 'fill', text: 'x' }]);
     expect(plan).toMatchObject({ counts: '채움 1', costs: true });
     expect(plan.effect).toContain('본문은 답한 문단만');
+  });
+
+  it('글 내용이 바뀌면 삽화는 그대로, 발행정보는 삽화 자리 앞뒤가 바뀐 경우에만 다시 만든다고 알린다', () => {
+    const plan = describeAnswerPlan(QUESTIONS, [{ id: 'u1', kind: 'delete' }]);
+    expect(plan.effect).toContain('삽화는 그대로');
+    expect(plan.effect).toContain('삽화 자리 앞뒤 문단이 바뀐 경우에만');
+  });
+
+  it('삽화 다시 만들기만이면 글은 그대로 두고 삽화·발행정보 글을 다시 만든다 — 비용이 든다', () => {
+    const questions = [...QUESTIONS, q('i1', 'illustration')];
+    expect(describeAnswerPlan(questions, [{ id: 'i1', kind: 'redo' }])).toEqual({
+      counts: '삽화 다시 만들기 1',
+      costs: true,
+      effect:
+        '글(본문·링크드인·Zenn)은 그대로 둡니다. 삽화를 다시 그리고 발행정보 글을 다시 만듭니다(썸네일은 그대로).',
+    });
+  });
+
+  it('모름과 삽화 다시 만들기를 같이 보내면 둘 다 센다', () => {
+    const questions = [...QUESTIONS, q('i1', 'illustration')];
+    const plan = describeAnswerPlan(questions, [
+      { id: 'c1', kind: 'keep' },
+      { id: 'i1', kind: 'redo' },
+    ]);
+    expect(plan.counts).toBe('모름 1 · 삽화 다시 만들기 1');
+    expect(plan.costs).toBe(true);
   });
 });

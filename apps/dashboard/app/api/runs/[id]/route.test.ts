@@ -216,6 +216,21 @@ describe('POST /api/runs/[id]/answer', () => {
     });
   });
 
+  it('삽화 다시 만들기(redo) 답도 받는다', async () => {
+    answerRunById.mockResolvedValue({ ok: true, data: { run: RUN } });
+
+    const response = await answer(
+      request('answer', { answers: [{ id: 'i1', kind: 'redo' }] }),
+      context(),
+    );
+
+    expect(response.status).toBe(201);
+    expect(answerRunById).toHaveBeenCalledWith({
+      runId: 'run_1',
+      answers: [{ id: 'i1', kind: 'redo' }],
+    });
+  });
+
   it.each([
     ['JSON 아님', 'not json'],
     ['answers 없음', {}],

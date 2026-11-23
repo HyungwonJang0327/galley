@@ -27,18 +27,24 @@ import {
 } from '@galley/pipeline';
 import { resolveDashboardDataDir } from './data-dir';
 
-/** 화면이 보내고 받는 답 한 건 — 질문 id와 종류(채움이면 글). 질문 본문·앵커는 서버가 질문 목록에서 다시 찾는다. */
+/**
+ * 화면이 보내고 받는 답 한 건 — 질문 id와 종류(채움이면 글). 질문 본문·앵커는 서버가 질문 목록에서 다시 찾는다.
+ * `redo`는 삽화 질문에만 쓴다(삽화 다시 만들기).
+ */
 export interface ReviewAnswerInput {
   id: string;
-  kind: 'fill' | 'keep' | 'delete';
+  kind: 'fill' | 'keep' | 'delete' | 'redo';
   text?: string;
 }
 
 export interface ReviewQuestionView {
   id: string;
-  /** `comment` = 본문의 [확인 필요] 주석, `unsupported` = 근거 검증이 근거를 찾지 못한 문장. */
-  source: 'comment' | 'unsupported';
-  /** 주석: 질문 한 문장. 근거 없음: 그 문장 원문. */
+  /**
+   * `comment` = 본문의 [확인 필요] 주석, `unsupported` = 근거 검증이 근거를 찾지 못한 문장,
+   * `illustration` = 자리 앞뒤 문단이 답 반영으로 바뀐 삽화(다시 만들지 묻는다).
+   */
+  source: 'comment' | 'unsupported' | 'illustration';
+  /** 주석: 질문 한 문장. 근거 없음: 그 문장 원문. 삽화: "삽화를 다시 만들까요?" + 삽화 이름. */
   text: string;
   reason?: string;
   /** 본문(velog.md) 줄 번호. */
@@ -86,6 +92,9 @@ const KEPT_REASON: Record<string, string> = {
   PATCH_OUTPUT_INVALID: '모델 출력이 두 번 다 비었거나 잘렸습니다',
 };
 
+const ILLUSTRATION_REASON =
+  '이 삽화 자리의 바로 앞뒤 문단이 답 반영으로 바뀌었습니다. 그림이 고친 글과 맞는지 확인해 주세요.';
+
 const DERIVED_STEPS: readonly { step: DerivedPatchStep; label: string }[] = [
   { step: 'linkedin', label: '링크드인' },
   { step: 'zenn', label: 'Zenn' },
@@ -97,6 +106,7 @@ const questionKey = (question: Pick<ReviewQuestion, 'source' | 'question'>) =>
 
 function describeAnswer(answer: ReviewAnswer): string {
   if (answer.kind === 'fill') return `채움: ${answer.text}`;
+  if (answer.kind === 'redo') return '다시 만들기';
   return answer.kind === 'keep' ? '모름(그대로 둠)' : '삭제';
 }
 
@@ -195,6 +205,15 @@ export async function getRunReview(runId: string): Promise<RunReviewView | undef
       const key = questionKey(question);
       const previous = reusable.get(key);
       if (previous !== undefined) reused.add(key);
+      // 삽화 질문은 파일에 삽화 이름만 있다 — 묻는 말과 이유는 여기서 붙인다.
+      if (question.source === 'illustration')
+        return {
+          id: question.id,
+          source: question.source,
+          text: `삽화를 다시 만들까요? (${question.question})`,
+          reason: ILLUSTRATION_REASON,
+          line: question.anchor.line,
+        };
       return {
         id: question.id,
         source: question.source,

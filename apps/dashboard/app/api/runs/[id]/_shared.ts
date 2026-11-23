@@ -106,7 +106,7 @@ export function parseRerunBody(raw: unknown, allowModel: boolean): RerunBody | n
 }
 
 export const ANSWER_BODY_HINT =
-  'answers(배열)가 필요합니다. 항목은 { id, kind: "fill" | "keep" | "delete", text? } — text는 fill일 때만.';
+  'answers(배열)가 필요합니다. 항목은 { id, kind: "fill" | "keep" | "delete" | "redo", text? } — text는 fill일 때만.';
 
 /** 확인 질문의 답 본문. 형식만 본다(빈 답·빈 채움·길이·중복은 pipeline이 거절한다). */
 export function parseAnswerBody(raw: unknown): ReviewAnswerInput[] | null {
@@ -121,7 +121,7 @@ export function parseAnswerBody(raw: unknown): ReviewAnswerInput[] | null {
     if (kind === 'fill') {
       if (typeof text !== 'string') return null;
       out.push({ id, kind, text });
-    } else if (kind === 'keep' || kind === 'delete') {
+    } else if (kind === 'keep' || kind === 'delete' || kind === 'redo') {
       out.push({ id, kind });
     } else return null;
   }

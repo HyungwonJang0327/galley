@@ -198,4 +198,30 @@ describe('RunReviewPanel', () => {
     expect(screen.getByText('링크드인 글에 본문 수정이 반영되지 않았습니다.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '답 반영' })).toBeNull();
   });
+
+  it('삽화 질문은 "다시 만들기"만 고를 수 있고, 고르면 그 답을 보낸다', async () => {
+    answerRun.mockResolvedValue({ ok: true, data: { run: { id: 'r2' } } });
+    const text = '삽화를 다시 만들까요? (illust1_feed)';
+    renderPanel(
+      review({
+        questions: [q('c1', 'comment', '몇 건이었나요?'), q('i1', 'illustration', text)],
+        more: [],
+      }),
+    );
+
+    const group = screen.getByRole('radiogroup', { name: `답: ${text}` });
+    expect(within(group).getAllByRole('radio')).toHaveLength(2);
+    expect(within(group).queryByRole('radio', { name: '채움' })).toBeNull();
+    expect(screen.getByText('삽화')).toBeTruthy();
+
+    choose(text, '다시 만들기');
+    expect(screen.getByText(/삽화를 전부 새로 그립니다/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '답 반영' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('삽화 다시 만들기 1');
+    expect(dialog.textContent).toContain('비용이 드는 작업');
+    await clickDialogButton('답 반영');
+
+    await waitFor(() => expect(answerRun).toHaveBeenCalledWith('r1', [{ id: 'i1', kind: 'redo' }]));
+  });
 });
