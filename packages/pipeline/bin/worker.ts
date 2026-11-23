@@ -27,6 +27,7 @@ import {
   type ThumbnailConfig,
 } from '../src/publish/thumbnail.ts';
 import { resolveTonePromptsDir } from '../src/prompts/tonePrompts.ts';
+import { createReviewQuestionWriter } from '../src/review/questionFile.ts';
 import { createStepRunner } from '../src/steps/createStepRunner.ts';
 import { createMockStepRunner } from '../src/steps/MockStepRunner.ts';
 import { createSeriesSource } from '../src/steps/seriesSource.ts';
@@ -284,6 +285,10 @@ async function main(): Promise<void> {
     return;
   }
   deps.stepRunner = stepRunner;
+  // 확인 질문 파일 — 승인 대기로 넘기기 직전에 쓴다. 산출물 폴더(DATA_DIR)가 있을 때만(없이 도는 Mock은 쓸 본문이 없다).
+  const reviewDataDir = resolveDataDir(process.env);
+  if (reviewDataDir.ok)
+    deps.review = createReviewQuestionWriter(new LocalFsArtifactStore(reviewDataDir.dir));
   deps.indexer = createIndexer(registry, redact.config);
   // 주제 ↔ 분석 글 자동 연결 — Run·IndexJob이 없을 때 runOnce가 부른다(모델 없음, DB만).
   const linkDeps = { prisma, clock: deps.clock, logger: deps.logger };

@@ -302,6 +302,45 @@ describe('runOnce — 정상 진행', () => {
 });
 
 describe('runOnce — 승인 대기', () => {
+  it('7단계를 마치면 승인 대기로 넘기기 전에 확인 질문 준비를 한 번 부른다', async () => {
+    const { repo, state, run } = fakeRepo();
+    const order: string[] = [];
+    const awaitApproval = repo.awaitApproval.bind(repo);
+    repo.awaitApproval = async (...args) => {
+      order.push('awaitApproval');
+      await awaitApproval(...args);
+    };
+    const prepare = vi.fn(async () => {
+      order.push('prepare');
+    });
+    const d = deps({ repo, review: { prepare } });
+
+    for (let i = 0; i < 20 && !state.awaited; i += 1) await runOnce(d);
+
+    expect(order).toEqual(['prepare', 'awaitApproval']);
+    expect(prepare).toHaveBeenCalledWith(expect.objectContaining({ id: run.id }));
+  });
+
+  it('확인 질문 준비가 실패해도 승인 대기로 넘긴다(기록만)', async () => {
+    const { repo, state } = fakeRepo();
+    const d = deps({
+      repo,
+      review: {
+        prepare: async () => {
+          throw new Error('디스크 가득');
+        },
+      },
+    });
+
+    for (let i = 0; i < 20 && !state.awaited; i += 1) await runOnce(d);
+
+    expect(state.awaited).toBe(true);
+    expect(d.logger.error).toHaveBeenCalledWith(
+      '확인 질문 파일을 쓰지 못했다',
+      expect.objectContaining({ error: '디스크 가득' }),
+    );
+  });
+
   it('여러 번 불러도 아무것도 잡지 않는다(사람 차례다)', async () => {
     const { repo, state } = fakeRepo({ pendingApproval: true });
     const d = deps({ repo });
