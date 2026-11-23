@@ -27,3 +27,74 @@ export interface ReviewResult {
 export function renderReviewResult(result: ReviewResult): string {
   return `${JSON.stringify(result, null, 2)}\n`;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** 결과 파일 읽기 — 형식이 아니면 undefined(없는 것으로 다룬다). 사유 코드는 문자열이기만 하면 받는다(표시가 모르는 코드를 견딘다). */
+export function parseReviewResult(text: string): ReviewResult | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(raw) || raw.version !== 1 || typeof raw.baseRunId !== 'string') return undefined;
+  const { applied, unapplied } = raw;
+  if (!Array.isArray(applied) || !applied.every((id): id is string => typeof id === 'string'))
+    return undefined;
+  if (!Array.isArray(unapplied)) return undefined;
+  const failed: ReviewResult['unapplied'] = [];
+  for (const entry of unapplied) {
+    if (!isRecord(entry) || typeof entry.id !== 'string' || typeof entry.code !== 'string')
+      return undefined;
+    failed.push({ id: entry.id, code: entry.code as ReviewUnappliedCode });
+  }
+  return { version: 1, baseRunId: raw.baseRunId, applied, unapplied: failed };
+}
+
+/**
+ * 뒤 단계(링크드인·Zenn) 고침 결과 — 단계마다 한 파일(`<단계>-patch.json`, DATA_DIR만).
+ *  - `patched`: 본문에서 바뀐 곳을 반영해 고쳤다  - `unchanged`: 본문 내용이 안 바뀌어 이전 결과 그대로(모델 호출 없음)
+ *  - `kept`: 모델이 두 번 다 범위 밖을 바꾸거나 출력이 불량해 **이전 결과를 그대로 뒀다** — 본문의 수정이 이 글에 반영되지 않았다.
+ */
+export type DerivedPatchStatus = 'patched' | 'unchanged' | 'kept';
+export type DerivedPatchStep = 'linkedin' | 'zenn';
+
+export interface DerivedPatchResult {
+  version: 1;
+  /** 고친 대상(이전 결과)을 만든 Run. */
+  baseRunId: string;
+  status: DerivedPatchStatus;
+  /** `kept`일 때만 — 마지막 시도가 반려된 이유. */
+  code?: 'PATCH_OUT_OF_SCOPE' | 'PATCH_OUTPUT_INVALID';
+}
+
+export const derivedPatchArtifact = (step: DerivedPatchStep): string => `${step}-patch.json`;
+
+export function renderDerivedPatchResult(result: DerivedPatchResult): string {
+  return `${JSON.stringify(result, null, 2)}\n`;
+}
+
+const DERIVED_STATUSES: readonly string[] = ['patched', 'unchanged', 'kept'];
+const DERIVED_CODES: readonly string[] = ['PATCH_OUT_OF_SCOPE', 'PATCH_OUTPUT_INVALID'];
+
+export function parseDerivedPatchResult(text: string): DerivedPatchResult | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(raw) || raw.version !== 1 || typeof raw.baseRunId !== 'string') return undefined;
+  const { status, code } = raw;
+  if (typeof status !== 'string' || !DERIVED_STATUSES.includes(status)) return undefined;
+  return {
+    version: 1,
+    baseRunId: raw.baseRunId,
+    status: status as DerivedPatchStatus,
+    ...(typeof code === 'string' && DERIVED_CODES.includes(code)
+      ? { code: code as NonNullable<DerivedPatchResult['code']> }
+      : {}),
+  };
+}
