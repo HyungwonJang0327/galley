@@ -24,7 +24,7 @@ export type ReviewAnswerSetFailure =
   | 'ANSWERS_EMPTY'
   /** 답이 상한(`REVIEW_ANSWERS_MAX`)보다 많음 */
   | 'ANSWERS_TOO_MANY'
-  /** 답의 id가 질문과 다르거나 같은 질문에 답이 둘, 채움인데 글이 비었음 */
+  /** 답의 id가 질문과 다르거나 같은 질문에 답이 둘, 채움인데 글이 비었음, 질문 종류에 맞지 않는 답(삽화 ↔ 다시 만들기) */
   | 'ANSWER_INVALID'
   /** 채움 글이 상한(`REVIEW_ANSWER_MAX_LENGTH`)을 넘음 */
   | 'ANSWER_TOO_LONG';
@@ -43,6 +43,9 @@ export function buildReviewAnswerSet(items: readonly ReviewAnswerItem[]): Review
     if (answer.id !== question.id || seen.has(question.id))
       return { ok: false, code: 'ANSWER_INVALID' };
     seen.add(question.id);
+    // 삽화 질문의 답은 "다시 만들기"뿐이고, 그 답은 삽화 질문에만 쓴다.
+    if ((question.source === 'illustration') !== (answer.kind === 'redo'))
+      return { ok: false, code: 'ANSWER_INVALID' };
     if (answer.kind !== 'fill') {
       out.push({ question, answer });
       continue;
@@ -66,6 +69,11 @@ export function answersChangeContent(items: readonly ReviewAnswerItem[]): boolea
   );
 }
 
+/** 답에 "삽화 다시 만들기"가 있는가 — 있으면 답 반영 실행이 삽화 단계를 다시 돌린다. */
+export function answersRedoIllustration(items: readonly ReviewAnswerItem[]): boolean {
+  return items.some(({ answer }) => answer.kind === 'redo');
+}
+
 export function renderReviewAnswerSet(set: ReviewAnswerSet): string {
   return JSON.stringify(set);
 }
@@ -77,7 +85,8 @@ export function parseReviewQuestion(value: unknown): ReviewQuestion | undefined 
   if (!isRecord(value) || !isRecord(value.anchor)) return undefined;
   const { id, source, question, reason, anchor } = value;
   if (typeof id !== 'string' || typeof question !== 'string') return undefined;
-  if (source !== 'comment' && source !== 'unsupported') return undefined;
+  if (source !== 'comment' && source !== 'unsupported' && source !== 'illustration')
+    return undefined;
   const { paragraph, line } = anchor;
   if (!Number.isInteger(paragraph) || !Number.isInteger(line)) return undefined;
   return {
@@ -91,7 +100,8 @@ export function parseReviewQuestion(value: unknown): ReviewQuestion | undefined 
 
 function parseAnswer(value: unknown): ReviewAnswer | undefined {
   if (!isRecord(value) || typeof value.id !== 'string') return undefined;
-  if (value.kind === 'keep' || value.kind === 'delete') return { id: value.id, kind: value.kind };
+  if (value.kind === 'keep' || value.kind === 'delete' || value.kind === 'redo')
+    return { id: value.id, kind: value.kind };
   if (value.kind === 'fill' && typeof value.text === 'string')
     return { id: value.id, kind: 'fill', text: value.text };
   return undefined;

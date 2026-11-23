@@ -156,7 +156,7 @@ describe('startRerun', () => {
     }
   });
 
-  test('답 반영 계획: 고치는 단계는 pending+patched+고칠 대상, 뒤 단계(삽화·발행정보)도 carried, 지시 없이 질문·답을 적는다', async () => {
+  test('답 반영 계획: 고치는 단계는 pending+patched+고칠 대상, 뒤 단계(삽화)도 carried, 지시 없이 질문·답을 적는다', async () => {
     const previous = await finishedRun();
 
     const result = await startRerun(deps(), {
@@ -181,7 +181,7 @@ describe('startRerun', () => {
       ['linkedin', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
       ['zenn', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
       ['illustration', STEP_STATUS.succeeded, STEP_ORIGIN.carried, previous.id],
-      ['publishInfo', STEP_STATUS.succeeded, STEP_ORIGIN.carried, previous.id],
+      ['publishInfo', STEP_STATUS.pending, STEP_ORIGIN.patched, previous.id],
     ]);
   });
 

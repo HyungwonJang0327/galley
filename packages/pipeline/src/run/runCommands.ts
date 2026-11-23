@@ -6,6 +6,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import type { ModelRegistry } from '../model/ModelRegistry.ts';
 import {
   answersChangeContent,
+  answersRedoIllustration,
   buildReviewAnswerSet,
   renderReviewAnswerSet,
   type ReviewAnswerItem,
@@ -250,6 +251,7 @@ export async function answerRun(
       const decision = applyCommand(current.status, {
         type: 'answer',
         contentChanges: answersChangeContent(built.set.items),
+        redoIllustration: answersRedoIllustration(built.set.items),
       });
       if (!decision.ok) return decision;
       if (!decision.rerun) throw new Error('answer 결과에 재실행 계획이 없다');

@@ -113,6 +113,49 @@ describe('collectReviewQuestions', () => {
   });
 });
 
+describe('삽화 질문', () => {
+  const patch = (illustrations: unknown[]) =>
+    JSON.stringify({ version: 1, baseRunId: 'run_0', status: 'patched', illustrations });
+  const collect = (publishRunId: string) =>
+    collectReviewQuestions(artifacts, {
+      slug: SLUG,
+      bodyRunId: 'run_1',
+      verifyRunId: 'run_1',
+      publishRunId,
+    });
+
+  test('발행정보 고침 결과에 물을 삽화가 있으면 질문 하나 — 상위 3건 뒤에 따로 붙는다', async () => {
+    await artifacts.write(
+      SLUG,
+      'run_pub',
+      'publishInfo-patch.json',
+      patch([
+        { name: 'illust2_table', paragraph: 3, line: 8 },
+        { name: 'illust1_feed', paragraph: 1, line: 3 },
+      ]),
+    );
+
+    const got = await collect('run_pub');
+
+    expect(got.ok && got.value.questions.map((q) => q.id)).toEqual(['c1', 'u1', 'u2', 'i1']);
+    expect(got.ok && got.value.questions[3]).toEqual({
+      id: 'i1',
+      source: 'illustration',
+      question: 'illust2_table, illust1_feed',
+      anchor: { paragraph: 1, line: 3 },
+    });
+  });
+
+  test('물을 삽화가 없거나 결과 파일이 없거나 깨졌으면 묻지 않는다', async () => {
+    await artifacts.write(SLUG, 'run_empty', 'publishInfo-patch.json', patch([]));
+    await artifacts.write(SLUG, 'run_bad', 'publishInfo-patch.json', '{');
+    for (const publishRunId of ['run_empty', 'run_bad', 'run_none']) {
+      const got = await collect(publishRunId);
+      expect(got.ok && got.value.questions.map((q) => q.id)).toEqual(['c1', 'u1', 'u2']);
+    }
+  });
+});
+
 describe('reviewQuestionsInputOf', () => {
   const step = (name: string, origin: string, sourceRunId?: string) => ({
     name,
@@ -127,14 +170,18 @@ describe('reviewQuestionsInputOf', () => {
         topicSlug: SLUG,
         steps: [step('velog', 'patched', 'run_2'), step('verify', 'carried', 'run_1')],
       }),
-    ).toEqual({ slug: SLUG, bodyRunId: 'run_3', verifyRunId: 'run_1' });
+    ).toEqual({ slug: SLUG, bodyRunId: 'run_3', verifyRunId: 'run_1', publishRunId: 'run_3' });
     expect(
       reviewQuestionsInputOf({
         id: 'run_3',
         topicSlug: SLUG,
-        steps: [step('velog', 'carried', 'run_2'), step('verify', 'fresh')],
+        steps: [
+          step('velog', 'carried', 'run_2'),
+          step('verify', 'fresh'),
+          step('publishInfo', 'carried', 'run_1'),
+        ],
       }),
-    ).toEqual({ slug: SLUG, bodyRunId: 'run_2', verifyRunId: 'run_3' });
+    ).toEqual({ slug: SLUG, bodyRunId: 'run_2', verifyRunId: 'run_3', publishRunId: 'run_1' });
   });
 
   test('이 실행을 만든 답 가운데 근거 없음 + 모름만 확정한 문장으로 넘긴다', () => {

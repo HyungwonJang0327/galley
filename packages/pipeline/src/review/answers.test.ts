@@ -234,3 +234,27 @@ describe('stripReviewComments', () => {
     expect(stripReviewComments('가\n\n나\n')).toBe('가\n\n나\n');
   });
 });
+
+describe('삽화 질문(illustration)·다시 만들기(redo)', () => {
+  const illust = {
+    id: 'i1',
+    source: 'illustration' as const,
+    question: 'illust1_feed',
+    anchor: { paragraph: 0, line: 1 },
+  };
+
+  test('다시 만들기 답은 본문을 건드리지 않고 반영·실패 어디에도 넣지 않는다', () => {
+    const body = '첫 문단.\n\n<!-- [삽화] illust1_feed.png -->\n';
+    expect(applyCodeAnswers(body, [illust], [{ id: 'i1', kind: 'redo' }])).toEqual({
+      body,
+      applied: [],
+      failed: [],
+      changed: false,
+      contentChanged: false,
+    });
+  });
+
+  test('삽화 질문은 본문의 고칠 자리가 없다', () => {
+    expect(locateQuestion('illust1_feed 라는 글자가 있어도\n', illust)).toBeUndefined();
+  });
+});

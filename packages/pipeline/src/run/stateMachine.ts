@@ -65,7 +65,7 @@ export function isStepStatus(value: string): value is StepStatus {
  * - `fresh`: 이번 실행에서 다시 돈 단계. 첫 실행은 전부 fresh.
  * - `carried`: 이번 재실행 범위에 없던 단계. 이전 실행 결과를 그대로 쓴다. 수정 지시 재실행에서는 시작 단계보다 앞이고,
  *   답 반영 실행에서는 **뒤 단계도** carried일 수 있다(삽화·발행정보 — `planAnswerRerun`).
- * - `patched`: 이전 결과를 입력으로 받아 바뀐 곳만 고치는 단계(답 반영 실행의 본문·링크드인·Zenn).
+ * - `patched`: 이전 결과를 입력으로 받아 바뀐 곳만 고치는 단계(답 반영 실행의 본문·링크드인·Zenn·발행정보).
  *
  * **생명주기(`status`)와 직교한다** — 재실행 중 시작 단계가 실패하면 앞은 `carried`+`succeeded`,
  * 시작 단계는 `fresh`+`failed`, 뒤는 `pending`이다. 단일 enum으로는 표현할 수 없다.
@@ -178,17 +178,30 @@ export interface AnswerRerunInput {
    * 모름(과 주석만 지우는 삭제)만이면 false.
    */
   contentChanges: boolean;
+  /** 답에 "삽화 다시 만들기"가 있는가(`answersRedoIllustration`). 생략하면 false. */
+  redoIllustration?: boolean;
 }
 
 /**
  * 답 반영 실행의 범위(decisions/review-questions.md 착수 결정). 수정 지시 재실행과 달리 **뒤 단계도 유지**될 수 있다.
- * - 근거 수집·삽화·발행정보: 항상 이전 결과 유지(삽화 앞뒤 문단 예외는 다음 확인 질문으로 올린다).
+ * - 근거 수집: 항상 이전 결과 유지.
  * - 본문: 항상 고침 — 모름만이어도 주석을 지운 새 본문이 이 Run의 산출물이 된다(모델 호출 없음).
  * - 글 내용이 바뀌면: 근거 검증은 다시, 링크드인·Zenn은 고침. 안 바뀌면 셋 다 유지(모델 호출 0회).
+ * - 삽화: 유지가 기본. "삽화 다시 만들기" 답이 있을 때만 다시 만든다.
+ * - 발행정보: 글 내용이 바뀌거나 삽화를 다시 만들면 고침 — 단계가 돌 때 삽화 자리 앞뒤가 바뀌었는지 보고, 안 바뀌었으면 이전
+ *   것을 그대로 옮기고(모델 호출 없음) 바뀌었으면 글만 다시 만든다(썸네일 PNG는 유지). 그 밖에는 유지.
  */
 export function planAnswerRerun(input: AnswerRerunInput): RerunPlan {
-  const patched: StepName[] = input.contentChanges ? ['velog', 'linkedin', 'zenn'] : ['velog'];
-  const fresh: StepName[] = input.contentChanges ? ['verify'] : [];
+  const redo = input.redoIllustration === true;
+  const patched: StepName[] = [
+    'velog',
+    ...(input.contentChanges ? (['linkedin', 'zenn'] as const) : []),
+    ...(input.contentChanges || redo ? (['publishInfo'] as const) : []),
+  ];
+  const fresh: StepName[] = [
+    ...(input.contentChanges ? (['verify'] as const) : []),
+    ...(redo ? (['illustration'] as const) : []),
+  ];
   return {
     startStep: 'velog',
     fresh,

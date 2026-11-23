@@ -381,6 +381,7 @@ describe('재실행', () => {
       { step: 'verify', patch: undefined },
       { step: 'linkedin', patch },
       { step: 'zenn', patch },
+      { step: 'publishInfo', patch },
     ]);
     const after = await prisma.run.findUniqueOrThrow({
       where: { id: answered.run.id },
@@ -394,7 +395,7 @@ describe('재실행', () => {
       STEP_ORIGIN.patched,
       STEP_ORIGIN.patched,
       STEP_ORIGIN.carried,
-      STEP_ORIGIN.carried,
+      STEP_ORIGIN.patched,
     ]);
     expect(after.steps.every((s) => s.status === STEP_STATUS.succeeded)).toBe(true);
   });

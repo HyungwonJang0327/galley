@@ -335,7 +335,7 @@ describe('answerRun', () => {
       (await prisma.runStep.findMany({ where: { runId } })).map((s) => [s.name, s.origin]),
     );
 
-  test('채움이 있으면: 이 Run은 revised, 새 Run은 본문·링크드인·Zenn 고침 + 검증 다시 + 나머지 유지, 질문·답을 남긴다', async () => {
+  test('채움이 있으면: 이 Run은 revised, 새 Run은 본문·링크드인·Zenn·발행정보 고침 + 검증 다시 + 나머지 유지, 질문·답을 남긴다', async () => {
     const run = await finishedRun();
     const items: ReviewAnswerItem[] = [
       { question: comment, answer: { id: 'c1', kind: 'fill', text: ' 검토했고 넣지 않았다 ' } },
@@ -348,7 +348,11 @@ describe('answerRun', () => {
       ok: true,
       previous: { id: run.id, status: RUN_STATUS.revised, finishedAt: NOW },
       run: { topicId, attempt: 2, status: RUN_STATUS.running, finishedAt: null },
-      plan: { startStep: 'velog', fresh: ['verify'], patched: ['velog', 'linkedin', 'zenn'] },
+      plan: {
+        startStep: 'velog',
+        fresh: ['verify'],
+        patched: ['velog', 'linkedin', 'zenn', 'publishInfo'],
+      },
     });
     if (!result.ok) return;
 
@@ -368,7 +372,7 @@ describe('answerRun', () => {
       linkedin: STEP_ORIGIN.patched,
       zenn: STEP_ORIGIN.patched,
       illustration: STEP_ORIGIN.carried,
-      publishInfo: STEP_ORIGIN.carried,
+      publishInfo: STEP_ORIGIN.patched,
     });
   });
 
@@ -387,6 +391,36 @@ describe('answerRun', () => {
     const origins = await originsOf(result.run.id);
     expect(origins.velog).toBe(STEP_ORIGIN.patched);
     expect(Object.values(origins).filter((o) => o === STEP_ORIGIN.carried)).toHaveLength(6);
+  });
+
+  test('삽화 다시 만들기만 답하면 삽화는 다시, 발행정보는 고침, 글 단계는 유지다', async () => {
+    const run = await finishedRun();
+
+    const result = await answerRun(deps(), {
+      runId: run.id,
+      items: [
+        {
+          question: {
+            id: 'i1',
+            source: 'illustration',
+            question: 'illust1_feed',
+            anchor: { paragraph: 5, line: 12 },
+          },
+          answer: { id: 'i1', kind: 'redo' },
+        },
+      ],
+    });
+    if (!result.ok) throw new Error(result.code);
+
+    expect(await originsOf(result.run.id)).toEqual({
+      evidence: STEP_ORIGIN.carried,
+      velog: STEP_ORIGIN.patched,
+      verify: STEP_ORIGIN.carried,
+      linkedin: STEP_ORIGIN.carried,
+      zenn: STEP_ORIGIN.carried,
+      illustration: STEP_ORIGIN.fresh,
+      publishInfo: STEP_ORIGIN.patched,
+    });
   });
 
   test('근거 없음 문장을 빼는 삭제는 글 내용이 바뀌므로 검증을 다시 돈다', async () => {
