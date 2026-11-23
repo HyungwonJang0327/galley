@@ -18,6 +18,8 @@ import {
   unwrapFence,
 } from './writing.ts';
 import { stripSeriesLines } from './series.ts';
+import { derivedPatchArtifact } from '../review/answerResult.ts';
+import { runDerivedPatch, type DerivedPatchSpec } from './derivedPatch.ts';
 
 export interface LinkedinStepDeps {
   /** 산출물 저장소(DATA_DIR) — 벨로그 본문을 여기서 읽고 linkedin.md를 여기에 쓴다. */
@@ -72,6 +74,19 @@ export function buildLinkedinPrompt(input: LinkedinInput): { system: string; pro
   return { system: SYSTEM_PREFIX + input.tone.text, prompt: lines.join('\n') };
 }
 
+/** 답 반영 실행에서 이전 링크드인 글을 고칠 때의 단계별 차이(derivedPatch.ts) — 머리가 없고 글 전체가 고칠 대상이다. */
+const patchSpec = (limits: WritingLimits): DerivedPatchSpec => ({
+  step: 'linkedin',
+  artifact: LINKEDIN_ARTIFACT,
+  codePrefix: 'LINKEDIN',
+  label: '링크드인 글',
+  maxOutputTokens: limits.linkedinMaxOutputTokens,
+  rules: [],
+  split: (text) => ({ head: '', body: text.trim() }),
+  join: (_head, body) => `${body.trim()}\n`,
+  clean: (output) => unwrapFence(output.trim()).trim(),
+});
+
 export function createLinkedinStepRunner(deps: LinkedinStepDeps): StepRunner {
   const limits = deps.limits ?? WRITING_LIMITS;
   return {
@@ -79,6 +94,10 @@ export function createLinkedinStepRunner(deps: LinkedinStepDeps): StepRunner {
       if (ctx.step !== 'linkedin')
         throw new Error(`linkedin 단계 러너에 ${ctx.step} 단계가 들어왔다 — 라우팅(BS5) 오류`);
       ctx.signal.throwIfAborted();
+
+      // 답 반영 실행 — 처음부터 다시 쓰지 않고 이전 글에서 본문이 바뀐 대목만 고친다.
+      const { patch } = ctx;
+      if (patch !== undefined) return runDerivedPatch(deps, { ...ctx, patch }, patchSpec(limits));
 
       const adapter = deps.adapters.get(ctx.modelId);
       if (adapter === undefined)
@@ -173,6 +192,7 @@ export function createLinkedinStepRunner(deps: LinkedinStepDeps): StepRunner {
     },
     async discard(ctx) {
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, LINKEDIN_ARTIFACT);
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, derivedPatchArtifact('linkedin'));
     },
   };
 }

@@ -67,7 +67,7 @@ export function routeStepRunner(runners: Record<StepName, StepRunner>): StepRunn
 }
 
 /** 이전 결과를 고치는 길(`ctx.patch`)을 구현한 단계 — 구현될 때마다 여기에 더한다(decisions/review-questions.md 단위 ④⑤). */
-const PATCH_STEPS: ReadonlySet<StepName> = new Set<StepName>(['velog']);
+const PATCH_STEPS: ReadonlySet<StepName> = new Set<StepName>(['velog', 'linkedin', 'zenn']);
 
 /**
  * 조립 루트용 — deps 하나로 7단계 러너를 만들어 라우팅한다. 라우팅 전에 **식별 정보 필터를 제목 경로에 한 번** 건다
