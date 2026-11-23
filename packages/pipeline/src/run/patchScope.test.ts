@@ -1,5 +1,11 @@
 import { describe, test, expect } from 'vitest';
-import { checkPatchScope, diffParagraphs } from './patchScope.ts';
+import {
+  checkPatchPlaces,
+  checkPatchScope,
+  coverChangedParagraphs,
+  diffParagraphs,
+  paragraphHunks,
+} from './patchScope.ts';
 
 /** 문단 여섯 개(0~5)짜리 글. */
 const P = ['# 제목', '하나', '둘', '셋', '```ts\nconst a = 1;\n\nconst b = 2;\n```', '다섯'];
@@ -116,5 +122,56 @@ describe('checkPatchScope', () => {
     expect(checkPatchScope(BEFORE, next, [2]).ok).toBe(false);
     expect(checkPatchScope(BEFORE, next, [2], 2).ok).toBe(true);
     expect(checkPatchScope(BEFORE, replace(3, '셋 고침'), [2], 0).ok).toBe(false);
+  });
+});
+
+describe('paragraphHunks', () => {
+  test('같은 글은 바뀐 곳이 없다', () => {
+    expect(paragraphHunks(BEFORE, `${BEFORE}\n\n`)).toEqual([]);
+  });
+
+  test('바뀐 곳마다 없어진 문단과 그 자리에 생긴 문단을 원문으로 돌려준다', () => {
+    const next = doc(['# 제목', '하나', '둘 고침', '둘 덧붙임', '셋', P[4]!, '다섯', '꼬리']);
+    expect(paragraphHunks(BEFORE, next)).toEqual([
+      { at: 2, removed: ['둘'], added: ['둘 고침', '둘 덧붙임'] },
+      { at: 6, removed: [], added: ['꼬리'] },
+    ]);
+  });
+
+  test('없어지기만 한 문단·끼워 넣기만 한 문단', () => {
+    expect(paragraphHunks(BEFORE, doc([...P.slice(0, 3), ...P.slice(4)]))).toEqual([
+      { at: 3, removed: ['셋'], added: [] },
+    ]);
+    expect(paragraphHunks(BEFORE, doc(['머리', ...P]))).toEqual([
+      { at: 0, removed: [], added: ['머리'] },
+    ]);
+  });
+});
+
+describe('checkPatchPlaces — 앵커를 모르는 글의 범위 검사', () => {
+  test('바뀐 문단을 앵커 ±1 창으로 묶는다', () => {
+    expect(coverChangedParagraphs(BEFORE, BEFORE)).toEqual([]);
+    expect(coverChangedParagraphs(BEFORE, replace(2, '둘 고침'))).toEqual([3]);
+    // 1·2·3은 한 창, 5는 다른 창.
+    const wide = doc(['# 제목', '하나 고침', '둘 고침', '셋 고침', P[4]!, '다섯 고침']);
+    expect(coverChangedParagraphs(BEFORE, wide)).toEqual([2, 6]);
+  });
+
+  test('바뀐 곳이 허용 수 이하면 통과, 넘으면 범위 밖', () => {
+    const one = replace(2, '둘 고침');
+    const two = doc(['# 제목 고침', '하나', '둘', '셋', P[4]!, '다섯 고침']);
+    expect(checkPatchPlaces(BEFORE, BEFORE, 0)).toEqual({ ok: true, places: 0 });
+    expect(checkPatchPlaces(BEFORE, one, 1)).toEqual({ ok: true, places: 1 });
+    expect(checkPatchPlaces(BEFORE, two, 1)).toEqual({
+      ok: false,
+      code: 'PATCH_OUT_OF_SCOPE',
+      places: 2,
+    });
+    expect(checkPatchPlaces(BEFORE, two, 2).ok).toBe(true);
+  });
+
+  test('통째로 다시 쓴 글은 한 곳으로 통과하지 못한다', () => {
+    const rewritten = doc(P.map((text) => `${text} 다시`));
+    expect(checkPatchPlaces(BEFORE, rewritten, 1)).toMatchObject({ ok: false, places: 2 });
   });
 });
