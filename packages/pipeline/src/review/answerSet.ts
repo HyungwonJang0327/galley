@@ -73,7 +73,7 @@ export function renderReviewAnswerSet(set: ReviewAnswerSet): string {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-function parseQuestion(value: unknown): ReviewQuestion | undefined {
+export function parseReviewQuestion(value: unknown): ReviewQuestion | undefined {
   if (!isRecord(value) || !isRecord(value.anchor)) return undefined;
   const { id, source, question, reason, anchor } = value;
   if (typeof id !== 'string' || typeof question !== 'string') return undefined;
@@ -109,7 +109,7 @@ export function parseReviewAnswerSet(text: string): ReviewAnswerSet | undefined 
   const items: ReviewAnswerItem[] = [];
   for (const entry of raw.items) {
     if (!isRecord(entry)) return undefined;
-    const question = parseQuestion(entry.question);
+    const question = parseReviewQuestion(entry.question);
     const answer = parseAnswer(entry.answer);
     if (question === undefined || answer === undefined) return undefined;
     items.push({ question, answer });

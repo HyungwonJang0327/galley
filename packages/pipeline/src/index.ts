@@ -534,6 +534,16 @@ export {
   type ReviewQuestions,
 } from './review/questions.ts';
 export {
+  collectReviewQuestions,
+  createReviewQuestionWriter,
+  parseReviewQuestions,
+  renderReviewQuestions,
+  reviewQuestionsInputOf,
+  type CollectReviewQuestionsInput,
+  type CollectReviewQuestionsResult,
+  type ReviewQuestionRun,
+} from './review/questionFile.ts';
+export {
   REVIEW_RESULT_ARTIFACT,
   derivedPatchArtifact,
   parseDerivedPatchResult,

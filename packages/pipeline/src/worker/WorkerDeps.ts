@@ -114,6 +114,11 @@ export interface WorkerDeps {
    */
   series?: { forTopic(topicId: string): Promise<SeriesStepInfo | undefined> };
   /**
+   * 확인 질문 준비 — 7단계를 마치고 **승인 대기로 넘기기 직전에** 한 번 부른다(질문 파일 `questions.json` 쓰기,
+   * decisions/review-questions.md). 실패해도 승인 대기로 넘긴다 — 기록만 한다(파일은 읽는 쪽이 다시 만들 수 있다).
+   */
+  review?: { prepare(run: ClaimedRun): Promise<unknown> };
+  /**
    * 리포 인덱싱(IndexJob) 틱. **Run이 없을 때만** 불린다 — Run 우선(decisions/run-location.md). 없으면 워커는 Run만 돈다.
    * 인덱싱 중 Run이 오면 현재 배치를 끝내고(틱 하나) 다음 틱이 Run을 잡는다.
    */

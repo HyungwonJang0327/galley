@@ -108,6 +108,15 @@ export async function runOnce(deps: WorkerDeps, signal?: AbortSignal): Promise<T
   const action = nextAction(run.steps);
 
   if (action.kind === 'awaitApproval') {
+    // 사람에게 물을 곳을 먼저 적어 둔다 — 화면이 승인 대기를 보는 순간 질문이 있어야 한다. 실패는 승인 대기를 막지 않는다.
+    try {
+      await deps.review?.prepare(run);
+    } catch (error) {
+      deps.logger.error('확인 질문 파일을 쓰지 못했다', {
+        runId: run.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     await deps.repo.awaitApproval(run.id, now);
     deps.logger.info('7단계를 마쳐 승인 대기로', { runId: run.id });
     return { outcome: 'completed' };
