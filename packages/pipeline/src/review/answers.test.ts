@@ -1,5 +1,10 @@
 import { describe, test, expect } from 'vitest';
-import { applyCodeAnswers, locateQuestion, type ReviewAnswer } from './answers.ts';
+import {
+  applyCodeAnswers,
+  locateQuestion,
+  stripReviewComments,
+  type ReviewAnswer,
+} from './answers.ts';
 import { selectReviewQuestions } from './questions.ts';
 
 const BODY = [
@@ -202,5 +207,30 @@ describe('locateQuestion — 지금 본문에서 질문의 자리', () => {
   test('본문에 없으면 undefined', () => {
     const [first] = all();
     expect(locateQuestion('# 다른 글\n\n내용.\n', first!)).toBeUndefined();
+  });
+});
+
+describe('stripReviewComments', () => {
+  test('[확인 필요] 주석만 걷어낸다 — 줄째 주석은 줄을, 줄 안 주석은 그 자리만. 다른 주석은 그대로', () => {
+    const body = [
+      '첫 문단이다. <!-- [확인 필요] 수치가 맞나요? — 근거에 없음 -->',
+      '',
+      '둘째 문단이다.',
+      '<!-- [확인 필요] 언제였나요? — 커밋에 날짜 없음 -->',
+      '',
+      '<!-- [확인 필요] 홀로 선 주석 — 사유 -->',
+      '',
+      '<!-- [삽화] illust1_a.png — 여기 -->',
+      '',
+    ].join('\n');
+    expect(stripReviewComments(body)).toBe(
+      ['첫 문단이다.', '', '둘째 문단이다.', '', '<!-- [삽화] illust1_a.png — 여기 -->', ''].join(
+        '\n',
+      ),
+    );
+  });
+
+  test('주석이 없으면 그대로', () => {
+    expect(stripReviewComments('가\n\n나\n')).toBe('가\n\n나\n');
   });
 });
