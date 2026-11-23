@@ -24,6 +24,7 @@ const review = (extra: Partial<RunReviewView> = {}): RunReviewView => ({
   more: [q('u2', 'unsupported', '접힌 문장')],
   unapplied: [],
   kept: [],
+  bodyNotes: [],
   maxLength: 2000,
   ...extra,
 });
@@ -223,5 +224,16 @@ describe('RunReviewPanel', () => {
     await clickDialogButton('답 반영');
 
     await waitFor(() => expect(answerRun).toHaveBeenCalledWith('r1', [{ id: 'i1', kind: 'redo' }]));
+  });
+
+  it('본문의 코드 분량이 기준을 넘으면 알리고, 승인을 막지 않는다고 적는다', () => {
+    renderPanel(
+      review({ bodyNotes: ['코드 블록이 7개입니다(기준 4개 이하).'], questions: [], more: [] }),
+    );
+
+    expect(screen.getByText('본문에 코드가 많습니다')).toBeTruthy();
+    expect(screen.getByText('코드 블록이 7개입니다(기준 4개 이하).')).toBeTruthy();
+    expect(screen.getByText(/승인은 막지 않습니다/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '답 반영' })).toBeNull();
   });
 });
