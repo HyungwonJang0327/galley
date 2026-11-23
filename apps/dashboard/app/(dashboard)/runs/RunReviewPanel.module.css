@@ -1,0 +1,118 @@
+/* 확인 질문 패널 — 타임라인 위. 토큰만 참조. 질문 종류 색은 근거 검증 펼침과 같은 계열(warning/danger fg). */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  margin-bottom: var(--ui-space-4);
+  font-size: var(--ui-text-sm);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ui-text-body);
+  font-weight: var(--ui-weight-medium);
+}
+
+.list,
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notices li {
+  display: flex;
+  flex-direction: column;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-2);
+  margin: 0;
+}
+
+.source {
+  font-weight: var(--ui-weight-medium);
+}
+
+.source[data-source='comment'] {
+  color: var(--ui-color-warning-fg);
+}
+
+.source[data-source='unsupported'] {
+  color: var(--ui-color-danger-fg);
+}
+
+.text,
+.noticeText,
+.noticeLine {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+  overflow-wrap: anywhere;
+}
+
+/* "그 외 N건" 접기 — 글자 버튼. */
+.more {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-color-text-muted);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space-3);
+}
+
+.message,
+.busy {
+  margin: 0;
+}
+
+.message {
+  color: var(--ui-color-danger-fg);
+}
+
+.busy {
+  color: var(--ui-color-text-muted);
+}
+
+.plan {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--ui-space-2) var(--ui-space-4);
+  margin: 0;
+}
+
+.plan dt {
+  color: var(--ui-color-text-muted);
+}
+
+.plan dd {
+  margin: 0;
+}

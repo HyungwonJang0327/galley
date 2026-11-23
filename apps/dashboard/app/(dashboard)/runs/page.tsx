@@ -25,12 +25,14 @@ import {
 import Link from 'next/link';
 import { getRunDetail } from '../../../lib/run-detail';
 import { getRunArtifacts, getRunVerificationFlags } from '../../../lib/run-artifacts';
+import { getRunReview } from '../../../lib/run-review';
 import { getRunSeries } from '../../../lib/run-series';
 import { getRunModelChoices } from '../../../lib/run-model-options';
 import styles from './page.module.css';
 import { RunTimeline } from './RunTimeline';
 import { RunPoller } from './RunPoller';
 import { RunActionBar } from './RunActionBar';
+import { RunReviewPanel } from './RunReviewPanel';
 import { RunStepDots } from './RunStepDots';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -68,9 +70,14 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   const headerBadge = selected ? runStatusBadge(selected.status) : undefined;
   // 시리즈 편이면 헤더 아래 한 줄(○○ 시리즈 N/M편 · 이전·다음 편). 못 읽으면 줄만 빠진다.
   // 산출물 미리보기는 성공한 단계의 DATA_DIR 파일 — 폴링(2s)마다 다시 읽지만 로컬 파일 몇 개라 가볍다.
-  const [series, artifacts] = selected
-    ? await Promise.all([getRunSeries(selected.topicId), getRunArtifacts(selected)])
-    : [undefined, undefined];
+  // 확인 질문(승인 대기)·답 반영 결과(미반영 안내)는 DATA_DIR 파일에서 — 보일 것이 없으면 패널이 빠진다.
+  const [series, artifacts, review] = selected
+    ? await Promise.all([
+        getRunSeries(selected.topicId),
+        getRunArtifacts(selected),
+        getRunReview(selected.id),
+      ])
+    : [undefined, undefined, undefined];
   return (
     <>
       <PageHeader title="실행" />
@@ -165,6 +172,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
               {/* 다른 실행을 고르면 폴러를 새로 만든다 — 같은 인스턴스가 "running → 아님" 전환으로
                   오인해 refresh를 한 번 더 부르지 않도록. */}
               <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
+              {/* 실행이 바뀌면 입력을 버린다(다른 실행의 질문에 같은 id가 있다). */}
+              {review ? (
+                <RunReviewPanel key={selected.id} runId={selected.id} review={review} />
+              ) : null}
               <RunTimeline
                 steps={selected.steps}
                 artifacts={artifacts}
