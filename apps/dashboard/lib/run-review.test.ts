@@ -119,6 +119,25 @@ describe('getRunReview', () => {
     });
   });
 
+  it('삽화 질문은 묻는 말과 이유를 붙여 보인다 — 파일에는 삽화 이름만 있다', async () => {
+    files({
+      'questions.json': {
+        questions: [question('i1', 'illustration', 'illust1_feed, illust2_table', 40)],
+        more: [],
+      },
+    });
+
+    expect((await getRunReview('run_2'))?.questions).toEqual([
+      {
+        id: 'i1',
+        source: 'illustration',
+        text: '삽화를 다시 만들까요? (illust1_feed, illust2_table)',
+        reason: expect.stringContaining('앞뒤 문단이 답 반영으로 바뀌었습니다'),
+        line: 40,
+      },
+    ]);
+  });
+
   it('보일 것이 없으면 undefined — 질문 0건, 본문 없음, DATA_DIR 없음, 없는 실행', async () => {
     files({ 'questions.json': { questions: [], more: [] } });
     expect(await getRunReview('run_2')).toBeUndefined();
@@ -253,6 +272,22 @@ describe('resolveReviewAnswers', () => {
           answer: { id: 'c1', kind: 'fill', text: '3만 건' },
         },
         { question: question('u1', 'unsupported', '문장'), answer: { id: 'u1', kind: 'delete' } },
+      ],
+    });
+  });
+
+  it('삽화 다시 만들기 답도 서버의 질문을 붙여 넘긴다', async () => {
+    files({
+      'questions.json': { questions: [question('i1', 'illustration', 'illust1_feed')], more: [] },
+    });
+
+    expect(await resolveReviewAnswers('run_2', [{ id: 'i1', kind: 'redo' }])).toEqual({
+      ok: true,
+      items: [
+        {
+          question: question('i1', 'illustration', 'illust1_feed'),
+          answer: { id: 'i1', kind: 'redo' },
+        },
       ],
     });
   });

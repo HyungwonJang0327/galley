@@ -26,6 +26,8 @@ export function describeChoice(
   choice: ReviewChoice,
 ): string | null {
   if (choice === 'none') return null;
+  if (choice === 'redo')
+    return '삽화 단계를 다시 돌려 삽화를 전부 새로 그립니다. 발행정보 글도 다시 만들고 썸네일은 그대로 둡니다.';
   if (choice === 'fill') return '모델이 이 답으로 그 문단만 고칩니다.';
   if (source === 'comment') {
     return choice === 'keep'
@@ -66,7 +68,7 @@ export function collectReviewAnswers(
 }
 
 export interface AnswerPlanText {
-  /** "채움 1 · 모름 2 · 삭제 1" */
+  /** "채움 1 · 모름 2 · 삭제 1 · 삽화 다시 만들기 1" */
   counts: string;
   /** 이 답으로 무엇이 다시 도는지. */
   effect: string;
@@ -77,6 +79,7 @@ export interface AnswerPlanText {
 /**
  * 확인 Dialog 문구. 글 내용이 바뀌는 답(채움, 근거 없음 문장의 삭제)이 있으면 근거 검증이 다시 돌고 링크드인·Zenn이
  * 그 대목만 고쳐진다 — pipeline `answersChangeContent`와 같은 규칙(값은 서버가 정하고 여기는 안내만).
+ * 삽화 다시 만들기가 있으면 삽화 단계가 다시 돌고 발행정보 글을 다시 만든다(`answersRedoIllustration`).
  */
 export function describeAnswerPlan(
   questions: readonly ReviewQuestionView[],
@@ -88,6 +91,7 @@ export function describeAnswerPlan(
       ['채움', count('fill')],
       ['모름', count('keep')],
       ['삭제', count('delete')],
+      ['삽화 다시 만들기', count('redo')],
     ] as const
   )
     .filter(([, n]) => n > 0)
@@ -97,11 +101,18 @@ export function describeAnswerPlan(
   const fills = count('fill') > 0;
   const changes =
     fills || answers.some((a) => a.kind === 'delete' && sourceOf(a.id) === 'unsupported');
-  return {
-    counts,
-    costs: changes,
-    effect: changes
-      ? `${fills ? '본문은 답한 문단만 고치고, ' : ''}근거 검증을 다시 돌린 뒤 링크드인·Zenn도 바뀐 대목만 고칩니다. 삽화·발행정보는 그대로 둡니다.`
-      : '모델을 부르지 않고 본문의 주석만 정리합니다. 뒤 단계는 그대로 둡니다.',
-  };
+  const redo = count('redo') > 0;
+  // 글 쪽(본문·검증·링크드인·Zenn)이 하는 일.
+  const writing = changes
+    ? `${fills ? '본문은 답한 문단만 고치고, ' : ''}근거 검증을 다시 돌린 뒤 링크드인·Zenn도 바뀐 대목만 고칩니다.`
+    : redo
+      ? '글(본문·링크드인·Zenn)은 그대로 둡니다.'
+      : '모델을 부르지 않고 본문의 주석만 정리합니다. 뒤 단계는 그대로 둡니다.';
+  // 삽화·발행정보가 하는 일 — 썸네일은 어느 경우에도 다시 찍지 않는다.
+  const pictures = redo
+    ? ' 삽화를 다시 그리고 발행정보 글을 다시 만듭니다(썸네일은 그대로).'
+    : changes
+      ? ' 삽화는 그대로 두고, 발행정보는 삽화 자리 앞뒤 문단이 바뀐 경우에만 글을 다시 만듭니다(썸네일은 그대로).'
+      : '';
+  return { counts, costs: changes || redo, effect: `${writing}${pictures}` };
 }
