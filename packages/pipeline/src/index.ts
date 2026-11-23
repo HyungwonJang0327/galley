@@ -535,12 +535,19 @@ export {
 } from './review/questions.ts';
 export {
   REVIEW_RESULT_ARTIFACT,
+  derivedPatchArtifact,
+  parseDerivedPatchResult,
+  parseReviewResult,
+  type DerivedPatchResult,
+  type DerivedPatchStatus,
+  type DerivedPatchStep,
   type ReviewResult,
   type ReviewUnappliedCode,
 } from './review/answerResult.ts';
 export {
   applyCodeAnswers,
   locateQuestion,
+  stripReviewComments,
   type CodeAnswerFailure,
   type CodeAnswersResult,
   type ReviewAnswer,
