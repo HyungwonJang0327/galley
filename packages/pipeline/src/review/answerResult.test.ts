@@ -2,8 +2,11 @@ import { describe, test, expect } from 'vitest';
 import {
   derivedPatchArtifact,
   parseDerivedPatchResult,
+  parsePublishPatchResult,
   parseReviewResult,
   renderDerivedPatchResult,
+  renderPublishPatchResult,
+  type PublishPatchResult,
   renderReviewResult,
   type DerivedPatchResult,
   type ReviewResult,
@@ -60,5 +63,30 @@ describe('뒤 단계 고침 결과 파일', () => {
     expect(
       parseDerivedPatchResult('{"version":1,"baseRunId":"r","status":"kept","code":"X"}'),
     ).toEqual({ version: 1, baseRunId: 'r', status: 'kept' });
+  });
+});
+
+describe('발행정보 고침 결과 파일', () => {
+  test('쓴 것을 그대로 읽는다', () => {
+    const result: PublishPatchResult = {
+      version: 1,
+      baseRunId: 'run_1',
+      status: 'patched',
+      illustrations: [{ name: 'illust1_feed', paragraph: 2, line: 5 }],
+    };
+    expect(parsePublishPatchResult(renderPublishPatchResult(result))).toEqual(result);
+  });
+
+  test('형식이 아니면 undefined', () => {
+    const base = { version: 1, baseRunId: 'run_1', status: 'unchanged', illustrations: [] };
+    expect(parsePublishPatchResult(JSON.stringify(base))).toBeDefined();
+    for (const broken of [
+      '{ nope',
+      JSON.stringify({ ...base, version: 2 }),
+      JSON.stringify({ ...base, status: 'kept' }),
+      JSON.stringify({ ...base, illustrations: [{ name: '', paragraph: 0, line: 1 }] }),
+      JSON.stringify({ ...base, illustrations: [{ name: 'a', paragraph: 0.5, line: 1 }] }),
+    ])
+      expect(parsePublishPatchResult(broken)).toBeUndefined();
   });
 });
