@@ -228,7 +228,7 @@ export type AnswerRunResult =
 /**
  * 확인 질문에 답 — 이 Run을 `revised`로 끝내고 **답한 곳만 고치는 새 Run**을 queued로 만든다(decisions/review-questions.md).
  * 수정 지시(`reviseRun`)와 같은 뼈대(한 트랜잭션, 새 Run 생성 → 이 Run 종결)이고 다른 점은 둘이다: 계획이 단계별 방식
- * (`planAnswerRerun` — 본문은 고침, 삽화·발행정보는 뒤 단계여도 유지)이고, 지시 대신 질문·답을 `Run.reviewAnswers`에 남긴다.
+ * (`planAnswerRerun` — 본문은 고침, 삽화는 뒤 단계여도 유지, 발행정보는 글 내용이 바뀔 때만 고침)이고, 지시 대신 질문·답을 `Run.reviewAnswers`에 남긴다.
  * 승인 대기에서만 받는다.
  */
 export async function answerRun(
