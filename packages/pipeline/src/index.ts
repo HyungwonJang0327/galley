@@ -581,6 +581,14 @@ export {
   type ReviewAnswerSetResult,
 } from './review/answerSet.ts';
 export {
+  BODY_CODE_LIMITS,
+  checkBodyCode,
+  measureBodyCode,
+  type BodyCodeFinding,
+  type BodyCodeLimits,
+  type BodyCodeMeasure,
+} from './review/bodyCode.ts';
+export {
   PATCH_SCOPE_RADIUS,
   checkPatchPlaces,
   checkPatchScope,
