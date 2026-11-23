@@ -7,6 +7,11 @@ import { LocalFsArtifactStore } from '../artifacts/ArtifactStore.ts';
 import type { EvidenceBundle } from '../evidence/bundle.ts';
 import { LocalFsEvidenceStore } from '../evidence/EvidenceStore.ts';
 import { createScriptedAdapter } from '../model/testing/scriptedAdapter.ts';
+import {
+  PUBLISH_PATCH_ARTIFACT,
+  REVIEW_RESULT_ARTIFACT,
+  parsePublishPatchResult,
+} from '../review/answerResult.ts';
 import { ILLUSTRATIONS_MANIFEST } from './illustration.ts';
 import { WRITING_LIMITS } from './limits.ts';
 import {
@@ -553,5 +558,187 @@ describe('createPublishInfoStepRunner', () => {
       ok: false,
       code: 'ARTIFACT_MISSING',
     });
+  });
+});
+
+describe('답 반영 실행(ctx.patch) — 발행정보는 유지가 기본, 삽화 자리 앞뒤가 바뀌면 글만 다시', () => {
+  const SLUG = 'infinite-scroll';
+  const ILLUST = '<!-- [삽화] illust1_feed.png — 여기: 배경 다음 -->';
+  const BEFORE = `# 무한 스크롤\n\n배경 문단.\n\n${ILLUST}\n\n본론 문단.\n\n둘째 문단.\n\n맺음 문단.\n`;
+  const OLD_PUBLISH = '# 발행 정보 — 이전 것\n';
+  const OLD_PNG = new Uint8Array([9, 9, 9]);
+  const TEXT_OUTPUT = JSON.stringify({ intro: '새 소개.', tags: ['React'] });
+
+  /** run_1 = 고치기 전(본문·삽화·발행정보), run_2 = 답 반영 실행(본문 고침까지 끝남). */
+  async function arrange(after: string, extra: { pending?: string[] } = {}) {
+    await artifacts.write(SLUG, 'run_1', VELOG_ARTIFACT, BEFORE);
+    await artifacts.write(
+      SLUG,
+      'run_1',
+      ILLUSTRATIONS_MANIFEST,
+      JSON.stringify({ version: 1, items: [{ n: 1, name: 'illust1_feed', where: '옛 자리' }] }),
+    );
+    await artifacts.write(SLUG, 'run_1', PUBLISH_ARTIFACT, OLD_PUBLISH);
+    await artifacts.writeBytes(SLUG, 'run_1', THUMBNAIL_ARTIFACT, OLD_PNG);
+    if (extra.pending === undefined) await artifacts.remove(SLUG, 'run_1', PUBLISH_PATCH_ARTIFACT);
+    else
+      await artifacts.write(
+        SLUG,
+        'run_1',
+        PUBLISH_PATCH_ARTIFACT,
+        JSON.stringify({
+          version: 1,
+          baseRunId: 'run_0',
+          status: 'patched',
+          illustrations: extra.pending.map((name) => ({ name, paragraph: 0, line: 1 })),
+        }),
+      );
+    await artifacts.write(SLUG, 'run_2', VELOG_ARTIFACT, after);
+    await artifacts.write(
+      SLUG,
+      'run_2',
+      REVIEW_RESULT_ARTIFACT,
+      JSON.stringify({ version: 1, baseRunId: 'run_1', applied: ['u1'], unapplied: [] }),
+    );
+    for (const name of [PUBLISH_ARTIFACT, THUMBNAIL_ARTIFACT, PUBLISH_PATCH_ARTIFACT])
+      await artifacts.remove(SLUG, 'run_2', name);
+  }
+
+  const patchCtx = (overrides: Partial<StepContext> = {}) =>
+    ctx({
+      runId: 'run_2',
+      sources: { evidence: 'run_1', zenn: 'run_1', illustration: 'run_1' },
+      patch: { baseRunId: 'run_1', answers: [] },
+      ...overrides,
+    });
+
+  const record = async () => {
+    const read = await artifacts.read(SLUG, 'run_2', PUBLISH_PATCH_ARTIFACT);
+    return read.ok ? parsePublishPatchResult(read.text) : undefined;
+  };
+  const thumbnail = async () => {
+    const read = await artifacts.readBytes(SLUG, 'run_2', THUMBNAIL_ARTIFACT);
+    return read.ok ? [...read.bytes] : undefined;
+  };
+
+  test('삽화 자리와 먼 곳만 바뀌면 이전 발행정보·썸네일을 그대로 옮긴다 — 모델·Chrome 0회', async () => {
+    await arrange(BEFORE.replace('맺음 문단.', '고친 맺음.'));
+    const adapter = createScriptedAdapter(() => TEXT_OUTPUT);
+    const thumbnails = fakeThumbnails();
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails });
+
+    const result = await runner.run(patchCtx());
+
+    expect(adapter.calls).toHaveLength(0);
+    expect(thumbnails.calls).toHaveLength(0);
+    expect(result.artifacts[PUBLISH_ARTIFACT]).toBe(OLD_PUBLISH);
+    expect(result.tokens).toBeUndefined();
+    expect(await thumbnail()).toEqual([...OLD_PNG]);
+    expect(await record()).toEqual({
+      version: 1,
+      baseRunId: 'run_1',
+      status: 'unchanged',
+      illustrations: [],
+    });
+  });
+
+  test('삽화 자리 바로 뒤 문단이 바뀌면 글만 다시 만든다 — 소개·태그만 묻고, 썸네일은 이전 PNG, 그 삽화를 물을 목록에', async () => {
+    const after = BEFORE.replace('본론 문단.', '고친 본론.').replace(
+      '여기: 배경 다음',
+      '여기: 고친 본론 앞',
+    );
+    await arrange(after);
+    const adapter = createScriptedAdapter(() => TEXT_OUTPUT);
+    const thumbnails = fakeThumbnails({ ok: false, code: 'THUMBNAIL_CHROME_NOT_FOUND' });
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter }, thumbnails });
+
+    const result = await runner.run(patchCtx());
+
+    expect(adapter.calls).toHaveLength(1);
+    expect(adapter.calls[0]!.system).not.toContain(THUMBNAIL_ART_MARKER);
+    expect(adapter.calls[0]!.system).not.toContain('thumbnailTitle');
+    // Chrome이 없어도 된다 — 썸네일을 찍지 않는다.
+    expect(thumbnails.calls).toHaveLength(0);
+    expect(await thumbnail()).toEqual([...OLD_PNG]);
+    const text = result.artifacts[PUBLISH_ARTIFACT]!;
+    expect(text).toContain('새 소개.');
+    // 삽화의 본문 자리는 지금 본문의 주석에서 다시 읽는다(삽화 단계 목록은 이전 것).
+    expect(text).toContain('고친 본론 앞');
+    expect(text).not.toContain('옛 자리');
+    expect(result.tokens).toBeDefined();
+    expect(await record()).toEqual({
+      version: 1,
+      baseRunId: 'run_1',
+      status: 'patched',
+      illustrations: [{ name: 'illust1_feed', paragraph: 2, line: 5 }],
+    });
+  });
+
+  test('이전 실행이 물었는데 아직 다시 만들지 않은 삽화는 계속 묻는다(이번엔 먼 곳만 바뀌어도)', async () => {
+    await arrange(BEFORE.replace('맺음 문단.', '고친 맺음.'), {
+      pending: ['illust1_feed', 'illust9_gone'],
+    });
+    const adapter = createScriptedAdapter(() => TEXT_OUTPUT);
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter } });
+
+    await runner.run(patchCtx());
+
+    expect(adapter.calls).toHaveLength(0);
+    expect((await record())?.illustrations).toEqual([
+      { name: 'illust1_feed', paragraph: 2, line: 5 },
+    ]);
+  });
+
+  test('이 실행이 삽화를 다시 만들었으면 글을 다시 만들고 더 묻지 않는다 — 썸네일은 그래도 이전 것', async () => {
+    await arrange(BEFORE, { pending: ['illust1_feed'] });
+    await artifacts.write(
+      SLUG,
+      'run_2',
+      ILLUSTRATIONS_MANIFEST,
+      JSON.stringify({ version: 1, items: [{ n: 1, name: 'illust1_feed' }] }),
+    );
+    const adapter = createScriptedAdapter(() => TEXT_OUTPUT);
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter } });
+
+    await runner.run(patchCtx({ sources: { evidence: 'run_1', zenn: 'run_1' } }));
+
+    expect(adapter.calls).toHaveLength(1);
+    expect(await thumbnail()).toEqual([...OLD_PNG]);
+    expect(await record()).toMatchObject({ status: 'patched', illustrations: [] });
+  });
+
+  test('이전 발행정보·썸네일이 없으면 모델을 부르기 전에 멈춘다', async () => {
+    await arrange(BEFORE.replace('본론 문단.', '고친 본론.'));
+    await artifacts.remove(SLUG, 'run_1', THUMBNAIL_ARTIFACT);
+    const adapter = createScriptedAdapter(() => TEXT_OUTPUT);
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => adapter } });
+
+    await expect(runner.run(patchCtx())).rejects.toMatchObject({
+      code: 'PUBLISH_INFO_PATCH_BASE_MISSING',
+      retryable: false,
+    });
+    expect(adapter.calls).toHaveLength(0);
+  });
+
+  test('이 실행의 본문 고침 결과가 없으면 멈춘다(바뀐 곳을 알 수 없다)', async () => {
+    await arrange(BEFORE);
+    await artifacts.remove(SLUG, 'run_2', REVIEW_RESULT_ARTIFACT);
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => undefined } });
+
+    await expect(runner.run(patchCtx())).rejects.toMatchObject({
+      code: 'PUBLISH_INFO_PATCH_BODY_MISSING',
+    });
+  });
+
+  test('옮기기만 하는 실행은 모델이 없어도 되고, discard는 고침 결과 파일도 지운다', async () => {
+    await arrange(BEFORE.replace('맺음 문단.', '고친 맺음.'));
+    const runner = runnerWith({ store, artifacts, adapters: { get: () => undefined } });
+
+    await runner.run(patchCtx());
+    expect(await record()).toBeDefined();
+
+    await runner.discard?.(patchCtx());
+    expect(await record()).toBeUndefined();
+    expect(await thumbnail()).toBeUndefined();
   });
 });

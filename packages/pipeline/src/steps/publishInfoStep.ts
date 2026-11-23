@@ -9,7 +9,20 @@ import { stripSnippets } from '../evidence/bundle.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
 import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { postFileNames } from '../publish/postFiles.ts';
-import { ILLUSTRATIONS_MANIFEST, parseIllustrationManifest } from './illustration.ts';
+import {
+  PUBLISH_PATCH_ARTIFACT,
+  REVIEW_RESULT_ARTIFACT,
+  parsePublishPatchResult,
+  parseReviewResult,
+  renderPublishPatchResult,
+  type PublishPatchResult,
+} from '../review/answerResult.ts';
+import {
+  ILLUSTRATIONS_MANIFEST,
+  locateIllustrationSlots,
+  parseIllustrationManifest,
+} from './illustration.ts';
+import { illustrationsNearChanges, locateIllustrations } from './illustrationNear.ts';
 import {
   DEFAULT_THUMBNAIL_CONFIG,
   splitThumbnailTitle,
@@ -56,9 +69,12 @@ export const THUMBNAIL_ART_MARKER = '===ART===';
 /** 그림 조각 글자 수 상한 — 넘으면 조각을 버린다(오른쪽 빈 자리). 예시 조각이 4,000자 안팎이다. */
 export const THUMBNAIL_ART_MAX_CHARS = 16_000;
 
-const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨로그 글을 읽고 발행 정보를 JSON 하나로만 답합니다.
+/** 소개·태그 규칙 — 썸네일까지 만드는 프롬프트와 글만 다시 만드는 프롬프트가 같이 쓴다. */
+const TEXT_RULES = `당신은 기술 블로그 발행 담당자입니다. 아래 벨로그 글을 읽고 발행 정보를 JSON 하나로만 답합니다.
 - "intro": 글을 소개하는 한국어 한 문단, 공백 포함 ${PUBLISH_INTRO_MAX_CHARS}자 이내. 본문에 없는 사실을 더하지 않습니다.
-- "tags": 벨로그 태그 3~${PUBLISH_TAGS_MAX}개(문자열 배열). 기술 이름은 널리 쓰는 표기, 나머지는 한국어. 회사·서비스 이름은 넣지 않습니다.
+- "tags": 벨로그 태그 3~${PUBLISH_TAGS_MAX}개(문자열 배열). 기술 이름은 널리 쓰는 표기, 나머지는 한국어. 회사·서비스 이름은 넣지 않습니다.`;
+
+const SYSTEM = `${TEXT_RULES}
 - "subtitle": 썸네일에 들어갈 한국어 부제 한 줄, ${THUMBNAIL_SUBTITLE_MAX_CHARS}자 이내. 제목을 되풀이하지 않고 글의 핵심을 한 문장으로.
 - "thumbnailTitle": 썸네일 제목 줄(문자열 배열, 2~${THUMBNAIL_TITLE_MAX_LINES}줄). 글 제목을 뜻이 끊기지 않는 자리에서 나누고 괄호 부제는 뺍니다. 한 줄은 공백 포함 ${THUMBNAIL_TITLE_LINE_CHARS}자 안팎(최대 ${THUMBNAIL_TITLE_LINE_MAX_CHARS}자). 마지막 줄이 빨간 강조색으로 찍히므로 글의 핵심어가 마지막 줄에 오게 합니다.
 - "thumbnailTags": 썸네일 알약 태그 2~${THUMBNAIL_TAGS_MAX}개(문자열 배열). 글의 핵심 기술 이름을 원어 표기로(예 "React", "zustand", "sessionStorage"), 각 ${THUMBNAIL_TAG_MAX_CHARS}자 이내. 회사·서비스 이름은 넣지 않습니다.
@@ -90,16 +106,27 @@ const SYSTEM = `당신은 기술 블로그 발행 담당자입니다. 아래 벨
 </div>
 <div class="dot-red" style="left:470px;top:270px"><span class="mono" style="color:#fff;font-size:24px;font-weight:500">429</span></div>`;
 
-/** 모델에 보내는 프롬프트 — 테스트용으로 공개. 본문은 상한까지만(소개·태그는 앞부분으로 충분). */
+/** 썸네일을 이전 것 그대로 둘 때의 지시 — 소개·태그만 받는다(제목 줄·알약·그림 조각을 만들게 하지 않는다). */
+const TEXT_ONLY_SYSTEM = `${TEXT_RULES}
+- 출력 형식: {"intro": "...", "tags": ["..."]} 형태의 JSON 하나. 코드 펜스나 설명을 붙이지 않습니다.`;
+
+/**
+ * 모델에 보내는 프롬프트 — 테스트용으로 공개. 본문은 상한까지만(소개·태그는 앞부분으로 충분).
+ * `thumbnail: false`면 소개·태그만 묻는다(답 반영 실행 — 썸네일은 이전 것을 그대로 쓴다).
+ */
 export function buildPublishInfoPrompt(
   input: { title: string; body: string },
   limits: WritingLimits = WRITING_LIMITS,
+  options: { thumbnail?: boolean } = {},
 ): { system: string; prompt: string } {
   const body =
     input.body.length > limits.publishInfoBodyChars
       ? `${input.body.slice(0, limits.publishInfoBodyChars)}\n\n(이하 생략)`
       : input.body;
-  return { system: SYSTEM, prompt: `# 제목\n${input.title}\n\n# 본문\n${body}\n` };
+  return {
+    system: options.thumbnail === false ? TEXT_ONLY_SYSTEM : SYSTEM,
+    prompt: `# 제목\n${input.title}\n\n# 본문\n${body}\n`,
+  };
 }
 
 export interface PublishInfoOutput {
@@ -242,6 +269,22 @@ const ARTIFACT_LABEL: Record<Artifact, { name: string; step: string; ko: string 
   zenn: { name: ZENN_ARTIFACT, step: 'zenn', ko: 'Zenn 원고' },
 };
 
+/**
+ * 삽화 목록의 "본문 자리" 글을 **지금 본문의 자리 주석**에서 다시 읽는다 — 답 반영으로 주석 글이 고쳐졌으면 삽화 단계의 목록
+ * (이전 결과)이 옛 글을 들고 있다. 본문에 그 이름의 주석이 없으면 목록의 글을 그대로 둔다.
+ */
+function withBodyPlaces(
+  items: readonly { name: string; where?: string }[],
+  body: string,
+): { name: string; where?: string }[] {
+  const slots = new Map(locateIllustrationSlots(body).map((slot) => [slot.name, slot]));
+  return items.map((item) => {
+    const slot = slots.get(item.name);
+    if (slot === undefined) return { ...item };
+    return { name: item.name, ...(slot.where === undefined ? {} : { where: slot.where }) };
+  });
+}
+
 export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunner {
   const limits = deps.limits ?? WRITING_LIMITS;
 
@@ -284,6 +327,104 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
     }));
   }
 
+  /**
+   * 답 반영 실행(`ctx.patch`)의 판단 — 발행정보 글을 다시 만들지, 어느 삽화를 "다시 만들까요?"로 물을지
+   * (decisions/review-questions.md: 발행정보는 유지가 기본, 바뀐 문단이 삽화 자리 앞뒤면 다시 만든다).
+   *  - 이 실행이 삽화를 다시 만들었으면: 글을 다시 만들고 물을 것은 없다.
+   *  - 아니면: 이 실행에서 고쳐진 본문의 바뀐 곳이 삽화 자리 앞뒤일 때만 글을 다시 만든다. 물을 삽화는 이번에 걸린 것과
+   *    이전 실행이 물었는데 아직 다시 만들지 않은 것을 합친다(이름이 지금 본문에 있는 것만).
+   */
+  async function planPatch(
+    ctx: StepContext,
+    baseRunId: string,
+    body: string,
+  ): Promise<{ remake: boolean; illustrations: PublishPatchResult['illustrations'] }> {
+    if (ctx.sources.illustration === undefined) return { remake: true, illustrations: [] };
+
+    let near: string[] = [];
+    // 본문이 이 실행에서 고쳐졌을 때만 바뀐 곳이 있다(이전 본문 유지면 없다).
+    if (ctx.sources.velog === undefined) {
+      const result = await deps.artifacts.read(ctx.topic.slug, ctx.runId, REVIEW_RESULT_ARTIFACT);
+      const parsed = result.ok ? parseReviewResult(result.text) : undefined;
+      const before =
+        parsed === undefined
+          ? undefined
+          : await deps.artifacts.read(ctx.topic.slug, parsed.baseRunId, VELOG_ARTIFACT);
+      if (before === undefined || !before.ok)
+        throw new StepFailure(
+          'PUBLISH_INFO_PATCH_BODY_MISSING',
+          '고치기 전 벨로그 본문을 찾지 못했습니다. 벨로그 본문부터 재실행하세요.',
+          false,
+        );
+      near = illustrationsNearChanges(before.text, body).map((item) => item.name);
+    }
+    const previous = await deps.artifacts.read(ctx.topic.slug, baseRunId, PUBLISH_PATCH_ARTIFACT);
+    const pending = (
+      previous.ok ? parsePublishPatchResult(previous.text) : undefined
+    )?.illustrations.map((item) => item.name);
+    return {
+      remake: near.length > 0,
+      illustrations: locateIllustrations(body, [...(pending ?? []), ...near]),
+    };
+  }
+
+  /** 이전 발행정보·썸네일을 이 실행으로 그대로 옮긴다(모델 호출 없음). */
+  async function carryOver(
+    ctx: StepContext,
+    baseRunId: string,
+    illustrations: PublishPatchResult['illustrations'],
+  ): Promise<StepResult> {
+    const { slug } = ctx.topic;
+    const text = await deps.artifacts.read(slug, baseRunId, PUBLISH_ARTIFACT);
+    const thumbnail = await deps.artifacts.readBytes(slug, baseRunId, THUMBNAIL_ARTIFACT);
+    if (!text.ok || !thumbnail.ok) throw patchBaseMissing();
+    const record = renderPublishPatchResult({
+      version: 1,
+      baseRunId,
+      status: 'unchanged',
+      illustrations,
+    });
+    try {
+      await deps.artifacts.write(slug, ctx.runId, PUBLISH_ARTIFACT, text.text);
+      await deps.artifacts.writeBytes(slug, ctx.runId, THUMBNAIL_ARTIFACT, thumbnail.bytes);
+      await deps.artifacts.write(slug, ctx.runId, PUBLISH_PATCH_ARTIFACT, record);
+    } catch (error) {
+      throw storeWriteFailed(error);
+    }
+    return { artifacts: { [PUBLISH_ARTIFACT]: text.text, [PUBLISH_PATCH_ARTIFACT]: record } };
+  }
+
+  function requireAdapter(ctx: StepContext): ModelAdapter {
+    const adapter = deps.adapters.get(ctx.modelId);
+    if (adapter === undefined)
+      throw new StepFailure(
+        'PUBLISH_INFO_MODEL_UNKNOWN',
+        '이 실행의 모델이 레지스트리에 없습니다.',
+        false,
+      );
+    if (!adapter.available)
+      throw new StepFailure(
+        'PUBLISH_INFO_MODEL_UNAVAILABLE',
+        '모델 API 키가 .env에 없습니다.',
+        false,
+      );
+    return adapter;
+  }
+
+  const patchBaseMissing = () =>
+    new StepFailure(
+      'PUBLISH_INFO_PATCH_BASE_MISSING',
+      '이전 발행정보·썸네일을 찾지 못했습니다(DATA_DIR). 발행정보부터 재실행하세요.',
+      false,
+    );
+  const storeWriteFailed = (error: unknown) =>
+    new StepFailure(
+      'PUBLISH_INFO_STORE_WRITE_FAILED',
+      '발행정보·썸네일을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
+      false,
+      { cause: error },
+    );
+
   return {
     async run(ctx: StepContext): Promise<StepResult> {
       if (ctx.step !== 'publishInfo')
@@ -296,19 +437,8 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
           false,
         );
 
-      const adapter = deps.adapters.get(ctx.modelId);
-      if (adapter === undefined)
-        throw new StepFailure(
-          'PUBLISH_INFO_MODEL_UNKNOWN',
-          '이 실행의 모델이 레지스트리에 없습니다.',
-          false,
-        );
-      if (!adapter.available)
-        throw new StepFailure(
-          'PUBLISH_INFO_MODEL_UNAVAILABLE',
-          '모델 API 키가 .env에 없습니다.',
-          false,
-        );
+      // 답 반영 실행은 모델 없이 끝날 수 있어(이전 것을 옮기기만) 모델 확인을 그 판단 뒤로 미룬다.
+      const early = ctx.patch === undefined ? requireAdapter(ctx) : undefined;
 
       // 벨로그 본문에서 글 제목 — 시리즈 표기(`| 시리즈명 N편`·인용 줄)는 뗀 것. H1이 없으면 힌트 뗀 주제 제목.
       const velogRaw = await readArtifact(ctx, 'velog');
@@ -320,6 +450,21 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
           '벨로그 본문이 비어 있어 발행정보를 만들지 않습니다. 벨로그 본문 단계부터 다시 실행하세요.',
           false,
         );
+
+      // 답 반영 실행 — 삽화 자리 앞뒤가 안 바뀌었으면 이전 발행정보·썸네일을 그대로 옮기고 끝낸다(모델·Chrome을 쓰지 않는다).
+      const baseRunId = ctx.patch?.baseRunId;
+      const patchPlan =
+        baseRunId === undefined ? undefined : await planPatch(ctx, baseRunId, velogRaw);
+      if (baseRunId !== undefined && patchPlan !== undefined && !patchPlan.remake)
+        return carryOver(ctx, baseRunId, patchPlan.illustrations);
+      // 글을 다시 만들어도 썸네일 PNG는 이전 것이다(사용자 결정) — 없으면 모델을 부르기 전에 멈춘다.
+      const keptThumbnail =
+        baseRunId === undefined
+          ? undefined
+          : await deps.artifacts.readBytes(ctx.topic.slug, baseRunId, THUMBNAIL_ARTIFACT);
+      if (keptThumbnail !== undefined && !keptThumbnail.ok) throw patchBaseMissing();
+
+      const adapter = early ?? requireAdapter(ctx);
 
       const zenn = parseZennFrontmatter(await readArtifact(ctx, 'zenn'));
       if (zenn === undefined)
@@ -342,15 +487,18 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
         );
 
       // 썸네일을 찍을 수 있는지 **모델을 부르기 전에** — Chrome이 없으면 토큰을 쓰지 않고 바로 실패한다(리뷰 M4, 사용자 결정).
-      const ready = await deps.thumbnails.check();
+      // 이전 썸네일을 쓰는 실행은 Chrome이 필요 없다.
+      const ready = keptThumbnail === undefined ? await deps.thumbnails.check() : { ok: true };
       if (!ready.ok)
         throw new StepFailure(
-          ready.code,
+          'code' in ready ? ready.code : 'THUMBNAIL_CHROME_NOT_FOUND',
           '썸네일을 찍을 Chrome을 찾지 못했습니다. .env의 GALLEY_CHROME에 실행 파일 경로를 적으세요.',
           false,
         );
 
-      const { system, prompt } = buildPublishInfoPrompt({ title, body }, limits);
+      const { system, prompt } = buildPublishInfoPrompt({ title, body }, limits, {
+        thumbnail: keptThumbnail === undefined,
+      });
       ctx.signal.throwIfAborted();
       let generated: GenerateResult;
       try {
@@ -379,10 +527,41 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
         zenn,
         evidence: stripSnippets(bundle.bundle),
         thumbnailFile: postFileNames(title).thumbnail,
-        illustrations: await readIllustrations(ctx),
+        illustrations:
+          patchPlan === undefined
+            ? await readIllustrations(ctx)
+            : withBodyPlaces(await readIllustrations(ctx), velogRaw),
         ...(ctx.series === undefined ? {} : { series: ctx.series }),
       };
       const text = renderPublishInfo(input);
+
+      // 답 반영 실행 — 썸네일은 다시 찍지 않고 이전 PNG를 그대로 옮긴다.
+      if (baseRunId !== undefined && patchPlan !== undefined && keptThumbnail?.ok === true) {
+        const record = renderPublishPatchResult({
+          version: 1,
+          baseRunId,
+          status: 'patched',
+          illustrations: patchPlan.illustrations,
+        });
+        try {
+          await deps.artifacts.write(ctx.topic.slug, ctx.runId, PUBLISH_ARTIFACT, text);
+          await deps.artifacts.writeBytes(
+            ctx.topic.slug,
+            ctx.runId,
+            THUMBNAIL_ARTIFACT,
+            keptThumbnail.bytes,
+          );
+          await deps.artifacts.write(ctx.topic.slug, ctx.runId, PUBLISH_PATCH_ARTIFACT, record);
+        } catch (error) {
+          throw storeWriteFailed(error);
+        }
+        return {
+          artifacts: { [PUBLISH_ARTIFACT]: text, [PUBLISH_PATCH_ARTIFACT]: record },
+          tokens: { input: generated.usage.inputTokens, output: generated.usage.outputTokens },
+          costUsd: generated.costUsd,
+          model: adapter.id,
+        };
+      }
 
       // 썸네일 — 모델 출력의 제목 줄·부제·알약·그림 조각(렌더러가 거른다) + 설정의 브랜드 + 시리즈 배지. 실패는 단계 실패(Chrome 없음·깨짐은 재시도 불가, 제한 시간은 재시도).
       ctx.signal.throwIfAborted();
@@ -429,12 +608,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
           rendered.png,
         );
       } catch (error) {
-        throw new StepFailure(
-          'PUBLISH_INFO_STORE_WRITE_FAILED',
-          '발행정보·썸네일을 저장하지 못했습니다(DATA_DIR 설정·권한·용량을 확인하세요).',
-          false,
-          { cause: error },
-        );
+        throw storeWriteFailed(error);
       }
       return {
         // 이진 산출물(썸네일)은 artifacts 맵(문자열)에 넣지 않는다 — DATA_DIR 파일이 진실이고 승인이 거기서 읽는다.
@@ -447,6 +621,7 @@ export function createPublishInfoStepRunner(deps: PublishInfoStepDeps): StepRunn
     async discard(ctx) {
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, PUBLISH_ARTIFACT);
       await deps.artifacts.remove(ctx.topic.slug, ctx.runId, THUMBNAIL_ARTIFACT);
+      await deps.artifacts.remove(ctx.topic.slug, ctx.runId, PUBLISH_PATCH_ARTIFACT);
     },
   };
 }

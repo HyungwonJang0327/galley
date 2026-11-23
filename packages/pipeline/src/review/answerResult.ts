@@ -98,3 +98,48 @@ export function parseDerivedPatchResult(text: string): DerivedPatchResult | unde
       : {}),
   };
 }
+
+/**
+ * 발행정보 고침 결과(`publishInfo-patch.json`, DATA_DIR만) — 답 반영 실행의 발행정보 단계가 남긴다.
+ *  - `unchanged`: 삽화 자리 앞뒤가 바뀌지 않아 이전 발행정보·썸네일을 그대로 옮겼다(모델 호출 없음).
+ *  - `patched`: 발행정보 글을 다시 만들었다(삽화 자리 앞뒤가 바뀌었거나 삽화를 다시 만들었다). **썸네일 PNG는 이전 것 그대로다.**
+ * `illustrations`는 "다시 만들까요?"를 물을 삽화 — 자리 앞뒤 문단이 바뀌었는데 아직 다시 만들지 않은 것(확인 질문이 읽는다).
+ */
+export const PUBLISH_PATCH_ARTIFACT = 'publishInfo-patch.json';
+
+export interface PublishPatchResult {
+  version: 1;
+  /** 이전 발행정보·썸네일을 만든 Run. */
+  baseRunId: string;
+  status: 'patched' | 'unchanged';
+  illustrations: { name: string; paragraph: number; line: number }[];
+}
+
+export function renderPublishPatchResult(result: PublishPatchResult): string {
+  return `${JSON.stringify(result, null, 2)}\n`;
+}
+
+export function parsePublishPatchResult(text: string): PublishPatchResult | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(raw) || raw.version !== 1 || typeof raw.baseRunId !== 'string') return undefined;
+  const { status, illustrations } = raw;
+  if (status !== 'patched' && status !== 'unchanged') return undefined;
+  if (!Array.isArray(illustrations)) return undefined;
+  const items: PublishPatchResult['illustrations'] = [];
+  for (const entry of illustrations) {
+    if (!isRecord(entry) || typeof entry.name !== 'string' || entry.name.trim() === '')
+      return undefined;
+    if (!Number.isInteger(entry.paragraph) || !Number.isInteger(entry.line)) return undefined;
+    items.push({
+      name: entry.name,
+      paragraph: entry.paragraph as number,
+      line: entry.line as number,
+    });
+  }
+  return { version: 1, baseRunId: raw.baseRunId, status, illustrations: items };
+}

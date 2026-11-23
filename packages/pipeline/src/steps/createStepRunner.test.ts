@@ -110,7 +110,7 @@ describe('createStepRunner', () => {
   });
 
   test('고치는 길이 없는 단계에 고침 입력이 오면 그 단계를 부르지 않고 멈춘다(처음부터 다시 만들지 않는다)', async () => {
-    for (const step of ['verify', 'illustration', 'publishInfo'] as const)
+    for (const step of ['verify', 'illustration'] as const)
       await expect(
         runner.run({ ...ctx(step), patch: { baseRunId: 'run_0', answers: [] } }),
       ).rejects.toMatchObject({ code: 'PATCH_UNSUPPORTED', retryable: false });
