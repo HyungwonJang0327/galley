@@ -310,6 +310,7 @@ describe('getRunWithSteps — 실행 상세', () => {
       instruction: '어투를 부드럽게',
       startStep: 'velog',
       workerState: 'running',
+      reviewAnswers: '{"version":1,"items":[]}',
     });
     await seedSteps(run.id, {
       velog: {
@@ -333,6 +334,8 @@ describe('getRunWithSteps — 실행 상세', () => {
       instruction: '어투를 부드럽게',
       startStep: 'velog',
       workerState: 'running',
+      // 답 반영 실행이면 그 질문·답(JSON) 그대로. 아니면 null.
+      reviewAnswers: '{"version":1,"items":[]}',
     });
     expect(detail?.steps.map((s) => s.name)).toEqual([...STEP_ORDER]);
     expect(detail?.steps[1]).toMatchObject({

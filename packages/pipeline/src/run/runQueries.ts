@@ -224,6 +224,8 @@ export interface RunDetail extends RunSummary {
   /** 재실행이면 그때의 수정 지시 원문·시작 단계. 첫 실행은 둘 다 null. */
   instruction: string | null;
   startStep: string | null;
+  /** 이 실행을 만든 확인 질문의 답(JSON, `review/answerSet.ts`). 답 반영 실행이 아니면 null. */
+  reviewAnswers: string | null;
   /** 파이프라인 순서(order 오름차순) 6행. */
   steps: RunStepDetail[];
 }
@@ -238,6 +240,7 @@ export async function getRunWithSteps(prisma: PrismaClient, id: string): Promise
       heartbeat: true,
       instruction: true,
       startStep: true,
+      reviewAnswers: true,
       steps: {
         orderBy: { order: 'asc' },
         select: {
