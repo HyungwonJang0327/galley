@@ -1,17 +1,24 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-const { approveRunById, reviseRunById, planRerunById } = vi.hoisted(() => ({
+const { approveRunById, reviseRunById, planRerunById, answerRunById } = vi.hoisted(() => ({
+  answerRunById: vi.fn(),
   approveRunById: vi.fn(),
   reviseRunById: vi.fn(),
   planRerunById: vi.fn(),
 }));
 
 // DB·상태 전이는 어댑터·pipeline 테스트가 본다. 여기서는 HTTP 경계(본문 검증·상태 코드·봉투)만.
-vi.mock('../../../../lib/run-commands', () => ({ approveRunById, reviseRunById, planRerunById }));
+vi.mock('../../../../lib/run-commands', () => ({
+  approveRunById,
+  reviseRunById,
+  planRerunById,
+  answerRunById,
+}));
 
 import { POST as approve } from './approve/route';
 import { POST as revise } from './revise/route';
 import { POST as rerunPlan } from './rerun-plan/route';
+import { POST as answer } from './answer/route';
 
 const context = (id = 'run_1') => ({ params: Promise.resolve({ id }) });
 const request = (path: string, body?: unknown) =>
@@ -36,6 +43,7 @@ afterEach(() => {
   approveRunById.mockReset();
   reviseRunById.mockReset();
   planRerunById.mockReset();
+  answerRunById.mockReset();
 });
 
 describe('POST /api/runs/[id]/approve', () => {
@@ -182,5 +190,59 @@ describe('POST /api/runs/[id]/rerun-plan', () => {
     expect((await rerunPlan(request('rerun-plan', { instruction: '' }), context())).status).toBe(
       400,
     );
+  });
+});
+
+describe('POST /api/runs/[id]/answer', () => {
+  it('답을 보내면 201과 새 실행을 돌려준다 — 채움만 글을 싣는다', async () => {
+    answerRunById.mockResolvedValue({ ok: true, data: { run: RUN } });
+    const answers = [
+      { id: 'c1', kind: 'fill', text: '3만 건' },
+      { id: 'u1', kind: 'keep', text: '무시되는 글' },
+      { id: 'u2', kind: 'delete' },
+    ];
+
+    const response = await answer(request('answer', { answers }), context());
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ ok: true, data: { run: RUN } });
+    expect(answerRunById).toHaveBeenCalledWith({
+      runId: 'run_1',
+      answers: [
+        { id: 'c1', kind: 'fill', text: '3만 건' },
+        { id: 'u1', kind: 'keep' },
+        { id: 'u2', kind: 'delete' },
+      ],
+    });
+  });
+
+  it.each([
+    ['JSON 아님', 'not json'],
+    ['answers 없음', {}],
+    ['항목이 객체 아님', { answers: ['c1'] }],
+    ['모르는 종류', { answers: [{ id: 'c1', kind: 'rewrite' }] }],
+    ['채움에 글 없음', { answers: [{ id: 'c1', kind: 'fill' }] }],
+    ['id 없음', { answers: [{ kind: 'keep' }] }],
+  ])('형식이 어긋나면 400: %s', async (_name, body) => {
+    const response = await answer(request('answer', body), context());
+
+    expect(response.status).toBe(400);
+    expect(answerRunById).not.toHaveBeenCalled();
+  });
+
+  it('빈 답·빈 채움은 400, 목록이 바뀜·상태 충돌은 409, 없는 실행은 404, 그 밖은 500', async () => {
+    for (const [code, status] of [
+      ['ANSWERS_EMPTY', 400],
+      ['ANSWER_INVALID', 400],
+      ['REVIEW_QUESTION_UNKNOWN', 409],
+      ['REVIEW_QUESTIONS_MISSING', 409],
+      ['NOT_PENDING_APPROVAL', 409],
+      ['RUN_NOT_FOUND', 404],
+      ['RUN_ANSWER_FAILED', 500],
+    ] as const) {
+      answerRunById.mockResolvedValue({ ok: false, error: { code, message: 'x' } });
+      const response = await answer(request('answer', { answers: [] }), context());
+      expect(response.status).toBe(status);
+    }
   });
 });

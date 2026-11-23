@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { approveRun, planRerun, reviseRun, startRun } from './run-api-client';
+import { answerRun, approveRun, planRerun, reviseRun, startRun } from './run-api-client';
 
 const fetchMock = vi.fn();
 
@@ -81,6 +81,19 @@ describe('run-api-client', () => {
     const offline = await reviseRun('r1', { instruction: 'x' });
     expect(offline.ok).toBe(false);
     if (!offline.ok) expect(offline.error.message).toContain('수정 지시');
+  });
+
+  it('answerRun은 답한 질문만 answers로 보낸다', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ ok: true, data: { run: { id: 'r2' } } }, 201));
+
+    const result = await answerRun('r1', [{ id: 'c1', kind: 'keep' }]);
+
+    expect(result).toEqual({ ok: true, data: { run: { id: 'r2' } } });
+    const [path, init] = fetchMock.mock.calls[0]!;
+    expect(path).toBe('/api/runs/r1/answer');
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({
+      answers: [{ id: 'c1', kind: 'keep' }],
+    });
   });
 
   it('id는 URL 인코딩한다', async () => {

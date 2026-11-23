@@ -4,6 +4,7 @@
 // 승인은 posts/<슬러그>/ 쓰기·큐 완료 이동까지(B3a) — DATA_DIR·BLOG_DIR 스토어를 여기서 조립한다(조립 루트).
 import 'server-only';
 import {
+  answerRun,
   approveAndPublishRun,
   createModelRegistryFromEnv,
   LocalFsArtifactStore,
@@ -14,6 +15,7 @@ import {
   previewRerun,
   prisma,
   reviseRun,
+  type AnswerRunFailure,
   type ApprovePublishFailure,
   type PreviewRerunFailure,
   type RerunPreview,
@@ -22,6 +24,11 @@ import {
 } from '@galley/pipeline';
 import { resolveDashboardDataDir } from './data-dir';
 import { getQueueSections } from './queue-data';
+import {
+  resolveReviewAnswers,
+  type ResolveReviewAnswersFailure,
+  type ReviewAnswerInput,
+} from './run-review';
 import type { StartedRun } from './run-start';
 
 /** 화면·API가 그대로 쓰는 직렬화 형태. `StartedRun`에 종결 시각을 더한 것. */
@@ -215,6 +222,88 @@ export async function reviseRunById(input: RunReviseInput): Promise<RunReviseRes
         code: 'RUN_REVISE_FAILED',
         message: `수정 지시를 보내지 못했습니다: ${reason(error)}`,
       },
+    };
+  }
+}
+
+// ── 확인 질문의 답 ───────────────────────────────────────────────────────────
+
+export interface RunAnswerInput {
+  runId: string;
+  /** 답한 질문만(id·종류·채움 글). 질문 본문·앵커는 서버가 이 실행의 질문 목록에서 붙인다. */
+  answers: readonly ReviewAnswerInput[];
+}
+
+export type RunAnswerErrorCode =
+  AnswerRunFailure | ResolveReviewAnswersFailure | 'QUEUE_RELOAD_FAILED' | 'RUN_ANSWER_FAILED';
+
+/** 수정 지시와 같은 모양 — 이 실행은 `revised`로 끝나고 답한 곳만 고치는 새 실행이 대기열에 오른다. */
+export type RunAnswerResult = { ok: true; data: RevisedRun } | Failure<RunAnswerErrorCode>;
+
+const ANSWER_MESSAGE: Record<AnswerRunFailure | ResolveReviewAnswersFailure, string> = {
+  RUN_NOT_FOUND: '실행을 찾을 수 없습니다.',
+  NOT_PENDING_APPROVAL: '승인 대기 상태의 실행에만 답할 수 있습니다.',
+  NOT_LATEST_ATTEMPT: '이 주제의 최신 시도에서만 답할 수 있습니다.',
+  TOPIC_ALREADY_DONE:
+    '이 주제는 주제_큐.md에서 이미 완료 섹션에 있습니다. 답을 반영해도 승인할 수 없습니다 — 줄을 대기로 되돌린 뒤 시도하세요.',
+  TOPIC_MISSING_FROM_FILE:
+    '주제_큐.md에서 이 주제의 줄이 사라졌습니다. 답을 반영해도 승인할 수 없습니다 — 큐 화면의 "파일에서 사라진 주제" 안내에서 보류로 옮기거나 줄을 되살린 뒤 시도하세요.',
+  CARRIED_STEP_NOT_SUCCEEDED: '이어받을 이전 단계가 성공하지 않았습니다. 재실행을 써 주세요.',
+  UNKNOWN_MODEL: '등록되지 않은 모델입니다.',
+  MODEL_UNAVAILABLE: '이 모델의 API 키가 .env에 없습니다.',
+  ANSWERS_EMPTY: '답한 질문이 없습니다. 하나 이상 답해 주세요.',
+  ANSWERS_TOO_MANY: '한 번에 답할 수 있는 질문 수를 넘었습니다.',
+  ANSWER_INVALID: '채움을 고른 질문에 내용을 입력해 주세요.',
+  ANSWER_TOO_LONG: '채움 내용이 너무 깁니다.',
+  DATA_DIR_MISSING: '루트 .env의 DATA_DIR이 없거나 규칙에 맞지 않아 질문을 읽지 못했습니다.',
+  REVIEW_QUESTIONS_MISSING: '이 실행의 본문을 찾지 못해 질문 목록을 만들 수 없습니다.',
+  REVIEW_QUESTION_UNKNOWN: '질문 목록이 바뀌었습니다. 화면을 새로 고친 뒤 다시 답해 주세요.',
+};
+
+/**
+ * 확인 질문에 답한다. 수정 지시와 같은 순서 — 큐 파일을 다시 적재한 뒤(주제 가드) 보낸다. 모델은 직전 실행의 것을 잇는다
+ * (다른 모델로 고치려면 수정 지시를 쓴다).
+ */
+export async function answerRunById(input: RunAnswerInput): Promise<RunAnswerResult> {
+  const reloaded = await getQueueSections();
+  if (!reloaded.ok) {
+    return {
+      ok: false,
+      error: {
+        code: 'QUEUE_RELOAD_FAILED',
+        message: `답을 반영하기 전에 큐 파일을 다시 읽지 못했습니다. ${reloaded.error.message}`,
+      },
+    };
+  }
+  try {
+    const resolved = await resolveReviewAnswers(input.runId, input.answers);
+    if (!resolved.ok) {
+      return { ok: false, error: { code: resolved.code, message: ANSWER_MESSAGE[resolved.code] } };
+    }
+    const registry = createModelRegistryFromEnv(process.env);
+    const result = await answerRun(
+      { prisma, registry },
+      { runId: input.runId, items: resolved.items },
+    );
+    if (!result.ok) {
+      return { ok: false, error: { code: result.code, message: ANSWER_MESSAGE[result.code] } };
+    }
+    return {
+      ok: true,
+      data: {
+        previous: toRecord(result.previous),
+        run: toRecord(result.run),
+        plan: {
+          startStep: result.plan.startStep,
+          fresh: [...result.plan.fresh],
+          carried: [...result.plan.carried],
+        },
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: { code: 'RUN_ANSWER_FAILED', message: `답을 보내지 못했습니다: ${reason(error)}` },
     };
   }
 }

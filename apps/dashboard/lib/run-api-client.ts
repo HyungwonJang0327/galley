@@ -3,6 +3,7 @@
 // 응답 봉투는 { ok, data } | { ok, error:{ code, message } } 둘뿐(decisions/error-handling.md ③).
 // HTTP 상태가 아니라 `ok`로 판별한다.
 import type { ApprovedRun, RerunPlanView, RevisedRun } from './run-commands';
+import type { ReviewAnswerInput } from './run-review';
 import type { StartedRun } from './run-start';
 
 export interface ApiFailure {
@@ -63,6 +64,14 @@ export function planRerun(runId: string, body: RerunRequest): Promise<ApiResult<
 
 export function reviseRun(runId: string, body: RerunRequest): Promise<ApiResult<RevisedRun>> {
   return post(`/api/runs/${encodeURIComponent(runId)}/revise`, body, '수정 지시');
+}
+
+/** 확인 질문에 답 — 답한 질문만 보낸다. 성공하면 수정 지시처럼 새 실행(`run`)이 생긴다. */
+export function answerRun(
+  runId: string,
+  answers: readonly ReviewAnswerInput[],
+): Promise<ApiResult<RevisedRun>> {
+  return post(`/api/runs/${encodeURIComponent(runId)}/answer`, { answers }, '답 반영');
 }
 
 export function startRun(body: StartRunRequest): Promise<ApiResult<StartedRun>> {

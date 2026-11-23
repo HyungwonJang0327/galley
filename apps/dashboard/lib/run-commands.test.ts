@@ -1,19 +1,20 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 
-const { approveAndPublishRun, reviseRun, previewRerun, createModelRegistryFromEnv } = vi.hoisted(
-  () => ({
+const { approveAndPublishRun, reviseRun, answerRun, previewRerun, createModelRegistryFromEnv } =
+  vi.hoisted(() => ({
     approveAndPublishRun: vi.fn(),
+    answerRun: vi.fn(),
     reviseRun: vi.fn(),
     previewRerun: vi.fn(),
     createModelRegistryFromEnv: vi.fn(() => ({ registry: true })),
-  }),
-);
+  }));
 
 // 실제 SQLite·파일은 pipeline 테스트가 본다. 여기서는 코드→문구, 날짜 직렬화, 예외 봉투, 스토어 조립만.
 vi.mock('@galley/pipeline', () => ({
   prisma: {},
   approveAndPublishRun,
   reviseRun,
+  answerRun,
   previewRerun,
   createModelRegistryFromEnv,
   resolveDataDir: (env: { DATA_DIR?: string }) =>
@@ -39,7 +40,11 @@ vi.mock('@galley/pipeline', () => ({
 const { getQueueSections } = vi.hoisted(() => ({ getQueueSections: vi.fn() }));
 vi.mock('./queue-data', () => ({ getQueueSections }));
 
-import { approveRunById, planRerunById, reviseRunById } from './run-commands';
+// 질문 목록 읽기는 run-review 테스트가 본다. 여기서는 순서·코드→문구만.
+const { resolveReviewAnswers } = vi.hoisted(() => ({ resolveReviewAnswers: vi.fn() }));
+vi.mock('./run-review', () => ({ resolveReviewAnswers }));
+
+import { answerRunById, approveRunById, planRerunById, reviseRunById } from './run-commands';
 
 const RUN = {
   id: 'run_2',
@@ -288,6 +293,85 @@ describe('planRerunById', () => {
     expect(await planRerunById({ runId: 'x', instruction: '' })).toMatchObject({
       ok: false,
       error: { code: 'RUN_RERUN_PLAN_FAILED' },
+    });
+  });
+});
+
+describe('answerRunById', () => {
+  const ITEMS = [{ question: { id: 'c1' }, answer: { id: 'c1', kind: 'keep' } }];
+  const ANSWERS = [{ id: 'c1', kind: 'keep' as const }];
+
+  beforeEach(() => {
+    resolveReviewAnswers.mockResolvedValue({ ok: true, items: ITEMS });
+  });
+  afterEach(() => {
+    resolveReviewAnswers.mockReset();
+    answerRun.mockReset();
+  });
+
+  it('서버가 질문을 붙인 답을 보내고, 직전·새 실행을 직렬화해 돌려준다', async () => {
+    answerRun.mockResolvedValue({ ok: true, previous: PREVIOUS, run: RUN, plan: PLAN });
+
+    const result = await answerRunById({ runId: 'run_1', answers: ANSWERS });
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        previous: expect.objectContaining({ id: 'run_1', status: 'revised' }),
+        run: expect.objectContaining({ id: 'run_2', finishedAt: null }),
+        plan: PLAN,
+      },
+    });
+    expect(resolveReviewAnswers).toHaveBeenCalledWith('run_1', ANSWERS);
+    expect(answerRun).toHaveBeenCalledWith(
+      { prisma: {}, registry: { registry: true } },
+      { runId: 'run_1', items: ITEMS },
+    );
+  });
+
+  it.each([
+    ['NOT_PENDING_APPROVAL', '승인 대기'],
+    ['ANSWERS_EMPTY', '하나 이상'],
+    ['ANSWER_INVALID', '내용을 입력'],
+    ['ANSWER_TOO_LONG', '너무 깁니다'],
+    ['TOPIC_ALREADY_DONE', '완료 섹션'],
+  ])('pipeline의 %s → 문구에 "%s"', async (code, phrase) => {
+    answerRun.mockResolvedValue({ ok: false, code });
+
+    expect(await answerRunById({ runId: 'run_1', answers: ANSWERS })).toEqual({
+      ok: false,
+      error: { code, message: expect.stringContaining(phrase) },
+    });
+  });
+
+  it('질문을 붙이지 못하면(목록이 바뀜) 보내지 않는다', async () => {
+    resolveReviewAnswers.mockResolvedValue({ ok: false, code: 'REVIEW_QUESTION_UNKNOWN' });
+
+    expect(await answerRunById({ runId: 'run_1', answers: ANSWERS })).toEqual({
+      ok: false,
+      error: { code: 'REVIEW_QUESTION_UNKNOWN', message: expect.stringContaining('새로 고친') },
+    });
+    expect(answerRun).not.toHaveBeenCalled();
+  });
+
+  it('큐 파일을 다시 읽지 못하면 보내지 않는다', async () => {
+    getQueueSections.mockResolvedValue({
+      ok: false,
+      error: { code: 'QUEUE_READ_FAILED', message: '파일 없음' },
+    });
+
+    const result = await answerRunById({ runId: 'run_1', answers: ANSWERS });
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'QUEUE_RELOAD_FAILED' } });
+    expect(resolveReviewAnswers).not.toHaveBeenCalled();
+  });
+
+  it('예외는 RUN_ANSWER_FAILED로 감싼다', async () => {
+    answerRun.mockRejectedValue(new Error('SQLITE_BUSY'));
+
+    expect(await answerRunById({ runId: 'run_1', answers: ANSWERS })).toEqual({
+      ok: false,
+      error: { code: 'RUN_ANSWER_FAILED', message: expect.stringContaining('SQLITE_BUSY') },
     });
   });
 });
