@@ -560,8 +560,13 @@ export {
 } from './review/answerSet.ts';
 export {
   PATCH_SCOPE_RADIUS,
+  checkPatchPlaces,
   checkPatchScope,
+  coverChangedParagraphs,
   diffParagraphs,
+  paragraphHunks,
   type ParagraphDiff,
+  type ParagraphHunk,
+  type PatchPlacesResult,
   type PatchScopeResult,
 } from './run/patchScope.ts';

@@ -1,6 +1,6 @@
 // 답 반영 범위 검사 — "답한 곳만 고쳤는가"를 승인 게이트 쪽에서 판정한다(decisions/review-questions.md, 사용자 결정:
 // 이 검사는 승인 게이트 모듈에 둔다). 고치기 전·후 글을 문단 단위로 견줘, 바뀐 문단이 앵커 문단과 그 앞뒤 1문단 밖에도
-// 있으면 범위 밖이다. 본문 패치(채움)와 링크드인·Zenn 패치가 같은 규칙을 쓴다. 모델 출력을 믿지 않기 위한 검사라
+// 있으면 범위 밖이다. 본문 패치(채움)와 링크드인·Zenn 패치가 같은 규칙을 쓴다(파생 글은 앵커를 몰라 곳 수로 — `checkPatchPlaces`). 모델 출력을 믿지 않기 위한 검사라
 // 순수 함수로 두고 호출부(단계)가 실패 → 1회 재시도 → 이전 글 유지를 정한다.
 import { splitParagraphs } from '../review/paragraphs.ts';
 
@@ -24,14 +24,8 @@ const normalize = (text: string) =>
     .map((line) => line.trimEnd())
     .join('\n');
 
-/**
- * 문단 단위 diff — 두 글에 순서대로 공통인 문단(최장 공통 부분열)을 그대로인 문단으로 보고, 나머지를 바뀐 것으로 본다.
- * 문단이 옮겨진 것(순서 바뀜)은 한쪽에서 없어지고 다른 쪽에 생긴 것으로 잡힌다.
- */
-export function diffParagraphs(previous: string, next: string): ParagraphDiff {
-  const a = splitParagraphs(previous).map((p) => normalize(p.text));
-  const b = splitParagraphs(next).map((p) => normalize(p.text));
-  // lcs[i][j] = a[i..]와 b[j..]의 최장 공통 부분열 길이.
+/** lcs[i][j] = a[i..]와 b[j..]의 최장 공통 부분열 길이. */
+function lcsTable(a: readonly string[], b: readonly string[]): number[][] {
   const lcs: number[][] = Array.from({ length: a.length + 1 }, () =>
     new Array<number>(b.length + 1).fill(0),
   );
@@ -39,6 +33,17 @@ export function diffParagraphs(previous: string, next: string): ParagraphDiff {
     for (let j = b.length - 1; j >= 0; j -= 1)
       lcs[i]![j] =
         a[i] === b[j] ? lcs[i + 1]![j + 1]! + 1 : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
+  return lcs;
+}
+
+/**
+ * 문단 단위 diff — 두 글에 순서대로 공통인 문단(최장 공통 부분열)을 그대로인 문단으로 보고, 나머지를 바뀐 것으로 본다.
+ * 문단이 옮겨진 것(순서 바뀜)은 한쪽에서 없어지고 다른 쪽에 생긴 것으로 잡힌다.
+ */
+export function diffParagraphs(previous: string, next: string): ParagraphDiff {
+  const a = splitParagraphs(previous).map((p) => normalize(p.text));
+  const b = splitParagraphs(next).map((p) => normalize(p.text));
+  const lcs = lcsTable(a, b);
 
   const changed: number[] = [];
   const inserted: ParagraphDiff['inserted'] = [];
@@ -109,4 +114,82 @@ export function checkPatchScope(
         outside: [...outside].sort((x, y) => x - y),
         diff,
       };
+}
+
+/** 바뀐 곳 하나 — 그대로인 문단 사이에서 없어진 문단들과 그 자리에 생긴 문단들(원문 그대로). */
+export interface ParagraphHunk {
+  /** 고치기 전 글에서 이 곳이 시작하는 문단 번호(순수하게 끼워 넣은 것이면 그 바로 뒤 문단 번호). */
+  at: number;
+  removed: string[];
+  added: string[];
+}
+
+/** 바뀐 곳을 글 순서로 — 뒤 단계(링크드인·Zenn 고침)가 "본문의 무엇이 무엇으로 바뀌었나"를 모델에 주는 데 쓴다. */
+export function paragraphHunks(previous: string, next: string): ParagraphHunk[] {
+  const before = splitParagraphs(previous).map((p) => p.text);
+  const after = splitParagraphs(next).map((p) => p.text);
+  const a = before.map(normalize);
+  const b = after.map(normalize);
+  const lcs = lcsTable(a, b);
+  const hunks: ParagraphHunk[] = [];
+  let open: ParagraphHunk | undefined;
+  const hunk = (at: number) => (open ??= { at, removed: [], added: [] });
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) {
+      if (open !== undefined) hunks.push(open);
+      open = undefined;
+      i += 1;
+      j += 1;
+    } else if (j >= b.length || (i < a.length && lcs[i + 1]![j]! >= lcs[i]![j + 1]!)) {
+      hunk(i).removed.push(before[i]!);
+      i += 1;
+    } else {
+      hunk(i).added.push(after[j]!);
+      j += 1;
+    }
+  }
+  if (open !== undefined) hunks.push(open);
+  return hunks;
+}
+
+/**
+ * 바뀐 곳을 덮는 데 필요한 앵커 — 바뀐 문단 번호를 앞에서부터 "앵커 ± radius" 창으로 묶는다(탐욕, 최소 개수).
+ * 아무것도 안 바뀌었으면 빈 배열.
+ */
+export function coverChangedParagraphs(
+  previous: string,
+  next: string,
+  radius: number = PATCH_SCOPE_RADIUS,
+): number[] {
+  const all = checkPatchScope(previous, next, [], radius);
+  if (all.ok) return [];
+  const anchors: number[] = [];
+  for (const index of all.outside) {
+    const last = anchors[anchors.length - 1];
+    if (last === undefined || index > last + radius) anchors.push(index + radius);
+  }
+  return anchors;
+}
+
+export type PatchPlacesResult =
+  | { ok: true; places: number }
+  /** `places` = 바뀐 곳을 덮는 데 필요한 창의 수(허용 수를 넘었다). */
+  | { ok: false; code: 'PATCH_OUT_OF_SCOPE'; places: number };
+
+/**
+ * 앵커를 미리 알 수 없는 글(본문에서 파생된 링크드인·Zenn)의 범위 검사 — 같은 규칙(한 곳 = 앵커 문단 ± radius)을
+ * **곳 수**로 건다: 바뀐 문단을 덮는 창이 `maxPlaces`개 이하여야 한다. `maxPlaces`는 본문에서 바뀐 곳 수다.
+ */
+export function checkPatchPlaces(
+  previous: string,
+  next: string,
+  maxPlaces: number,
+  radius: number = PATCH_SCOPE_RADIUS,
+): PatchPlacesResult {
+  const places = coverChangedParagraphs(previous, next, radius).length;
+  return places <= maxPlaces
+    ? { ok: true, places }
+    : { ok: false, code: 'PATCH_OUT_OF_SCOPE', places };
 }
