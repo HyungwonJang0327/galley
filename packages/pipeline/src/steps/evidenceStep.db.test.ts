@@ -211,6 +211,51 @@ const deps = (redactConfig: RedactConfig | null, limits: EvidenceLimits = EVIDEN
   limits,
 });
 
+describe('evidence 단계 — 작업 문서', () => {
+  test('리포 위 폴더의 worklog에서 주제 낱말이 든 절을 번들에 싣고, posts 사본에는 위치만 남긴다', async () => {
+    const worklog = join(dir, 'worklog');
+    await mkdir(worklog, { recursive: true });
+    await writeFile(
+      join(worklog, '2024-03-06.md'),
+      '# 2024-03-06\n\n## 무한 스크롤 버그\n스크롤 위치가 튀었다(Example Corp 데모 전).\n다음 날 고쳤다.\n\n## 배포\n환경변수를 옮겼다.\n끝.\n',
+    );
+    try {
+      const { topic, run } = await seed(true);
+      const result = await createEvidenceStepRunner(deps(REDACT)).run(ctxFor(run, topic));
+      const stored = await store.read('무한-스크롤', run.id);
+      expect(stored.ok).toBe(true);
+      if (!stored.ok) return;
+      expect(stored.bundle.docs).toEqual([
+        {
+          kind: 'worklog',
+          path: 'worklog/2024-03-06.md',
+          lineRange: { start: 3, end: 6 },
+          source: 'disk',
+          date: '2024-03-06',
+          repo: 'fixture',
+          title: '2024-03-06 › 무한 스크롤 버그',
+          text: '## 무한 스크롤 버그\n스크롤 위치가 튀었다([COMPANY] 데모 전).\n다음 날 고쳤다.',
+          redacted: true,
+          truncated: false,
+        },
+      ]);
+      const pointers = JSON.parse(result.artifacts[EVIDENCE_ARTIFACT]!) as EvidencePointers;
+      expect(pointers.docs).toEqual([
+        {
+          kind: 'worklog',
+          path: 'worklog/2024-03-06.md',
+          lineRange: { start: 3, end: 6 },
+          source: 'disk',
+          date: '2024-03-06',
+        },
+      ]);
+      expect(result.artifacts[EVIDENCE_ARTIFACT]).not.toContain('스크롤 위치');
+    } finally {
+      await rm(worklog, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('evidence 단계', () => {
   test('linked 포인터를 읽어 DATA_DIR에 snippet 번들, artifacts에는 포인터만 — 모든 snippet이 커밋의 파일 내용과 일치', async () => {
     const { area, change, topic, run } = await seed(true);
@@ -283,6 +328,7 @@ describe('evidence 단계', () => {
       },
     ]);
     expect(stored.bundle.historyOmitted).toBe(0);
+    expect([stored.bundle.docs, stored.bundle.docsOmitted]).toEqual([[], 0]); // 작업 문서 폴더가 없다
     expect(pointers.history).toEqual([
       { commit: head, date: '2024-03-05T10:00:00+09:00', paths: ['src/b.ts', 'src/a.ts'] },
     ]);
