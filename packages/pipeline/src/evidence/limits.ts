@@ -12,5 +12,13 @@ export const EVIDENCE_LIMITS = {
   maxDiscoveredItems: 16,
   /** 기간 근접 가중이 미치는 달 수 — 주제 기간에서 이 달 수 안의 change 글은 거리에 따라 점수를 덜 받고, 넘으면 0. */
   periodNearMonths: 2,
+  /** 이력에 싣는 커밋 최대 수 — 넘으면 조각 파일을 많이 건드린 커밋 먼저, 같으면 오래된 것 먼저 남긴다. */
+  maxHistoryCommits: 40,
+  /** 리포 하나에서 이력 후보로 읽는 커밋 최대 수(최신부터). */
+  historyScanCommits: 400,
+  /** 커밋 본문(body) 최대 글자 수. 넘으면 잘라내고 `truncated`. */
+  historyBodyChars: 800,
+  /** 커밋 하나에 싣는 파일 최대 수 — 조각 파일을 먼저, 나머지는 git 순서. 전체 수는 `fileCount`. */
+  historyFilesPerCommit: 12,
 } as const;
 export type EvidenceLimits = { readonly [K in keyof typeof EVIDENCE_LIMITS]: number };

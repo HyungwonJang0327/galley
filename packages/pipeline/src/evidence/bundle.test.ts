@@ -26,6 +26,21 @@ const BUNDLE: EvidenceBundle = {
     },
   ],
   analyses: [{ id: 'a1', kind: 'area', title: 'src 영역', summary: '요약.' }],
+  history: [
+    {
+      commit: 'abc1234',
+      date: '2024-03-05T10:00:00+09:00',
+      paths: ['src/a.ts'],
+      repo: 'app',
+      subject: 'feat: COMMIT_SUBJECT',
+      body: 'COMMIT_BODY',
+      files: [{ status: 'A', path: 'src/a.ts', added: 2, deleted: 0 }],
+      fileCount: 1,
+      redacted: false,
+      truncated: false,
+    },
+  ],
+  historyOmitted: 0,
   unreadable: 0,
   filtered: true,
 };
@@ -37,6 +52,17 @@ describe('stripSnippets · parseEvidenceBundle', () => {
     expect(JSON.stringify(pointers)).not.toContain('secret');
     expect(pointers.items[0]).toMatchObject({ commit: 'abc1234', lineRange: { start: 1, end: 2 } });
     expect(BUNDLE.items[0]!.snippet).toBe('const secret = 1;\n'); // 원본 불변
+  });
+
+  test('posts 쪽 사본의 커밋 이력은 커밋·날짜·경로만 — 제목·본문·파일별 줄 수가 없다', () => {
+    const pointers = stripSnippets(BUNDLE);
+    expect(pointers.history).toEqual([
+      { commit: 'abc1234', date: '2024-03-05T10:00:00+09:00', paths: ['src/a.ts'] },
+    ]);
+    expect(JSON.stringify(pointers)).not.toContain('COMMIT_');
+    const { history: _h, ...noHistory } = BUNDLE;
+    void _h;
+    expect(stripSnippets(noHistory)).not.toHaveProperty('history');
   });
 
   test('라운드트립·형식 검증', () => {
@@ -63,6 +89,23 @@ describe('stripSnippets · parseEvidenceBundle', () => {
         items: [{ ...BUNDLE.items[0], lineRange: { start: 3, end: 2 } }],
       }),
     ).toMatchObject({ ok: false });
+    // history도 옵션 — 없으면 빈 배열·0, 제목 없는 포인터 사본이나 음수 줄 수는 거부
+    const { history: _h, historyOmitted: _o, ...withoutHistory } = BUNDLE;
+    void _h;
+    void _o;
+    const old = parseEvidenceBundle(withoutHistory);
+    expect(old.ok && [old.bundle.history, old.bundle.historyOmitted]).toEqual([[], 0]);
+    const commit = BUNDLE.history![0]!;
+    expect(
+      parseEvidenceBundle({ ...BUNDLE, history: stripSnippets(BUNDLE).history }),
+    ).toMatchObject({ ok: false });
+    expect(
+      parseEvidenceBundle({
+        ...BUNDLE,
+        history: [{ ...commit, files: [{ status: 'M', path: 'a', added: -1 }] }],
+      }),
+    ).toMatchObject({ ok: false });
+    expect(parseEvidenceBundle({ ...BUNDLE, historyOmitted: -1 })).toMatchObject({ ok: false });
     expect(parseEvidenceBundle('x')).toMatchObject({ ok: false });
   });
 });
