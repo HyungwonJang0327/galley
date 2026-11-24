@@ -34,6 +34,41 @@ export interface EvidenceAnalysis {
   summary: string;
 }
 
+/**
+ * 커밋 이력 한 줄의 포인터 쪽 — posts 사본에 남는 것은 이것뿐이다(커밋·날짜·경로). 제목·본문은 회사 글이라 DATA_DIR에만.
+ */
+export interface EvidenceCommitPointer {
+  commit: string;
+  /** 작성일(ISO 8601). */
+  date: string;
+  /** 번들 조각의 경로 중 이 커밋이 건드린 것 — 이 커밋이 이력에 든 이유. */
+  paths: string[];
+}
+
+export interface EvidenceCommitFile {
+  /** A 추가 · M 수정 · D 삭제 · T 종류 변경. */
+  status: 'A' | 'M' | 'D' | 'T';
+  path: string;
+  /** 추가·삭제 줄 수(바이너리는 없다). */
+  added?: number;
+  deleted?: number;
+}
+
+/** DATA_DIR 쪽 — 커밋 메시지(제목·본문, redact 거침)와 그 커밋이 바꾼 파일·줄 수. diff 본문은 없다. */
+export interface EvidenceCommit extends EvidenceCommitPointer {
+  /** 어느 리포의 커밋인가(리포 이름). */
+  repo: string;
+  subject: string;
+  body: string;
+  /** 바꾼 파일(상한 `historyFilesPerCommit`까지). */
+  files: EvidenceCommitFile[];
+  /** 그 커밋이 바꾼 파일 전체 수(`files`가 잘렸어도 이 수는 전체). */
+  fileCount: number;
+  redacted: boolean;
+  /** 본문·파일 목록이 상한으로 잘렸는가. */
+  truncated: boolean;
+}
+
 export interface EvidenceBundle {
   version: 1;
   runId: string;
@@ -44,6 +79,13 @@ export interface EvidenceBundle {
   items: EvidenceItem[];
   /** 항목이 온 분석 글의 제목·요약(옵션 — 없으면 빈 배열로 읽는다, version 1 유지). */
   analyses?: EvidenceAnalysis[];
+  /**
+   * 조각의 파일들을 건드린 커밋 이력, **오래된 순**(옵션 — 없으면 빈 배열로 읽는다, version 1 유지).
+   * decisions/evidence-collection.md "근거의 층과 순서".
+   */
+  history?: EvidenceCommit[];
+  /** 상한(`maxHistoryCommits`)에 밀려 이력에서 빠진 커밋 수. */
+  historyOmitted?: number;
   /** 읽지 못한 포인터 수(커밋·경로가 사라짐 등). 실패가 아니라 기록이다. */
   unreadable: number;
   /** 식별 정보 필터를 거쳤는가(설정 없이 진행하면 false — readOnly 리포가 있으면 단계가 거부한다). */
@@ -52,19 +94,25 @@ export interface EvidenceBundle {
 
 /** posts 쪽 — snippet 키가 없다(타입으로 강제). */
 export type EvidencePointerItem = EvidenceItemBase;
-export interface EvidencePointers extends Omit<EvidenceBundle, 'items'> {
+export interface EvidencePointers extends Omit<EvidenceBundle, 'items' | 'history'> {
   items: EvidencePointerItem[];
+  history?: EvidenceCommitPointer[];
 }
 
 /** 조각을 뗀 포인터 전용 사본 — posts/<슬러그>/evidence.json의 내용. */
 export function stripSnippets(bundle: EvidenceBundle): EvidencePointers {
+  const { history, ...rest } = bundle;
   return {
-    ...bundle,
+    ...rest,
     items: bundle.items.map((item) => {
       const { snippet: _snippet, ...pointer } = item;
       void _snippet;
       return pointer;
     }),
+    // 커밋 메시지·파일별 줄 수는 떼고 포인터(커밋·날짜·경로)만 — 이름을 골라 옮긴다(나중에 필드가 늘어도 새지 않게).
+    ...(history === undefined
+      ? {}
+      : { history: history.map((c) => ({ commit: c.commit, date: c.date, paths: c.paths })) }),
   };
 }
 
@@ -100,6 +148,32 @@ const isAnalysis = (v: unknown): v is EvidenceAnalysis =>
   typeof v['title'] === 'string' &&
   typeof v['summary'] === 'string';
 
+const isStringArray = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.every((x) => typeof x === 'string');
+const isCount = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0;
+
+const isCommitFile = (v: unknown): v is EvidenceCommitFile =>
+  isRecord(v) &&
+  (v['status'] === 'A' || v['status'] === 'M' || v['status'] === 'D' || v['status'] === 'T') &&
+  typeof v['path'] === 'string' &&
+  (v['added'] === undefined || isCount(v['added'])) &&
+  (v['deleted'] === undefined || isCount(v['deleted']));
+
+/** 제목이 없는 것(= posts의 포인터 사본)은 거부한다 — 조각 없는 항목을 거부하는 것과 같은 이유. */
+const isCommit = (v: unknown): v is EvidenceCommit =>
+  isRecord(v) &&
+  typeof v['commit'] === 'string' &&
+  typeof v['date'] === 'string' &&
+  isStringArray(v['paths']) &&
+  typeof v['repo'] === 'string' &&
+  typeof v['subject'] === 'string' &&
+  typeof v['body'] === 'string' &&
+  Array.isArray(v['files']) &&
+  v['files'].every(isCommitFile) &&
+  isCount(v['fileCount']) &&
+  typeof v['redacted'] === 'boolean' &&
+  typeof v['truncated'] === 'boolean';
+
 export type ParseBundleResult =
   { ok: true; bundle: EvidenceBundle } | { ok: false; code: 'EVIDENCE_BUNDLE_INVALID' };
 
@@ -108,6 +182,7 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
   const invalid = { ok: false as const, code: 'EVIDENCE_BUNDLE_INVALID' as const };
   if (!isRecord(json) || json['version'] !== 1) return invalid;
   const { runId, topicId, topicSlug, collectedAt, items, unreadable, filtered, analyses } = json;
+  const { history, historyOmitted } = json;
   if (
     typeof runId !== 'string' ||
     typeof topicId !== 'string' ||
@@ -117,7 +192,9 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
     !items.every(isItem) ||
     !Number.isInteger(unreadable) ||
     typeof filtered !== 'boolean' ||
-    (analyses !== undefined && !(Array.isArray(analyses) && analyses.every(isAnalysis)))
+    (analyses !== undefined && !(Array.isArray(analyses) && analyses.every(isAnalysis))) ||
+    (history !== undefined && !(Array.isArray(history) && history.every(isCommit))) ||
+    (historyOmitted !== undefined && !isCount(historyOmitted))
   )
     return invalid;
   return {
@@ -132,6 +209,8 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
       unreadable: unreadable as number,
       filtered,
       analyses: analyses === undefined ? [] : (analyses as EvidenceAnalysis[]),
+      history: history === undefined ? [] : (history as EvidenceCommit[]),
+      historyOmitted: historyOmitted === undefined ? 0 : historyOmitted,
     },
   };
 }
