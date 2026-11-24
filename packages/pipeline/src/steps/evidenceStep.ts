@@ -1,6 +1,7 @@
 // 근거 수집 단계(evidence) — linked: 주제에 연결된 분석 글(TopicAnalysisLink)의 포인터를 따라 원본 조각을 읽는다(BE8).
 // discovered: 연결에 없던 분석 글을 주제 키워드·기간 점수로 골라(`discoverAnalyses`, 모델 없음) 같은 방식으로 읽는다(BE9).
 // history: 담긴 조각의 파일들을 건드린 커밋 이력(`collectHistory`, 모델 없음 — decisions "근거의 층과 순서").
+// docs: 그 리포들의 작업 문서(worklog·decisions)에서 주제 낱말이 든 절(`collectDocs`, 모델 없음 — 리포 안 우선·없으면 바로 위 폴더).
 // 산출물: snippet 포함 번들은 EvidenceStore(DATA_DIR)에 쓰고, 워커에 돌려주는 artifacts에는 **포인터 사본만**
 // (`evidence.json` — B3a가 posts/<슬러그>/에 쓴다). 회사 코드 조각은 DATA_DIR 밖으로 나가지 않는다(CLAUDE.md §5).
 // 단계 라우팅(createStepRunner)은 BS5 — 여기는 evidence 단계만 아는 StepRunner다.
@@ -15,6 +16,7 @@ import type {
 import { stripSnippets } from '../evidence/bundle.ts';
 import { discoverAnalyses, type DiscoverRerank } from '../evidence/discover.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
+import { collectDocs, docTerms } from '../evidence/docs.ts';
 import { collectHistory, type HistoryRepo } from '../evidence/history.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
 import { readPointerSnippet, type CommitMetaResolver } from '../evidence/readSnippet.ts';
@@ -53,6 +55,7 @@ interface AnalysisRow {
   kind: string;
   title: string;
   summary: string;
+  keywords: string;
   pointers: string;
   repo: { name: string; path: string; readOnly: boolean };
 }
@@ -61,6 +64,7 @@ const ANALYSIS_SELECT = {
   kind: true,
   title: true,
   summary: true,
+  keywords: true,
   pointers: true,
   repo: { select: { name: true, path: true, readOnly: true } },
 } as const;
@@ -202,6 +206,33 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         if (!isAnalysisKind(a.kind)) continue;
         analyses.push({ id: a.id, kind: a.kind, title: a.title, summary: a.summary });
       }
+      // 작업 문서 — 낱말은 주제 제목 + 주제 힌트 키워드 + 항목이 담긴 분석 글의 키워드.
+      const topicHints = await deps.prisma.queueItem.findUnique({
+        where: { id: ctx.topic.id },
+        select: { keywords: true },
+      });
+      const usedAnalyses = [...linkedAnalyses, ...discoveredAnalyses].filter((a) =>
+        usedAnalysisIds.has(a.id),
+      );
+      ctx.signal.throwIfAborted();
+      const docs = await collectDocs(
+        targets.map((t) => ({ name: t.name, path: t.path })),
+        docTerms({
+          title: ctx.topic.title,
+          keywords: [
+            ...parseStringArray(topicHints?.keywords ?? '[]'),
+            ...usedAnalyses.flatMap((a) => parseStringArray(a.keywords)),
+          ],
+        }),
+        deps.redactConfig,
+        limits,
+      );
+      if (!docs.ok)
+        throw new StepFailure(
+          'EVIDENCE_REPO_UNAVAILABLE',
+          '연결된 리포를 읽을 수 없습니다(경로가 바뀌었거나 git 리포가 아닙니다).',
+          false,
+        );
       const bundle: EvidenceBundle = {
         version: 1,
         runId: ctx.runId,
@@ -212,6 +243,8 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         analyses,
         history: history.history,
         historyOmitted: history.omitted,
+        docs: docs.docs,
+        docsOmitted: docs.omitted,
         unreadable,
         filtered: deps.redactConfig !== null,
       };
