@@ -69,6 +69,30 @@ export interface EvidenceCommit extends EvidenceCommitPointer {
   truncated: boolean;
 }
 
+export type EvidenceDocKind = 'worklog' | 'decisions';
+
+/** 작업 문서 절의 포인터 쪽 — posts 사본에 남는 것(어느 문서의 몇 줄인가). 제목·본문은 DATA_DIR에만. */
+export interface EvidenceDocPointer {
+  kind: EvidenceDocKind;
+  /** `worklog/2026-06-20.md` — 문서 폴더 기준 상대 경로(절대경로 없음). */
+  path: string;
+  lineRange: { start: number; end: number };
+  /** git = 리포의 HEAD 커밋에서, disk = 리포 바로 위 폴더에서(커밋 없음). */
+  source: 'git' | 'disk';
+  commit?: string;
+  /** 파일 이름의 날짜(`YYYY-MM-DD`) — worklog. */
+  date?: string;
+}
+
+/** DATA_DIR 쪽 — 절의 머리글 경로와 본문(redact 거침). */
+export interface EvidenceDoc extends EvidenceDocPointer {
+  repo: string;
+  title: string;
+  text: string;
+  redacted: boolean;
+  truncated: boolean;
+}
+
 export interface EvidenceBundle {
   version: 1;
   runId: string;
@@ -86,6 +110,10 @@ export interface EvidenceBundle {
   history?: EvidenceCommit[];
   /** 상한(`maxHistoryCommits`)에 밀려 이력에서 빠진 커밋 수. */
   historyOmitted?: number;
+  /** 주제와 관련된 작업 문서(worklog·decisions)의 절 — worklog(날짜순) → decisions(옵션, 없으면 빈 배열). */
+  docs?: EvidenceDoc[];
+  /** 관련은 있으나 종류별 상한에 밀린 절 수. */
+  docsOmitted?: number;
   /** 읽지 못한 포인터 수(커밋·경로가 사라짐 등). 실패가 아니라 기록이다. */
   unreadable: number;
   /** 식별 정보 필터를 거쳤는가(설정 없이 진행하면 false — readOnly 리포가 있으면 단계가 거부한다). */
@@ -94,14 +122,15 @@ export interface EvidenceBundle {
 
 /** posts 쪽 — snippet 키가 없다(타입으로 강제). */
 export type EvidencePointerItem = EvidenceItemBase;
-export interface EvidencePointers extends Omit<EvidenceBundle, 'items' | 'history'> {
+export interface EvidencePointers extends Omit<EvidenceBundle, 'items' | 'history' | 'docs'> {
   items: EvidencePointerItem[];
   history?: EvidenceCommitPointer[];
+  docs?: EvidenceDocPointer[];
 }
 
 /** 조각을 뗀 포인터 전용 사본 — posts/<슬러그>/evidence.json의 내용. */
 export function stripSnippets(bundle: EvidenceBundle): EvidencePointers {
-  const { history, ...rest } = bundle;
+  const { history, docs, ...rest } = bundle;
   return {
     ...rest,
     items: bundle.items.map((item) => {
@@ -113,6 +142,18 @@ export function stripSnippets(bundle: EvidenceBundle): EvidencePointers {
     ...(history === undefined
       ? {}
       : { history: history.map((c) => ({ commit: c.commit, date: c.date, paths: c.paths })) }),
+    ...(docs === undefined
+      ? {}
+      : {
+          docs: docs.map((d) => ({
+            kind: d.kind,
+            path: d.path,
+            lineRange: d.lineRange,
+            source: d.source,
+            ...(d.commit !== undefined ? { commit: d.commit } : {}),
+            ...(d.date !== undefined ? { date: d.date } : {}),
+          })),
+        }),
   };
 }
 
@@ -174,6 +215,21 @@ const isCommit = (v: unknown): v is EvidenceCommit =>
   typeof v['redacted'] === 'boolean' &&
   typeof v['truncated'] === 'boolean';
 
+/** 본문이 없는 것(= posts의 포인터 사본)은 거부한다. */
+const isDoc = (v: unknown): v is EvidenceDoc =>
+  isRecord(v) &&
+  (v['kind'] === 'worklog' || v['kind'] === 'decisions') &&
+  typeof v['path'] === 'string' &&
+  isLineRange(v['lineRange']) &&
+  (v['source'] === 'git' || v['source'] === 'disk') &&
+  (v['commit'] === undefined || typeof v['commit'] === 'string') &&
+  (v['date'] === undefined || typeof v['date'] === 'string') &&
+  typeof v['repo'] === 'string' &&
+  typeof v['title'] === 'string' &&
+  typeof v['text'] === 'string' &&
+  typeof v['redacted'] === 'boolean' &&
+  typeof v['truncated'] === 'boolean';
+
 export type ParseBundleResult =
   { ok: true; bundle: EvidenceBundle } | { ok: false; code: 'EVIDENCE_BUNDLE_INVALID' };
 
@@ -182,7 +238,7 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
   const invalid = { ok: false as const, code: 'EVIDENCE_BUNDLE_INVALID' as const };
   if (!isRecord(json) || json['version'] !== 1) return invalid;
   const { runId, topicId, topicSlug, collectedAt, items, unreadable, filtered, analyses } = json;
-  const { history, historyOmitted } = json;
+  const { history, historyOmitted, docs, docsOmitted } = json;
   if (
     typeof runId !== 'string' ||
     typeof topicId !== 'string' ||
@@ -194,7 +250,9 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
     typeof filtered !== 'boolean' ||
     (analyses !== undefined && !(Array.isArray(analyses) && analyses.every(isAnalysis))) ||
     (history !== undefined && !(Array.isArray(history) && history.every(isCommit))) ||
-    (historyOmitted !== undefined && !isCount(historyOmitted))
+    (historyOmitted !== undefined && !isCount(historyOmitted)) ||
+    (docs !== undefined && !(Array.isArray(docs) && docs.every(isDoc))) ||
+    (docsOmitted !== undefined && !isCount(docsOmitted))
   )
     return invalid;
   return {
@@ -211,6 +269,8 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
       analyses: analyses === undefined ? [] : (analyses as EvidenceAnalysis[]),
       history: history === undefined ? [] : (history as EvidenceCommit[]),
       historyOmitted: historyOmitted === undefined ? 0 : historyOmitted,
+      docs: docs === undefined ? [] : (docs as EvidenceDoc[]),
+      docsOmitted: docsOmitted === undefined ? 0 : docsOmitted,
     },
   };
 }
