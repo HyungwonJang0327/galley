@@ -1,5 +1,6 @@
 // 근거 수집 단계(evidence) — linked: 주제에 연결된 분석 글(TopicAnalysisLink)의 포인터를 따라 원본 조각을 읽는다(BE8).
 // discovered: 연결에 없던 분석 글을 주제 키워드·기간 점수로 골라(`discoverAnalyses`, 모델 없음) 같은 방식으로 읽는다(BE9).
+// history: 담긴 조각의 파일들을 건드린 커밋 이력(`collectHistory`, 모델 없음 — decisions "근거의 층과 순서").
 // 산출물: snippet 포함 번들은 EvidenceStore(DATA_DIR)에 쓰고, 워커에 돌려주는 artifacts에는 **포인터 사본만**
 // (`evidence.json` — B3a가 posts/<슬러그>/에 쓴다). 회사 코드 조각은 DATA_DIR 밖으로 나가지 않는다(CLAUDE.md §5).
 // 단계 라우팅(createStepRunner)은 BS5 — 여기는 evidence 단계만 아는 StepRunner다.
@@ -14,6 +15,7 @@ import type {
 import { stripSnippets } from '../evidence/bundle.ts';
 import { discoverAnalyses, type DiscoverRerank } from '../evidence/discover.ts';
 import type { EvidenceStore } from '../evidence/EvidenceStore.ts';
+import { collectHistory, type HistoryRepo } from '../evidence/history.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
 import { readPointerSnippet, type CommitMetaResolver } from '../evidence/readSnippet.ts';
 import { gitCommitMeta } from '../index/gitRead.ts';
@@ -39,6 +41,7 @@ export const EVIDENCE_ARTIFACT = 'evidence.json';
 interface PlannedPointer {
   analysisId: string;
   repoPath: string;
+  repoName: string;
   repoReadOnly: boolean;
   pointerIndex: number;
   source: EvidenceSource;
@@ -51,7 +54,7 @@ interface AnalysisRow {
   title: string;
   summary: string;
   pointers: string;
-  repo: { path: string; readOnly: boolean };
+  repo: { name: string; path: string; readOnly: boolean };
 }
 const ANALYSIS_SELECT = {
   id: true,
@@ -59,7 +62,7 @@ const ANALYSIS_SELECT = {
   title: true,
   summary: true,
   pointers: true,
-  repo: { select: { path: true, readOnly: true } },
+  repo: { select: { name: true, path: true, readOnly: true } },
 } as const;
 
 function planAnalysis(
@@ -70,6 +73,7 @@ function planAnalysis(
     link: {
       analysisId: analysis.id,
       repoPath: analysis.repo.path,
+      repoName: analysis.repo.name,
       repoReadOnly: analysis.repo.readOnly,
       pointerIndex,
       source,
@@ -136,6 +140,8 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         discovered: limits.maxDiscoveredItems,
       };
       const count: Record<EvidenceSource, number> = { linked: 0, discovered: 0 };
+      // 조각이 실제로 담긴 리포·경로 — 커밋 이력을 읽을 범위(담긴 순).
+      const historyRepos = new Map<string, { name: string; paths: string[] }>();
       for (const { link, pointer } of planned) {
         if (count[link.source] >= budget[link.source]) continue;
         ctx.signal.throwIfAborted();
@@ -173,7 +179,20 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
           snippet: read.value.snippet,
         });
         count[link.source] += 1;
+        const repo = historyRepos.get(link.repoPath) ?? { name: link.repoName, paths: [] };
+        if (!repo.paths.includes(pointer.path)) repo.paths.push(pointer.path);
+        historyRepos.set(link.repoPath, repo);
       }
+
+      ctx.signal.throwIfAborted();
+      const targets: HistoryRepo[] = [...historyRepos].map(([path, r]) => ({ path, ...r }));
+      const history = await collectHistory(targets, deps.redactConfig, limits);
+      if (!history.ok)
+        throw new StepFailure(
+          'EVIDENCE_REPO_UNAVAILABLE',
+          '연결된 리포를 읽을 수 없습니다(경로가 바뀌었거나 git 리포가 아닙니다).',
+          false,
+        );
 
       // 항목이 실제로 담긴 글의 제목·요약만(인덱싱 때 redact된 값) — 본문 단계 입력의 "요약". linked 글 → discovered 글 순.
       const usedAnalysisIds = new Set(items.map((i) => i.analysisId));
@@ -191,6 +210,8 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         collectedAt: deps.clock.now().toISOString(),
         items,
         analyses,
+        history: history.history,
+        historyOmitted: history.omitted,
         unreadable,
         filtered: deps.redactConfig !== null,
       };

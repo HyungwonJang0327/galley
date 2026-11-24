@@ -253,6 +253,13 @@ export { discoverAnalyses, periodDistance, periodWeight } from './evidence/disco
 export type { DiscoveredAnalysis, DiscoverRerank, DiscoverOptions } from './evidence/discover.ts';
 export { stripSnippets, parseEvidenceBundle } from './evidence/bundle.ts';
 export type {
+  EvidenceCommit,
+  EvidenceCommitFile,
+  EvidenceCommitPointer,
+} from './evidence/bundle.ts';
+export { collectHistory } from './evidence/history.ts';
+export type { CollectHistoryResult, HistoryRepo } from './evidence/history.ts';
+export type {
   EvidenceBundle,
   EvidenceItem,
   EvidencePointers,
