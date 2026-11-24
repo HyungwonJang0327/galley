@@ -142,7 +142,7 @@ Galley/
 - **모델 id·단가를 앱 코드에 하드코딩하지 않는다. `ModelRegistry`(packages/pipeline)만 안다.** 앱·단계 코드는 어댑터 id만 받고 provider를 모른다. 모델은 실행(Run) 속성 — decisions/model-selection.md.
 - **파이프라인은 대시보드가 아니라 워커가 실행한다.** 대시보드는 Run을 `queued`로 만들 뿐, 워커에 직접 신호를 보내지 않는다(수정 지시·승인도 Run 상태 변경으로만) — decisions/run-location.md.
 - **요약만으로 본문을 쓰지 않는다. 본문 단계 입력은 EvidenceBundle뿐**(주제 + 원본 조각 + 어투 프롬프트). 리포 경로·분석 글 원문이 들어갈 자리를 입력 타입에 두지 않는다 — decisions/evidence-collection.md.
-- **읽기 전용 리포에 쓰기 금지.** 인덱싱·근거 수집은 `git show`·`git log` 등 읽기 명령만. 파일·브랜치·git 상태를 바꾸는 명령을 리포 경로에서 실행하지 않는다. 테스트는 tmpdir 픽스처 리포로만(회사 리포 미열람은 그대로).
+- **읽기 전용 리포에 쓰기 금지.** 인덱싱·근거 수집은 `git show`·`git log` 등 읽기 명령만(예외 하나: 작업 문서 `worklog/`·`decisions/`가 리포 커밋에 없으면 리포 바로 위 폴더에서 파일로 읽는다 — 읽기만, decisions/evidence-collection.md). 파일·브랜치·git 상태를 바꾸는 명령을 리포 경로에서 실행하지 않는다. 테스트는 tmpdir 픽스처 리포로만(회사 리포 미열람은 그대로).
 - **식별 정보 필터는 `.galley/redact.json` 한 곳.** 인덱싱(summary·note)과 EvidenceBundle(snippet) 양쪽이 같은 함수를 쓴다. 패턴을 코드에 흩어 두지 않는다.
 - **Node 24 LTS 필수**(`engines >=24`). 워커는 빌드·런처 없이 `node bin/worker.ts`로 돈다 — Node가 타입만 걷어낸다(decisions/node-runtime.md). 그래서 `packages/pipeline`에는 세 가지 제약이 있다:
   - **상대 import에 `.ts` 확장자 필수**(`from './foo.ts'`). 빠뜨리면 워커만 `ERR_MODULE_NOT_FOUND`로 죽는다(테스트·빌드는 통과한다).
