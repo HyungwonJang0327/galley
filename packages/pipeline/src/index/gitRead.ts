@@ -113,6 +113,9 @@ export type GitFileStatus = 'A' | 'M' | 'D' | 'T';
 export interface GitCommitFile {
   status: GitFileStatus;
   path: string;
+  /** 추가·삭제 줄 수 — `numstat` 옵션으로 읽었을 때만. 바이너리는 없다. */
+  added?: number;
+  deleted?: number;
 }
 export interface GitCommit {
   sha: string;
@@ -133,6 +136,13 @@ export interface GitLogOptions {
   from?: string;
   /** 최신부터 이 개수까지만. */
   maxCommits: number;
+  /**
+   * 이 경로들을 건드린 커밋만(리포 루트 기준, 글자 그대로 — pathspec 마법 없음). 고른 커밋의 `files`는 경로 밖 파일까지
+   * 전부 담는다(`--full-diff`) — "그 커밋이 한 일" 전체가 보이게. 빈 배열이면 커밋 0개.
+   */
+  paths?: readonly string[];
+  /** 파일마다 추가·삭제 줄 수도 읽는다(`--numstat`). diff 본문은 읽지 않는다. */
+  numstat?: boolean;
 }
 
 export interface GitLogResult {
@@ -170,19 +180,37 @@ function parseHeader(header: string): Omit<GitCommit, 'files'> | undefined {
   };
 }
 
-/** `--raw -z` 항목 `:<srcmode> <dstmode> <srcsha> <dstsha> <status>\0<path>\0`의 반복. */
+const NUMSTAT = /^(\d+|-)\t(\d+|-)\t([\s\S]+)$/;
+
+/**
+ * `--raw -z` 항목 `:<srcmode> <dstmode> <srcsha> <dstsha> <status>\0<path>\0`의 반복. `--numstat`을 함께 주면 그 뒤에
+ * `<추가>\t<삭제>\t<path>\0`이 이어진다(git 2.49 실측, 바이너리는 `-\t-`) — raw에 있던 파일에만 줄 수를 붙인다.
+ */
 function parseRawFiles(rest: string): GitCommitFile[] {
   const files: GitCommitFile[] = [];
+  const byPath = new Map<string, GitCommitFile>();
   const tokens = rest.replace(/^\n/, '').split('\0');
-  for (let i = 0; i + 1 < tokens.length; i += 2) {
-    const meta = tokens[i]!;
-    const path = tokens[i + 1]!;
-    if (!meta.startsWith(':') || path === '') continue;
-    const [srcMode = '', dstMode = '', , , status = ''] = meta.slice(1).split(' ');
-    if (EXCLUDED_MODES.has(srcMode) || EXCLUDED_MODES.has(dstMode)) continue;
-    const code = status.charAt(0);
-    if (!isFileStatus(code)) continue;
-    files.push({ status: code, path });
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i]!;
+    if (token.startsWith(':')) {
+      const path = tokens[i + 1] ?? '';
+      i += 1;
+      if (path === '') continue;
+      const [srcMode = '', dstMode = '', , , status = ''] = token.slice(1).split(' ');
+      if (EXCLUDED_MODES.has(srcMode) || EXCLUDED_MODES.has(dstMode)) continue;
+      const code = status.charAt(0);
+      if (!isFileStatus(code)) continue;
+      const file: GitCommitFile = { status: code, path };
+      files.push(file);
+      byPath.set(path, file);
+      continue;
+    }
+    const stat = NUMSTAT.exec(token);
+    if (stat === null) continue;
+    const file = byPath.get(stat[3]!);
+    if (file === undefined || stat[1] === '-' || stat[2] === '-') continue;
+    file.added = Number(stat[1]);
+    file.deleted = Number(stat[2]);
   }
   return files;
 }
@@ -203,13 +231,20 @@ export async function gitLog(
     return { ok: false, code: 'GIT_OBJECT_NOT_FOUND' };
   const max = Number.isFinite(options.maxCommits) ? Math.max(0, Math.floor(options.maxCommits)) : 0;
   const range = options.from === undefined ? options.to : `${options.from}..${options.to}`;
+  if (options.paths !== undefined && options.paths.length === 0)
+    return { ok: true, value: { commits: [], truncated: false } };
+  // 경로는 `--` 뒤에 글자 그대로(`--literal-pathspecs` — `:(glob)` 같은 pathspec 마법이 해석되지 않게).
+  const literal = options.paths === undefined ? [] : ['--literal-pathspecs'];
+  const pathArgs = options.paths === undefined ? [] : ['--', ...options.paths];
 
   const listed = await git(repoPath, [
+    ...literal,
     'rev-list',
     '--no-merges',
     `--max-count=${max + 1}`,
     '--end-of-options',
     range,
+    ...pathArgs,
   ]);
   if (!listed.ok) return listed;
   const all = listed.value.split('\n').filter((l) => FULL_SHA.test(l));
@@ -218,6 +253,7 @@ export async function gitLog(
   if (order.length === 0) return { ok: true, value: { commits: [], truncated } };
 
   const r = await git(repoPath, [
+    ...literal,
     'log',
     '-z',
     '--no-merges',
@@ -226,8 +262,11 @@ export async function gitLog(
     `--max-count=${max}`,
     '--format=%x1e%H%x1f%P%x1f%aI%x1f%s%x1f%b',
     '--raw',
+    ...(options.numstat === true ? ['--numstat'] : []),
+    ...(options.paths === undefined ? [] : ['--full-diff']),
     '--end-of-options',
     range,
+    ...pathArgs,
   ]);
   if (!r.ok) return r;
 

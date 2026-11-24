@@ -293,6 +293,41 @@ describe('gitLog (읽기 전용)', () => {
     expect(c.files).toEqual([{ status: 'A', path: 'src/c.ts' }]);
   });
 
+  test('paths를 주면 그 경로를 건드린 커밋만 — 파일 목록은 커밋 전체, numstat이면 줄 수가 붙는다', async () => {
+    const r = await gitLog(logRepo, {
+      to: shas[6]!,
+      maxCommits: 100,
+      paths: ['src/a.ts'],
+      numstat: true,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.commits.map((c) => c.sha)).toEqual([shas[2], shas[0]]);
+    expect(r.value.commits[0]!.files).toEqual([
+      { status: 'D', path: 'README.md', added: 0, deleted: 1 },
+      { status: 'D', path: 'src/a.ts', added: 0, deleted: 1 },
+      { status: 'A', path: 'src/b.ts', added: 1, deleted: 0 },
+    ]);
+    expect(r.value.commits[1]!.files).toEqual([
+      { status: 'A', path: 'README.md', added: 1, deleted: 0 },
+      { status: 'A', path: 'src/a.ts', added: 1, deleted: 0 },
+    ]);
+  });
+
+  test('paths는 글자 그대로 읽는다(pathspec 마법 없음) · 빈 배열이면 커밋 0개 · 한글 경로', async () => {
+    const magic = await gitLog(logRepo, { to: shas[6]!, maxCommits: 100, paths: [':(glob)**'] });
+    expect(magic).toEqual({ ok: true, value: { commits: [], truncated: false } });
+    const none = await gitLog(logRepo, { to: shas[6]!, maxCommits: 100, paths: [] });
+    expect(none).toEqual({ ok: true, value: { commits: [], truncated: false } });
+    const korean = await gitLog(logRepo, {
+      to: shas[6]!,
+      maxCommits: 1,
+      paths: ['src/한글 경로.ts', 'src/c.ts'],
+    });
+    expect(korean.ok && korean.value.commits.map((c) => c.sha)).toEqual([shas[6]]);
+    expect(korean.ok && korean.value.truncated).toBe(true);
+  });
+
   test('from..to 범위와 maxCommits(최신부터)·truncated를 지킨다', async () => {
     const ranged = await gitLog(logRepo, { from: shas[0]!, to: shas[2]!, maxCommits: 100 });
     expect(ranged.ok && ranged.value.commits.map((c) => c.sha)).toEqual([shas[2], shas[1]]);
