@@ -263,6 +263,29 @@ describe('evidence 단계', () => {
       { id: change.id, kind: 'change', title: 'c', summary: 's' },
     ]);
     expect(stored.bundle.items[1]!.note).toBeUndefined(); // change의 포인터엔 note가 없다
+    // 커밋 이력: 담긴 조각의 파일(b.ts·a.ts)을 건드린 커밋 — DATA_DIR에는 제목·파일·줄 수, posts 사본에는 커밋·날짜·경로만
+    expect(stored.bundle.history).toEqual([
+      {
+        commit: head,
+        date: '2024-03-05T10:00:00+09:00',
+        paths: ['src/b.ts', 'src/a.ts'],
+        repo: 'fixture',
+        subject: 'init',
+        body: '',
+        files: [
+          { status: 'A', path: 'src/a.ts', added: 3, deleted: 0 },
+          { status: 'A', path: 'src/b.ts', added: 1, deleted: 0 },
+          { status: 'A', path: 'src/c.ts', added: 1, deleted: 0 },
+        ],
+        fileCount: 3,
+        redacted: false,
+        truncated: false,
+      },
+    ]);
+    expect(stored.bundle.historyOmitted).toBe(0);
+    expect(pointers.history).toEqual([
+      { commit: head, date: '2024-03-05T10:00:00+09:00', paths: ['src/b.ts', 'src/a.ts'] },
+    ]);
     const raw = await readFile(store.pathFor('무한-스크롤', run.id), 'utf8');
     expect(raw).not.toContain('Example Corp');
     // 리포는 읽기만
