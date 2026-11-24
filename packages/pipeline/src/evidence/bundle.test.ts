@@ -41,6 +41,21 @@ const BUNDLE: EvidenceBundle = {
     },
   ],
   historyOmitted: 0,
+  docs: [
+    {
+      kind: 'worklog',
+      path: 'worklog/2024-03-06.md',
+      lineRange: { start: 3, end: 6 },
+      source: 'disk',
+      date: '2024-03-06',
+      repo: 'app',
+      title: 'DOC_TITLE',
+      text: 'DOC_TEXT',
+      redacted: false,
+      truncated: false,
+    },
+  ],
+  docsOmitted: 0,
   unreadable: 0,
   filtered: true,
 };
@@ -63,6 +78,23 @@ describe('stripSnippets · parseEvidenceBundle', () => {
     const { history: _h, ...noHistory } = BUNDLE;
     void _h;
     expect(stripSnippets(noHistory)).not.toHaveProperty('history');
+  });
+
+  test('posts 쪽 사본의 작업 문서는 어느 문서의 몇 줄인지만 — 머리글·본문이 없다', () => {
+    const pointers = stripSnippets(BUNDLE);
+    expect(pointers.docs).toEqual([
+      {
+        kind: 'worklog',
+        path: 'worklog/2024-03-06.md',
+        lineRange: { start: 3, end: 6 },
+        source: 'disk',
+        date: '2024-03-06',
+      },
+    ]);
+    expect(JSON.stringify(pointers)).not.toContain('DOC_');
+    const { docs: _d, ...noDocs } = BUNDLE;
+    void _d;
+    expect(stripSnippets(noDocs)).not.toHaveProperty('docs');
   });
 
   test('라운드트립·형식 검증', () => {
@@ -106,6 +138,15 @@ describe('stripSnippets · parseEvidenceBundle', () => {
       }),
     ).toMatchObject({ ok: false });
     expect(parseEvidenceBundle({ ...BUNDLE, historyOmitted: -1 })).toMatchObject({ ok: false });
+    // docs도 옵션 — 없으면 빈 배열·0, 본문 없는 포인터 사본은 거부
+    const { docs: _d, docsOmitted: _n, ...withoutDocs } = BUNDLE;
+    void _d;
+    void _n;
+    const noDocs = parseEvidenceBundle(withoutDocs);
+    expect(noDocs.ok && [noDocs.bundle.docs, noDocs.bundle.docsOmitted]).toEqual([[], 0]);
+    expect(parseEvidenceBundle({ ...BUNDLE, docs: stripSnippets(BUNDLE).docs })).toMatchObject({
+      ok: false,
+    });
     expect(parseEvidenceBundle('x')).toMatchObject({ ok: false });
   });
 });

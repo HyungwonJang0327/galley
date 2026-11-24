@@ -20,5 +20,17 @@ export const EVIDENCE_LIMITS = {
   historyBodyChars: 800,
   /** 커밋 하나에 싣는 파일 최대 수 — 조각 파일을 먼저, 나머지는 git 순서. 전체 수는 `fileCount`. */
   historyFilesPerCommit: 12,
+  /** 작업 문서(worklog·decisions) 파일 하나 최대 바이트 — 넘는 파일은 읽지 않는다. */
+  docFileBytes: 256 * 1024,
+  /** 리포 하나에서 읽는 작업 문서 파일 최대 수(경로순 앞에서부터). */
+  maxDocFiles: 300,
+  /** 번들에 싣는 worklog 절 최대 수(점수 순) — 사건 전개는 여기에 있어 decisions보다 넉넉히. */
+  maxWorklogSections: 10,
+  /** 번들에 싣는 decisions 절 최대 수(점수 순). */
+  maxDecisionSections: 6,
+  /** 절 하나 최대 글자 수. 넘으면 잘라내고 `truncated`. */
+  docSectionChars: 1800,
+  /** 절이 뽑히려면 들어 있어야 하는 서로 다른 주제 낱말 수. */
+  docMinTerms: 2,
 } as const;
 export type EvidenceLimits = { readonly [K in keyof typeof EVIDENCE_LIMITS]: number };
