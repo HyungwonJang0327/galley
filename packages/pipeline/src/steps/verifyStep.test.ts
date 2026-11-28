@@ -102,12 +102,45 @@ const run = (
 const reportOf = (r: { artifacts: Record<string, string> }): VerificationReport =>
   JSON.parse(r.artifacts[VERIFICATION_ARTIFACT]!) as VerificationReport;
 
+const LAYERS = {
+  background: { chars: 20, text: '회사에서 2년 넘게 만든 제품이었다', redacted: false },
+  docs: [
+    {
+      kind: 'worklog' as const,
+      path: 'worklog/2024-03-06.md',
+      lineRange: { start: 3, end: 6 },
+      source: 'git' as const,
+      date: '2024-03-06',
+      repo: 'app',
+      title: '2024-03-06 › 스크롤 버그',
+      text: '## 스크롤 버그\n스크롤 위치가 37번 튀는 것을 확인했다.',
+      redacted: false,
+      truncated: false,
+    },
+  ],
+  history: [
+    {
+      commit: 'fedcba9876543',
+      date: '2024-03-07T09:00:00+09:00',
+      paths: ['src/scroll.ts'],
+      repo: 'app',
+      subject: 'fix: 스크롤 위치 복원',
+      body: '뒤로 가기에서 위치를 잃어버리던 문제를 고쳤다.',
+      files: [{ status: 'M' as const, path: 'src/scroll.ts', added: 8, deleted: 2 }],
+      fileCount: 1,
+      redacted: false,
+      truncated: false,
+    },
+  ],
+  historyOmitted: 0,
+};
+
 describe('buildJudgePrompt · parseJudgments', () => {
   test('프롬프트 = 요약·근거 조각(펜스)·번호 붙은 문장, 판정 파서는 형식 밖을 걸러낸다', () => {
     const { system, prompt } = buildJudgePrompt(
       { ...BUNDLE, analyses: [{ id: 'a', kind: 'area', title: 't', summary: 's' }] },
       [{ text: '문장 하나다.', kind: 'statement', status: 'uncertain', line: 1 }],
-      1000,
+      { evidenceChars: 1000, docsChars: 1000, historyChars: 1000 },
     );
     expect(system).toContain('supported / unsupported / uncertain');
     expect(prompt).toContain('- [area] t: s');
@@ -416,6 +449,29 @@ describe('createVerifyStepRunner', () => {
     expect(r.artifacts[VERIFICATION_ARTIFACT]).not.toContain('PAGE_SIZE = 20');
     expect(sanitizeNote('  `x`  ', BUNDLE, 8)).toBeUndefined();
     expect(sanitizeNote('조각 1에 있음', BUNDLE, 8)).toBe('조각 1에 있음');
+  });
+
+  test('판정 프롬프트는 배경 메모·작업 문서·커밋 이력도 싣고, 사유가 그 문장을 인용하면 버린다', () => {
+    const bundle = { ...BUNDLE, ...LAYERS };
+    const { system, prompt } = buildJudgePrompt(
+      bundle,
+      [{ text: '문장 하나다.', kind: 'statement', status: 'uncertain', line: 1 }],
+      { evidenceChars: 1000, docsChars: 1000, historyChars: 1000 },
+    );
+    expect(system).toContain('배경 메모·작업 문서·커밋 이력·코드 조각');
+    expect(prompt).toContain('회사에서 2년 넘게 만든 제품이었다');
+    expect(prompt).toContain('## 문서 1 — worklog/2024-03-06.md');
+    expect(prompt).toContain('## 커밋 1 — 2024-03-07 fedcba9 (app)');
+    expect(prompt.indexOf('# 커밋 이력(')).toBeLessThan(prompt.indexOf('# 코드 조각('));
+    expect(sanitizeNote('커밋 1에 있음', bundle, 8)).toBe('커밋 1에 있음');
+    expect(sanitizeNote('fix: 스크롤 위치 복원 이라고 적힘', bundle, 8)).toBeUndefined();
+    expect(
+      sanitizeNote('뒤로 가기에서 위치를 잃어버리던 문제를 고쳤다.', bundle, 8),
+    ).toBeUndefined();
+    expect(
+      sanitizeNote('스크롤 위치가 37번 튀는 것을 확인했다. 라고 함', bundle, 8),
+    ).toBeUndefined();
+    expect(sanitizeNote('메모: 회사에서 2년 넘게 만든 제품이었다', bundle, 8)).toBeUndefined();
   });
 
   test('실패는 StepFailure로 — 모델 없음·키 없음·본문 없음/못 읽음/빈 것·번들 없음/깨짐·저장 실패는 재시도 불가, 판정 호출 503은 재시도', async () => {

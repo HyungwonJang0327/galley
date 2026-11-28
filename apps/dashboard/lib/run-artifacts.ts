@@ -355,6 +355,7 @@ const isReason = oneOf<ClaimReason>([
   'not-in-evidence',
   'generalizable',
   'in-analysis-summary',
+  'in-records',
   'judged',
   'not-judged',
   'judge-missing',

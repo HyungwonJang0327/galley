@@ -16,13 +16,15 @@ export interface EvidenceRef {
 
 /**
  * 판정 사유 코드 — 값은 영어 코드만, 한국어 문구는 앱이 붙인다(decisions/db-value-language.md 취지).
- * 기계: `not-in-evidence`(숫자 미발견) · `generalizable`(경로·식별자 미발견 — 어투가 일반화를 강제) · `in-analysis-summary`(요약에서만).
+ * 기계: `not-in-evidence`(숫자 미발견) · `generalizable`(경로·식별자 미발견 — 어투가 일반화를 강제) · `in-analysis-summary`(요약에서만) ·
+ * `in-records`(조각에는 없고 커밋 이력·작업 문서·배경 메모에 있음).
  * 서술: `judged`(모델 판정, `note`에 사유) · `not-judged`(상한 초과) · `judge-missing`(모델이 id를 빠뜨림) · `judge-unparsed` · `judge-truncated`.
  */
 export type ClaimReason =
   | 'not-in-evidence'
   | 'generalizable'
   | 'in-analysis-summary'
+  | 'in-records'
   | 'judged'
   | 'not-judged'
   | 'judge-missing'
@@ -299,8 +301,22 @@ export function matchMechanicalClaims(
   const summaries = plain(
     (bundle.analyses ?? []).map((a) => `${a.title}\n${a.summary}`).join('\n'),
   );
-  const find = (pattern: RegExp): EvidenceItem | 'summary' | undefined => {
+  // 조각 밖의 기록 — 커밋 이력(날짜·제목·본문·파일)·작업 문서(날짜·경로·머리글·본문)·배경 메모. 조각을 먼저 본다(포인터가 남는다).
+  const records = plain(
+    [
+      ...(bundle.history ?? []).flatMap((c) => [
+        c.date.slice(0, 10),
+        c.subject,
+        c.body,
+        ...c.files.map((f) => f.path),
+      ]),
+      ...(bundle.docs ?? []).flatMap((d) => [d.date ?? '', d.path, d.title, d.text]),
+      bundle.background?.text ?? '',
+    ].join('\n'),
+  );
+  const find = (pattern: RegExp): EvidenceItem | 'records' | 'summary' | undefined => {
     for (const h of haystacks) if (pattern.test(h.text)) return h.item;
+    if (pattern.test(records)) return 'records';
     return pattern.test(summaries) ? 'summary' : undefined;
   };
   return claims.map((claim) => {
@@ -331,9 +347,9 @@ export function matchMechanicalClaims(
         ? { ...claim, status: 'unsupported', reason: 'not-in-evidence' }
         : { ...claim, status: 'uncertain', reason: 'generalizable' };
     }
-    return hit === 'summary'
-      ? { ...claim, status: 'supported', reason: 'in-analysis-summary' }
-      : { ...claim, status: 'supported', evidenceRef: refOf(hit) };
+    if (hit === 'summary') return { ...claim, status: 'supported', reason: 'in-analysis-summary' };
+    if (hit === 'records') return { ...claim, status: 'supported', reason: 'in-records' };
+    return { ...claim, status: 'supported', evidenceRef: refOf(hit) };
   });
 }
 

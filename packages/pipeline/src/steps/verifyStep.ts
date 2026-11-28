@@ -28,7 +28,12 @@ import { extractJson, isRecord } from '../index/analysisText.ts';
 import type { GenerateResult, ModelAdapter } from '../model/ModelAdapter.ts';
 import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 import { VELOG_ARTIFACT } from './velogStep.ts';
-import { abortable, classifyModelError, renderEvidenceItems } from './writing.ts';
+import {
+  abortable,
+  classifyModelError,
+  renderEvidenceBundle,
+  type EvidenceRenderLimits,
+} from './writing.ts';
 
 export interface VerifyStepDeps {
   store: EvidenceStore;
@@ -46,12 +51,12 @@ export interface VerifyStepDeps {
 export const VERIFICATION_ARTIFACT = 'verification.json';
 
 const JUDGE_SYSTEM = `당신은 기술 블로그 초안의 문장이 "근거 묶음"으로 뒷받침되는지 판정하는 검수자입니다.
-- 근거 묶음(코드 조각·note·분석 글 요약)이 사실의 전부입니다. 상식·추측·일반적인 기술 지식으로 채우지 않습니다.
+- 근거 묶음(배경 메모·작업 문서·커밋 이력·코드 조각·note·분석 글 요약)이 사실의 전부입니다. 상식·추측·일반적인 기술 지식으로 채우지 않습니다.
 - 각 문장을 supported / unsupported / uncertain 중 하나로 판정합니다.
   - supported: 문장의 사실(수치·시점·동작·결정·이유·사건)이 근거에 있다. 이름이 일반 이름으로 바뀐 것(예: 경로·식별자·회사명 토큰)은 사실이 같으면 supported로 봅니다.
   - unsupported: 근거와 어긋나거나, 구체적 사실(수치·시점·사건·이유)을 주장하는데 근거에 그 사실이 없다.
   - uncertain: 의견·소감·일반론이거나, 근거만으로는 참·거짓을 가릴 수 없다.
-- reason은 한 줄 사유, **40자 이내**입니다. **근거 조각의 코드·경로·note를 인용하지 말고** "조각 2에 있음"처럼 조각 번호로 가리킵니다(사유는 공개 파일에 실립니다).
+- reason은 한 줄 사유, **40자 이내**입니다. **근거의 코드·경로·note·커밋 메시지·문서·메모 문장을 인용하지 말고** "조각 2에 있음"·"커밋 3에 있음"·"문서 1에 있음"·"배경 메모에 있음"처럼 번호로 가리킵니다(사유는 공개 파일에 실립니다).
 - 출력은 JSON 객체 하나뿐입니다: {"judgments":[{"id":1,"status":"supported","reason":"한 줄 사유"}, ...]}. 모든 id를 빠짐없이 포함하고, 앞뒤에 설명을 붙이지 않습니다.
 `;
 
@@ -74,12 +79,17 @@ export function sanitizeNote(
     .slice(0, NOTE_MAX_CHARS);
   if (cleaned === '') return undefined;
   const flat = cleaned.replace(/\s/g, '');
+  // 조각뿐 아니라 커밋 메시지·작업 문서·배경 메모도 DATA_DIR에만 두는 글이다 — 같은 기준으로 막는다.
+  const sources: string[] = [];
   for (const item of bundle.items) {
-    const candidates = [
-      ...item.snippet.split(/\r?\n/),
-      ...(item.note === undefined ? [] : [item.note]),
-    ];
-    for (const raw of candidates) {
+    sources.push(item.snippet);
+    if (item.note !== undefined) sources.push(item.note);
+  }
+  for (const c of bundle.history ?? []) sources.push(c.subject, c.body);
+  for (const d of bundle.docs ?? []) sources.push(d.text);
+  if (bundle.background !== undefined) sources.push(bundle.background.text);
+  for (const source of sources) {
+    for (const raw of source.split(/\r?\n/)) {
       const line = significant(raw, minLineChars);
       if (line !== undefined && flat.includes(line.replace(/\s/g, ''))) return undefined;
     }
@@ -87,11 +97,11 @@ export function sanitizeNote(
   return cleaned;
 }
 
-/** 판정 프롬프트 — 테스트·미리보기용으로 공개. 근거 묶음(조각·요약) + 번호 붙은 서술 문장(묶음 안에서 1부터). */
+/** 판정 프롬프트 — 테스트·미리보기용으로 공개. 근거 묶음(본문 단계와 같은 표현 — 메모·문서·이력·조각, 요약) + 번호 붙은 서술 문장(묶음 안에서 1부터). */
 export function buildJudgePrompt(
   bundle: EvidenceBundle,
   statements: readonly VerificationClaim[],
-  evidenceChars: number,
+  renderLimits: EvidenceRenderLimits,
 ): { system: string; prompt: string } {
   const lines: string[] = [];
   const analyses = bundle.analyses ?? [];
@@ -101,8 +111,7 @@ export function buildJudgePrompt(
     lines.push('');
   }
   lines.push(
-    `# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`,
-    ...renderEvidenceItems(bundle.items, evidenceChars),
+    ...renderEvidenceBundle(bundle, renderLimits),
     `# 판정할 문장(${statements.length}개)`,
   );
   statements.forEach((s, i) => lines.push(`${i + 1}. ${s.text}`));
@@ -137,7 +146,7 @@ export function parseJudgments(
 
 export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
   const limits = deps.limits ?? VERIFY_LIMITS;
-  const evidenceChars = (deps.writingLimits ?? WRITING_LIMITS).evidenceChars;
+  const renderLimits: EvidenceRenderLimits = deps.writingLimits ?? WRITING_LIMITS;
   const clock = deps.clock ?? { now: () => new Date() };
   return {
     async run(ctx: StepContext): Promise<StepResult> {
@@ -217,7 +226,7 @@ export function createVerifyStepRunner(deps: VerifyStepDeps): StepRunner {
         for (let start = 0; start < head.length; start += batchSize) {
           ctx.signal.throwIfAborted();
           const batch = head.slice(start, start + batchSize);
-          const { system, prompt } = buildJudgePrompt(bundle, batch, evidenceChars);
+          const { system, prompt } = buildJudgePrompt(bundle, batch, renderLimits);
           let generated: GenerateResult;
           try {
             generated = await abortable(
