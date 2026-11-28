@@ -160,6 +160,55 @@ describe('matchMechanicalClaims', () => {
     });
     expect(m.find((c) => c.text === '77건')?.evidenceRef).toBeUndefined();
   });
+
+  test('조각에 없는 숫자·날짜가 커밋 이력·작업 문서·배경 메모에 있으면 supported(in-records), 조각에도 있으면 조각이 먼저', () => {
+    const bundle: EvidenceBundle = {
+      ...BUNDLE,
+      items: [{ ...BUNDLE.items[0]!, note: undefined, snippet: 'limit = 50;' }],
+      background: { chars: 1, text: '회사에서 2년 넘게 만든 제품', redacted: false },
+      docs: [
+        {
+          kind: 'worklog',
+          path: 'worklog/2024-03-06.md',
+          lineRange: { start: 1, end: 2 },
+          source: 'git',
+          date: '2024-03-06',
+          repo: 'app',
+          title: 't',
+          text: '37건 튀었다. limit는 50개.',
+          redacted: false,
+          truncated: false,
+        },
+      ],
+      history: [
+        {
+          commit: 'c1',
+          date: '2024-03-07T09:00:00+09:00',
+          paths: [],
+          repo: 'app',
+          subject: 'fix',
+          body: '응답이 120ms 줄었다',
+          files: [],
+          fileCount: 0,
+          redacted: false,
+          truncated: false,
+        },
+      ],
+    };
+    const claims = extractMechanicalClaims(
+      splitBodyLines(
+        '2년 동안 만들었고 37건 튀었다. 120ms 줄었고 2024-03-07에 고쳤다. 50개씩, 99건은 없다.',
+      ),
+    );
+    const m = matchMechanicalClaims(claims, bundle);
+    const by = (text: string) => m.find((c) => c.text === text);
+    for (const text of ['2년', '37건', '120ms', '2024-03-07'])
+      expect(by(text), text).toMatchObject({ status: 'supported', reason: 'in-records' });
+    expect(by('2년')?.evidenceRef).toBeUndefined();
+    expect(by('50개')?.reason).toBeUndefined(); // 조각 히트 — 포인터가 남는다
+    expect(by('50개')?.evidenceRef).toBeDefined();
+    expect(by('99건')).toMatchObject({ status: 'unsupported', reason: 'not-in-evidence' });
+  });
 });
 
 describe('extractStatements', () => {

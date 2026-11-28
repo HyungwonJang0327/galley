@@ -21,6 +21,7 @@ const REASON_LABEL: Record<NonNullable<ClaimView['reason']>, string> = {
   'not-in-evidence': '근거에 없음',
   generalizable: '근거에 없어 일반화된 표현으로 봄',
   'in-analysis-summary': '분석 요약에만 있음',
+  'in-records': '이력·문서·메모에 있음',
   judged: '모델 판정',
   'not-judged': '판정 상한 초과',
   'judge-missing': '모델 판정 누락',
