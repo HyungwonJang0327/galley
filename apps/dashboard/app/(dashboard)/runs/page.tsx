@@ -171,10 +171,10 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             <>
               {/* 다른 실행을 고르면 폴러를 새로 만든다 — 같은 인스턴스가 "running → 아님" 전환으로
                   오인해 refresh를 한 번 더 부르지 않도록. */}
-              <RunPoller key={selected.id} active={isRunInProgress(selected.status)} />
-              {/* 실행이 바뀌면 입력을 버린다(다른 실행의 질문에 같은 id가 있다). */}
+              <RunPoller key={`poller-${selected.id}`} active={isRunInProgress(selected.status)} />
+              {/* 실행이 바뀌면 입력을 버린다(다른 실행의 질문에 같은 id가 있다). key는 형제인 폴러와 겹치지 않게 접두어를 붙인다. */}
               {review ? (
-                <RunReviewPanel key={selected.id} runId={selected.id} review={review} />
+                <RunReviewPanel key={`review-${selected.id}`} runId={selected.id} review={review} />
               ) : null}
               <RunTimeline
                 steps={selected.steps}
