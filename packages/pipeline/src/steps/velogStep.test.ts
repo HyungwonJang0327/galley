@@ -146,7 +146,7 @@ describe('buildVelogPrompt — 배경 메모', () => {
     expect(system.endsWith(TONE)).toBe(true);
     const memo = prompt.indexOf('# 배경 메모(');
     expect(memo).toBeGreaterThan(-1);
-    expect(memo).toBeLessThan(prompt.indexOf('# 근거 묶음('));
+    expect(memo).toBeLessThan(prompt.indexOf('# 코드 조각('));
     // 메모 안의 ``` 가 절을 닫지 못한다 — 더 긴 펜스로 감싼다
     expect(prompt).toContain('````\n회사에서 2년 넘게 만든 제품\n```\n사용자는 나 혼자\n````');
   });
@@ -159,6 +159,53 @@ describe('buildVelogPrompt — 배경 메모', () => {
     });
     expect(prompt).not.toContain('배경 메모');
     expect(system).not.toContain('배경 메모');
+  });
+});
+
+describe('buildVelogPrompt — 이력·작업 문서', () => {
+  const tone = { step: 'velog' as const, text: TONE, hash: 'h' };
+  const history = [
+    {
+      commit: 'fedcba9876543',
+      date: '2024-03-07T09:00:00+09:00',
+      paths: ['src/scroll.ts'],
+      repo: 'app',
+      subject: 'fix: 스크롤 위치 복원',
+      body: '뒤로 가기에서 위치를 잃어버리던 문제를 고쳤다.',
+      files: [{ status: 'M' as const, path: 'src/scroll.ts', added: 8, deleted: 2 }],
+      fileCount: 1,
+      redacted: false,
+      truncated: false,
+    },
+  ];
+  test('이력이 있으면 커밋 이력 절이 코드 조각 앞에 들어가고, SYSTEM에 서술 규칙(첫 장면·삽질 기록 조건·타임라인 4개·이름 금지)이 붙는다', () => {
+    const { system, prompt } = buildVelogPrompt({
+      topic: { title: 't', slug: 's' },
+      bundle: { ...BUNDLE, history, historyOmitted: 0 },
+      tone,
+    });
+    expect(prompt).toContain('## 커밋 1 — 2024-03-07 fedcba9 (app)\n제목: fix: 스크롤 위치 복원');
+    expect(prompt).toContain('파일: M src/scroll.ts (+8 -2)');
+    expect(prompt.indexOf('# 커밋 이력(')).toBeLessThan(prompt.indexOf('# 코드 조각('));
+    expect(system).toContain('사건 한 장면');
+    expect(system).toContain('제품이나 기능 소개로 시작하지 않습니다');
+    expect(system).toContain('"실수 → 발견 → 고침"');
+    expect(system).toContain("결과 절의 '아쉬운 것'으로");
+    expect(system).toContain('날짜에서 4개 이상');
+    expect(system).toContain('에이전트 역할 이름은 본문에 옮기지 않습니다');
+    expect(system).not.toContain('배경 메모는 작성자가 직접'); // 메모가 없으면 메모 줄은 없다
+    expect(system.endsWith(TONE)).toBe(true);
+  });
+
+  test('이력·문서·메모가 없는 묶음(옛 실행)의 프롬프트는 그대로다', () => {
+    const { system, prompt } = buildVelogPrompt({
+      topic: { title: 't', slug: 's' },
+      bundle: { ...BUNDLE, history: [], docs: [] },
+      tone,
+    });
+    expect(system).not.toContain('사건 한 장면');
+    expect(prompt).toContain(`# 근거 묶음(${BUNDLE.items.length}개 조각 — 이것이 사실의 전부)`);
+    expect(prompt).not.toContain('커밋 이력');
   });
 });
 
