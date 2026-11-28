@@ -65,8 +65,9 @@ export function EvidencePanel({ evidence }: { evidence: EvidenceView }) {
               {evidence.filtered && item.snippetPreview.length > 0 ? (
                 // 가로 스크롤 영역은 키보드 초점이 가야 한다(axe scrollable-region-focusable).
                 <pre className={styles.snippet} tabIndex={0} aria-label="근거 조각 미리보기">
-                  {item.snippetPreview.join('\n')}
-                  {item.hasMore ? '\n…' : ''}
+                  {/* 문자열 하나로 넘긴다 — 빈 줄로 시작하는 조각은 브라우저가 <pre> 뒤 첫 줄바꿈을 버려 hydration이 어긋나는데,
+                      React는 자식이 문자열 하나일 때만 그것을 보정한다. */}
+                  {item.snippetPreview.join('\n') + (item.hasMore ? '\n…' : '')}
                 </pre>
               ) : null}
             </li>
