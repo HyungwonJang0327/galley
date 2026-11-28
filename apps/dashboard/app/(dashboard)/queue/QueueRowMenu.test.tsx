@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { RunStartProvider } from '../_components/RunStart';
 import { QueueRowMenu } from './QueueRowMenu';
 import { TopicEvidenceProvider } from './TopicEvidenceEdit';
+import { TopicNoteProvider } from './TopicNoteEdit';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('../../../lib/run-api-client', () => ({ startRun: vi.fn() }));
@@ -29,11 +30,18 @@ const evidenceActions = {
   remove: vi.fn(),
 };
 
-/** 행 메뉴는 페이지의 실행 시작·근거 편집 Dialog(Provider 둘) 안에서만 쓰인다. */
+const noteActions = {
+  load: vi.fn().mockResolvedValue({ ok: true, data: { note: '', maxChars: 2000 } }),
+  save: vi.fn(),
+};
+
+/** 행 메뉴는 페이지의 실행 시작·배경 메모·근거 편집 Dialog(Provider 셋) 안에서만 쓰인다. */
 function renderInPage(ui: ReactElement) {
   return render(
     <RunStartProvider choices={choices} loadEvidence={evidenceActions.load}>
-      <TopicEvidenceProvider actions={evidenceActions}>{ui}</TopicEvidenceProvider>
+      <TopicNoteProvider actions={noteActions}>
+        <TopicEvidenceProvider actions={evidenceActions}>{ui}</TopicEvidenceProvider>
+      </TopicNoteProvider>
     </RunStartProvider>,
   );
 }
@@ -63,6 +71,7 @@ describe('QueueRowMenu', () => {
       '후보로',
       '보류로',
       '근거 편집',
+      '배경 메모',
       '지금 실행',
     ]);
     expect(
@@ -154,6 +163,21 @@ describe('QueueRowMenu', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain('이동 요청이 실패했습니다'),
     );
+  });
+
+  it('"배경 메모"는 그 주제의 배경 메모 Dialog를 연다(move는 부르지 않는다)', async () => {
+    const move = vi.fn();
+    renderInPage(<QueueRowMenu {...props} move={move} />);
+    openMenu();
+    await waitFor(() => expect(screen.getByRole('menu')).toBeTruthy());
+
+    press(screen.getByRole('menuitem', { name: '배경 메모' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: '첫 주제 — 배경 메모' })).toBeTruthy(),
+    );
+    expect(noteActions.load).toHaveBeenCalledWith('topic-1');
+    expect(move).not.toHaveBeenCalled();
   });
 
   it('비활성 "지금 실행"을 눌러도 move를 부르지 않는다', async () => {
