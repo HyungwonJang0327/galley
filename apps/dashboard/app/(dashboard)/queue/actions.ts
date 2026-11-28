@@ -20,6 +20,11 @@ import {
   type TopicEvidenceListResult,
   type TopicEvidenceSearchResult,
 } from '../../../lib/topic-evidence';
+import {
+  getTopicBackgroundNote,
+  saveTopicBackgroundNote,
+  type TopicNoteResult,
+} from '../../../lib/topic-note';
 
 export async function reloadQueueAction(): Promise<QueueReloadResult> {
   const result = await reloadQueue();
@@ -91,4 +96,14 @@ export async function removeTopicEvidenceAction(
   const result = await removeTopicEvidence(topicId, analysisId);
   if (result.ok) revalidatePath('/', 'layout');
   return result;
+}
+
+/** "배경 메모" Dialog가 열릴 때 읽는 메모. 읽기만. */
+export async function loadTopicNoteAction(topicId: string): Promise<TopicNoteResult> {
+  return getTopicBackgroundNote(topicId);
+}
+
+/** 배경 메모 저장. 큐 목록에는 메모가 보이지 않아 다시 그리지 않는다 — 다음 실행의 근거 수집이 읽는다. */
+export async function saveTopicNoteAction(topicId: string, note: string): Promise<TopicNoteResult> {
+  return saveTopicBackgroundNote(topicId, note);
 }

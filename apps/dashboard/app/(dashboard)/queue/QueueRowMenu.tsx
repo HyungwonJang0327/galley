@@ -5,16 +5,19 @@ import type { MoveQueueTopicInput, QueueStatus } from '@galley/pipeline';
 import type { QueueMoveResult } from '../../../lib/queue-move';
 import {
   EDIT_EVIDENCE_ID,
+  EDIT_NOTE_ID,
   parseMoveTarget,
   queueRowMenuEntries,
   RUN_NOW_ID,
 } from '../../../lib/queue-row-menu';
 import { useRunStart } from '../_components/RunStart';
 import { useTopicEvidenceEdit } from './TopicEvidenceEdit';
+import { useTopicNoteEdit } from './TopicNoteEdit';
 import styles from './QueueRowMenu.module.css';
 
 // 큐 행 끝 ⋮ 메뉴. move는 Server Action(테스트에선 가짜). 이동 성공 시 액션이 화면을 다시 그린다.
-// "지금 실행"은 페이지의 실행 시작 Dialog(RunStartProvider)를, "근거 편집"은 근거 편집 Dialog(TopicEvidenceProvider)를 연다.
+// "지금 실행"은 페이지의 실행 시작 Dialog(RunStartProvider)를, "근거 편집"은 근거 편집 Dialog(TopicEvidenceProvider)를,
+// "배경 메모"는 배경 메모 Dialog(TopicNoteProvider)를 연다.
 export function QueueRowMenu({
   topicId,
   title,
@@ -37,6 +40,7 @@ export function QueueRowMenu({
   const [error, setError] = useState<string | null>(null);
   const openRunStart = useRunStart();
   const openEvidenceEdit = useTopicEvidenceEdit();
+  const openNoteEdit = useTopicNoteEdit();
 
   return (
     <div className={styles.menu}>
@@ -60,6 +64,10 @@ export function QueueRowMenu({
           }
           if (id === EDIT_EVIDENCE_ID) {
             openEvidenceEdit({ id: topicId, title });
+            return;
+          }
+          if (id === EDIT_NOTE_ID) {
+            openNoteEdit({ id: topicId, title });
             return;
           }
           const to = parseMoveTarget(id);

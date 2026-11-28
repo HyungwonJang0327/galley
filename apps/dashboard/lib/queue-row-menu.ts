@@ -1,5 +1,5 @@
 // 큐 행 ⋮ 메뉴 항목(표현용, 순수). 클라이언트에서도 쓰므로 pipeline 값은 import하지 않는다(타입만).
-// 항목 구성은 decisions/layout.md §4 — 이동 3개 중 현재 섹션은 빼고, 구분선 뒤 "근거 편집"·"지금 실행".
+// 항목 구성은 decisions/layout.md §4 — 이동 3개 중 현재 섹션은 빼고, 구분선 뒤 "근거 편집"·"배경 메모"·"지금 실행".
 import type { MissingMark, MovableStatus, QueueStatus } from '@galley/pipeline';
 
 export interface QueueRowMenuItem {
@@ -20,9 +20,13 @@ const MOVE_TARGETS: readonly { status: MovableStatus; label: string }[] = [
 const MOVE_PREFIX = 'move:';
 export const RUN_NOW_ID = 'run-now';
 export const EDIT_EVIDENCE_ID = 'edit-evidence';
+export const EDIT_NOTE_ID = 'edit-note';
 
 /** "근거 편집" = 연결된 분석 글 목록·추가·제거 Dialog(BE12 — decisions/evidence-collection.md "수동 편집"). 늘 활성. */
 const EDIT_EVIDENCE: QueueRowMenuItem = { id: EDIT_EVIDENCE_ID, label: '근거 편집' };
+
+/** "배경 메모" = 커밋·문서에 없는 조건·동기를 적는 Dialog(decisions/evidence-collection.md "근거의 층과 순서"). 늘 활성. */
+const EDIT_NOTE: QueueRowMenuItem = { id: EDIT_NOTE_ID, label: '배경 메모' };
 
 /** "지금 실행" = 실행 시작 Dialog를 연다(BM6 — 큐 상단·홈 카드와 같은 Dialog). */
 const RUN_NOW: QueueRowMenuItem = { id: RUN_NOW_ID, label: '지금 실행' };
@@ -66,7 +70,7 @@ export function queueRowMenuEntries(
     options.runDisabledReason === undefined
       ? RUN_NOW
       : { ...RUN_NOW, disabled: true, disabledReason: options.runDisabledReason };
-  return [...moves, { type: 'separator' }, EDIT_EVIDENCE, runNow];
+  return [...moves, { type: 'separator' }, EDIT_EVIDENCE, EDIT_NOTE, runNow];
 }
 
 /** 메뉴 id → 옮길 섹션. 이동 항목이 아니면 null. */

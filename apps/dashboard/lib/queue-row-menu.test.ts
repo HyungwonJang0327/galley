@@ -7,6 +7,7 @@ import {
   topicRunDisabledReason,
   RUN_NOW_ID,
   EDIT_EVIDENCE_ID,
+  EDIT_NOTE_ID,
 } from './queue-row-menu';
 
 const labels = (status: 'waiting' | 'candidate' | 'hold') =>
@@ -14,9 +15,30 @@ const labels = (status: 'waiting' | 'candidate' | 'hold') =>
 
 describe('queueRowMenuEntries', () => {
   it('현재 섹션으로 가는 항목은 빼고 나머지 이동 2개를 준다', () => {
-    expect(labels('waiting')).toEqual(['후보로', '보류로', '—', '근거 편집', '지금 실행']);
-    expect(labels('candidate')).toEqual(['대기로', '보류로', '—', '근거 편집', '지금 실행']);
-    expect(labels('hold')).toEqual(['대기로', '후보로', '—', '근거 편집', '지금 실행']);
+    expect(labels('waiting')).toEqual([
+      '후보로',
+      '보류로',
+      '—',
+      '근거 편집',
+      '배경 메모',
+      '지금 실행',
+    ]);
+    expect(labels('candidate')).toEqual([
+      '대기로',
+      '보류로',
+      '—',
+      '근거 편집',
+      '배경 메모',
+      '지금 실행',
+    ]);
+    expect(labels('hold')).toEqual([
+      '대기로',
+      '후보로',
+      '—',
+      '근거 편집',
+      '배경 메모',
+      '지금 실행',
+    ]);
   });
 
   it('"지금 실행"은 활성(실행 시작 Dialog를 연다)', () => {
@@ -36,10 +58,12 @@ describe('queueRowMenuEntries', () => {
       '보류로',
       '—',
       '근거 편집',
+      '배경 메모',
       '지금 실행',
     ]);
     // "근거 편집"은 사유와 무관하게 활성 — 실행 못 하는 주제도 근거는 손볼 수 있다
-    expect(entries.at(-2)).toEqual({ id: EDIT_EVIDENCE_ID, label: '근거 편집' });
+    expect(entries.at(-3)).toEqual({ id: EDIT_EVIDENCE_ID, label: '근거 편집' });
+    expect(entries.at(-2)).toEqual({ id: EDIT_NOTE_ID, label: '배경 메모' });
     expect(entries.at(-1)).toMatchObject({
       id: RUN_NOW_ID,
       disabled: true,
