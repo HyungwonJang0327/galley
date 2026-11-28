@@ -4,7 +4,7 @@
 // 파일이 없거나 DATA_DIR이 없으면 오류가 아니라 "질문 없음"이다 — 이 패널이 실행 상세를 막지 않는다.
 import 'server-only';
 import {
-  checkBodyCode,
+  checkPostShape,
   collectReviewQuestions,
   derivedPatchArtifact,
   getRunWithSteps,
@@ -13,14 +13,16 @@ import {
   parseReviewAnswerSet,
   parseReviewQuestions,
   parseReviewResult,
+  POST_SHAPE_REFERENCE,
   prisma,
   REVIEW_ANSWER_MAX_LENGTH,
   REVIEW_QUESTIONS_ARTIFACT,
   REVIEW_RESULT_ARTIFACT,
   reviewQuestionsInputOf,
   RUN_STATUS,
-  type BodyCodeFinding,
   type DerivedPatchStep,
+  type PostShape,
+  type PostShapeFinding,
   type ReviewAnswer,
   type ReviewAnswerItem,
   type ReviewQuestion,
@@ -66,6 +68,21 @@ export interface ReviewUnappliedView {
   reused: boolean;
 }
 
+/** 기존 글과 견준 수치 한 줄 — 이 본문의 값과 기존 글 23편의 범위. */
+export interface BodyShapeStat {
+  label: string;
+  value: string;
+  reference: string;
+}
+
+export interface BodyShapeView {
+  /** 기준(본문 글자 수·코드 블록 수) 밖인 항목(문구). */
+  off: string[];
+  /** 경고(블록 길이·코드 비율, 문구). */
+  warn: string[];
+  stats: BodyShapeStat[];
+}
+
 export interface RunReviewView {
   /** 질문에 답할 수 있는가 — 승인 대기만. */
   answerable: boolean;
@@ -76,8 +93,8 @@ export interface RunReviewView {
   unapplied: ReviewUnappliedView[];
   /** 본문 수정이 반영되지 않아 이전 글을 그대로 둔 뒤 단계(문구). */
   kept: string[];
-  /** 본문의 코드 분량이 기준을 넘은 항목(문구) — 표시만 하고 승인을 막지 않는다. */
-  bodyNotes: string[];
+  /** 본문을 기존 글과 견준 결과(승인 대기에서만) — 표시만 하고 승인을 막지 않는다. */
+  bodyShape?: BodyShapeView;
   /** 채움 글 길이 상한. */
   maxLength: number;
 }
@@ -107,21 +124,80 @@ const DERIVED_STEPS: readonly { step: DerivedPatchStep; label: string }[] = [
 /** 벨로그 본문 산출물 이름(pipeline `VELOG_ARTIFACT`와 같은 값). */
 const VELOG_ARTIFACT = 'velog.md';
 
-function describeBodyCode(finding: BodyCodeFinding): string {
-  if (finding.code === 'CODE_BLOCKS_OVER')
-    return `코드 블록이 ${finding.value}개입니다(기준 ${finding.limit}개 이하).`;
-  if (finding.code === 'CODE_BLOCK_TOO_LONG')
-    return `${finding.limit}줄을 넘는 코드 블록이 ${finding.count}개 있습니다(가장 긴 것 ${finding.value}줄).`;
-  return `코드가 본문 글자의 ${finding.value}%입니다(기준 ${finding.limit}% 이하).`;
+const num = (n: number) => n.toLocaleString('ko-KR');
+
+function describeShapeFinding(finding: PostShapeFinding): string {
+  switch (finding.code) {
+    case 'PROSE_CHARS_UNDER':
+    case 'PROSE_CHARS_OVER':
+      return `본문이 ${num(finding.value)}자입니다(기준 ${num(finding.min)}~${num(finding.max)}자, 코드 제외).`;
+    case 'CODE_BLOCKS_UNDER':
+    case 'CODE_BLOCKS_OVER':
+      return `코드 블록이 ${finding.value}개입니다(기준 ${finding.min}~${finding.max}개).`;
+    case 'CODE_BLOCK_TOO_LONG':
+      return `가장 긴 코드 블록이 ${finding.value}줄입니다(기존 글에서 가장 긴 것 ${finding.limit}줄).`;
+    case 'CODE_RATIO_OVER':
+      return `코드가 본문 글자의 ${finding.value}%입니다(기존 글에서 가장 높은 것 ${finding.limit}%).`;
+  }
 }
 
-/** 이 실행의 본문(이전 결과 유지면 출처 실행의 것)에서 코드 분량이 기준을 넘은 항목. 본문이 없으면 빈 배열. */
-async function loadBodyNotes(store: LocalFsArtifactStore, run: RunDetail): Promise<string[]> {
+const range = (r: { min: number; max: number }, unit: string) =>
+  `${num(r.min)}~${num(r.max)}${unit}`;
+
+/** 잰 값 전부를 기존 글 23편의 범위와 나란히 — 표시만 한다. */
+function shapeStats(shape: PostShape): BodyShapeStat[] {
+  const ref = POST_SHAPE_REFERENCE;
+  return [
+    {
+      label: '본문 글자 수(코드 제외)',
+      value: `${num(shape.proseChars)}자`,
+      reference: range(ref.proseChars, '자'),
+    },
+    { label: '코드 블록', value: `${shape.codeBlocks}개`, reference: range(ref.codeBlocks, '개') },
+    {
+      label: '가장 긴 코드 블록',
+      value: `${shape.longestBlockLines}줄`,
+      reference: range(ref.longestBlockLines, '줄'),
+    },
+    { label: '코드 비율', value: `${shape.codePercent}%`, reference: range(ref.codePercent, '%') },
+    {
+      label: '인라인 코드',
+      value: `${shape.inlineCodes}개`,
+      reference: range(ref.inlineCodes, '개'),
+    },
+    { label: '문단', value: `${shape.paragraphs}개`, reference: range(ref.paragraphs, '개') },
+    {
+      label: '삽화 자리',
+      value: `${shape.illustrationSlots}개`,
+      reference: range(ref.illustrationSlots, '개'),
+    },
+    {
+      label: '결과 절 날짜',
+      value: `${shape.resultDates}개`,
+      reference: `${range(ref.resultDates, '개')}(날짜 목록이 있는 6편)`,
+    },
+  ];
+}
+
+/**
+ * 이 실행의 본문(이전 결과 유지면 출처 실행의 것)을 기존 글과 견준 결과. 본문이 없으면 undefined.
+ * 기준 밖·경고·수치 모두 표시만 한다 — 승인을 막지 않는다.
+ */
+async function loadBodyShape(
+  store: LocalFsArtifactStore,
+  run: RunDetail,
+): Promise<BodyShapeView | undefined> {
   const step = run.steps.find((s) => s.name === 'velog');
   const bodyRunId =
     step?.origin === 'carried' && step.sourceRunId !== null ? step.sourceRunId : run.id;
   const body = await store.read(run.topicSlug, bodyRunId, VELOG_ARTIFACT);
-  return body.ok ? checkBodyCode(body.text).map(describeBodyCode) : [];
+  if (!body.ok) return undefined;
+  const { shape, findings } = checkPostShape(body.text);
+  return {
+    off: findings.filter((f) => f.level === 'off').map(describeShapeFinding),
+    warn: findings.filter((f) => f.level === 'warn').map(describeShapeFinding),
+    stats: shapeStats(shape),
+  };
 }
 
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
@@ -205,7 +281,7 @@ async function loadKept(store: LocalFsArtifactStore, run: RunDetail): Promise<st
 }
 
 /**
- * 실행 상세의 확인 질문 패널. 보일 것이 없으면(질문 0·미반영 0·유지 0·코드 분량 알림 0, 또는 DATA_DIR·실행 없음) undefined — 패널이 빠진다.
+ * 실행 상세의 확인 질문 패널. 보일 것이 없으면(질문 0·미반영 0·유지 0·본문 형식 없음, 또는 DATA_DIR·실행 없음) undefined — 패널이 빠진다.
  * 던지지 않는다(읽기 실패는 "없음").
  */
 export async function getRunReview(runId: string): Promise<RunReviewView | undefined> {
@@ -216,12 +292,12 @@ export async function getRunReview(runId: string): Promise<RunReviewView | undef
     if (!run) return undefined;
 
     const answerable = run.status === RUN_STATUS.pendingApproval;
-    const [questions, unapplied, kept, bodyNotes] = await Promise.all([
+    const [questions, unapplied, kept, bodyShape] = await Promise.all([
       answerable ? loadQuestions(store, run) : undefined,
       loadUnapplied(store, run),
       loadKept(store, run),
-      // 코드 분량은 승인 대기에서만 알린다 — 수정 지시를 낼 수 있는 때다.
-      answerable ? loadBodyNotes(store, run) : [],
+      // 본문 형식은 승인 대기에서만 보인다 — 수정 지시를 낼 수 있는 때다.
+      answerable ? loadBodyShape(store, run) : undefined,
     ]);
 
     // 미반영된 답은 지금 목록의 같은 질문(종류 + 문장)에 다시 채운다 — 질문 id는 실행마다 새로 매겨져 id로는 못 잇는다.
@@ -257,7 +333,7 @@ export async function getRunReview(runId: string): Promise<RunReviewView | undef
       more: (questions?.more ?? []).map(toView),
       unapplied: [],
       kept,
-      bodyNotes,
+      ...(bodyShape === undefined ? {} : { bodyShape }),
       maxLength: REVIEW_ANSWER_MAX_LENGTH,
     };
     view.unapplied = unapplied.map(({ item, code }) => ({
@@ -269,12 +345,8 @@ export async function getRunReview(runId: string): Promise<RunReviewView | undef
     }));
 
     const empty =
-      view.questions.length +
-        view.more.length +
-        view.unapplied.length +
-        view.kept.length +
-        view.bodyNotes.length ===
-      0;
+      view.questions.length + view.more.length + view.unapplied.length + view.kept.length === 0 &&
+      view.bodyShape === undefined;
     return empty ? undefined : view;
   } catch {
     return undefined;

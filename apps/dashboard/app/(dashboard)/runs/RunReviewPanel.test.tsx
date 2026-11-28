@@ -24,7 +24,6 @@ const review = (extra: Partial<RunReviewView> = {}): RunReviewView => ({
   more: [q('u2', 'unsupported', '접힌 문장')],
   unapplied: [],
   kept: [],
-  bodyNotes: [],
   maxLength: 2000,
   ...extra,
 });
@@ -226,14 +225,47 @@ describe('RunReviewPanel', () => {
     await waitFor(() => expect(answerRun).toHaveBeenCalledWith('r1', [{ id: 'i1', kind: 'redo' }]));
   });
 
-  it('본문의 코드 분량이 기준을 넘으면 알리고, 승인을 막지 않는다고 적는다', () => {
+  const stats = [
+    { label: '본문 글자 수(코드 제외)', value: '4,084자', reference: '1,098~4,669자' },
+    { label: '인라인 코드', value: '114개', reference: '1~53개' },
+  ];
+
+  it('본문이 기준을 벗어나면 알리고, 승인을 막지 않는다고 적는다 — 수치 표는 기존 글 범위와 나란히', () => {
     renderPanel(
-      review({ bodyNotes: ['코드 블록이 7개입니다(기준 4개 이하).'], questions: [], more: [] }),
+      review({
+        bodyShape: {
+          off: ['코드 블록이 7개입니다(기준 2~4개).'],
+          warn: ['가장 긴 코드 블록이 60줄입니다(기존 글에서 가장 긴 것 49줄).'],
+          stats,
+        },
+        questions: [],
+        more: [],
+      }),
     );
 
-    expect(screen.getByText('본문에 코드가 많습니다')).toBeTruthy();
-    expect(screen.getByText('코드 블록이 7개입니다(기준 4개 이하).')).toBeTruthy();
+    expect(screen.getByText('본문이 분량 기준을 벗어났습니다')).toBeTruthy();
+    expect(screen.getByText('코드 블록이 7개입니다(기준 2~4개).')).toBeTruthy();
+    expect(screen.getByText(/가장 긴 코드 블록이 60줄/)).toBeTruthy();
     expect(screen.getByText(/승인은 막지 않습니다/)).toBeTruthy();
+    expect(screen.getByText('기존 글 대비 수치 2개')).toBeTruthy();
+    const row = screen.getByRole('rowheader', { name: '인라인 코드' }).closest('tr');
+    expect(row?.textContent).toBe('인라인 코드114개1~53개');
     expect(screen.queryByRole('button', { name: '답 반영' })).toBeNull();
+  });
+
+  it('경고만 있으면 제목이 다르고, 벗어난 것이 없으면 알림 없이 수치 표만 보인다', () => {
+    const { unmount } = renderPanel(
+      review({
+        bodyShape: { off: [], warn: ['코드가 본문 글자의 55%입니다.'], stats },
+        questions: [],
+        more: [],
+      }),
+    );
+    expect(screen.getByText('본문의 코드 분량을 확인하세요')).toBeTruthy();
+    unmount();
+
+    renderPanel(review({ bodyShape: { off: [], warn: [], stats }, questions: [], more: [] }));
+    expect(screen.queryByText(/승인은 막지 않습니다/)).toBeNull();
+    expect(screen.getByText('기존 글 대비 수치 2개')).toBeTruthy();
   });
 });

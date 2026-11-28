@@ -146,6 +146,7 @@ export function RunReviewPanel({ runId, review }: RunReviewPanelProps) {
   };
 
   const hasQuestions = review.answerable && all.length > 0;
+  const shape = review.bodyShape;
   return (
     <section className={styles.panel} aria-label="확인 질문">
       {review.unapplied.length > 0 ? (
@@ -172,17 +173,49 @@ export function RunReviewPanel({ runId, review }: RunReviewPanelProps) {
           ))}
         </InlineAlert>
       ) : null}
-      {review.bodyNotes.length > 0 ? (
-        <InlineAlert tone="warning" title="본문에 코드가 많습니다">
-          {review.bodyNotes.map((line) => (
+      {shape !== undefined && shape.off.length + shape.warn.length > 0 ? (
+        <InlineAlert
+          tone="warning"
+          title={
+            shape.off.length > 0
+              ? '본문이 분량 기준을 벗어났습니다'
+              : '본문의 코드 분량을 확인하세요'
+          }
+        >
+          {[...shape.off, ...shape.warn].map((line) => (
             <p key={line} className={styles.noticeLine}>
               {line}
             </p>
           ))}
           <p className={styles.noticeLine}>
-            승인은 막지 않습니다. 줄이려면 수정 지시로 본문부터 다시 실행하세요.
+            승인은 막지 않습니다. 고치려면 수정 지시로 본문부터 다시 실행하세요.
           </p>
         </InlineAlert>
+      ) : null}
+      {shape !== undefined ? (
+        <details className={styles.shape}>
+          <summary className={styles.shapeSummary}>
+            기존 글 대비 수치 {shape.stats.length}개
+          </summary>
+          <table className={styles.shapeTable}>
+            <thead>
+              <tr>
+                <th scope="col">항목</th>
+                <th scope="col">이 본문</th>
+                <th scope="col">기존 글 23편</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shape.stats.map((stat) => (
+                <tr key={stat.label}>
+                  <th scope="row">{stat.label}</th>
+                  <td>{stat.value}</td>
+                  <td>{stat.reference}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
       ) : null}
       {hasQuestions ? (
         <>
