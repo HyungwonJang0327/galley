@@ -149,6 +149,25 @@ describe('stripSnippets · parseEvidenceBundle', () => {
     });
     expect(parseEvidenceBundle('x')).toMatchObject({ ok: false });
   });
+
+  test('배경 메모 — 없으면 키가 없고, posts 사본에는 길이만 남는다(글은 DATA_DIR에만)', () => {
+    expect(BUNDLE).not.toHaveProperty('background');
+    const none = parseEvidenceBundle(JSON.parse(JSON.stringify(BUNDLE)));
+    expect(none.ok && 'background' in none.bundle).toBe(false);
+    expect(stripSnippets(BUNDLE)).not.toHaveProperty('background');
+
+    const background = { chars: 10, text: '사용자는 나 혼자였다', redacted: false };
+    const withNote = { ...BUNDLE, background };
+    const parsed = parseEvidenceBundle(JSON.parse(JSON.stringify(withNote)));
+    expect(parsed.ok && parsed.bundle.background).toEqual(background);
+    const pointers = stripSnippets(withNote);
+    expect(pointers.background).toEqual({ chars: 10 });
+    expect(JSON.stringify(pointers)).not.toContain('나 혼자');
+    // 글 없는 포인터 사본은 거부
+    expect(parseEvidenceBundle({ ...BUNDLE, background: pointers.background })).toMatchObject({
+      ok: false,
+    });
+  });
 });
 
 describe('LocalFsEvidenceStore', () => {

@@ -1,6 +1,7 @@
 // 근거 수집 단계(evidence) — linked: 주제에 연결된 분석 글(TopicAnalysisLink)의 포인터를 따라 원본 조각을 읽는다(BE8).
 // discovered: 연결에 없던 분석 글을 주제 키워드·기간 점수로 골라(`discoverAnalyses`, 모델 없음) 같은 방식으로 읽는다(BE9).
 // history: 담긴 조각의 파일들을 건드린 커밋 이력(`collectHistory`, 모델 없음 — decisions "근거의 층과 순서").
+// background: 주제에 사람이 적어 둔 배경 메모(QueueItem.backgroundNote) — 근거의 맨 앞 층, 식별 정보 필터를 거친다.
 // docs: 그 리포들의 작업 문서(worklog·decisions)에서 주제 낱말이 든 절(`collectDocs`, 모델 없음 — 리포 안 우선·없으면 바로 위 폴더).
 // 산출물: snippet 포함 번들은 EvidenceStore(DATA_DIR)에 쓰고, 워커에 돌려주는 artifacts에는 **포인터 사본만**
 // (`evidence.json` — B3a가 posts/<슬러그>/에 쓴다). 회사 코드 조각은 DATA_DIR 밖으로 나가지 않는다(CLAUDE.md §5).
@@ -9,6 +10,7 @@ import type { PrismaClient } from '@prisma/client';
 import { StepFailure, type StepContext, type StepResult, type StepRunner } from './StepRunner.ts';
 import type {
   EvidenceAnalysis,
+  EvidenceBackground,
   EvidenceBundle,
   EvidenceItem,
   EvidenceSource,
@@ -21,7 +23,7 @@ import { collectHistory, type HistoryRepo } from '../evidence/history.ts';
 import { EVIDENCE_LIMITS, type EvidenceLimits } from '../evidence/limits.ts';
 import { readPointerSnippet, type CommitMetaResolver } from '../evidence/readSnippet.ts';
 import { gitCommitMeta } from '../index/gitRead.ts';
-import type { RedactConfig } from '../evidence/redact.ts';
+import { redact, type RedactConfig } from '../evidence/redact.ts';
 import { LINK_SOURCE, isAnalysisKind, parsePointers, parseStringArray } from '../index/schema.ts';
 import { loadAnalysisCandidates } from '../link/autoLink.ts';
 import type { Clock } from '../worker/WorkerDeps.ts';
@@ -209,8 +211,9 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
       // 작업 문서 — 낱말은 주제 제목 + 주제 힌트 키워드 + 항목이 담긴 분석 글의 키워드.
       const topicHints = await deps.prisma.queueItem.findUnique({
         where: { id: ctx.topic.id },
-        select: { keywords: true },
+        select: { keywords: true, backgroundNote: true },
       });
+      const background = backgroundOf(topicHints?.backgroundNote ?? null, deps.redactConfig);
       const usedAnalyses = [...linkedAnalyses, ...discoveredAnalyses].filter((a) =>
         usedAnalysisIds.has(a.id),
       );
@@ -239,6 +242,7 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
         topicId: ctx.topic.id,
         topicSlug: ctx.topic.slug,
         collectedAt: deps.clock.now().toISOString(),
+        ...(background === undefined ? {} : { background }),
         items,
         analyses,
         history: history.history,
@@ -268,6 +272,18 @@ export function createEvidenceStepRunner(deps: EvidenceStepDeps): StepRunner {
       await deps.store.remove(ctx.topic.slug, ctx.runId);
     },
   };
+}
+
+/** 배경 메모 → 묶음의 맨 앞 층. 비었으면 없음. 필터 설정이 있으면 거친다(메모에도 회사 이름·도메인이 적힐 수 있다). */
+function backgroundOf(
+  note: string | null,
+  redactConfig: RedactConfig | null,
+): EvidenceBackground | undefined {
+  const raw = (note ?? '').trim();
+  if (raw === '') return undefined;
+  const filtered =
+    redactConfig === null ? { text: raw, redacted: false } : redact(raw, redactConfig);
+  return { chars: filtered.text.length, text: filtered.text, redacted: filtered.redacted };
 }
 
 /**

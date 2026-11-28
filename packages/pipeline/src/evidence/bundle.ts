@@ -93,6 +93,17 @@ export interface EvidenceDoc extends EvidenceDocPointer {
   truncated: boolean;
 }
 
+/** 배경 메모의 포인터 쪽 — posts 사본에는 "메모가 있었다"와 길이만 남는다(글 자체는 DATA_DIR에만). */
+export interface EvidenceBackgroundPointer {
+  chars: number;
+}
+
+/** DATA_DIR 쪽 — 주제에 사람이 적어 둔 배경 메모(redact 거침). 커밋·문서에 없는 조건·동기·숫자. */
+export interface EvidenceBackground extends EvidenceBackgroundPointer {
+  text: string;
+  redacted: boolean;
+}
+
 export interface EvidenceBundle {
   version: 1;
   runId: string;
@@ -100,6 +111,8 @@ export interface EvidenceBundle {
   topicSlug: string;
   /** 번들을 만든 시각(ISO). */
   collectedAt: string;
+  /** 주제의 배경 메모 — 근거의 맨 앞 층(옵션 — 메모가 없으면 키가 없다, version 1 유지). */
+  background?: EvidenceBackground;
   items: EvidenceItem[];
   /** 항목이 온 분석 글의 제목·요약(옵션 — 없으면 빈 배열로 읽는다, version 1 유지). */
   analyses?: EvidenceAnalysis[];
@@ -122,7 +135,11 @@ export interface EvidenceBundle {
 
 /** posts 쪽 — snippet 키가 없다(타입으로 강제). */
 export type EvidencePointerItem = EvidenceItemBase;
-export interface EvidencePointers extends Omit<EvidenceBundle, 'items' | 'history' | 'docs'> {
+export interface EvidencePointers extends Omit<
+  EvidenceBundle,
+  'items' | 'history' | 'docs' | 'background'
+> {
+  background?: EvidenceBackgroundPointer;
   items: EvidencePointerItem[];
   history?: EvidenceCommitPointer[];
   docs?: EvidenceDocPointer[];
@@ -130,9 +147,10 @@ export interface EvidencePointers extends Omit<EvidenceBundle, 'items' | 'histor
 
 /** 조각을 뗀 포인터 전용 사본 — posts/<슬러그>/evidence.json의 내용. */
 export function stripSnippets(bundle: EvidenceBundle): EvidencePointers {
-  const { history, docs, ...rest } = bundle;
+  const { history, docs, background, ...rest } = bundle;
   return {
     ...rest,
+    ...(background === undefined ? {} : { background: { chars: background.chars } }),
     items: bundle.items.map((item) => {
       const { snippet: _snippet, ...pointer } = item;
       void _snippet;
@@ -215,6 +233,13 @@ const isCommit = (v: unknown): v is EvidenceCommit =>
   typeof v['redacted'] === 'boolean' &&
   typeof v['truncated'] === 'boolean';
 
+/** 글이 없는 것(= posts의 포인터 사본)은 거부한다. */
+const isBackground = (v: unknown): v is EvidenceBackground =>
+  isRecord(v) &&
+  isCount(v['chars']) &&
+  typeof v['text'] === 'string' &&
+  typeof v['redacted'] === 'boolean';
+
 /** 본문이 없는 것(= posts의 포인터 사본)은 거부한다. */
 const isDoc = (v: unknown): v is EvidenceDoc =>
   isRecord(v) &&
@@ -238,7 +263,7 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
   const invalid = { ok: false as const, code: 'EVIDENCE_BUNDLE_INVALID' as const };
   if (!isRecord(json) || json['version'] !== 1) return invalid;
   const { runId, topicId, topicSlug, collectedAt, items, unreadable, filtered, analyses } = json;
-  const { history, historyOmitted, docs, docsOmitted } = json;
+  const { history, historyOmitted, docs, docsOmitted, background } = json;
   if (
     typeof runId !== 'string' ||
     typeof topicId !== 'string' ||
@@ -252,7 +277,8 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
     (history !== undefined && !(Array.isArray(history) && history.every(isCommit))) ||
     (historyOmitted !== undefined && !isCount(historyOmitted)) ||
     (docs !== undefined && !(Array.isArray(docs) && docs.every(isDoc))) ||
-    (docsOmitted !== undefined && !isCount(docsOmitted))
+    (docsOmitted !== undefined && !isCount(docsOmitted)) ||
+    (background !== undefined && !isBackground(background))
   )
     return invalid;
   return {
@@ -263,6 +289,7 @@ export function parseEvidenceBundle(json: unknown): ParseBundleResult {
       topicId,
       topicSlug,
       collectedAt,
+      ...(background === undefined ? {} : { background }),
       items,
       unreadable: unreadable as number,
       filtered,
