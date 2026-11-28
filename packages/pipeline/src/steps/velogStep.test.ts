@@ -131,6 +131,37 @@ describe('buildVelogPrompt', () => {
   });
 });
 
+describe('buildVelogPrompt — 배경 메모', () => {
+  const tone = { step: 'velog' as const, text: TONE, hash: 'h' };
+  test('메모가 있으면 근거 묶음 앞에 절로 넣고, SYSTEM에 "서론의 시점·조건은 배경 메모를 우선"을 붙인다', () => {
+    const text = '회사에서 2년 넘게 만든 제품\n```\n사용자는 나 혼자';
+    const { system, prompt } = buildVelogPrompt({
+      topic: { title: 't', slug: 's' },
+      bundle: { ...BUNDLE, background: { chars: text.length, text, redacted: false } },
+      tone,
+    });
+    expect(system).toContain(
+      '서론의 시점·조건(언제, 어떤 상황, 기간·규모 같은 숫자)은 배경 메모를 우선',
+    );
+    expect(system.endsWith(TONE)).toBe(true);
+    const memo = prompt.indexOf('# 배경 메모(');
+    expect(memo).toBeGreaterThan(-1);
+    expect(memo).toBeLessThan(prompt.indexOf('# 근거 묶음('));
+    // 메모 안의 ``` 가 절을 닫지 못한다 — 더 긴 펜스로 감싼다
+    expect(prompt).toContain('````\n회사에서 2년 넘게 만든 제품\n```\n사용자는 나 혼자\n````');
+  });
+
+  test('메모가 없으면 절도 SYSTEM 줄도 없다(메모 없는 실행의 프롬프트는 그대로)', () => {
+    const { system, prompt } = buildVelogPrompt({
+      topic: { title: 't', slug: 's' },
+      bundle: BUNDLE,
+      tone,
+    });
+    expect(prompt).not.toContain('배경 메모');
+    expect(system).not.toContain('배경 메모');
+  });
+});
+
 describe('VelogInput — 본문 단계 입력 경계(BE11)', () => {
   test('리포 경로·분석 글 원문·요약 묶음은 입력 타입에 자리가 없고(typecheck가 지킨다), 넘겨도 프롬프트에 나오지 않는다', () => {
     const base = {
