@@ -14,8 +14,8 @@ import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 import {
   abortable,
   classifyModelError,
-  renderBackground,
-  renderEvidenceItems,
+  hasStoryLayers,
+  renderEvidenceBundle,
   tonePromptFailure,
   unwrapFence,
 } from './writing.ts';
@@ -63,6 +63,18 @@ const BACKGROUND_SYSTEM_LINE = `- 사용자 메시지의 "배경 메모"는 작�
 
 `;
 
+/**
+ * 묶음에 이야기의 재료(배경 메모·작업 문서·커밋 이력)가 있을 때만 SYSTEM 머리에 붙는 서술 규칙(decisions "근거의 층과 순서" 4).
+ * 어투 프롬프트 파일(사용자 소유)은 건드리지 않는다 — 여기는 "근거를 어떻게 쓰는가"만 말한다. 재료가 없는 묶음(옛 실행)의 프롬프트는 그대로다.
+ */
+const STORY_SYSTEM_LINES = `- 근거 묶음은 배경 메모·작업 문서(worklog·decisions)·커밋 이력·코드 조각으로 이뤄집니다. 시점·조건·사건의 전개는 배경 메모 → 작업 문서 → 커밋 이력 순으로 찾고, 코드 조각은 "코드가 어떻게 생겼는지"에 씁니다.
+- 첫 문단은 배경 메모·작업 문서·커밋 날짜에서 뽑은 사건 한 장면(언제, 어떤 상황에서, 무슨 일이 있었는지)으로 시작합니다. 제품이나 기능 소개로 시작하지 않습니다.
+- "삽질 기록" 같은 시행착오 항목은 "실수 → 발견 → 고침"의 흐름이 작업 문서나 커밋 이력에 실제로 있을 때만 씁니다. 그런 근거가 없으면 항목을 만들지 않고, 지금 코드에 대한 아쉬움은 결과 절의 '아쉬운 것'으로 보냅니다.
+- 결과 절의 타임라인(날짜 목록)은 커밋·작업 문서의 날짜에서 4개 이상 뽑아 씁니다. 근거에 있는 날짜가 그보다 적으면 있는 만큼만 쓰고, 날짜를 지어내지 않습니다.
+- 작업 문서·커밋 메시지에 나오는 사람 이름과 에이전트 역할 이름은 본문에 옮기지 않습니다.
+
+`;
+
 /** 모델에 보내는 프롬프트 — 테스트·미리보기용으로 공개. system = 어투, user = 주제·지시·요약·근거. */
 export function buildVelogPrompt(
   input: VelogInput,
@@ -89,18 +101,15 @@ export function buildVelogPrompt(
     lines.push('');
   }
 
-  const background = renderBackground(bundle.background);
-  lines.push(
-    ...background,
-    `# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`,
-    ...renderEvidenceItems(bundle.items, limits.evidenceChars),
-  );
+  lines.push(...renderEvidenceBundle(bundle, limits));
   lines.push('# 요청', '위 어투 규칙과 근거로 벨로그 본문 초안을 마크다운으로 작성하세요.');
   const seriesLine =
     input.series === undefined ? '' : `${renderSeriesSystemLine(input.series)}\n\n`;
-  const backgroundLine = background.length === 0 ? '' : BACKGROUND_SYSTEM_LINE;
+  const hasBackground = bundle.background !== undefined && bundle.background.text.trim() !== '';
+  const storyLines = hasStoryLayers(bundle) ? STORY_SYSTEM_LINES : '';
+  const backgroundLine = hasBackground ? BACKGROUND_SYSTEM_LINE : '';
   return {
-    system: SYSTEM_PREFIX + backgroundLine + seriesLine + input.tone.text,
+    system: SYSTEM_PREFIX + storyLines + backgroundLine + seriesLine + input.tone.text,
     prompt: lines.join('\n'),
   };
 }
