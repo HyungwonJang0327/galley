@@ -3,7 +3,7 @@
 // decisions/evidence-collection.md 2026-09-23 BS3 리뷰 반영). 단계별 러너 골격은 각 단계 파일에 있다.
 import { StepFailure } from './StepRunner.ts';
 import type { TonePromptFailure } from '../prompts/tonePrompts.ts';
-import type { EvidenceItem } from '../evidence/bundle.ts';
+import type { EvidenceBackground, EvidenceItem } from '../evidence/bundle.ts';
 
 /** 어투 로더의 값 실패 → 단계 실패(재시도 불가). 벨로그·링크드인·Zenn 단계가 같은 헬퍼를 쓴다. 문구에 절대경로 없음(파일명만). */
 export function tonePromptFailure(failure: TonePromptFailure): StepFailure {
@@ -86,6 +86,22 @@ export function fenceFor(text: string): string {
 export function unwrapFence(text: string): string {
   const m = /^(`{3,})(?:markdown|md)?\s*\n([\s\S]*?)\n\1\s*$/.exec(text);
   return m === null ? text : m[2]!;
+}
+
+/**
+ * 배경 메모를 프롬프트 줄로 — 작성자가 직접 적은 조건·동기라 근거 묶음의 일부다(조각보다 앞에 둔다). 메모가 없으면 빈 배열
+ * (절 자체가 없다). 메모 안의 백틱이 구조를 닫지 못하게 동적 펜스로 감싼다.
+ */
+export function renderBackground(background: EvidenceBackground | undefined): string[] {
+  if (background === undefined || background.text.trim() === '') return [];
+  const fence = fenceFor(background.text);
+  return [
+    '# 배경 메모(작성자가 직접 적은 조건·동기 — 근거 묶음의 일부)',
+    fence,
+    background.text,
+    fence,
+    '',
+  ];
 }
 
 /**

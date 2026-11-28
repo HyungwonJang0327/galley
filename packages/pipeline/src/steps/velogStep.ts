@@ -14,6 +14,7 @@ import { WRITING_LIMITS, type WritingLimits } from './limits.ts';
 import {
   abortable,
   classifyModelError,
+  renderBackground,
   renderEvidenceItems,
   tonePromptFailure,
   unwrapFence,
@@ -57,6 +58,11 @@ const SYSTEM_PREFIX = `당신은 아래 "어투" 규칙대로 기술 블로그 �
 
 `;
 
+/** 배경 메모가 있을 때만 SYSTEM 머리에 붙는 줄 — 메모가 없는 실행의 프롬프트는 그대로다. */
+const BACKGROUND_SYSTEM_LINE = `- 사용자 메시지의 "배경 메모"는 작성자가 직접 적은 사실이며 근거 묶음의 일부입니다. 서론의 시점·조건(언제, 어떤 상황, 기간·규모 같은 숫자)은 배경 메모를 우선 씁니다. 메모에 없는 조건을 보태지 않습니다.
+
+`;
+
 /** 모델에 보내는 프롬프트 — 테스트·미리보기용으로 공개. system = 어투, user = 주제·지시·요약·근거. */
 export function buildVelogPrompt(
   input: VelogInput,
@@ -83,14 +89,20 @@ export function buildVelogPrompt(
     lines.push('');
   }
 
+  const background = renderBackground(bundle.background);
   lines.push(
+    ...background,
     `# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`,
     ...renderEvidenceItems(bundle.items, limits.evidenceChars),
   );
   lines.push('# 요청', '위 어투 규칙과 근거로 벨로그 본문 초안을 마크다운으로 작성하세요.');
   const seriesLine =
     input.series === undefined ? '' : `${renderSeriesSystemLine(input.series)}\n\n`;
-  return { system: SYSTEM_PREFIX + seriesLine + input.tone.text, prompt: lines.join('\n') };
+  const backgroundLine = background.length === 0 ? '' : BACKGROUND_SYSTEM_LINE;
+  return {
+    system: SYSTEM_PREFIX + backgroundLine + seriesLine + input.tone.text,
+    prompt: lines.join('\n'),
+  };
 }
 
 export function createVelogStepRunner(deps: VelogStepDeps): StepRunner {
