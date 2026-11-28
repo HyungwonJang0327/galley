@@ -3,7 +3,13 @@
 // decisions/evidence-collection.md 2026-09-23 BS3 리뷰 반영). 단계별 러너 골격은 각 단계 파일에 있다.
 import { StepFailure } from './StepRunner.ts';
 import type { TonePromptFailure } from '../prompts/tonePrompts.ts';
-import type { EvidenceBackground, EvidenceItem } from '../evidence/bundle.ts';
+import type {
+  EvidenceBackground,
+  EvidenceBundle,
+  EvidenceCommit,
+  EvidenceDoc,
+  EvidenceItem,
+} from '../evidence/bundle.ts';
 
 /** 어투 로더의 값 실패 → 단계 실패(재시도 불가). 벨로그·링크드인·Zenn 단계가 같은 헬퍼를 쓴다. 문구에 절대경로 없음(파일명만). */
 export function tonePromptFailure(failure: TonePromptFailure): StepFailure {
@@ -133,4 +139,121 @@ export function renderEvidenceItems(
   });
   if (omitted > 0) lines.push(`(입력 상한으로 조각 본문 ${omitted}개 생략)`, '');
   return lines;
+}
+
+/**
+ * 작업 문서(worklog·decisions)의 절을 프롬프트 줄로 — 절마다 머리(경로·줄·날짜·머리글 경로)와 동적 펜스 안 본문. 없으면 빈 배열.
+ * 총 글자 상한을 넘는 절은 본문을 생략하고 머리만 남긴다. 번호는 판정 사유가 "문서 2"처럼 가리키는 데 쓴다.
+ */
+export function renderDocs(docs: readonly EvidenceDoc[], docsChars: number): string[] {
+  if (docs.length === 0) return [];
+  const lines: string[] = [
+    `# 작업 문서(${docs.length}개 절 — 근거 묶음의 일부. 작업하던 그때 적은 기록, worklog는 날짜순)`,
+  ];
+  let used = 0;
+  let omitted = 0;
+  docs.forEach((doc, i) => {
+    const date = doc.date === undefined ? '' : `, ${doc.date}`;
+    lines.push(
+      `## 문서 ${i + 1} — ${doc.path} L${doc.lineRange.start}-${doc.lineRange.end} (${doc.kind}${date}) · ${doc.title}`,
+    );
+    if (used + doc.text.length <= docsChars) {
+      const fence = fenceFor(doc.text);
+      lines.push(fence, doc.text, fence);
+      used += doc.text.length;
+    } else {
+      omitted += 1;
+      lines.push('(절 본문은 입력 상한으로 생략)');
+    }
+    if (doc.truncated) lines.push('(절은 상한으로 잘렸다)');
+    lines.push('');
+  });
+  if (omitted > 0) lines.push(`(입력 상한으로 절 본문 ${omitted}개 생략)`, '');
+  return lines;
+}
+
+const fileLine = (f: EvidenceCommit['files'][number]): string =>
+  f.added === undefined && f.deleted === undefined
+    ? `${f.status} ${f.path}`
+    : `${f.status} ${f.path} (+${f.added ?? 0} -${f.deleted ?? 0})`;
+
+/**
+ * 커밋 이력을 프롬프트 줄로 — 커밋마다 머리(날짜·짧은 해시·리포)·제목·본문(동적 펜스)·바뀐 파일과 줄 수. 묶음의 순서(오래된 순) 그대로.
+ * 없으면 빈 배열. 총 글자 상한을 넘는 커밋은 본문을 생략하고 날짜·제목·파일만 남긴다(타임라인에는 그것으로 충분하다).
+ */
+export function renderHistory(
+  history: readonly EvidenceCommit[],
+  historyChars: number,
+  omittedCommits = 0,
+): string[] {
+  if (history.length === 0) return [];
+  const lines: string[] = [
+    `# 커밋 이력(${history.length}개 — 근거 묶음의 일부. 오래된 순, 코드 조각의 파일을 건드린 커밋)`,
+  ];
+  let used = 0;
+  let omitted = 0;
+  history.forEach((c, i) => {
+    lines.push(
+      `## 커밋 ${i + 1} — ${c.date.slice(0, 10)} ${c.commit.slice(0, 7)} (${c.repo})`,
+      `제목: ${c.subject}`,
+    );
+    if (c.body.trim() !== '') {
+      if (used + c.body.length <= historyChars) {
+        const fence = fenceFor(c.body);
+        lines.push(fence, c.body, fence);
+        used += c.body.length;
+      } else {
+        omitted += 1;
+        lines.push('(커밋 본문은 입력 상한으로 생략)');
+      }
+    }
+    if (c.files.length > 0) {
+      const more = c.fileCount > c.files.length ? ` 외 ${c.fileCount - c.files.length}개` : '';
+      lines.push(`파일: ${c.files.map(fileLine).join(', ')}${more}`);
+    }
+    lines.push('');
+  });
+  if (omitted > 0) lines.push(`(입력 상한으로 커밋 본문 ${omitted}개 생략)`, '');
+  if (omittedCommits > 0) lines.push(`(상한에 밀려 이력에서 빠진 커밋 ${omittedCommits}개)`, '');
+  return lines;
+}
+
+export interface EvidenceRenderLimits {
+  evidenceChars: number;
+  docsChars: number;
+  historyChars: number;
+}
+
+/**
+ * 근거 묶음 전체를 프롬프트 줄로 — **배경 메모 → 작업 문서 → 커밋 이력 → 코드 조각**(decisions "근거의 층과 순서"). 벨로그 본문(사실의
+ * 전부)과 근거 검증(대조 대상)이 같은 표현을 쓴다. 층이 하나도 없는 묶음(옛 실행)은 예전과 같은 한 절(`# 근거 묶음(N개 조각 …)`)이다.
+ */
+export function renderEvidenceBundle(
+  bundle: EvidenceBundle,
+  limits: EvidenceRenderLimits,
+): string[] {
+  const layers = [
+    ...renderBackground(bundle.background),
+    ...renderDocs(bundle.docs ?? [], limits.docsChars),
+    ...renderHistory(bundle.history ?? [], limits.historyChars, bundle.historyOmitted ?? 0),
+  ];
+  const items = renderEvidenceItems(bundle.items, limits.evidenceChars);
+  if (layers.length === 0)
+    return [`# 근거 묶음(${bundle.items.length}개 조각 — 이것이 사실의 전부)`, ...items];
+  return [
+    ...layers,
+    `# 코드 조각(${bundle.items.length}개 — 근거 묶음의 일부. 각 커밋 시점의 파일 내용)`,
+    ...items,
+    '(근거 묶음 = 위의 배경 메모·작업 문서·커밋 이력·코드 조각 — 이것이 사실의 전부)',
+    '',
+  ];
+}
+
+/** 묶음에 이야기의 재료(배경 메모·작업 문서·커밋 이력)가 하나라도 있는가 — 본문 고정 머리의 서술 규칙을 붙일 조건. */
+export function hasStoryLayers(bundle: EvidenceBundle): boolean {
+  return (
+    (bundle.background !== undefined && bundle.background.text.trim() !== '') ||
+    (bundle.docs ?? []).length > 0 ||
+    (bundle.history ?? []).length > 0
+  );
 }
