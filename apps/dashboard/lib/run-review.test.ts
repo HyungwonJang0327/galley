@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { read, getRunWithSteps, collectReviewQuestions, checkBodyCode, json } = vi.hoisted(() => ({
-  checkBodyCode: vi.fn(),
+const { read, getRunWithSteps, collectReviewQuestions, checkPostShape, json } = vi.hoisted(() => ({
+  checkPostShape: vi.fn(),
   read: vi.fn(),
   getRunWithSteps: vi.fn(),
   collectReviewQuestions: vi.fn(),
@@ -27,7 +27,17 @@ vi.mock('@galley/pipeline', () => ({
   parseReviewAnswerSet: json,
   reviewQuestionsInputOf: (run: unknown) => ({ from: run }),
   collectReviewQuestions,
-  checkBodyCode,
+  checkPostShape,
+  POST_SHAPE_REFERENCE: {
+    proseChars: { min: 1098, max: 4669 },
+    codeBlocks: { min: 3, max: 6 },
+    longestBlockLines: { min: 12, max: 49 },
+    codePercent: { min: 19, max: 47 },
+    inlineCodes: { min: 1, max: 53 },
+    paragraphs: { min: 14, max: 28 },
+    illustrationSlots: { min: 0, max: 3 },
+    resultDates: { min: 3, max: 8 },
+  },
   prisma: {},
   getRunWithSteps,
   resolveDataDir: (env: { DATA_DIR?: string }) =>
@@ -65,12 +75,23 @@ const files = (map: Record<string, unknown>) =>
     ),
   );
 
+const SHAPE = {
+  proseChars: 2500,
+  codeBlocks: 3,
+  longestBlockLines: 20,
+  codePercent: 23,
+  inlineCodes: 114,
+  paragraphs: 34,
+  illustrationSlots: 1,
+  resultDates: 2,
+};
+
 beforeEach(() => {
   vi.stubEnv('DATA_DIR', '/data');
   vi.stubEnv('BLOG_DIR', '/blog');
   getRunWithSteps.mockResolvedValue(RUN);
   collectReviewQuestions.mockResolvedValue({ ok: false, code: 'REVIEW_BODY_MISSING' });
-  checkBodyCode.mockReturnValue([]);
+  checkPostShape.mockReturnValue({ shape: SHAPE, findings: [] });
 });
 
 afterEach(() => {
@@ -95,7 +116,6 @@ describe('getRunReview', () => {
       more: [{ id: 'u1', source: 'unsupported', text: '응답이 2배 빨라졌다.', line: 40 }],
       unapplied: [],
       kept: [],
-      bodyNotes: [],
       maxLength: 2000,
     });
     expect(collectReviewQuestions).not.toHaveBeenCalled();
@@ -157,30 +177,55 @@ describe('getRunReview', () => {
     expect(await getRunReview('run_2')).toBeUndefined();
   });
 
-  it('본문의 코드 분량이 기준을 넘으면 문구로 알린다 — 본문이 이전 결과 유지면 출처 실행의 것을 잰다', async () => {
+  it('본문을 기존 글과 견준 결과를 문구로 싣는다 — 기준 밖·경고·수치, 본문이 이전 결과 유지면 출처 실행의 것을 잰다', async () => {
     files({ 'velog.md': '본문' });
-    checkBodyCode.mockReturnValue([
-      { code: 'CODE_BLOCKS_OVER', value: 7, limit: 4 },
-      { code: 'CODE_BLOCK_TOO_LONG', value: 37, limit: 15, count: 5 },
-      { code: 'CODE_RATIO_OVER', value: 55, limit: 40 },
-    ]);
+    checkPostShape.mockReturnValue({
+      shape: { ...SHAPE, proseChars: 4084, codeBlocks: 7, longestBlockLines: 60, codePercent: 55 },
+      findings: [
+        { code: 'PROSE_CHARS_OVER', level: 'off', value: 4084, min: 2000, max: 3000 },
+        { code: 'CODE_BLOCKS_OVER', level: 'off', value: 7, min: 2, max: 4 },
+        { code: 'CODE_BLOCK_TOO_LONG', level: 'warn', value: 60, limit: 49 },
+        { code: 'CODE_RATIO_OVER', level: 'warn', value: 55, limit: 47 },
+      ],
+    });
 
     const view = await getRunReview('run_2');
 
-    expect(view?.bodyNotes).toEqual([
-      '코드 블록이 7개입니다(기준 4개 이하).',
-      '15줄을 넘는 코드 블록이 5개 있습니다(가장 긴 것 37줄).',
-      '코드가 본문 글자의 55%입니다(기준 40% 이하).',
+    expect(view?.bodyShape?.off).toEqual([
+      '본문이 4,084자입니다(기준 2,000~3,000자, 코드 제외).',
+      '코드 블록이 7개입니다(기준 2~4개).',
+    ]);
+    expect(view?.bodyShape?.warn).toEqual([
+      '가장 긴 코드 블록이 60줄입니다(기존 글에서 가장 긴 것 49줄).',
+      '코드가 본문 글자의 55%입니다(기존 글에서 가장 높은 것 47%).',
+    ]);
+    expect(view?.bodyShape?.stats).toEqual([
+      { label: '본문 글자 수(코드 제외)', value: '4,084자', reference: '1,098~4,669자' },
+      { label: '코드 블록', value: '7개', reference: '3~6개' },
+      { label: '가장 긴 코드 블록', value: '60줄', reference: '12~49줄' },
+      { label: '코드 비율', value: '55%', reference: '19~47%' },
+      { label: '인라인 코드', value: '114개', reference: '1~53개' },
+      { label: '문단', value: '34개', reference: '14~28개' },
+      { label: '삽화 자리', value: '1개', reference: '0~3개' },
+      { label: '결과 절 날짜', value: '2개', reference: '3~8개(날짜 목록이 있는 6편)' },
     ]);
     expect(view?.questions).toEqual([]);
-    expect(checkBodyCode).toHaveBeenCalledWith('"본문"');
+    expect(checkPostShape).toHaveBeenCalledWith('"본문"');
     expect(read).toHaveBeenCalledWith('무한-스크롤', 'run_1', 'velog.md');
   });
 
-  it('승인 대기가 아니면 코드 분량도 알리지 않는다', async () => {
+  it('기준 안이어도 본문이 있으면 수치는 보인다(벗어난 항목은 빈 배열)', async () => {
+    files({ 'velog.md': '본문' });
+
+    const view = await getRunReview('run_2');
+
+    expect(view?.bodyShape).toMatchObject({ off: [], warn: [] });
+    expect(view?.bodyShape?.stats).toHaveLength(8);
+  });
+
+  it('승인 대기가 아니면 본문 형식도 보이지 않는다', async () => {
     getRunWithSteps.mockResolvedValue({ ...RUN, status: 'done' });
     files({ 'velog.md': '본문' });
-    checkBodyCode.mockReturnValue([{ code: 'CODE_BLOCKS_OVER', value: 7, limit: 4 }]);
 
     expect(await getRunReview('run_2')).toBeUndefined();
   });

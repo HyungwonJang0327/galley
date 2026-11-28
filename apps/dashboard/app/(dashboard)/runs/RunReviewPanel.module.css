@@ -116,3 +116,30 @@
 .plan dd {
   margin: 0;
 }
+
+/* 기존 글 대비 수치 — 접어 두고, 펼치면 작은 표. */
+.shape {
+  font-size: var(--ui-text-sm);
+}
+
+.shapeSummary {
+  cursor: pointer;
+  color: var(--ui-color-text-muted);
+}
+
+.shapeTable {
+  margin-top: var(--ui-space-2);
+  border-collapse: collapse;
+}
+
+.shapeTable th,
+.shapeTable td {
+  padding: var(--ui-space-1) var(--ui-space-3) var(--ui-space-1) 0;
+  text-align: left;
+  font-weight: var(--ui-weight-regular);
+}
+
+.shapeTable thead th {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-text-xs);
+}
