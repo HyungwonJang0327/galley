@@ -523,6 +523,8 @@ export type {
   AddTopicLinkResult,
   RemoveTopicLinkResult,
 } from './link/topicLinks.ts';
+export { TOPIC_NOTE_MAX_CHARS, getTopicNote, setTopicNote } from './queue/topicNote.ts';
+export type { GetTopicNoteResult, SetTopicNoteResult } from './queue/topicNote.ts';
 export type {
   EnqueueIndexJobInput,
   EnqueuedIndexJob,

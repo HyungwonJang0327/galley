@@ -57,6 +57,11 @@ model QueueItem {
   // 시리즈명·정의 줄은 DB에 두지 않는다(decisions/series.md). 파일에서 사라진 행도 지우지 않아 복원 때 태그를 되붙인다.
   seriesKey   String?
   episodeNo   Int?
+
+  // 배경 메모 — 커밋·문서에 없는 조건과 동기를 사람이 적는 자유 텍스트(decisions/evidence-collection.md "근거의 층과 순서").
+  // 파일(주제_큐.md)에는 없고 DB에만 있다 — 재적재는 이 컬럼을 건드리지 않는다. null = 없음.
+  backgroundNote String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
