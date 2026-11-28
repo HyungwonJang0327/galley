@@ -600,14 +600,17 @@ export {
   type ReviewAnswerSetFailure,
   type ReviewAnswerSetResult,
 } from './review/answerSet.ts';
+export { measureBodyCode, type BodyCodeMeasure } from './review/bodyCode.ts';
 export {
-  BODY_CODE_LIMITS,
-  checkBodyCode,
-  measureBodyCode,
-  type BodyCodeFinding,
-  type BodyCodeLimits,
-  type BodyCodeMeasure,
-} from './review/bodyCode.ts';
+  POST_SHAPE_LIMITS,
+  POST_SHAPE_REFERENCE,
+  checkPostShape,
+  measurePostShape,
+  type PostShape,
+  type PostShapeCheck,
+  type PostShapeFinding,
+  type PostShapeLimits,
+} from './review/postShape.ts';
 export {
   PATCH_SCOPE_RADIUS,
   checkPatchPlaces,

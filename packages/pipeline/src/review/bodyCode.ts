@@ -1,6 +1,5 @@
-// 본문의 코드 분량 검사 — 승인 대기 화면에 "코드가 많다"를 **표시만** 한다(승인을 막지 않는다. 모델 호출 없음).
-// 어투 프롬프트의 "클린룸 코드 2~4개"는 모델이 어길 수 있어(리허설 6차: 7개·코드 55%) 코드로 재서 사람에게 알린다.
-// 순수 함수만. 줄이는 것은 사람이 수정 지시로 한다.
+// 본문의 코드 분량 재기 — 코드 블록마다 줄 수, 코드·글 글자 수. 기준과 견주는 것은 postShape.ts(기존 글 대비 형식 검사)가 한다.
+// 순수 함수만.
 
 /** 펜스 여는 줄 — 들여쓰기 3칸까지, 백틱·물결 3개 이상(문단 나누기와 같은 기준). */
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
@@ -52,53 +51,4 @@ export function measureBodyCode(body: string): BodyCodeMeasure {
       .replace(/\s+/g, ''),
   ).length;
   return { blockLines, codeChars, proseChars };
-}
-
-export interface BodyCodeLimits {
-  /** 코드 블록 수 상한. */
-  maxBlocks: number;
-  /** 블록 하나의 줄 수 상한. */
-  maxBlockLines: number;
-  /** 코드 글자 비율 상한(%) — 코드 ÷ (코드 + 글), 공백 제외. */
-  maxCodePercent: number;
-}
-
-/** 기본 상한 — 블록 수는 어투 프롬프트의 "2~4개", 줄 수·비율은 리허설 6차에서 정한 값(2026-11-23). */
-export const BODY_CODE_LIMITS: BodyCodeLimits = {
-  maxBlocks: 4,
-  maxBlockLines: 15,
-  maxCodePercent: 40,
-};
-
-/** 넘은 항목 하나(값은 영어 코드 — 문구는 대시보드가 붙인다). */
-export type BodyCodeFinding =
-  /** 코드 블록이 상한보다 많다 */
-  | { code: 'CODE_BLOCKS_OVER'; value: number; limit: number }
-  /** 상한보다 긴 블록이 있다 — `count`개, 가장 긴 것이 `value`줄 */
-  | { code: 'CODE_BLOCK_TOO_LONG'; value: number; limit: number; count: number }
-  /** 코드 글자 비율(%)이 상한을 넘는다 */
-  | { code: 'CODE_RATIO_OVER'; value: number; limit: number };
-
-/** 본문의 코드 분량이 상한을 넘은 항목들. 넘은 것이 없으면 빈 배열. */
-export function checkBodyCode(
-  body: string,
-  limits: BodyCodeLimits = BODY_CODE_LIMITS,
-): BodyCodeFinding[] {
-  const { blockLines, codeChars, proseChars } = measureBodyCode(body);
-  const findings: BodyCodeFinding[] = [];
-  if (blockLines.length > limits.maxBlocks)
-    findings.push({ code: 'CODE_BLOCKS_OVER', value: blockLines.length, limit: limits.maxBlocks });
-  const long = blockLines.filter((lines) => lines > limits.maxBlockLines);
-  if (long.length > 0)
-    findings.push({
-      code: 'CODE_BLOCK_TOO_LONG',
-      value: Math.max(...long),
-      limit: limits.maxBlockLines,
-      count: long.length,
-    });
-  const total = codeChars + proseChars;
-  const percent = total === 0 ? 0 : Math.round((codeChars / total) * 100);
-  if (percent > limits.maxCodePercent)
-    findings.push({ code: 'CODE_RATIO_OVER', value: percent, limit: limits.maxCodePercent });
-  return findings;
 }
