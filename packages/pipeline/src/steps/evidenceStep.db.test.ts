@@ -256,6 +256,33 @@ describe('evidence 단계 — 작업 문서', () => {
   });
 });
 
+describe('evidence 단계 — 배경 메모', () => {
+  test('주제에 메모가 있으면 필터를 거쳐 묶음에 싣고 posts 사본에는 길이만, 없으면 키가 없다', async () => {
+    const { topic, run } = await seed(true);
+    const runner = createEvidenceStepRunner(deps(REDACT));
+    const none = await runner.run(ctxFor(run, topic));
+    const before = await store.read('무한-스크롤', run.id);
+    expect(before.ok && 'background' in before.bundle).toBe(false);
+    expect(JSON.parse(none.artifacts[EVIDENCE_ARTIFACT]!)).not.toHaveProperty('background');
+
+    await prisma.queueItem.update({
+      where: { id: topic.id },
+      data: { backgroundNote: 'Example Corp에서 2년 넘게 만든 제품\n사용자는 나 혼자' },
+    });
+    const result = await runner.run(ctxFor(run, topic));
+    const stored = await store.read('무한-스크롤', run.id);
+    const text = '[COMPANY]에서 2년 넘게 만든 제품\n사용자는 나 혼자';
+    expect(stored.ok && stored.bundle.background).toEqual({
+      chars: text.length,
+      text,
+      redacted: true,
+    });
+    const pointers = JSON.parse(result.artifacts[EVIDENCE_ARTIFACT]!) as EvidencePointers;
+    expect(pointers.background).toEqual({ chars: text.length });
+    expect(result.artifacts[EVIDENCE_ARTIFACT]).not.toContain('나 혼자');
+  });
+});
+
 describe('evidence 단계', () => {
   test('linked 포인터를 읽어 DATA_DIR에 snippet 번들, artifacts에는 포인터만 — 모든 snippet이 커밋의 파일 내용과 일치', async () => {
     const { area, change, topic, run } = await seed(true);

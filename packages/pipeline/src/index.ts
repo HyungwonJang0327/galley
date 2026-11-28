@@ -258,6 +258,7 @@ export type {
   EvidenceCommitPointer,
 } from './evidence/bundle.ts';
 export type { EvidenceDoc, EvidenceDocKind, EvidenceDocPointer } from './evidence/bundle.ts';
+export type { EvidenceBackground, EvidenceBackgroundPointer } from './evidence/bundle.ts';
 export { collectDocs, docTerms, readRepoDocs, splitDocSections } from './evidence/docs.ts';
 export type {
   CollectDocsResult,
