@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { measureBodyCode } from './bodyCode.ts';
 
-const block = (lines: number, fence = '```') =>
-  [`${fence}ts`, ...Array.from({ length: lines }, (_, i) => `const v${i} = ${i};`), fence].join(
-    '\n',
-  );
-const prose = (chars: number) => '가'.repeat(chars);
-
 describe('measureBodyCode', () => {
   test('코드 블록의 줄 수와 코드·글 글자 수(공백 제외)를 잰다 — HTML 주석은 글이 아니다', () => {
     const body = [
